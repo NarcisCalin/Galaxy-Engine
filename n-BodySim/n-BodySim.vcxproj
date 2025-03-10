@@ -118,6 +118,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -127,11 +128,21 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="button.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="mouseTrailDot.cpp" />
+    <ClCompile Include="planet.cpp" />
+    <ClCompile Include="quadtree.cpp" />
     <ClCompile Include="slingshot.cpp" />
+    <ClCompile Include="ui.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="simulation.h" />
+    <ClInclude Include="button.h" />
+    <ClInclude Include="mouseTrailDot.h" />
+    <ClInclude Include="planet.h" />
+    <ClInclude Include="quadtree.h" />
+    <ClInclude Include="ui.h" />
+    <ClInclude Include="updateScene.h" />
     <ClInclude Include="slingshot.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

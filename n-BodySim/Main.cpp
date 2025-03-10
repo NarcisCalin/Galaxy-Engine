@@ -10,25 +10,34 @@
 #include <functional>
 #include <future>
 #include <stdexcept>
+#include <array>
 
 #include "slingshot.h"
+#include "quadtree.h"
+#include "planet.h"
+#include "mouseTrailDot.h"
+#include "button.h"
+#include <omp.h>
 
 
 int screenWidth = 1000;
 int screenHeight = 1000;
 
 int targetFPS = 144;
-
 const double G = 6.674 * pow(10, -11);
 
-#include <vector>
-#include <queue>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-#include <functional>
-#include <future>
-#include <stdexcept>
+bool trailsEnabled = false;
+bool enableBlur = false;
+bool enablePixelDrawing = true;
+bool isFourierSpaceEnabled = true;
+bool isMultiThreadingEnabled = true;
+bool barnesHutEnabled = true;
+bool isDarkMatterEnabled = false;
+bool colorVisualsEnabled = false;
+
+int threadsAmount = 14;
+
+
 
 class ThreadPool {
 public:
@@ -42,9 +51,9 @@ public:
 					// Lock and wait for a task.
 					{
 						std::unique_lock<std::mutex> lock(this->queueMutex);
-						this->condition.wait(lock, [this] {
-							return this->stop || !this->tasks.empty();
-							});
+
+						this->condition.wait(lock, [this] {return this->stop || !this->tasks.empty();});
+
 						if (this->stop && this->tasks.empty())
 							return; // Exit thread.
 						task = std::move(this->tasks.front());
@@ -63,7 +72,7 @@ public:
 	auto enqueue(F&& f, Args&&... args)
 		-> std::future<typename std::result_of<F(Args...)>::type>
 	{
-		using return_type = typename std::result_of<F(Args...)>::type;
+		using return_type = std::invoke_result_t<F, Args...>;
 
 		// Wrap the function and its arguments.
 		auto task = std::make_shared<std::packaged_task<return_type()>>(
@@ -107,238 +116,7 @@ private:
 	bool stop;
 };
 
-
-class MouseTrailDot {
-public:
-	Vector2 pos;
-	int size = 5;
-	MouseTrailDot(float x, float y, int z) {
-
-		pos.x = x;
-		pos.y = y;
-		size = z;
-
-	}
-};
-
-class Planet {
-public:
-	Vector2 pos;
-	float size;
-	Vector2 velocity;
-	double mass;
-	Color color;
-	bool enableBlur = true;
-	Vector2 acceleration;
-	Vector2 prevAcceleration;
-	bool customColor;
-	float pressureRadius;
-
-
-
-
-	Planet(float x, float y, float z, float vx, float vy, double w, int r, int g, int b, int a, float accX, float accY, bool customColor) {
-		pos.x = x;
-		pos.y = y;
-		size = z;
-		velocity.x = vx;
-		velocity.y = vy;
-		mass = w;
-		color.r = r;
-		color.g = g;
-		color.b = b;
-		color.a = a;
-		acceleration.x = accX;
-		acceleration.y = accY;
-		prevAcceleration = acceleration;
-		this->customColor = customColor;
-		pressureRadius = size;
-
-	}
-};
-
-
-
-
-
-
-bool rectanglesIntersect(const Rectangle& r1, const Rectangle& r2) {
-	return!(r1.x > r2.x + r2.width ||
-		r1.x + r1.width < r2.x ||
-		r1.y > r2.y + r2.height ||
-		r1.y + r1.height < r2.y);
-}
-
-class Quadtree {
-public:
-	Vector2 pos;
-	float size;
-	Color color;
-	std::vector<Quadtree> subGrids;
-	std::vector<Planet> myPlanets;
-	float gridMass;
-	Vector2 centerOfMass;
-	Quadtree* parent;
-	int depth;
-
-
-
-	Quadtree(float posX, float posY, float size,
-		int r, int g, int b, int a,
-		std::vector<Planet> planets,
-		Quadtree* parent = nullptr) {
-
-		this->pos.x = posX;
-		this->pos.y = posY;
-		this->size = size;
-		this->color.r = r;
-		this->color.g = g;
-		this->color.b = b;
-		this->color.a = a;
-		this->gridMass = 0;
-		this->centerOfMass = { 0,0 };
-		this->parent = parent;
-		depth = (parent == nullptr) ? 0 : parent->depth + 1; // Set depth here
-		for (auto& planet : planets) {
-			if (planet.pos.x >= pos.x && planet.pos.x < pos.x + size &&
-				planet.pos.y >= pos.y && planet.pos.y < pos.y + size) {
-				myPlanets.push_back(planet);
-			}
-		}
-
-		if (myPlanets.size() > 1) {
-			subGridMaker();
-		}
-	}
-
-	void subGridMaker() {
-		for (int i = 0; i < 2; i++) {
-			for (int j = 0; j < 2; j++) {
-				subGrids.emplace_back(
-					this->pos.x + i * (this->size / 2),
-					this->pos.y + j * (this->size / 2),
-					this->size / 2,
-					255, 255, 255, 255,
-					this->myPlanets,
-					this
-
-				);
-			}
-		}
-
-		//Draw grids
-		for (auto& subGrid : subGrids) {
-			if (size < 10) {
-				//DrawRectangleLines(subGrid.pos.x, subGrid.pos.y, subGrid.size, subGrid.size, RED);
-			}
-			else {
-				//DrawRectangleLines(subGrid.pos.x, subGrid.pos.y, subGrid.size, subGrid.size, WHITE);
-			}
-		}
-	}
-
-	std::vector<Planet*> queryRange(const Rectangle& range) const {
-		std::vector<Planet*> results;
-
-		Rectangle nodeRect = { pos.x, pos.y, size, size };
-		if (!rectanglesIntersect(nodeRect, range)) {
-			return results; // No intersection, return empty.
-		}
-
-		if (subGrids.empty()) {
-			for (const Planet& planet : myPlanets) {
-				if (planet.pos.x >= range.x && planet.pos.x <= range.x + range.width &&
-					planet.pos.y >= range.y && planet.pos.y <= range.y + range.height)
-				{
-					// Casting away const is not ideal; ideally store pointers in the tree.
-					results.push_back((Planet*)&planet);
-				}
-
-			}
-		}
-
-		else {
-			for (const Quadtree& child : subGrids) {
-				std::vector<Planet*> childResults = child.queryRange(range);
-				results.insert(results.end(), childResults.begin(), childResults.end());
-			}
-		}
-		return results;
-	}
-
-	void calculateMasses() {
-
-		for (auto& subGrid : subGrids) {
-			subGrid.calculateMasses();
-		}
-
-		if (myPlanets.size() == 1 && subGrids.empty()) {
-			gridMass = myPlanets[0].mass;
-			centerOfMass = myPlanets[0].pos;
-		}
-		else if (!subGrids.empty()) {
-			gridMass = 0;
-			float totalMass = 0;
-			centerOfMass = { 0,0 };
-
-			for (auto& subGrid : subGrids) {
-				if (subGrid.gridMass > 0) {
-					gridMass += subGrid.gridMass;
-					centerOfMass.x += subGrid.centerOfMass.x * subGrid.gridMass;
-					centerOfMass.y += subGrid.centerOfMass.y * subGrid.gridMass;
-					totalMass += subGrid.gridMass;
-				}
-			}
-
-			if (totalMass > 0) {
-				centerOfMass.x /= totalMass;
-				centerOfMass.y /= totalMass;
-			}
-		}
-		else {
-			gridMass = 0;
-			centerOfMass = { 0,0 };
-		}
-	}
-
-	void printGridInfo() {
-		std::cout << "Grid at (" << pos.x << ", " << pos.y << ") with size " << size << ":\n";
-		std::cout << "  Mass: " << gridMass << "\n";
-		std::cout << "  Center of Mass: (" << centerOfMass.x << ", " << centerOfMass.y << ")\n";
-		std::cout << "  Number of planets: " << myPlanets.size() << "\n";
-		std::cout << "  Number of subgrids: " << subGrids.size() << "\n";
-	}
-
-	void parentInfo() const {
-		if (parent != nullptr) {
-			std::cout << "Parent grid mass: " << parent->gridMass << '\n';
-		}
-		else {
-			std::cout << "The grid has no parent (Root)" << '\n';
-		}
-	}
-
-	void drawCenterOfMass() const {
-
-		if (gridMass > 0 && (myPlanets.size() > 1 || subGrids.size() > 0)) {
-
-			float circleSize = std::max(4.0f - (depth * 0.5f), 1.0f);
-
-
-			Color depthColor = { 255,20 + (depth * 30),20,255 };
-
-			DrawCircle(centerOfMass.x, centerOfMass.y, circleSize, depthColor);
-		}
-
-
-		for (const auto& subGrid : subGrids) {
-			subGrid.drawCenterOfMass();
-		}
-	}
-
-};
-
-Quadtree gridFunction(std::vector<Planet> vectorPlanet) {
+static Quadtree gridFunction(std::vector<Planet> vectorPlanet) {
 	Quadtree grid(
 		0,             // posX
 		0,             // posY
@@ -365,101 +143,9 @@ bool isDragging = false;
 
 Slingshot slingshotObject = Slingshot::planetSlingshot(isDragging, isMouse0Pressed, isMouse2SpacePressed);
 
-Planet createPlanet() {
-
-
-	Slingshot slingshot = slingshotObject.planetSlingshot(isDragging, isMouse0Pressed, isMouse2SpacePressed);
-
-
-	Planet planet(GetMouseX(),
-		GetMouseY(),
-		4,
-		slingshot.normalizedX * slingshot.length,
-		slingshot.normalizedY * slingshot.length,
-		50000000000000000,
-		255,
-		255,
-		255,
-		255,
-		0,
-		0,
-		true
-	);
-	planet.pressureRadius *= 2;
-
-
-	return planet;
-}
-
-int currentPlanet;
-int previousPlanet;
-
-bool enableBlur = false;
-void drawScene(std::vector<Planet>& planets, std::vector<MouseTrailDot>& dots) {
-
-	if (IsKeyPressed(KEY_B) && enableBlur) {
-		enableBlur = false;
-	}
-	else if (IsKeyPressed(KEY_B) && !enableBlur) {
-		enableBlur = true;
-	}
-	for (Planet& planet : planets) {
-
-
-		if (enableBlur) {
-
-			for (int i = 1; i <= 3; i++) {
-
-				float t = static_cast<float>(i) / 90.0f;
-
-				float falloff = 1.0f - (t * t);
-
-				int blurSize = planet.size + static_cast<int>(35 * t);
-
-				float newAlpha = planet.color.a * falloff / 5;
-				if (newAlpha < 0.0f) newAlpha = 0.0f;
-				if (newAlpha > 255.0f) newAlpha = 255.0f;
-
-				Color blurColor = { planet.color.r, planet.color.g, planet.color.b, static_cast<unsigned char>(newAlpha) };
-
-				DrawCircle(planet.pos.x, planet.pos.y, blurSize, blurColor);
-			}
-		}
-		else {
-			DrawCircle(planet.pos.x, planet.pos.y, planet.size, planet.color);
-		}
-
-
-
-
-	}
-
-	for (const MouseTrailDot& dot : dots) {
-		DrawCircle(dot.pos.x, dot.pos.y, dot.size, YELLOW);
-	}
-	DrawText(TextFormat("Particles: %i", planets.size()), 50, 50, 25, WHITE);
-
-	if (GetFPS() >= 60) {
-		DrawText(TextFormat("FPS: %i", GetFPS()), screenWidth - 150, 50, 18, GREEN);
-
-	}
-	else if (GetFPS() < 60 && GetFPS() > 30) {
-		DrawText(TextFormat("FPS: %i", GetFPS()), screenWidth - 150, 50, 18, YELLOW);
-	}
-	else {
-		DrawText(TextFormat("FPS: %i", GetFPS()), screenWidth - 150, 50, 18, RED);
-	}
-
-
-
-}
-
 int planetIndex = 0;
 
-//THIS FUNCTION BELOW CALCULATES BARNES HUT FORCES
-bool isFourierSpaceEnabled = true;
-
-Vector2 calculateForceFromGrid(Planet& planet, const Quadtree& grid) {
+static Vector2 calculateForceFromGrid(Planet& planet, const Quadtree& grid) {
 
 	Vector2 totalForce = { 0.0f, 0.0f };
 
@@ -472,25 +158,25 @@ Vector2 calculateForceFromGrid(Planet& planet, const Quadtree& grid) {
 	float dx = grid.centerOfMass.x - planet.pos.x;
 
 	if (isFourierSpaceEnabled) {
-	if (dx > screenWidth / 2)
-		dx -= screenWidth;
-	else if (dx < -screenWidth / 2)
-		dx += screenWidth;
+		if (dx > screenWidth / 2)
+			dx -= screenWidth;
+		else if (dx < -screenWidth / 2)
+			dx += screenWidth;
 	}
 
 	float dy = grid.centerOfMass.y - planet.pos.y;
 
 	if (isFourierSpaceEnabled) {
-	if (dy > screenHeight / 2)
-		dy -= screenHeight;
-	else if (dy < -screenHeight / 2)
-		dy += screenHeight;
+		if (dy > screenHeight / 2)
+			dy -= screenHeight;
+		else if (dy < -screenHeight / 2)
+			dy += screenHeight;
 	}
 
 	float distanceSq = dx * dx + dy * dy;
 
 	// Avoid division by zero
-	if (distanceSq < 5.0f) distanceSq = 90.0f;
+	if (distanceSq < 5.0f) distanceSq = 60.0f;
 	float distance = sqrt(distanceSq);
 
 	float s_over_d = grid.size / distance;
@@ -509,7 +195,7 @@ Vector2 calculateForceFromGrid(Planet& planet, const Quadtree& grid) {
 
 		//std::cout << neighborCount << '\n';
 		// TEST THIS IN A FUTURE FOR PRESSURE
-		/*if (distanceSq < 300.0f) {
+		/*if (distanceSq < 10.0f) {
 			totalForce.x = -totalForce.x * 0.6;
 			totalForce.y = -totalForce.y * 0.6;
 		}*/
@@ -524,47 +210,6 @@ Vector2 calculateForceFromGrid(Planet& planet, const Quadtree& grid) {
 		}
 	}
 	return totalForce;
-}
-
-
-
-// TRY TO OPTIMIZE THIS LATER. POSSIBLE SOLUTION POINTERS IN QUADTREE CLASS VECTOR PLANETS
-float densityRadius = 7;
-int maxNeighbors = 20;
-void updateDensityColors(const Quadtree& qt, std::vector<Planet>& planets, float densityRadius, int maxNeighbors) {
-
-	float densityRadiusSq = densityRadius * densityRadius;
-
-	for (Planet& planet : planets) {
-
-		Rectangle range;
-		range.x = planet.pos.x - densityRadius;
-		range.y = planet.pos.y - densityRadius;
-		range.width = densityRadius * 2;
-		range.height = densityRadius * 2;
-
-		std::vector<Planet*> neighbors = qt.queryRange(range);
-		int neighborCount = 0;
-		for (Planet* other : neighbors) {
-			if (other == &planet) continue;
-
-			float dx = planet.pos.x - other->pos.x;
-			float dy = planet.pos.y - other->pos.y;
-			if (dx * dx + dy * dy < densityRadiusSq) {
-				neighborCount++;
-			}
-		}
-
-		float normalDensity = std::min((float)neighborCount / (float)maxNeighbors, 1.0f);
-
-		planet.color.r = static_cast<unsigned char>(normalDensity * 255);
-		planet.color.g = static_cast<unsigned char>(normalDensity * 140);
-		planet.color.b = static_cast<unsigned char>(60);
-		planet.color.a = static_cast<unsigned char>(90);
-
-
-	}
-
 }
 
 //THIS FUNCTION BELOW IS USED TO CALCULATE DARK MATTER
@@ -582,7 +227,7 @@ struct DarkMatterHalo {
 	}
 };
 
-Vector2 darkMatterForce(const Planet& planet) {
+static Vector2 darkMatterForce(const Planet& planet) {
 	float centerX = screenWidth / 2.0f;
 	float centerY = screenHeight / 2.0f;
 
@@ -611,15 +256,9 @@ Vector2 darkMatterForce(const Planet& planet) {
 
 	return force;
 }
-
-int threadsAmount = 14;
 ThreadPool pool(threadsAmount);
-bool isMultiThreadingEnabled = true;
 
-bool barnesHutEnabled = true;
-bool isDarkMatterEnabled = false;
-
-void updateForcesMultithreading(std::vector<Planet>& planets, const Quadtree& grid,
+static void updateForcesMultithreading(std::vector<Planet>& planets, const Quadtree& grid,
 	size_t start, size_t end, float fixedDeltaTime) {
 	for (size_t i = start; i < end; ++i) {
 		Planet& planet = planets[i];
@@ -648,9 +287,9 @@ void updateForcesMultithreading(std::vector<Planet>& planets, const Quadtree& gr
 
 
 
-void updateScene(std::vector<Planet>& planets) {
+static void updateScene(std::vector<Planet>& planets, bool& isMouseHoveringUI) {
 
-	const float fixedDeltaTime = 0.02f;
+	const float fixedDeltaTime = 0.03f;
 
 	float timeStepMultiplier = 1;
 	float deltaTime = GetFrameTime() * timeStepMultiplier;
@@ -665,132 +304,146 @@ void updateScene(std::vector<Planet>& planets) {
 	Quadtree grid = gridFunction(planets);
 
 
-	Slingshot slingshot = slingshotObject.planetSlingshot(isDragging, isMouse0Pressed, isMouse2SpacePressed);
+	if (isMouseHoveringUI) {
+		Slingshot slingshot = slingshotObject.planetSlingshot(isDragging, isMouse0Pressed, isMouse2SpacePressed);
 
-	
-
-	if (IsMouseButtonReleased(0) && !IsKeyDown(KEY_SPACE)) {
-		Planet planet = createPlanet();
-		planets.push_back(planet);
-		isDragging = false;
-	}
-
-	if (IsMouseButtonDown(2)) {
-		Planet planet = createPlanet();
-		for (int i = 0; i < 70; i++) {
-			planets.emplace_back(
-				GetMouseX() + rand() % 50 - 25,
-				GetMouseY() + rand() % 50 - 25,
-				1,
+		if (IsMouseButtonReleased(0) && !IsKeyDown(KEY_SPACE)) {
+			planets.emplace_back(GetMouseX(),
+				GetMouseY(),
+				4,
+				slingshot.normalizedX * slingshot.length,
+				slingshot.normalizedY * slingshot.length,
+				500000000000000,
+				255,
+				255,
+				255,
+				255,
 				0,
 				0,
-				2000000000000,
-				128,
-				128,
-				128,
-				100,
-				0,
-				0,
-				false
-			);
-		}
-	}
-
-	if (IsMouseButtonPressed(1) && !isDragging) {
-		Planet planet = createPlanet();
-		for (int i = 0; i < 4000; i++) {
-			float galaxyCenterX = 500;
-			float galaxyCenterY = 500;
-
-			float angle = static_cast<float>(rand()) / RAND_MAX * 2 * PI;
-			float radius = static_cast<float>(rand()) / RAND_MAX * 200.0f + 8;
-
-			float posX = galaxyCenterX + radius * cos(angle);
-			float posY = galaxyCenterY + radius * sin(angle);
-
-			float dx = posX - galaxyCenterX;
-			float dy = posY - galaxyCenterY;
-
-			float normalRadius = 10 / radius;
-
-			float angularSpeed = 130 / (radius + 60);
-
-			float velocityX = -dy * angularSpeed;
-			float velocityY = dx * angularSpeed;
-
-			planets.emplace_back(
-				posX, posY,
-				2, // Size
-				velocityX, velocityY,
-				50000000000, // Mass
-				128, 128, 128, 100, // Color (RGBA)
-				0, 0, // Acceleration
-				false
-			);
-		}
-	}
-
-	if (IsMouseButtonReleased(0) && isDragging || IsKeyReleased(KEY_SPACE) && isDragging) {
-		Planet planet = createPlanet();
-		for (int i = 0; i < 3000; i++) {
-
-			float galaxyCenterX = GetMouseX();
-			float galaxyCenterY = GetMouseY();
-
-			float angle = static_cast<float>(rand()) / RAND_MAX * 2 * PI;
-			float radius = static_cast<float>(rand()) / RAND_MAX * 100.0f + 2;
-
-			float posX = galaxyCenterX + radius * cos(angle);
-			float posY = galaxyCenterY + radius * sin(angle);
-
-			float dx = posX - galaxyCenterX;
-			float dy = posY - galaxyCenterY;
-
-			float normalRadius = 10 / radius;
-
-			float angularSpeed = 60 / (radius + 60);
-
-			float velocityX = -dy * angularSpeed;
-			float velocityY = dx * angularSpeed;
-
-			planets.emplace_back(
-				posX,
-				posY,
-				1,
-				velocityX + (slingshot.normalizedX * slingshot.length),
-				velocityY + (slingshot.normalizedY * slingshot.length),
-				340000000000,
-				128,
-				128,
-				128,
-				100,
-				0,
-				0,
-				false
-			);
+				true,
+				false);
 			isDragging = false;
 		}
-	}
 
-	if (IsKeyPressed(KEY_G)) {
-		Planet planet = createPlanet();
-		for (int i = 0; i < 10000; i++) {
-			planets.emplace_back(rand() % screenWidth,
-				rand() % screenHeight,
-				1,
-				0,
-				0,
-				5000000000000,
-				128,
-				128,
-				128,
-				100,
-				0,
-				0,
-				false
-			);
+		if (IsMouseButtonDown(2)) {
+			for (int i = 0; i < 70; i++) {
+				planets.emplace_back(
+					GetMouseX() + rand() % 50 - 25,
+					GetMouseY() + rand() % 50 - 25,
+					1,
+					0,
+					0,
+					200000000000,
+					128,
+					128,
+					128,
+					100,
+					0,
+					0,
+					false,
+					true
+				);
+
+			}
+		}
+
+		if (IsMouseButtonPressed(1) && !isDragging) {
+			for (int i = 0; i < 40000; i++) {
+				float galaxyCenterX = 500;
+				float galaxyCenterY = 500;
+
+				float angle = static_cast<float>(rand()) / RAND_MAX * 2 * PI;
+				float radius = static_cast<float>(rand()) / RAND_MAX * 200.0f + 8;
+
+				float posX = galaxyCenterX + radius * cos(angle);
+				float posY = galaxyCenterY + radius * sin(angle);
+
+				float dx = posX - galaxyCenterX;
+				float dy = posY - galaxyCenterY;
+
+				float normalRadius = 10 / radius;
+
+				float angularSpeed = 130 / (radius + 60);
+
+				float velocityX = -dy * angularSpeed;
+				float velocityY = dx * angularSpeed;
+
+				planets.emplace_back(
+					posX, posY,
+					2, // Size
+					velocityX, velocityY,
+					50000000000, // Mass
+					128, 128, 128, 100, // Color (RGBA)
+					0, 0, // Acceleration
+					false,
+					true
+				);
+			}
+		}
+
+		if (IsMouseButtonReleased(0) && isDragging || IsKeyReleased(KEY_SPACE) && isDragging) {
+			for (int i = 0; i < 12000; i++) {
+
+				float galaxyCenterX = GetMouseX();
+				float galaxyCenterY = GetMouseY();
+
+				float angle = static_cast<float>(rand()) / RAND_MAX * 2 * PI;
+				float radius = static_cast<float>(rand()) / RAND_MAX * 100.0f + 2;
+
+				float posX = galaxyCenterX + radius * cos(angle);
+				float posY = galaxyCenterY + radius * sin(angle);
+
+				float dx = posX - galaxyCenterX;
+				float dy = posY - galaxyCenterY;
+
+				float normalRadius = 10 / radius;
+
+				float angularSpeed = 60 / (radius + 60);
+
+				float velocityX = -dy * angularSpeed;
+				float velocityY = dx * angularSpeed;
+
+				planets.emplace_back(
+					posX,
+					posY,
+					1,
+					velocityX + (slingshot.normalizedX * slingshot.length),
+					velocityY + (slingshot.normalizedY * slingshot.length),
+					85000000000,
+					128,
+					128,
+					128,
+					100,
+					0,
+					0,
+					false,
+					true
+				);
+				isDragging = false;
+			}
+		}
+
+		if (IsKeyPressed(KEY_G)) {
+			for (int i = 0; i < 10000; i++) {
+				planets.emplace_back(rand() % screenWidth,
+					rand() % screenHeight,
+					1,
+					0,
+					0,
+					500000000000,
+					128,
+					128,
+					128,
+					100,
+					0,
+					0,
+					false,
+					true
+				);
+			}
 		}
 	}
+
 
 	if (isMultiThreadingEnabled) {
 		size_t numPlanets = planets.size();
@@ -813,90 +466,85 @@ void updateScene(std::vector<Planet>& planets) {
 	}
 	else {
 
-	if (barnesHutEnabled) {
-		for (Planet& planet : planets) {
-			planet.acceleration = { 0.0f, 0.0f };
+		if (barnesHutEnabled) {
+			for (Planet& planet : planets) {
+				planet.acceleration = { 0.0f, 0.0f };
 
-			//planet.prevAcceleration = planet.acceleration;
+				//planet.prevAcceleration = planet.acceleration;
 
-			Vector2 netForce = calculateForceFromGrid(planet, grid);
-			if (isDarkMatterEnabled) {
-			Vector2 dmForce = darkMatterForce(planet);
-			netForce.x += dmForce.x;
-			netForce.y += dmForce.y;
+				Vector2 netForce = calculateForceFromGrid(planet, grid);
+				if (isDarkMatterEnabled) {
+					Vector2 dmForce = darkMatterForce(planet);
+					netForce.x += dmForce.x;
+					netForce.y += dmForce.y;
 
-			}
+				}
 
+				//float fx = (dx / distance) * force;
+				//float fy = (dy / distance) * force;
+				planet.acceleration.x = netForce.x / planet.mass;
+				planet.acceleration.y = netForce.y / planet.mass;
 
-
-
-			//float fx = (dx / distance) * force;
-			//float fy = (dy / distance) * force;
-			planet.acceleration.x = netForce.x / planet.mass;
-			planet.acceleration.y = netForce.y / planet.mass;
-
-
-
-			planet.velocity.x += fixedDeltaTime * ((3.0f / 2.0f)) * planet.acceleration.x - ((1.0f / 2.0f)) * planet.prevAcceleration.x;
-			planet.velocity.y += fixedDeltaTime * ((3.0f / 2.0f)) * planet.acceleration.y - ((1.0f / 2.0f)) * planet.prevAcceleration.y;
-			//planet.velocity.x += deltaTime * planet.acceleration.x;
-			//.velocity.y += deltaTime * planet.acceleration.y;
-
-		}
-	}
-	else {
-		// Iterate over unique pairs of planets
-		for (size_t i = 0; i < planets.size(); ++i) {
-			for (size_t j = i + 1; j < planets.size(); ++j) {
-				Planet& planetA = planets[i];
-				Planet& planetB = planets[j];
-
-
-				// Calculate gravitational force between A and B
-				float dx = planetB.pos.x - planetA.pos.x;
-				if (dx > screenWidth / 2)
-					dx -= screenWidth;
-				else if (dx < -screenWidth / 2)
-					dx += screenWidth;
-
-				float dy = planetB.pos.y - planetA.pos.y;
-				if (dy > screenHeight / 2)
-					dy -= screenHeight;
-				else if (dy < -screenHeight / 2)
-					dy += screenHeight;
-				float distanceSq = dx * dx + dy * dy;
-
-				// Avoid division by zero
-				if (distanceSq < 200) continue;
-
-				float distance = sqrt(distanceSq);
-				float force = G * planetA.mass * planetB.mass / distanceSq; // Total force magnitude
-
-
-				//planetB.proximity = force;
-
-
-				// Normalize direction
-				float fx = (dx / distance) * force;
-				float fy = (dy / distance) * force;
-
-				float accelPlanetAX = fx / planetA.mass;
-				float accelPlanetAY = fy / planetA.mass;
-
-
-				float accelPlanetBX = fx / planetB.mass;
-				float accelPlanetBY = fy / planetB.mass;
-
-				planetA.velocity.x += accelPlanetAX * deltaTime;
-				planetA.velocity.y += accelPlanetAY * deltaTime;
-
-				planetB.velocity.x -= accelPlanetBX * deltaTime;
-				planetB.velocity.y -= accelPlanetBY * deltaTime;
+				planet.velocity.x += fixedDeltaTime * ((3.0f / 2.0f)) * planet.acceleration.x - ((1.0f / 2.0f)) * planet.prevAcceleration.x;
+				planet.velocity.y += fixedDeltaTime * ((3.0f / 2.0f)) * planet.acceleration.y - ((1.0f / 2.0f)) * planet.prevAcceleration.y;
+				//planet.velocity.x += deltaTime * planet.acceleration.x;
+				//.velocity.y += deltaTime * planet.acceleration.y;
 
 			}
 		}
+		else {
+			// Iterate over unique pairs of planets
+			for (size_t i = 0; i < planets.size(); ++i) {
+				for (size_t j = i + 1; j < planets.size(); ++j) {
+					Planet& planetA = planets[i];
+					Planet& planetB = planets[j];
 
-	}
+
+					// Calculate gravitational force between A and B
+					float dx = planetB.pos.x - planetA.pos.x;
+					if (dx > screenWidth / 2)
+						dx -= screenWidth;
+					else if (dx < -screenWidth / 2)
+						dx += screenWidth;
+
+					float dy = planetB.pos.y - planetA.pos.y;
+					if (dy > screenHeight / 2)
+						dy -= screenHeight;
+					else if (dy < -screenHeight / 2)
+						dy += screenHeight;
+					float distanceSq = dx * dx + dy * dy;
+
+					// Avoid division by zero
+					if (distanceSq < 200) continue;
+
+					float distance = sqrt(distanceSq);
+					float force = G * planetA.mass * planetB.mass / distanceSq; // Total force magnitude
+
+
+					//planetB.proximity = force;
+
+
+					// Normalize direction
+					float fx = (dx / distance) * force;
+					float fy = (dy / distance) * force;
+
+					float accelPlanetAX = fx / planetA.mass;
+					float accelPlanetAY = fy / planetA.mass;
+
+
+					float accelPlanetBX = fx / planetB.mass;
+					float accelPlanetBY = fy / planetB.mass;
+
+					planetA.velocity.x += accelPlanetAX * deltaTime;
+					planetA.velocity.y += accelPlanetAY * deltaTime;
+
+					planetB.velocity.x -= accelPlanetBX * deltaTime;
+					planetB.velocity.y -= accelPlanetBY * deltaTime;
+
+				}
+			}
+
+		}
 	}
 	for (Planet& planet : planets) {
 		planet.pos.x += planet.velocity.x * fixedDeltaTime;
@@ -907,37 +555,20 @@ void updateScene(std::vector<Planet>& planets) {
 		//  THIS IS THE INFINITE SPACE CODE
 		// 
 		if (isFourierSpaceEnabled) {
-		if (planet.pos.x < 0)
-			planet.pos.x += screenWidth;
-		else if (planet.pos.x >= screenWidth)
-			planet.pos.x -= screenWidth;
-		if (planet.pos.y < 0)
-			planet.pos.y += screenHeight;
-		else if (planet.pos.y >= screenHeight)
-			planet.pos.y -= screenHeight;
+			if (planet.pos.x < 0)
+				planet.pos.x += screenWidth;
+			else if (planet.pos.x >= screenWidth)
+				planet.pos.x -= screenWidth;
+			if (planet.pos.y < 0)
+				planet.pos.y += screenHeight;
+			else if (planet.pos.y >= screenHeight)
+				planet.pos.y -= screenHeight;
 
 		}
-
-		// Wrap Y coordinate
-
 	}
-
-	//updateDensityColors(grid, planets, 7.0f, 20);
-
-
-
-
-
-
-
-	 //PROXIMITY COLOR CODE
-
-	
-
-	slingshotObject.planetSlingshot(isDragging, isMouse0Pressed, isMouse2SpacePressed);
 }
 
-void particlesColorVisuals(std::vector<Planet>& planets) {
+static void particlesColorVisuals(std::vector<Planet>& planets) {
 
 	const float densityRadius = 7.0f;
 	const float densityRadiusSq = densityRadius * densityRadius;  // Precompute squared radius
@@ -970,7 +601,7 @@ void particlesColorVisuals(std::vector<Planet>& planets) {
 	}
 }
 
-void particlesColorVisualsParallel(std::vector<Planet>& planets) {
+static void particlesColorVisualsParallel(std::vector<Planet>& planets) {
 	// Set up constants.
 	const float densityRadius = 7.0f;
 	const float densityRadiusSq = densityRadius * densityRadius;
@@ -1046,21 +677,18 @@ void particlesColorVisualsParallel(std::vector<Planet>& planets) {
 	}
 }
 
-bool trailsEnabled = false;
+
 int trailDotFrameIndex = 0;
-void mouseTrail(std::vector<MouseTrailDot>& dots, std::vector<Planet>& planets) {
+static void mouseTrail(std::vector<MouseTrailDot>& dots, std::vector<Planet>& planets) {
 	// Add new dots for all planets
 	const int NUM_PLANETS = planets.size();
 
-	if (IsKeyPressed(KEY_T) && trailsEnabled) {
-		trailsEnabled = false;
+	if (IsKeyPressed(KEY_T)) {
+		trailsEnabled = !trailsEnabled;
+	}
+	if (!trailsEnabled) {
 		dots.clear();
 	}
-	else if (IsKeyPressed(KEY_T) && !trailsEnabled) {
-		trailsEnabled = true;
-	}
-
-
 
 	if (trailsEnabled) {
 		for (const Planet& planet : planets) {
@@ -1081,17 +709,217 @@ void mouseTrail(std::vector<MouseTrailDot>& dots, std::vector<Planet>& planets) 
 		planets.clear();
 		dots.clear();
 	}
+}
+
+std::array<Button, 8> settingsButtonsArray = {
+
+Button
+	(
+		{780, 100},
+		{200, 50},
+		"Pixel Drawing",
+		true
+	),
+Button
+	(
+		{780, 0},
+		{200, 50},
+		"Blur Drawing",
+		true
+	),
+Button
+	(
+		{780, 0},
+		{200, 50},
+		"Particle Trails",
+		true
+	),
+	Button
+	(
+		{780, 100},
+		{200, 50},
+		"Color Visuals",
+		true
+	),
+Button
+	(
+		{780, 0},
+		{200, 50},
+		"Dark Matter",
+		true
+	),
+Button
+	(
+		{780, 0},
+		{200, 50},
+		"Fourier Space",
+		true
+	),
+Button
+	(
+		{780, 0},
+		{200, 50},
+		"Barnes-Hut",
+		true
+	),
+Button
+	(
+		{780, 0},
+		{200, 50},
+		"MultiThread-BH",
+		true
+	) };
+
+Button toggleSettingsButtons
+(
+	{ 966, 85 },
+	{ 14,14 },
+	"",
+	false
+);
+
+std::array<std::string, 9> controlsArray = {
+	"Hold LMB: Throw heavy particle",
+	"RMB: Create big galaxy",
+	"Hold MMB: Paint particles",
+	"Space + Hold LMB: Create small galaxy",
+	"G: Scatter particles",
+	"T: Toggle trails",
+	"P: Toggle pixel drawing",
+	"B: Toggle blur drawing",
+	"C: Clear all particles"
+
+};
+
+bool showSettings = true;
+
+static void drawScene(std::vector<Planet>& planets, std::vector<MouseTrailDot>& dots, bool& isMouseHoveringUI) {
+
+	bool buttonShowSettingsHovering = toggleSettingsButtons.buttonLogic(showSettings);
+	DrawTriangle({ 969, 90 }, { 973, 96 }, { 977,90 }, WHITE);
+
+	if (showSettings) {
+		for (int i = 1; i < settingsButtonsArray.size(); i++) {
+			settingsButtonsArray[i].pos.x = settingsButtonsArray[i - 1].pos.x;
+			settingsButtonsArray[i].pos.y = settingsButtonsArray[i - 1].pos.y + settingsButtonsArray[i].size.y + 20;
+
+		}
+		bool buttonPixelDrawingHovering = settingsButtonsArray[0].buttonLogic(enablePixelDrawing);
+		bool buttonBlurHovering = settingsButtonsArray[1].buttonLogic(enableBlur);
+		bool buttonTrailsHovering = settingsButtonsArray[2].buttonLogic(trailsEnabled);
+		bool buttoncolorVisualsHovering = settingsButtonsArray[3].buttonLogic(colorVisualsEnabled);
+		bool buttonDarkMatterHovering = settingsButtonsArray[4].buttonLogic(isDarkMatterEnabled);
+		bool buttonFourierSpaceHovering = settingsButtonsArray[5].buttonLogic(isFourierSpaceEnabled);
+		bool buttonBarnesHutHovering = settingsButtonsArray[6].buttonLogic(barnesHutEnabled);
+		bool buttonMultiThreadingHovering = settingsButtonsArray[7].buttonLogic(isMultiThreadingEnabled);
+
+		for (int i = 0; i < controlsArray.size(); i++) {
+			DrawText(TextFormat("%s", controlsArray[i].c_str()), 25, 100 + 20 * i, 15, WHITE);
+		}
+
+		if (buttonPixelDrawingHovering ||
+			buttonDarkMatterHovering ||
+			buttonFourierSpaceHovering ||
+			buttonTrailsHovering ||
+			buttonBarnesHutHovering ||
+			buttonMultiThreadingHovering ||
+			buttonBlurHovering ||
+			buttoncolorVisualsHovering ||
+			buttonShowSettingsHovering
+			) {
+			isMouseHoveringUI = false;
+		}
+		else {
+			isMouseHoveringUI = true;
+		}
+		if (buttonPixelDrawingHovering && IsMouseButtonPressed(0)) {
+			enableBlur = false;
+		}
+		if (buttonBlurHovering && IsMouseButtonPressed(0)) {
+			enablePixelDrawing = false;
+		}
+	}
+	else {
+		if (buttonShowSettingsHovering) {
+			isMouseHoveringUI = false;
+		}
+		else {
+			isMouseHoveringUI = true;
+		}
+	}
 
 
+
+	if (IsKeyPressed(KEY_B)) {
+		enableBlur = !enableBlur;
+		enablePixelDrawing = false;
+	}
+
+	if (IsKeyPressed(KEY_P)) {
+		enablePixelDrawing = !enablePixelDrawing;
+		enableBlur = false;
+	}
+
+
+
+	for (Planet& planet : planets) {
+
+		if (!colorVisualsEnabled) {
+			if (!planet.customColor) {
+				planet.color = { 128, 128, 128, 100 };
+			}
+		}
+		if (enableBlur) {
+
+			for (int i = 1; i <= 3; i++) {
+
+				float t = static_cast<float>(i) / 90.0f;
+
+				float falloff = 1.0f - (t * t);
+
+				int blurSize = planet.size + static_cast<int>(35 * t);
+
+				float newAlpha = planet.color.a * falloff / 5;
+				if (newAlpha < 0.0f) newAlpha = 0.0f;
+				if (newAlpha > 255.0f) newAlpha = 255.0f;
+
+				Color blurColor = { planet.color.r, planet.color.g, planet.color.b, static_cast<unsigned char>(newAlpha) };
+
+				DrawCircle(planet.pos.x, planet.pos.y, blurSize, blurColor);
+			}
+		}
+		else if (enablePixelDrawing && planet.drawPixel) {
+			
+			DrawPixel(planet.pos.x, planet.pos.y, planet.color);
+
+			
+		}
+		else {
+			DrawCircle(planet.pos.x, planet.pos.y, planet.size, planet.color);
+
+		}
+	}
+
+	for (const MouseTrailDot& dot : dots) {
+		DrawPixel(dot.pos.x, dot.pos.y, YELLOW);
+	}
+	DrawText(TextFormat("Particles: %i", planets.size()), 50, 50, 25, WHITE);
+
+	if (GetFPS() >= 60) {
+		DrawText(TextFormat("FPS: %i", GetFPS()), screenWidth - 150, 50, 18, GREEN);
+
+	}
+	else if (GetFPS() < 60 && GetFPS() > 30) {
+		DrawText(TextFormat("FPS: %i", GetFPS()), screenWidth - 150, 50, 18, YELLOW);
+	}
+	else {
+		DrawText(TextFormat("FPS: %i", GetFPS()), screenWidth - 150, 50, 18, RED);
+	}
 
 }
 
 
-
-
-
 int main() {
-
 
 	int planetPosX = 0;
 	int planetPosY = 0;
@@ -1099,20 +927,12 @@ int main() {
 
 	std::vector<Planet> vectorPlanet;
 
-
 	std::vector<MouseTrailDot> trailDots;
 
-
-
-
-
-
+	bool isMouseHoveringUI = false;
 
 
 	InitWindow(screenWidth, screenHeight, "n-Body");
-
-
-
 	SetTargetFPS(targetFPS);
 
 	while (!WindowShouldClose()) {
@@ -1132,7 +952,7 @@ int main() {
 		mouseTrail(trailDots, vectorPlanet);
 
 
-		drawScene(vectorPlanet, trailDots);
+		drawScene(vectorPlanet, trailDots, isMouseHoveringUI);
 
 		EndBlendMode();
 
@@ -1143,17 +963,20 @@ int main() {
 		//updateSceneThread.join();
 		//particlesColorThread.join();
 
-		updateScene(vectorPlanet);
+		updateScene(vectorPlanet, isMouseHoveringUI);
 
 		if (isMultiThreadingEnabled) {
-		particlesColorVisualsParallel(vectorPlanet);
+			if (colorVisualsEnabled) {
+				particlesColorVisualsParallel(vectorPlanet);
+			}
 
 		}
 		else {
-		particlesColorVisuals(vectorPlanet);
-
+			if (colorVisualsEnabled) {
+				particlesColorVisuals(vectorPlanet);
+			}
 		}
-		
+
 
 
 
