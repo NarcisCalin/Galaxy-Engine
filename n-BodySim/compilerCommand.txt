@@ -1,7 +1,11 @@
+//Normal
 g++ Main.cpp quadtree.cpp slingshot.cpp button.cpp planet.cpp mouseTrailDot.cpp ui.cpp -o nbodySim.exe -std=c++17 -pthread -I"C:\raylib\raylib\src" -L"C:\raylib\raylib\src" -lraylib -lopengl32 -lgdi32 -lwinmm -static -O3 -march=native -flto
 
+//OpemMP
+g++ Main.cpp quadtree.cpp slingshot.cpp button.cpp planet.cpp mouseTrailDot.cpp ui.cpp -o nbodySim.exe -std=c++17 -pthread -I"C:\raylib\raylib\src" -L"C:\raylib\raylib\src" -lraylib -lopengl32 -lgdi32 -lwinmm -static -O3 -march=native -flto -fopenmp
 
 
+//Gpu openMP
 g++ Main.cpp quadtree.cpp slingshot.cpp button.cpp planet.cpp mouseTrailDot.cpp ui.cpp -o nbodySim.exe -std=c++17 -pthread -I"C:\raylib\raylib\src" -L"C:\raylib\raylib\src" -lraylib -lopengl32 -lgdi32 -lwinmm -static -O3 -march=native -flto -fopenmp -foffload=nvptx-none="-march=sm_89"
 
 

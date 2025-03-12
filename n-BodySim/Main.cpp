@@ -1,3 +1,5 @@
+
+
 #include <iostream>
 #include <vector>
 #include "raylib.h"
@@ -20,6 +22,7 @@
 #include <omp.h>
 
 
+
 int screenWidth = 1000;
 int screenHeight = 1000;
 
@@ -35,86 +38,6 @@ bool barnesHutEnabled = true;
 bool isDarkMatterEnabled = false;
 bool colorVisualsEnabled = false;
 
-int threadsAmount = 14;
-
-
-
-class ThreadPool {
-public:
-	// Constructor that spawns 'numThreads' worker threads.
-	ThreadPool(size_t numThreads) : stop(false) {
-		for (size_t i = 0; i < numThreads; ++i) {
-			workers.emplace_back([this] {
-				for (;;) {
-					std::function<void()> task;
-
-					// Lock and wait for a task.
-					{
-						std::unique_lock<std::mutex> lock(this->queueMutex);
-
-						this->condition.wait(lock, [this] {return this->stop || !this->tasks.empty();});
-
-						if (this->stop && this->tasks.empty())
-							return; // Exit thread.
-						task = std::move(this->tasks.front());
-						this->tasks.pop();
-					}
-
-					// Execute the task.
-					task();
-				}
-				});
-		}
-	}
-
-	// Enqueue a new task and return a future to get the result.
-	template<class F, class... Args>
-	auto enqueue(F&& f, Args&&... args)
-		-> std::future<typename std::result_of<F(Args...)>::type>
-	{
-		using return_type = std::invoke_result_t<F, Args...>;
-
-		// Wrap the function and its arguments.
-		auto task = std::make_shared<std::packaged_task<return_type()>>(
-			std::bind(std::forward<F>(f), std::forward<Args>(args)...)
-		);
-
-		std::future<return_type> res = task->get_future();
-		{
-			std::unique_lock<std::mutex> lock(queueMutex);
-
-			// Don't allow enqueueing after stopping the pool.
-			if (stop)
-				throw std::runtime_error("enqueue on stopped ThreadPool");
-
-			tasks.emplace([task]() { (*task)(); });
-		}
-		condition.notify_one();
-		return res;
-	}
-
-	// Destructor: Join all threads.
-	~ThreadPool() {
-		{
-			std::unique_lock<std::mutex> lock(queueMutex);
-			stop = true;
-		}
-		condition.notify_all();
-		for (std::thread& worker : workers)
-			worker.join();
-	}
-
-private:
-	// Vector of worker threads.
-	std::vector<std::thread> workers;
-	// Task queue.
-	std::queue<std::function<void()>> tasks;
-
-	// Synchronization.
-	std::mutex queueMutex;
-	std::condition_variable condition;
-	bool stop;
-};
 
 static Quadtree gridFunction(std::vector<Planet> vectorPlanet) {
 	Quadtree grid(
@@ -145,16 +68,13 @@ Slingshot slingshotObject = Slingshot::planetSlingshot(isDragging, isMouse0Press
 
 int planetIndex = 0;
 
+
 static Vector2 calculateForceFromGrid(Planet& planet, const Quadtree& grid) {
 
 	Vector2 totalForce = { 0.0f, 0.0f };
 
 	if (grid.gridMass <= 0) return totalForce;
 
-
-
-
-	// Calculate gravitational force between A and B
 	float dx = grid.centerOfMass.x - planet.pos.x;
 
 	if (isFourierSpaceEnabled) {
@@ -192,14 +112,6 @@ static Vector2 calculateForceFromGrid(Planet& planet, const Quadtree& grid) {
 		double force = G * planet.mass * grid.gridMass / distanceSq;
 		totalForce.x = (dx / distance) * force;
 		totalForce.y = (dy / distance) * force;
-
-		//std::cout << neighborCount << '\n';
-		// TEST THIS IN A FUTURE FOR PRESSURE
-		/*if (distanceSq < 10.0f) {
-			totalForce.x = -totalForce.x * 0.6;
-			totalForce.y = -totalForce.y * 0.6;
-		}*/
-
 
 	}
 	else {
@@ -256,36 +168,66 @@ static Vector2 darkMatterForce(const Planet& planet) {
 
 	return force;
 }
-ThreadPool pool(threadsAmount);
 
-static void updateForcesMultithreading(std::vector<Planet>& planets, const Quadtree& grid,
-	size_t start, size_t end, float fixedDeltaTime) {
-	for (size_t i = start; i < end; ++i) {
-		Planet& planet = planets[i];
-		// Reset acceleration.
-		planet.acceleration = { 0.0f, 0.0f };
 
-		// Calculate net gravitational force.
-		Vector2 netForce = calculateForceFromGrid(planet, grid);
+void pairWiseGravity(std::vector<Planet>& planets) {
+	const float fixedDeltaTime = 0.03f;
 
-		// Optionally add dark matter force.
-		if (isDarkMatterEnabled) {
-			Vector2 dmForce = darkMatterForce(planet);
-			netForce.x += dmForce.x;
-			netForce.y += dmForce.y;
+	float timeStepMultiplier = 1;
+	float deltaTime = GetFrameTime() * timeStepMultiplier;
+#pragma omp parallel for schedule(dynamic)
+	for (size_t i = 0; i < planets.size(); ++i) {
+		for (size_t j = i + 1; j < planets.size(); ++j) {
+			Planet& planetA = planets[i];
+			Planet& planetB = planets[j];
+
+
+			// Calculate gravitational force between A and B
+			float dx = planetB.pos.x - planetA.pos.x;
+			if (dx > screenWidth / 2)
+				dx -= screenWidth;
+			else if (dx < -screenWidth / 2)
+				dx += screenWidth;
+
+			float dy = planetB.pos.y - planetA.pos.y;
+			if (dy > screenHeight / 2)
+				dy -= screenHeight;
+			else if (dy < -screenHeight / 2)
+				dy += screenHeight;
+			float distanceSq = dx * dx + dy * dy;
+
+			// Avoid division by zero
+			if (distanceSq < 200) continue;
+
+			float distance = sqrt(distanceSq);
+			float force = G * planetA.mass * planetB.mass / distanceSq; // Total force magnitude
+
+
+			//planetB.proximity = force;
+
+
+			// Normalize direction
+			float fx = (dx / distance) * force;
+			float fy = (dy / distance) * force;
+
+			float accelPlanetAX = fx / planetA.mass;
+			float accelPlanetAY = fy / planetA.mass;
+
+
+			float accelPlanetBX = fx / planetB.mass;
+			float accelPlanetBY = fy / planetB.mass;
+
+			planetA.velocity.x += accelPlanetAX * deltaTime;
+			planetA.velocity.y += accelPlanetAY * deltaTime;
+
+			planetB.velocity.x -= accelPlanetBX * deltaTime;
+			planetB.velocity.y -= accelPlanetBY * deltaTime;
+
 		}
-
-		// Update acceleration from net force.
-		planet.acceleration.x = netForce.x / planet.mass;
-		planet.acceleration.y = netForce.y / planet.mass;
-
-		// Update velocity using your integration scheme.
-		planet.velocity.x += fixedDeltaTime * ((3.0f / 2.0f)) * planet.acceleration.x - ((1.0f / 2.0f)) * planet.prevAcceleration.x;
-		planet.velocity.y += fixedDeltaTime * ((3.0f / 2.0f)) * planet.acceleration.y - ((1.0f / 2.0f)) * planet.prevAcceleration.y;
 	}
 }
 
-
+bool isGPU = true;
 
 static void updateScene(std::vector<Planet>& planets, bool& isMouseHoveringUI) {
 
@@ -443,117 +385,75 @@ static void updateScene(std::vector<Planet>& planets, bool& isMouseHoveringUI) {
 			}
 		}
 	}
+//	if (isGPU) {
+//		Planet* planets_data = planets.data();
+//		int numPlanets = planets.size();
+//
+//#pragma omp target teams distribute parallel for \
+//    map(to: grid, isDarkMatterEnabled, fixedDeltaTime) \
+//    map(tofrom: planets_data[0:numPlanets])
+//		for (int i = 0; i < numPlanets; i++) {
+//			Planet& planet = planets_data[i];
+//
+//			// Reset acceleration
+//			planet.acceleration.x = 0.0f;
+//			planet.acceleration.y = 0.0f;
+//
+//			// Calculate the net force from the grid
+//			Vector2 netForce = calculateForceFromGrid(planet, grid);
+//
+//			// Add dark matter force if enabled
+//			if (isDarkMatterEnabled) {
+//				Vector2 dmForce = darkMatterForce(planet);
+//				netForce.x += dmForce.x;
+//				netForce.y += dmForce.y;
+//			}
+//
+//			// Update acceleration
+//			planet.acceleration.x = netForce.x / planet.mass;
+//			planet.acceleration.y = netForce.y / planet.mass;
+//
+//			// Update velocity (predictor-corrector update)
+//			planet.velocity.x += fixedDeltaTime * (1.5f * planet.acceleration.x) - (0.5f * planet.prevAcceleration.x);
+//			planet.velocity.y += fixedDeltaTime * (1.5f * planet.acceleration.y) - (0.5f * planet.prevAcceleration.y);
+//		}
+//	}
+//	else {
 
+	if (barnesHutEnabled) {
 
-	if (isMultiThreadingEnabled) {
-		size_t numPlanets = planets.size();
-		size_t numThreads = threadsAmount; // same as our pool size.
-		size_t chunkSize = (numPlanets + numThreads - 1) / numThreads;
+#pragma omp parallel for schedule(dynamic)
+		for (Planet& planet : planets) {
+			planet.acceleration = { 0.0f, 0.0f };
 
-		std::vector<std::future<void>> futures;
+			Vector2 netForce = calculateForceFromGrid(planet, grid);
 
-		// Enqueue tasks for each segment.
-		for (size_t t = 0; t < numThreads; ++t) {
-			size_t start = t * chunkSize;
-			size_t end = std::min(start + chunkSize, numPlanets);
-			futures.emplace_back(pool.enqueue(updateForcesMultithreading, std::ref(planets), std::cref(grid), start, end, fixedDeltaTime));
+			if (isDarkMatterEnabled) {
+				Vector2 dmForce = darkMatterForce(planet);
+				netForce.x += dmForce.x;
+				netForce.y += dmForce.y;
+			}
+
+			planet.acceleration.x = netForce.x / planet.mass;
+			planet.acceleration.y = netForce.y / planet.mass;
+
+			planet.velocity.x += fixedDeltaTime * ((3.0f / 2.0f)) * planet.acceleration.x - ((1.0f / 2.0f)) * planet.prevAcceleration.x;
+			planet.velocity.y += fixedDeltaTime * ((3.0f / 2.0f)) * planet.acceleration.y - ((1.0f / 2.0f)) * planet.prevAcceleration.y;
 		}
 
-		// Wait for all tasks to complete.
-		for (auto& f : futures) {
-			f.get();
-		}
 	}
 	else {
-
-		if (barnesHutEnabled) {
-			for (Planet& planet : planets) {
-				planet.acceleration = { 0.0f, 0.0f };
-
-				//planet.prevAcceleration = planet.acceleration;
-
-				Vector2 netForce = calculateForceFromGrid(planet, grid);
-				if (isDarkMatterEnabled) {
-					Vector2 dmForce = darkMatterForce(planet);
-					netForce.x += dmForce.x;
-					netForce.y += dmForce.y;
-
-				}
-
-				//float fx = (dx / distance) * force;
-				//float fy = (dy / distance) * force;
-				planet.acceleration.x = netForce.x / planet.mass;
-				planet.acceleration.y = netForce.y / planet.mass;
-
-				planet.velocity.x += fixedDeltaTime * ((3.0f / 2.0f)) * planet.acceleration.x - ((1.0f / 2.0f)) * planet.prevAcceleration.x;
-				planet.velocity.y += fixedDeltaTime * ((3.0f / 2.0f)) * planet.acceleration.y - ((1.0f / 2.0f)) * planet.prevAcceleration.y;
-				//planet.velocity.x += deltaTime * planet.acceleration.x;
-				//.velocity.y += deltaTime * planet.acceleration.y;
-
-			}
-		}
-		else {
-			// Iterate over unique pairs of planets
-			for (size_t i = 0; i < planets.size(); ++i) {
-				for (size_t j = i + 1; j < planets.size(); ++j) {
-					Planet& planetA = planets[i];
-					Planet& planetB = planets[j];
-
-
-					// Calculate gravitational force between A and B
-					float dx = planetB.pos.x - planetA.pos.x;
-					if (dx > screenWidth / 2)
-						dx -= screenWidth;
-					else if (dx < -screenWidth / 2)
-						dx += screenWidth;
-
-					float dy = planetB.pos.y - planetA.pos.y;
-					if (dy > screenHeight / 2)
-						dy -= screenHeight;
-					else if (dy < -screenHeight / 2)
-						dy += screenHeight;
-					float distanceSq = dx * dx + dy * dy;
-
-					// Avoid division by zero
-					if (distanceSq < 200) continue;
-
-					float distance = sqrt(distanceSq);
-					float force = G * planetA.mass * planetB.mass / distanceSq; // Total force magnitude
-
-
-					//planetB.proximity = force;
-
-
-					// Normalize direction
-					float fx = (dx / distance) * force;
-					float fy = (dy / distance) * force;
-
-					float accelPlanetAX = fx / planetA.mass;
-					float accelPlanetAY = fy / planetA.mass;
-
-
-					float accelPlanetBX = fx / planetB.mass;
-					float accelPlanetBY = fy / planetB.mass;
-
-					planetA.velocity.x += accelPlanetAX * deltaTime;
-					planetA.velocity.y += accelPlanetAY * deltaTime;
-
-					planetB.velocity.x -= accelPlanetBX * deltaTime;
-					planetB.velocity.y -= accelPlanetBY * deltaTime;
-
-				}
-			}
-
-		}
+		pairWiseGravity(planets);
 	}
+	//}
+
+
+
 	for (Planet& planet : planets) {
 		planet.pos.x += planet.velocity.x * fixedDeltaTime;
 		planet.pos.y += planet.velocity.y * fixedDeltaTime;
-		//planet.pos.x += planet.velocity.x * deltaTime;
-		//planet.pos.y += planet.velocity.y * deltaTime;
 
 		//  THIS IS THE INFINITE SPACE CODE
-		// 
 		if (isFourierSpaceEnabled) {
 			if (planet.pos.x < 0)
 				planet.pos.x += screenWidth;
@@ -574,10 +474,9 @@ static void particlesColorVisuals(std::vector<Planet>& planets) {
 	const float densityRadiusSq = densityRadius * densityRadius;  // Precompute squared radius
 	const int maxNeighbors = 30;
 
-
 	std::vector<int> neighborCounts(planets.size(), 0);
 
-
+#pragma omp parallel for schedule(dynamic)
 	for (size_t i = 0; i < planets.size(); i++) {
 		for (size_t j = i + 1; j < planets.size(); j++) {
 			float dx = planets[i].pos.x - planets[j].pos.x;
@@ -589,85 +488,8 @@ static void particlesColorVisuals(std::vector<Planet>& planets) {
 		}
 	}
 
-
 	for (size_t i = 0; i < planets.size(); i++) {
 		float normalDensity = std::min(float(neighborCounts[i]) / maxNeighbors, 1.0f);
-		if (!planets[i].customColor) {
-			planets[i].color.r = static_cast<unsigned char>(normalDensity * 255);
-			planets[i].color.g = static_cast<unsigned char>(normalDensity * 140);
-			planets[i].color.b = static_cast<unsigned char>(60);
-			planets[i].color.a = static_cast<unsigned char>(100);
-		}
-	}
-}
-
-static void particlesColorVisualsParallel(std::vector<Planet>& planets) {
-	// Set up constants.
-	const float densityRadius = 7.0f;
-	const float densityRadiusSq = densityRadius * densityRadius;
-	const int maxNeighbors = 30;
-
-	// Get the number of planets.
-	size_t n = planets.size();
-
-	// Choose how many threads to use (e.g. threadsAmount is a global or configured value).
-	int numThreads = threadsAmount; // e.g., 8
-
-	// Calculate the chunk size (each thread will process a contiguous block of indices for the outer loop).
-	size_t chunkSize = (n + numThreads - 1) / numThreads;
-
-	// Create a vector to hold local neighbor counts for each thread.
-	// Each thread will maintain a vector of size 'n', all initialized to 0.
-	std::vector<std::vector<int>> localCounts(numThreads, std::vector<int>(n, 0));
-
-	// This vector will hold futures for each enqueued task.
-	std::vector<std::future<void>> futures;
-
-	// Enqueue tasks into the thread pool.
-	for (int t = 0; t < numThreads; t++) {
-		// Determine the range for the outer loop.
-		size_t start = t * chunkSize;
-		size_t end = std::min(start + chunkSize, n);
-
-		// Capture 'start', 'end', and thread index 't' by value.
-		// Also capture planets and localCounts by reference.
-		futures.emplace_back(
-			pool.enqueue([start, end, t, n, densityRadiusSq, &planets, &localCounts]() {
-				// For each planet in our assigned range...
-				for (size_t i = start; i < end; i++) {
-					// Compare with every planet j > i (to avoid duplicate pairs).
-					for (size_t j = i + 1; j < n; j++) {
-						float dx = planets[i].pos.x - planets[j].pos.x;
-						float dy = planets[i].pos.y - planets[j].pos.y;
-						// If the squared distance is below our threshold...
-						if (dx * dx + dy * dy < densityRadiusSq) {
-							// Increment the count for both i and j in this thread’s local array.
-							localCounts[t][i]++;
-							localCounts[t][j]++;
-						}
-					}
-				}
-				})
-		);
-	}
-
-	// Wait for all threads to finish processing.
-	for (auto& f : futures) {
-		f.get();
-	}
-
-	// Now reduce (sum) all the local neighbor counts into one global vector.
-	std::vector<int> neighborCounts(n, 0);
-	for (int t = 0; t < numThreads; t++) {
-		for (size_t i = 0; i < n; i++) {
-			neighborCounts[i] += localCounts[t][i];
-		}
-	}
-
-	// Finally, update the color for each planet based on the neighbor count.
-	for (size_t i = 0; i < n; i++) {
-		float normalDensity = std::min(float(neighborCounts[i]) / maxNeighbors, 1.0f);
-		// Only update the color if the planet doesn't have a custom color.
 		if (!planets[i].customColor) {
 			planets[i].color.r = static_cast<unsigned char>(normalDensity * 255);
 			planets[i].color.g = static_cast<unsigned char>(normalDensity * 140);
@@ -693,9 +515,7 @@ static void mouseTrail(std::vector<MouseTrailDot>& dots, std::vector<Planet>& pl
 	if (trailsEnabled) {
 		for (const Planet& planet : planets) {
 			dots.push_back(MouseTrailDot(planet.pos.x, planet.pos.y, 1));
-
 		}
-
 	}
 	trailDotFrameIndex = 0;
 
@@ -766,7 +586,7 @@ Button
 	(
 		{780, 0},
 		{200, 50},
-		"MultiThread-BH",
+		"Multi-Threading",
 		true
 	) };
 
@@ -788,7 +608,6 @@ std::array<std::string, 9> controlsArray = {
 	"P: Toggle pixel drawing",
 	"B: Toggle blur drawing",
 	"C: Clear all particles"
-
 };
 
 bool showSettings = true;
@@ -849,7 +668,6 @@ static void drawScene(std::vector<Planet>& planets, std::vector<MouseTrailDot>& 
 	}
 
 
-
 	if (IsKeyPressed(KEY_B)) {
 		enableBlur = !enableBlur;
 		enablePixelDrawing = false;
@@ -889,10 +707,10 @@ static void drawScene(std::vector<Planet>& planets, std::vector<MouseTrailDot>& 
 			}
 		}
 		else if (enablePixelDrawing && planet.drawPixel) {
-			
+
 			DrawPixel(planet.pos.x, planet.pos.y, planet.color);
 
-			
+
 		}
 		else {
 			DrawCircle(planet.pos.x, planet.pos.y, planet.size, planet.color);
@@ -916,10 +734,24 @@ static void drawScene(std::vector<Planet>& planets, std::vector<MouseTrailDot>& 
 		DrawText(TextFormat("FPS: %i", GetFPS()), screenWidth - 150, 50, 18, RED);
 	}
 
+	if (colorVisualsEnabled) {
+		particlesColorVisuals(planets);
+	}
+
 }
 
+static void enableMultiThreading() {
+	if (isMultiThreadingEnabled) {
+		omp_set_num_threads(14);
+	}
+	else {
+		omp_set_num_threads(1);
+	}
+}
 
 int main() {
+
+
 
 	int planetPosX = 0;
 	int planetPosY = 0;
@@ -940,50 +772,21 @@ int main() {
 
 		BeginDrawing();
 
-
-
-
 		ClearBackground(BLACK);
-
-
 
 		BeginBlendMode(1);
 
 		mouseTrail(trailDots, vectorPlanet);
 
-
 		drawScene(vectorPlanet, trailDots, isMouseHoveringUI);
 
 		EndBlendMode();
 
-		//std::thread updateSceneThread(updateScene, std::ref(vectorPlanet));
-		//std::thread particlesColorThread(particlesColorVisuals, std::ref(vectorPlanet));
-
-		// Join threads to ensure they finish before the next frame or exit
-		//updateSceneThread.join();
-		//particlesColorThread.join();
-
 		updateScene(vectorPlanet, isMouseHoveringUI);
 
-		if (isMultiThreadingEnabled) {
-			if (colorVisualsEnabled) {
-				particlesColorVisualsParallel(vectorPlanet);
-			}
-
-		}
-		else {
-			if (colorVisualsEnabled) {
-				particlesColorVisuals(vectorPlanet);
-			}
-		}
-
-
-
-
+		enableMultiThreading();
 
 		EndDrawing();
-
-
 	}
 
 	CloseWindow();
