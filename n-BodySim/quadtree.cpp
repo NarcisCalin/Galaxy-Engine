@@ -3,6 +3,7 @@
 #include <iostream>
 #include "quadtree.h"
 #include "planet.h"
+#include "omp.h"
 
 
 
@@ -35,7 +36,9 @@ Quadtree::Quadtree(float posX, float posY, float size,
 	}
 }
 void Quadtree::subGridMaker() {
+
 	for (int i = 0; i < 2; i++) {
+
 		for (int j = 0; j < 2; j++) {
 			subGrids.emplace_back(
 				this->pos.x + i * (this->size / 2),
@@ -50,14 +53,14 @@ void Quadtree::subGridMaker() {
 	}
 
 	//Draw grids
-	for (auto& subGrid : subGrids) {
+	/*for (auto& subGrid : subGrids) {
 		if (size < 10) {
-			//DrawRectangleLines(subGrid.pos.x, subGrid.pos.y, subGrid.size, subGrid.size, RED);
+			DrawRectangleLines(this->pos.x, subGrid.pos.y, subGrid.size, subGrid.size, RED);
 		}
 		else {
-			//DrawRectangleLines(subGrid.pos.x, subGrid.pos.y, subGrid.size, subGrid.size, WHITE);
+			DrawRectangleLines(subGrid.pos.x, subGrid.pos.y, subGrid.size, subGrid.size, WHITE);
 		}
-	}
+	}*/
 }
 
 void Quadtree::calculateMasses() {
@@ -74,7 +77,6 @@ void Quadtree::calculateMasses() {
 		gridMass = 0;
 		float totalMass = 0;
 		centerOfMass = { 0,0 };
-
 		for (auto& subGrid : subGrids) {
 			if (subGrid.gridMass > 0) {
 				gridMass += subGrid.gridMass;

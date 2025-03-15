@@ -1,33 +1,23 @@
-
-
 #include <iostream>
 #include <vector>
 #include "raylib.h"
 #include <cmath>
-#include <algorithm>
-#include <thread>
-#include <queue>
-#include <mutex>
-#include <condition_variable>
-#include <functional>
-#include <future>
-#include <stdexcept>
 #include <array>
+#include <omp.h>
+#include <thread>
 
 #include "slingshot.h"
 #include "quadtree.h"
 #include "planet.h"
 #include "mouseTrailDot.h"
 #include "button.h"
-#include <omp.h>
-
 
 
 int screenWidth = 1000;
 int screenHeight = 1000;
 
 int targetFPS = 144;
-const double G = 6.674 * pow(10, -11);
+constexpr double G = 6.674e-11;
 
 bool trailsEnabled = false;
 bool enableBlur = false;
@@ -37,6 +27,9 @@ bool isMultiThreadingEnabled = true;
 bool barnesHutEnabled = true;
 bool isDarkMatterEnabled = false;
 bool colorVisualsEnabled = false;
+
+
+const float fixedDeltaTime = 0.03f;
 
 
 static Quadtree gridFunction(std::vector<Planet> vectorPlanet) {
@@ -124,6 +117,7 @@ static Vector2 calculateForceFromGrid(Planet& planet, const Quadtree& grid) {
 	return totalForce;
 }
 
+
 //THIS FUNCTION BELOW IS USED TO CALCULATE DARK MATTER
 
 struct DarkMatterHalo {
@@ -138,6 +132,7 @@ struct DarkMatterHalo {
 		: pos(position), mass(m), radius(r) {
 	}
 };
+
 
 static Vector2 darkMatterForce(const Planet& planet) {
 	float centerX = screenWidth / 2.0f;
@@ -171,7 +166,6 @@ static Vector2 darkMatterForce(const Planet& planet) {
 
 
 void pairWiseGravity(std::vector<Planet>& planets) {
-	const float fixedDeltaTime = 0.03f;
 
 	float timeStepMultiplier = 1;
 	float deltaTime = GetFrameTime() * timeStepMultiplier;
@@ -197,7 +191,7 @@ void pairWiseGravity(std::vector<Planet>& planets) {
 			float distanceSq = dx * dx + dy * dy;
 
 			// Avoid division by zero
-			if (distanceSq < 200) continue;
+			if (distanceSq < 5.0f) distanceSq = 60.0f;
 
 			float distance = sqrt(distanceSq);
 			float force = G * planetA.mass * planetB.mass / distanceSq; // Total force magnitude
@@ -217,21 +211,17 @@ void pairWiseGravity(std::vector<Planet>& planets) {
 			float accelPlanetBX = fx / planetB.mass;
 			float accelPlanetBY = fy / planetB.mass;
 
-			planetA.velocity.x += accelPlanetAX * deltaTime;
-			planetA.velocity.y += accelPlanetAY * deltaTime;
+			planetA.velocity.x += fixedDeltaTime * ((3.0f / 2.0f)) * accelPlanetAX - ((1.0f / 2.0f)) * planetA.prevAcceleration.x;
+			planetA.velocity.y += fixedDeltaTime * ((3.0f / 2.0f)) * accelPlanetAY - ((1.0f / 2.0f)) * planetA.prevAcceleration.y;
 
-			planetB.velocity.x -= accelPlanetBX * deltaTime;
-			planetB.velocity.y -= accelPlanetBY * deltaTime;
+			planetB.velocity.x -= fixedDeltaTime * ((3.0f / 2.0f)) * accelPlanetBX - ((1.0f / 2.0f)) * planetB.prevAcceleration.x;
+			planetB.velocity.y -= fixedDeltaTime * ((3.0f / 2.0f)) * accelPlanetBY - ((1.0f / 2.0f)) * planetB.prevAcceleration.y;
 
 		}
 	}
 }
 
-bool isGPU = true;
-
 static void updateScene(std::vector<Planet>& planets, bool& isMouseHoveringUI) {
-
-	const float fixedDeltaTime = 0.03f;
 
 	float timeStepMultiplier = 1;
 	float deltaTime = GetFrameTime() * timeStepMultiplier;
@@ -263,7 +253,8 @@ static void updateScene(std::vector<Planet>& planets, bool& isMouseHoveringUI) {
 				0,
 				0,
 				true,
-				false);
+				false
+			);
 			isDragging = false;
 		}
 
@@ -385,69 +376,36 @@ static void updateScene(std::vector<Planet>& planets, bool& isMouseHoveringUI) {
 			}
 		}
 	}
-//	if (isGPU) {
-//		Planet* planets_data = planets.data();
-//		int numPlanets = planets.size();
-//
-//#pragma omp target teams distribute parallel for \
-//    map(to: grid, isDarkMatterEnabled, fixedDeltaTime) \
-//    map(tofrom: planets_data[0:numPlanets])
-//		for (int i = 0; i < numPlanets; i++) {
-//			Planet& planet = planets_data[i];
-//
-//			// Reset acceleration
-//			planet.acceleration.x = 0.0f;
-//			planet.acceleration.y = 0.0f;
-//
-//			// Calculate the net force from the grid
-//			Vector2 netForce = calculateForceFromGrid(planet, grid);
-//
-//			// Add dark matter force if enabled
-//			if (isDarkMatterEnabled) {
-//				Vector2 dmForce = darkMatterForce(planet);
-//				netForce.x += dmForce.x;
-//				netForce.y += dmForce.y;
-//			}
-//
-//			// Update acceleration
-//			planet.acceleration.x = netForce.x / planet.mass;
-//			planet.acceleration.y = netForce.y / planet.mass;
-//
-//			// Update velocity (predictor-corrector update)
-//			planet.velocity.x += fixedDeltaTime * (1.5f * planet.acceleration.x) - (0.5f * planet.prevAcceleration.x);
-//			planet.velocity.y += fixedDeltaTime * (1.5f * planet.acceleration.y) - (0.5f * planet.prevAcceleration.y);
-//		}
-//	}
-//	else {
 
+	
 	if (barnesHutEnabled) {
 
 #pragma omp parallel for schedule(dynamic)
-		for (Planet& planet : planets) {
-			planet.acceleration = { 0.0f, 0.0f };
+for (size_t i = 0; i < planets.size(); i++) {
+    Planet& planet = planets[i];  // Access by index (better for SIMD)
 
-			Vector2 netForce = calculateForceFromGrid(planet, grid);
+    planet.acceleration = {0.0f, 0.0f};
 
-			if (isDarkMatterEnabled) {
-				Vector2 dmForce = darkMatterForce(planet);
-				netForce.x += dmForce.x;
-				netForce.y += dmForce.y;
-			}
+    Vector2 netForce = calculateForceFromGrid(planet, grid);
 
-			planet.acceleration.x = netForce.x / planet.mass;
-			planet.acceleration.y = netForce.y / planet.mass;
+    if (isDarkMatterEnabled) {
+        Vector2 dmForce = darkMatterForce(planet);
+        netForce.x += dmForce.x;
+        netForce.y += dmForce.y;
+    }
 
-			planet.velocity.x += fixedDeltaTime * ((3.0f / 2.0f)) * planet.acceleration.x - ((1.0f / 2.0f)) * planet.prevAcceleration.x;
-			planet.velocity.y += fixedDeltaTime * ((3.0f / 2.0f)) * planet.acceleration.y - ((1.0f / 2.0f)) * planet.prevAcceleration.y;
-		}
+    planet.acceleration.x = netForce.x / planet.mass;
+    planet.acceleration.y = netForce.y / planet.mass;
+
+    planet.velocity.x += fixedDeltaTime * ((3.0f / 2.0f)) * planet.acceleration.x - ((1.0f / 2.0f)) * planet.prevAcceleration.x;
+    planet.velocity.y += fixedDeltaTime * ((3.0f / 2.0f)) * planet.acceleration.y - ((1.0f / 2.0f)) * planet.prevAcceleration.y;
+}
 
 	}
 	else {
 		pairWiseGravity(planets);
 	}
-	//}
-
-
+	
 
 	for (Planet& planet : planets) {
 		planet.pos.x += planet.velocity.x * fixedDeltaTime;
@@ -466,7 +424,11 @@ static void updateScene(std::vector<Planet>& planets, bool& isMouseHoveringUI) {
 
 		}
 	}
+	
+	
 }
+
+
 
 static void particlesColorVisuals(std::vector<Planet>& planets) {
 
@@ -588,7 +550,8 @@ Button
 		{200, 50},
 		"Multi-Threading",
 		true
-	) };
+	)
+};
 
 Button toggleSettingsButtons
 (
@@ -631,7 +594,6 @@ static void drawScene(std::vector<Planet>& planets, std::vector<MouseTrailDot>& 
 		bool buttonFourierSpaceHovering = settingsButtonsArray[5].buttonLogic(isFourierSpaceEnabled);
 		bool buttonBarnesHutHovering = settingsButtonsArray[6].buttonLogic(barnesHutEnabled);
 		bool buttonMultiThreadingHovering = settingsButtonsArray[7].buttonLogic(isMultiThreadingEnabled);
-
 		for (int i = 0; i < controlsArray.size(); i++) {
 			DrawText(TextFormat("%s", controlsArray[i].c_str()), 25, 100 + 20 * i, 15, WHITE);
 		}
@@ -657,6 +619,7 @@ static void drawScene(std::vector<Planet>& planets, std::vector<MouseTrailDot>& 
 		if (buttonBlurHovering && IsMouseButtonPressed(0)) {
 			enablePixelDrawing = false;
 		}
+
 	}
 	else {
 		if (buttonShowSettingsHovering) {
@@ -740,6 +703,8 @@ static void drawScene(std::vector<Planet>& planets, std::vector<MouseTrailDot>& 
 
 }
 
+
+
 static void enableMultiThreading() {
 	if (isMultiThreadingEnabled) {
 		omp_set_num_threads(14);
@@ -749,20 +714,14 @@ static void enableMultiThreading() {
 	}
 }
 
+
 int main() {
-
-
-
-	int planetPosX = 0;
-	int planetPosY = 0;
-	int planetSize = 0;
 
 	std::vector<Planet> vectorPlanet;
 
 	std::vector<MouseTrailDot> trailDots;
 
 	bool isMouseHoveringUI = false;
-
 
 	InitWindow(screenWidth, screenHeight, "n-Body");
 	SetTargetFPS(targetFPS);
