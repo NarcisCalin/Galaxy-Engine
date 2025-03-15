@@ -6,6 +6,9 @@
 
 class Quadtree {
 public:
+	static constexpr int MAX_DEPTH = 20;
+	static constexpr float MIN_SIZE = 2.0f;
+
 	Vector2 pos;
 	float size;
 	Color color;

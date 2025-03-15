@@ -377,35 +377,35 @@ static void updateScene(std::vector<Planet>& planets, bool& isMouseHoveringUI) {
 		}
 	}
 
-	
+
 	if (barnesHutEnabled) {
 
 #pragma omp parallel for schedule(dynamic)
-for (size_t i = 0; i < planets.size(); i++) {
-    Planet& planet = planets[i];  // Access by index (better for SIMD)
+		for (size_t i = 0; i < planets.size(); i++) {
+			Planet& planet = planets[i];  // Access by index (better for SIMD)
 
-    planet.acceleration = {0.0f, 0.0f};
+			planet.acceleration = { 0.0f, 0.0f };
 
-    Vector2 netForce = calculateForceFromGrid(planet, grid);
+			Vector2 netForce = calculateForceFromGrid(planet, grid);
 
-    if (isDarkMatterEnabled) {
-        Vector2 dmForce = darkMatterForce(planet);
-        netForce.x += dmForce.x;
-        netForce.y += dmForce.y;
-    }
+			if (isDarkMatterEnabled) {
+				Vector2 dmForce = darkMatterForce(planet);
+				netForce.x += dmForce.x;
+				netForce.y += dmForce.y;
+			}
 
-    planet.acceleration.x = netForce.x / planet.mass;
-    planet.acceleration.y = netForce.y / planet.mass;
+			planet.acceleration.x = netForce.x / planet.mass;
+			planet.acceleration.y = netForce.y / planet.mass;
 
-    planet.velocity.x += fixedDeltaTime * ((3.0f / 2.0f)) * planet.acceleration.x - ((1.0f / 2.0f)) * planet.prevAcceleration.x;
-    planet.velocity.y += fixedDeltaTime * ((3.0f / 2.0f)) * planet.acceleration.y - ((1.0f / 2.0f)) * planet.prevAcceleration.y;
-}
+			planet.velocity.x += fixedDeltaTime * ((3.0f / 2.0f)) * planet.acceleration.x - ((1.0f / 2.0f)) * planet.prevAcceleration.x;
+			planet.velocity.y += fixedDeltaTime * ((3.0f / 2.0f)) * planet.acceleration.y - ((1.0f / 2.0f)) * planet.prevAcceleration.y;
+		}
 
 	}
 	else {
 		pairWiseGravity(planets);
 	}
-	
+
 
 	for (Planet& planet : planets) {
 		planet.pos.x += planet.velocity.x * fixedDeltaTime;
@@ -424,8 +424,8 @@ for (size_t i = 0; i < planets.size(); i++) {
 
 		}
 	}
-	
-	
+
+
 }
 
 
@@ -645,12 +645,17 @@ static void drawScene(std::vector<Planet>& planets, std::vector<MouseTrailDot>& 
 
 	for (Planet& planet : planets) {
 
+
 		if (!colorVisualsEnabled) {
 			if (!planet.customColor) {
 				planet.color = { 128, 128, 128, 100 };
 			}
 		}
-		if (enableBlur) {
+
+		if (enablePixelDrawing && planet.drawPixel) {
+			DrawPixel(planet.pos.x, planet.pos.y, planet.color);
+		}
+		else if (enableBlur) {
 
 			for (int i = 1; i <= 3; i++) {
 
@@ -668,12 +673,6 @@ static void drawScene(std::vector<Planet>& planets, std::vector<MouseTrailDot>& 
 
 				DrawCircle(planet.pos.x, planet.pos.y, blurSize, blurColor);
 			}
-		}
-		else if (enablePixelDrawing && planet.drawPixel) {
-
-			DrawPixel(planet.pos.x, planet.pos.y, planet.color);
-
-
 		}
 		else {
 			DrawCircle(planet.pos.x, planet.pos.y, planet.size, planet.color);

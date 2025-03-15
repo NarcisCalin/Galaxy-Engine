@@ -4,8 +4,7 @@ g++ main.cpp -o nbodySim.exe -std=c++17 -pthread -I"C:\raylib\raylib\src" -L"C:\
 
 
 ////////USE THIS ONE!!!!////////
-clang++ main.cpp quadtree.cpp slingshot.cpp button.cpp planet.cpp mouseTrailDot.cpp ui.cpp -o nbodySim.exe -std=c++17 -pthread -I"C:\raylib\src" -L"C:\raylib\build\raylib\Release" -lraylib -lopengl32 -lgdi32 -lwinmm -luser32 -lshell32 -lkernel32 -static -O3 -march=native -flto -fuse-ld=lld -fopenmp
-
+clang++ main.cpp quadtree.cpp slingshot.cpp button.cpp planet.cpp mouseTrailDot.cpp ui.cpp -o nbodySim.exe -std=c++17 -pthread -I"C:\raylib\src" -L"C:\raylib\build\raylib\Release" -lraylib -lopengl32 -lgdi32 -lwinmm -luser32 -lshell32 -lkernel32 -static -O3 -march=native -flto -fuse-ld=lld -fopenmp 
 
 /// ADD THIS FOR A LITTLE EXTRA ACCURACY (LOOK ON GOOGLE WHAT THEY REALLY DO): -ffp-model=precise -fno-fast-math
  
