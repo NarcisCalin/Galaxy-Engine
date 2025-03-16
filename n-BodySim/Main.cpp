@@ -11,6 +11,7 @@
 #include "planet.h"
 #include "mouseTrailDot.h"
 #include "button.h"
+#include "screenCapture.h"
 
 
 int screenWidth = 1000;
@@ -37,10 +38,6 @@ static Quadtree gridFunction(std::vector<Planet> vectorPlanet) {
 		0,             // posX
 		0,             // posY
 		screenWidth,   // size
-		12,            // Red
-		12,            // Green
-		12,            // Blue
-		12,            // Alpha
 		vectorPlanet,  // planets
 		nullptr        // parent (null for root)
 	);
@@ -239,7 +236,7 @@ static void updateScene(std::vector<Planet>& planets, bool& isMouseHoveringUI) {
 	if (isMouseHoveringUI) {
 		Slingshot slingshot = slingshotObject.planetSlingshot(isDragging, isMouse0Pressed, isMouse2SpacePressed);
 
-		if (IsMouseButtonReleased(0) && !IsKeyDown(KEY_SPACE)) {
+		/*if (IsMouseButtonReleased(0) && !IsKeyDown(KEY_SPACE)) {
 			planets.emplace_back(GetMouseX(),
 				GetMouseY(),
 				4,
@@ -278,7 +275,7 @@ static void updateScene(std::vector<Planet>& planets, bool& isMouseHoveringUI) {
 				);
 
 			}
-		}
+		}*/
 
 		if (IsMouseButtonPressed(1) && !isDragging) {
 			for (int i = 0; i < 40000; i++) {
@@ -314,7 +311,7 @@ static void updateScene(std::vector<Planet>& planets, bool& isMouseHoveringUI) {
 			}
 		}
 
-		if (IsMouseButtonReleased(0) && isDragging || IsKeyReleased(KEY_SPACE) && isDragging) {
+		/*if (IsMouseButtonReleased(0) && isDragging || IsKeyReleased(KEY_SPACE) && isDragging) {
 			for (int i = 0; i < 12000; i++) {
 
 				float galaxyCenterX = GetMouseX();
@@ -354,7 +351,7 @@ static void updateScene(std::vector<Planet>& planets, bool& isMouseHoveringUI) {
 				);
 				isDragging = false;
 			}
-		}
+		}*/
 
 		if (IsKeyPressed(KEY_G)) {
 			for (int i = 0; i < 10000; i++) {
@@ -653,10 +650,9 @@ static void drawScene(std::vector<Planet>& planets, std::vector<MouseTrailDot>& 
 		}
 
 		if (enablePixelDrawing && planet.drawPixel) {
-			DrawPixel(planet.pos.x, planet.pos.y, planet.color);
+			DrawPixelV({ planet.pos.x, planet.pos.y }, planet.color);
 		}
 		else if (enableBlur) {
-
 			for (int i = 1; i <= 3; i++) {
 
 				float t = static_cast<float>(i) / 90.0f;
@@ -671,11 +667,11 @@ static void drawScene(std::vector<Planet>& planets, std::vector<MouseTrailDot>& 
 
 				Color blurColor = { planet.color.r, planet.color.g, planet.color.b, static_cast<unsigned char>(newAlpha) };
 
-				DrawCircle(planet.pos.x, planet.pos.y, blurSize, blurColor);
+				DrawCircleV({ planet.pos.x, planet.pos.y }, blurSize, blurColor);
 			}
 		}
 		else {
-			DrawCircle(planet.pos.x, planet.pos.y, planet.size, planet.color);
+			DrawCircleV({ planet.pos.x, planet.pos.y }, planet.size, planet.color);
 
 		}
 	}
@@ -713,7 +709,6 @@ static void enableMultiThreading() {
 	}
 }
 
-
 int main() {
 
 	std::vector<Planet> vectorPlanet;
@@ -721,6 +716,8 @@ int main() {
 	std::vector<MouseTrailDot> trailDots;
 
 	bool isMouseHoveringUI = false;
+
+	ScreenCapture screenCapture;
 
 	InitWindow(screenWidth, screenHeight, "n-Body");
 	SetTargetFPS(targetFPS);
@@ -743,6 +740,13 @@ int main() {
 		updateScene(vectorPlanet, isMouseHoveringUI);
 
 		enableMultiThreading();
+
+		bool isRecording = screenCapture.screenGrab();
+
+		if (isRecording) {
+		DrawRectangleLines(0,0,screenWidth, screenHeight, RED);
+
+		}
 
 		EndDrawing();
 	}

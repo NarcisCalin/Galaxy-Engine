@@ -1,87 +1,14 @@
-//// OTHER PROJECT
-g++ main.cpp -o nbodySim.exe -std=c++17 -pthread -I"C:\raylib\raylib\src" -L"C:\raylib\raylib\src" -lraylib -lopengl32 -lgdi32 -lwinmm -static -O3 -march=native -flto -fopenmp
+////////USE THIS ONE!!!!//////// CLANG
+clang++ main.cpp quadtree.cpp slingshot.cpp button.cpp planet.cpp mouseTrailDot.cpp ui.cpp screenCapture.cpp -o nbodySim.exe -std=c++17 -pthread -I"C:\raylib\src" -L"C:\raylib\build\raylib\Release" -lraylib -lopengl32 -lgdi32 -lwinmm -luser32 -lshell32 -lkernel32 -static -O3 -march=native -flto -fuse-ld=lld -fopenmp -static
+
+
+//////////////// G++
+g++ main.cpp quadtree.cpp slingshot.cpp button.cpp planet.cpp mouseTrailDot.cpp ui.cpp screenCapture.cpp -o nbodySim.exe -std=c++17 -pthread -I"C:\RaylibMingw\include" -L"C:\RaylibMingw\lib" -lraylib -lopengl32 -lgdi32 -lwinmm -luser32 -lshell32 -lkernel32 -static -O3 -march=native -flto -fopenmp
 
 
 
-////////USE THIS ONE!!!!////////
-clang++ main.cpp quadtree.cpp slingshot.cpp button.cpp planet.cpp mouseTrailDot.cpp ui.cpp -o nbodySim.exe -std=c++17 -pthread -I"C:\raylib\src" -L"C:\raylib\build\raylib\Release" -lraylib -lopengl32 -lgdi32 -lwinmm -luser32 -lshell32 -lkernel32 -static -O3 -march=native -flto -fuse-ld=lld -fopenmp 
 
 /// ADD THIS FOR A LITTLE EXTRA ACCURACY (LOOK ON GOOGLE WHAT THEY REALLY DO): -ffp-model=precise -fno-fast-math
  
 
-pacman -S --needed git wget mingw-w64-x86_64-gcc mingw-w64-x86_64-ninja mingw-w64-x86_64-cmake make mingw-w64-x86_64-python3 autoconf libtool
-
-
 #pragma omp parallel for schedule(dynamic)
-
-cd /mnt/f/Coding/n-BodySim/n-BodySim
-
-cd /mnt/c/Users/silen/source/repos/GeneralLearningTests/GeneralLearningTests
-
-clang++ -o game.exe main.cpp -I/usr/local/include -L/usr/local/lib -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
-
-clang++ -fopenmp=libomp -fopenmp-targets=nvptx64 --offload-arch=sm_86 -O2 -o gpu_offload_example main.cpp
-
-
-clang++ --target=x86_64-w64-mingw32 -o game.exe main.cpp -I/mnt/c/raylib/src -L/mnt/c/raylib/build/raylib/Release -lopengl32 -lgdi32 -mwindows
-
-
--I/mnt/c/raylib/build/raylib/include
-
--L/mnt/c/raylib/build/raylib/Release
-
-clang++ --target=x86_64-w64-mingw32 -o game.exe main.cpp \
-    -I/mnt/c/raylib/build/raylib/include \
-    -L/mnt/c/raylib/build/raylib/Release \
-    -lraylib -lopengl32 -lgdi32 -mwindows
-
-clang++ --target=x86_64-w64-mingw32 -o game.exe main.cpp \
--I/mnt/c/RaylibMingw/include \
--L/mnt/c/RaylibMingw/lib \
--lraylib \
--lopengl32 \
--lgdi32 \
--lwinmm \
--lshell32 \
--mwindows \
--static \
--fopenmp=libgomp
-
-
-clang++ -fopenmp=libomp -fopenmp-targets=nvptx64 --offload-arch=sm_89 \
-  --cuda-path=/usr/local/cuda \
-  -O2 -o gpu_offload.exe main.cpp \
-  -I/mnt/c/RaylibMingw/include \
-  -L/mnt/c/RaylibMingw/lib \
-  -lraylib \
-  -lopengl32 \
-  -lgdi32 \
-  -lwinmm \
-  -lshell32 \
-  -mwindows \
-  -static
-
-/////////////////////////////////////////////////////////////////////////
-clang++ -fopenmp=libomp -fopenmp-targets=nvptx64 --offload-arch=sm_89 \
-  --cuda-path=/usr/local/cuda \
-  --libomptarget-nvptx-bc-path=/usr/lib/llvm-18/lib \
-  -O2 -o gpu_offload main.cpp quadtree.cpp slingshot.cpp button.cpp planet.cpp mouseTrailDot.cpp ui.cpp \
-  -I/mnt/c/RaylibMingw/include \
-  -L/opt/libomp/lib \
-  -L/usr/lib/llvm-18/lib \
-  -L/usr/local/lib \
-  -L/usr/lib/x86_64-linux-gnu \
-  -L/mnt/c/RaylibMingw/lib \
-  -lraylib \
-  -larcher \
-  -lomp
-//////////////////////////////////////////////////////////////////////////////
-./gpu_offload
-
-clang++ main.cpp quadtree.cpp slingshot.cpp button.cpp planet.cpp mouseTrailDot.cpp ui.cpp -o nbodySim \
--std=c++17 -pthread \
--I/mnt/c/raylib/src
--L/mnt/c/raylib/build/raylib/Release
--lGL -lm -lpthread -ldl -lX11 \
--fopenmp -fopenmp-targets=nvptx64-nvidia-cuda --offload-arch=sm_89 \
--O3 -march=native -flto -fuse-ld=lld

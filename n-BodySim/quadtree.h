@@ -6,12 +6,11 @@
 
 class Quadtree {
 public:
-	static constexpr int MAX_DEPTH = 20;
-	static constexpr float MIN_SIZE = 2.0f;
+	static constexpr int MAX_DEPTH = 30.0f;
+	static constexpr float MIN_SIZE = 1.0f;
 
 	Vector2 pos;
 	float size;
-	Color color;
 	std::vector<Quadtree> subGrids;
 	std::vector<Planet> myPlanets;
 	float gridMass;
@@ -20,8 +19,7 @@ public:
 	int depth;
 
 	Quadtree(float posX, float posY, float size,
-		int r, int g, int b, int a,
-		std::vector<Planet> planets,
+		const std::vector<Planet>& planets,
 		Quadtree* parent);
 
 	void subGridMaker();

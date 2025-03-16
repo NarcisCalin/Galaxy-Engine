@@ -9,21 +9,17 @@
 
 
 Quadtree::Quadtree(float posX, float posY, float size,
-	int r, int g, int b, int a,
-	std::vector<Planet> planets,
+	const std::vector<Planet>& planets,
 	Quadtree* parent = nullptr) {
 
 	this->pos.x = posX;
 	this->pos.y = posY;
 	this->size = size;
-	this->color.r = r;
-	this->color.g = g;
-	this->color.b = b;
-	this->color.a = a;
 	this->gridMass = 0;
 	this->centerOfMass = { 0,0 };
 	this->parent = parent;
 	depth = (parent == nullptr) ? 0 : parent->depth + 1; // Set depth here
+
 	for (auto& planet : planets) {
 		if (planet.pos.x >= pos.x && planet.pos.x < pos.x + size &&
 			planet.pos.y >= pos.y && planet.pos.y < pos.y + size) {
@@ -38,13 +34,11 @@ Quadtree::Quadtree(float posX, float posY, float size,
 void Quadtree::subGridMaker() {
 
 	for (int i = 0; i < 2; i++) {
-
 		for (int j = 0; j < 2; j++) {
 			subGrids.emplace_back(
 				this->pos.x + i * (this->size / 2),
 				this->pos.y + j * (this->size / 2),
 				this->size / 2,
-				255, 255, 255, 255,
 				this->myPlanets,
 				this
 

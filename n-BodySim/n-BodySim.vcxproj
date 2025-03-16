@@ -138,11 +138,12 @@
   <ItemGroup>
     <ClCompile Include="button.cpp" />
     <ClCompile Include="main.cpp">
-      <FileType>Document</FileType>
+      <FileType>CppCode</FileType>
     </ClCompile>
     <ClCompile Include="mouseTrailDot.cpp" />
     <ClCompile Include="planet.cpp" />
     <ClCompile Include="quadtree.cpp" />
+    <ClCompile Include="screenCapture.cpp" />
     <ClCompile Include="slingshot.cpp" />
     <ClCompile Include="ui.cpp" />
   </ItemGroup>
@@ -151,6 +152,7 @@
     <ClInclude Include="mouseTrailDot.h" />
     <ClInclude Include="planet.h" />
     <ClInclude Include="quadtree.h" />
+    <ClInclude Include="screenCapture.h" />
     <ClInclude Include="ui.h" />
     <ClInclude Include="updateScene.h" />
     <ClInclude Include="slingshot.h" />
