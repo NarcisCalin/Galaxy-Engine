@@ -9,7 +9,7 @@
 
 
 Quadtree::Quadtree(float posX, float posY, float size,
-	const std::vector<Planet>& planets,
+	const std::vector<ParticlePhysics>& pParticles,
 	Quadtree* parent = nullptr) {
 
 	this->pos.x = posX;
@@ -20,14 +20,14 @@ Quadtree::Quadtree(float posX, float posY, float size,
 	this->parent = parent;
 	depth = (parent == nullptr) ? 0 : parent->depth + 1; // Set depth here
 
-	for (auto& planet : planets) {
+	for (auto& planet : pParticles) {
 		if (planet.pos.x >= pos.x && planet.pos.x < pos.x + size &&
 			planet.pos.y >= pos.y && planet.pos.y < pos.y + size) {
-			myPlanets.push_back(planet);
+			myParticles.push_back(planet);
 		}
 	}
 
-	if (myPlanets.size() > 1) {
+	if (myParticles.size() > 1) {
 		subGridMaker();
 	}
 }
@@ -39,7 +39,7 @@ void Quadtree::subGridMaker() {
 				this->pos.x + i * (this->size / 2),
 				this->pos.y + j * (this->size / 2),
 				this->size / 2,
-				this->myPlanets,
+				this->myParticles,
 				this
 
 			);
@@ -63,9 +63,9 @@ void Quadtree::calculateMasses() {
 		subGrid.calculateMasses();
 	}
 
-	if (myPlanets.size() == 1 && subGrids.empty()) {
-		gridMass = myPlanets[0].mass;
-		centerOfMass = myPlanets[0].pos;
+	if (myParticles.size() == 1 && subGrids.empty()) {
+		gridMass = myParticles[0].mass;
+		centerOfMass = myParticles[0].pos;
 	}
 	else if (!subGrids.empty()) {
 		gridMass = 0;
@@ -95,7 +95,7 @@ void Quadtree::printGridInfo() {
 	std::cout << "Grid at (" << pos.x << ", " << pos.y << ") with size " << size << ":\n";
 	std::cout << "  Mass: " << gridMass << "\n";
 	std::cout << "  Center of Mass: (" << centerOfMass.x << ", " << centerOfMass.y << ")\n";
-	std::cout << "  Number of planets: " << myPlanets.size() << "\n";
+	std::cout << "  Number of planets: " << myParticles.size() << "\n";
 	std::cout << "  Number of subgrids: " << subGrids.size() << "\n";
 }
 

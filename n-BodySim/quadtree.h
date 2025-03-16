@@ -12,14 +12,14 @@ public:
 	Vector2 pos;
 	float size;
 	std::vector<Quadtree> subGrids;
-	std::vector<Planet> myPlanets;
+	std::vector<ParticlePhysics> myParticles;
 	float gridMass;
 	Vector2 centerOfMass;
 	Quadtree* parent;
 	int depth;
 
 	Quadtree(float posX, float posY, float size,
-		const std::vector<Planet>& planets,
+		const std::vector<ParticlePhysics>& pParticles,
 		Quadtree* parent);
 
 	void subGridMaker();
