@@ -5,6 +5,7 @@ ParticlePhysics::ParticlePhysics(Vector2 pos, Vector2 velocity, double mass) {
 	this->pos = pos;
 	this->velocity = velocity;
 	this->mass = mass;
+	mortonKey = 0;
 }
 
 ParticleRendering::ParticleRendering(Color color, float size, bool enableBlur, bool customColor, bool drawPixel) {

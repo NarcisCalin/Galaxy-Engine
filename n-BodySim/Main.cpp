@@ -14,8 +14,10 @@
 #include "screenCapture.h"
 
 
-int screenWidth = 1000;
-int screenHeight = 1000;
+#include "morton.h"
+
+int screenWidth = 1024;
+int screenHeight = 1024;
 
 int targetFPS = 144;
 constexpr double G = 6.674e-11;
@@ -284,8 +286,8 @@ static void updateScene(std::vector<ParticlePhysics>& pParticles, std::vector<Pa
 
 		if (IsMouseButtonPressed(1) && !isDragging) {
 			for (int i = 0; i < 40000; i++) {
-				float galaxyCenterX = 500;
-				float galaxyCenterY = 500;
+				float galaxyCenterX = static_cast<float>(screenWidth / 2);
+				float galaxyCenterY = static_cast<float>(screenHeight / 2);
 
 				float angle = static_cast<float>(rand()) / RAND_MAX * 2 * PI;
 				float radius = static_cast<float>(rand()) / RAND_MAX * 200.0f + 8;
@@ -720,14 +722,16 @@ static void enableMultiThreading() {
 
 int main() {
 
-	std::vector<ParticlePhysics> vectorParticlePhysics;
-	std::vector<ParticleRendering> vectorParticleRendering;
+	std::vector<ParticlePhysics> pParticles;
+	std::vector<ParticleRendering> rParticles;
 
 	std::vector<MouseTrailDot> trailDots;
 
 	bool isMouseHoveringUI = false;
 
 	ScreenCapture screenCapture;
+
+	Morton morton;
 
 	InitWindow(screenWidth, screenHeight, "n-Body");
 	SetTargetFPS(targetFPS);
@@ -741,13 +745,17 @@ int main() {
 
 		BeginBlendMode(1);
 
-		mouseTrail(trailDots, vectorParticlePhysics, vectorParticleRendering);
+		morton.computeMortonKeys(pParticles);
+		morton.sortParticlesByMortonKey(pParticles, rParticles);
 
-		drawScene(vectorParticlePhysics, vectorParticleRendering, trailDots, isMouseHoveringUI);
+
+		mouseTrail(trailDots, pParticles, rParticles);
+
+		drawScene(pParticles, rParticles, trailDots, isMouseHoveringUI);
 
 		EndBlendMode();
 
-		updateScene(vectorParticlePhysics, vectorParticleRendering, isMouseHoveringUI);
+		updateScene(pParticles, rParticles, isMouseHoveringUI);
 
 		enableMultiThreading();
 

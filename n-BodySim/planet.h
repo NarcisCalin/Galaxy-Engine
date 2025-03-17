@@ -1,12 +1,14 @@
 #pragma once
+#include <cstdint>
 #include "raylib.h"
 
 
 struct ParticlePhysics {
-public:
+
 	Vector2 pos;
 	Vector2 velocity;
 	double mass;
+	uint32_t mortonKey;
 
 	ParticlePhysics(Vector2 pos, Vector2 velocity, double mass);
 };

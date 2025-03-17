@@ -2,10 +2,11 @@
 #include "raylib.h"
 #include <vector>
 #include <iostream>
+#include <algorithm>
 #include "planet.h"
 
-class Quadtree {
-public:
+struct Quadtree {
+
 	static constexpr int MAX_DEPTH = 30.0f;
 	static constexpr float MIN_SIZE = 1.0f;
 

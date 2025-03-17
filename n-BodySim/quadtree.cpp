@@ -9,7 +9,7 @@
 
 
 Quadtree::Quadtree(float posX, float posY, float size,
-	const std::vector<ParticlePhysics>& pParticles,
+	const std::vector<ParticlePhysics>& planets,
 	Quadtree* parent = nullptr) {
 
 	this->pos.x = posX;
@@ -20,7 +20,7 @@ Quadtree::Quadtree(float posX, float posY, float size,
 	this->parent = parent;
 	depth = (parent == nullptr) ? 0 : parent->depth + 1; // Set depth here
 
-	for (auto& planet : pParticles) {
+	for (auto& planet : planets) {
 		if (planet.pos.x >= pos.x && planet.pos.x < pos.x + size &&
 			planet.pos.y >= pos.y && planet.pos.y < pos.y + size) {
 			myParticles.push_back(planet);

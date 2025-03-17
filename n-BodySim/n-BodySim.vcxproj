@@ -140,6 +140,7 @@
     <ClCompile Include="main.cpp">
       <FileType>CppCode</FileType>
     </ClCompile>
+    <ClCompile Include="morton.cpp" />
     <ClCompile Include="mouseTrailDot.cpp" />
     <ClCompile Include="planet.cpp" />
     <ClCompile Include="quadtree.cpp" />
@@ -149,6 +150,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="button.h" />
+    <ClInclude Include="morton.h" />
     <ClInclude Include="mouseTrailDot.h" />
     <ClInclude Include="planet.h" />
     <ClInclude Include="quadtree.h" />
