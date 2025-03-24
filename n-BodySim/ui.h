@@ -4,6 +4,7 @@
 
 class Ui {
 public:
-
+	
 	Ui();
+
 };

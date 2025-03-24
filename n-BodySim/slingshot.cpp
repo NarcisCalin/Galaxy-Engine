@@ -12,31 +12,31 @@ Slingshot::Slingshot(float normalizedX, float normalizedY, float length) {
 
 
 
-Slingshot Slingshot::planetSlingshot(bool &isDragging, bool &isMouse0Pressed, bool &isMouse2SpacePressed) {
+Slingshot Slingshot::planetSlingshot(bool &isDragging, bool &isMouse0Pressed, bool & isMouse2ControlPressed, SceneCamera myCamera) {
 
-	//Is left click pressed?
-	if (IsMouseButtonPressed(0) && !IsKeyDown(KEY_SPACE)) {
+	if (IsMouseButtonPressed(0) && !IsKeyDown(KEY_LEFT_CONTROL)) {
 		isMouse0Pressed = true;
 	}
 	else {
 		isMouse0Pressed = false;
 	}
-	//Is middle mouse button and spacebar pressed?
-	if (IsMouseButtonPressed(0) && IsKeyDown(KEY_SPACE)) {
-		isMouse2SpacePressed = true;
+
+	if (IsMouseButtonPressed(0) && IsKeyDown(KEY_LEFT_CONTROL)) {
+		isMouse2ControlPressed = true;
 	}
 	else {
-		isMouse2SpacePressed = false;
+		isMouse2ControlPressed = false;
 	}
 
+	Vector2 mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), myCamera.camera);
 
-	if (isMouse0Pressed || isMouse2SpacePressed) {
+	if (isMouse0Pressed || isMouse2ControlPressed) {
 		isDragging = true;
-		slingshotPos = GetMousePosition();
+		slingshotPos = mouseWorldPos;
 	}
 	if (isDragging) {
-		float slingshotDistX = slingshotPos.x - GetMouseX();
-		float slingshotDistY = slingshotPos.y - GetMouseY();
+		float slingshotDistX = slingshotPos.x - mouseWorldPos.x;
+		float slingshotDistY = slingshotPos.y - mouseWorldPos.y;
 		float slingshotLengthSquared = slingshotDistX * slingshotDistX + slingshotDistY * slingshotDistY;
 		float slingshotLength = sqrt(slingshotLengthSquared);
 
@@ -44,7 +44,7 @@ Slingshot Slingshot::planetSlingshot(bool &isDragging, bool &isMouse0Pressed, bo
 			float normalX = slingshotDistX / slingshotLength;
 			float normalY = slingshotDistY / slingshotLength;
 			DrawCircle(slingshotPos.x, slingshotPos.y, 5, BLUE);
-			DrawLine(GetMouseX(), GetMouseY(), slingshotPos.x, slingshotPos.y, RED);
+			DrawLine(mouseWorldPos.x, mouseWorldPos.y, slingshotPos.x, slingshotPos.y, RED);
 
 			Slingshot slingshot(normalX, normalY, slingshotLength);
 			return slingshot;

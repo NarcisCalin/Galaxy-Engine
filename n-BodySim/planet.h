@@ -7,10 +7,10 @@ struct ParticlePhysics {
 
 	Vector2 pos;
 	Vector2 velocity;
-	double mass;
+	float mass;
 	uint32_t mortonKey;
 
-	ParticlePhysics(Vector2 pos, Vector2 velocity, double mass);
+	ParticlePhysics(Vector2 pos, Vector2 velocity, float mass);
 };
 
 struct ParticleRendering {
@@ -18,9 +18,9 @@ struct ParticleRendering {
 	Color color;
 	float size;
 	bool enableBlur;
-	bool customColor;
+	bool uniqueColor;
 	bool drawPixel;
 
-	ParticleRendering(Color color, float size, bool enableBlur, bool customColor, bool drawPixel);
+	ParticleRendering(Color color, float size, bool enableBlur, bool uniqueColor, bool drawPixel);
 
 };

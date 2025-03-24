@@ -7,6 +7,7 @@
 class MouseTrailDot {
 public:
 	Vector2 pos;
-	int size = 5;
-	MouseTrailDot(float x, float y, int z);
+	float size = 5;
+	Color color;
+	MouseTrailDot(Vector2 pos, float size, Color color);
 };

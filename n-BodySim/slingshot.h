@@ -1,5 +1,5 @@
 #pragma once
-
+#include "camera.h"
 
 class Slingshot {
 public:
@@ -9,6 +9,6 @@ public:
 	Slingshot(float normalizedX, float normalizedY, float length);
 
 	
-	static Slingshot planetSlingshot(bool &isDragging, bool &isMouse0Pressed, bool &isMouse2SpacePressed);
+	static Slingshot planetSlingshot(bool &isDragging, bool &isMouse0Pressed, bool &isMouse2SpacePressed, SceneCamera myCamera);
 };
 

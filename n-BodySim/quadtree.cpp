@@ -1,6 +1,7 @@
 #include "raylib.h"
 #include <vector>
 #include <iostream>
+#include <algorithm>
 #include "quadtree.h"
 #include "planet.h"
 #include "omp.h"
@@ -9,110 +10,97 @@
 
 
 Quadtree::Quadtree(float posX, float posY, float size,
-	const std::vector<ParticlePhysics>& planets,
+	int startIndex, int endIndex,
+	const std::vector<ParticlePhysics>& pParticles, const std::vector<ParticleRendering>& rParticles,
 	Quadtree* parent = nullptr) {
 
 	this->pos.x = posX;
 	this->pos.y = posY;
 	this->size = size;
+	this->startIndex = startIndex;
+	this->endIndex = endIndex;
 	this->gridMass = 0;
 	this->centerOfMass = { 0,0 };
 	this->parent = parent;
-	depth = (parent == nullptr) ? 0 : parent->depth + 1; // Set depth here
 
-	for (auto& planet : planets) {
-		if (planet.pos.x >= pos.x && planet.pos.x < pos.x + size &&
-			planet.pos.y >= pos.y && planet.pos.y < pos.y + size) {
-			myParticles.push_back(planet);
-		}
-	}
-
-	if (myParticles.size() > 1) {
-		subGridMaker();
+	if ((endIndex - startIndex) >= 1 && size > 1.0f) {
+		subGridMaker(const_cast<std::vector<ParticlePhysics>&>(pParticles), const_cast<std::vector<ParticleRendering>&>(rParticles));
 	}
 }
-void Quadtree::subGridMaker() {
 
-	for (int i = 0; i < 2; i++) {
-		for (int j = 0; j < 2; j++) {
-			subGrids.emplace_back(
-				this->pos.x + i * (this->size / 2),
-				this->pos.y + j * (this->size / 2),
-				this->size / 2,
-				this->myParticles,
-				this
+void Quadtree::subGridMaker(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles) {
+	float midX = pos.x + size / 2.0f;
+	float midY = pos.y + size / 2.0f;
 
-			);
-		}
-	}
+	int current = startIndex;
+	for (int q = 0; q < 4; ++q) {
+		int qStart = current;
+		for (int i = current; i < endIndex; ++i) {
+			int quadrant = 0;
+			if (pParticles[i].pos.x >= midX) quadrant += 1;
+			if (pParticles[i].pos.y >= midY) quadrant += 2;
 
-	//Draw grids
-	/*for (auto& subGrid : subGrids) {
-		if (size < 10) {
-			DrawRectangleLines(this->pos.x, subGrid.pos.y, subGrid.size, subGrid.size, RED);
-		}
-		else {
-			DrawRectangleLines(subGrid.pos.x, subGrid.pos.y, subGrid.size, subGrid.size, WHITE);
-		}
-	}*/
-}
-
-void Quadtree::calculateMasses() {
-
-	for (auto& subGrid : subGrids) {
-		subGrid.calculateMasses();
-	}
-
-	if (myParticles.size() == 1 && subGrids.empty()) {
-		gridMass = myParticles[0].mass;
-		centerOfMass = myParticles[0].pos;
-	}
-	else if (!subGrids.empty()) {
-		gridMass = 0;
-		float totalMass = 0;
-		centerOfMass = { 0,0 };
-		for (auto& subGrid : subGrids) {
-			if (subGrid.gridMass > 0) {
-				gridMass += subGrid.gridMass;
-				centerOfMass.x += subGrid.centerOfMass.x * subGrid.gridMass;
-				centerOfMass.y += subGrid.centerOfMass.y * subGrid.gridMass;
-				totalMass += subGrid.gridMass;
+			if (quadrant == q) {
+				std::swap(pParticles[i], pParticles[current]);
+				std::swap(rParticles[i], rParticles[current]);
+				current++;
 			}
 		}
+		int qEnd = current;
 
-		if (totalMass > 0) {
-			centerOfMass.x /= totalMass;
-			centerOfMass.y /= totalMass;
+		if (qEnd > qStart) {
+			switch (q) {
+			case 0:
+				subGrids.push_back(std::make_unique<Quadtree>(pos.x, pos.y, size / 2, qStart, qEnd, pParticles, rParticles, this));
+				break;
+			case 1:
+				subGrids.push_back(std::make_unique<Quadtree>(pos.x + size / 2, pos.y, size / 2, qStart, qEnd, pParticles, rParticles, this));
+				break;
+			case 2:
+				subGrids.push_back(std::make_unique<Quadtree>(pos.x, pos.y + size / 2, size / 2, qStart, qEnd, pParticles, rParticles, this));
+				break;
+			case 3:
+				subGrids.push_back(std::make_unique<Quadtree>(pos.x + size / 2, pos.y + size / 2, size / 2, qStart, qEnd, pParticles, rParticles, this));
+				break;
+			}
+		}
+	}
+}
+
+void Quadtree::calculateMasses(const std::vector<ParticlePhysics>& pParticles) {
+	for (const auto& child : subGrids) {
+		child->calculateMasses(pParticles);
+	}
+	if (subGrids.empty()) {
+		if ((endIndex - startIndex) == 1) {
+			gridMass = pParticles[startIndex].mass;
+			centerOfMass = pParticles[startIndex].pos;
+		}
+		else {
+			gridMass = 0;
+			centerOfMass = { 0, 0 };
+			for (int i = startIndex; i < endIndex; i++) {
+				gridMass += pParticles[i].mass;
+				centerOfMass.x += pParticles[i].pos.x * pParticles[i].mass;
+				centerOfMass.y += pParticles[i].pos.y * pParticles[i].mass;
+			}
+			if (gridMass > 0) {
+				centerOfMass.x /= gridMass;
+				centerOfMass.y /= gridMass;
+			}
 		}
 	}
 	else {
 		gridMass = 0;
-		centerOfMass = { 0,0 };
-	}
-}
-
-void Quadtree::printGridInfo() {
-	std::cout << "Grid at (" << pos.x << ", " << pos.y << ") with size " << size << ":\n";
-	std::cout << "  Mass: " << gridMass << "\n";
-	std::cout << "  Center of Mass: (" << centerOfMass.x << ", " << centerOfMass.y << ")\n";
-	std::cout << "  Number of planets: " << myParticles.size() << "\n";
-	std::cout << "  Number of subgrids: " << subGrids.size() << "\n";
-}
-
-void Quadtree::drawCenterOfMass() const{
-
-		/*if (gridMass > 0 && (myPlanets.size() > 1 || subGrids.size() > 0)) {
-
-			float circleSize = std::max(4.0f - (depth * 0.5f), 1.0f);
-
-
-			Color depthColor = { 255,20 + (depth * 30),20,255 };
-
-			DrawCircle(centerOfMass.x, centerOfMass.y, circleSize, depthColor);
+		centerOfMass = { 0, 0 };
+		for (const auto& child : subGrids) {
+			gridMass += child->gridMass;
+			centerOfMass.x += child->centerOfMass.x * child->gridMass;
+			centerOfMass.y += child->centerOfMass.y * child->gridMass;
 		}
-
-
-		for (const auto& subGrid : subGrids) {
-			subGrid.drawCenterOfMass();
-		}*/
+		if (gridMass > 0) {
+			centerOfMass.x /= gridMass;
+			centerOfMass.y /= gridMass;
+		}
+	}
 }

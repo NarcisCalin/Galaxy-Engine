@@ -2,10 +2,8 @@
 
 
 
-MouseTrailDot::MouseTrailDot(float x, float y, int z) {
-
-	pos.x = x;
-	pos.y = y;
-	size = z;
-
+MouseTrailDot::MouseTrailDot(Vector2 pos, float size, Color color) {
+	this->pos = pos;
+	this->size = size;
+	this->color = color;
 }

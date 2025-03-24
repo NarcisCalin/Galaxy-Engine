@@ -2,32 +2,25 @@
 #include "raylib.h"
 #include <vector>
 #include <iostream>
-#include <algorithm>
+#include <memory>
 #include "planet.h"
 
 struct Quadtree {
-
-	static constexpr int MAX_DEPTH = 30.0f;
-	static constexpr float MIN_SIZE = 1.0f;
-
 	Vector2 pos;
 	float size;
-	std::vector<Quadtree> subGrids;
-	std::vector<ParticlePhysics> myParticles;
+	int startIndex;
+	int endIndex;
 	float gridMass;
 	Vector2 centerOfMass;
 	Quadtree* parent;
-	int depth;
+	std::vector<std::unique_ptr<Quadtree>> subGrids;
 
 	Quadtree(float posX, float posY, float size,
-		const std::vector<ParticlePhysics>& pParticles,
+		int startIndex, int endIndex,
+		const std::vector<ParticlePhysics>& pParticles, const std::vector<ParticleRendering>& rParticles,
 		Quadtree* parent);
 
-	void subGridMaker();
+	void subGridMaker(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles);
 
-	void calculateMasses();
-
-	void printGridInfo();
-
-	void drawCenterOfMass() const;
+	void calculateMasses(const std::vector<ParticlePhysics>& pParticles);
 };

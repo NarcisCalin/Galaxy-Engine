@@ -136,7 +136,9 @@
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="brush.cpp" />
     <ClCompile Include="button.cpp" />
+    <ClCompile Include="camera.cpp" />
     <ClCompile Include="main.cpp">
       <FileType>CppCode</FileType>
     </ClCompile>
@@ -145,16 +147,20 @@
     <ClCompile Include="planet.cpp" />
     <ClCompile Include="quadtree.cpp" />
     <ClCompile Include="screenCapture.cpp" />
+    <ClCompile Include="slider.cpp" />
     <ClCompile Include="slingshot.cpp" />
     <ClCompile Include="ui.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="brush.h" />
     <ClInclude Include="button.h" />
+    <ClInclude Include="camera.h" />
     <ClInclude Include="morton.h" />
     <ClInclude Include="mouseTrailDot.h" />
     <ClInclude Include="planet.h" />
     <ClInclude Include="quadtree.h" />
     <ClInclude Include="screenCapture.h" />
+    <ClInclude Include="slider.h" />
     <ClInclude Include="ui.h" />
     <ClInclude Include="updateScene.h" />
     <ClInclude Include="slingshot.h" />
