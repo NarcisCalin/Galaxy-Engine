@@ -17,10 +17,9 @@ struct ParticleRendering {
 
 	Color color;
 	float size;
-	bool enableBlur;
 	bool uniqueColor;
 	bool drawPixel;
-
-	ParticleRendering(Color color, float size, bool enableBlur, bool uniqueColor, bool drawPixel);
+	bool isSelected;
+	ParticleRendering(Color color, float size, bool uniqueColor, bool drawPixel);
 
 };

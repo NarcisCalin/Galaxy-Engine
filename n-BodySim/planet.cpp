@@ -7,10 +7,10 @@ ParticlePhysics::ParticlePhysics(Vector2 pos, Vector2 velocity, float mass) {
 	mortonKey = 0;
 }
 
-ParticleRendering::ParticleRendering(Color color, float size, bool enableBlur, bool uniqueColor, bool drawPixel) {
+ParticleRendering::ParticleRendering(Color color, float size, bool uniqueColor, bool drawPixel) {
 	this->color = color;
 	this->size = size;
-	this->enableBlur = enableBlur;
 	this->uniqueColor = uniqueColor;
 	this->drawPixel = drawPixel;
+	isSelected = false;
 }

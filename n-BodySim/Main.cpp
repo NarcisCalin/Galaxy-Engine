@@ -20,25 +20,29 @@
 #include "raymath.h"
 #include "brush.h"
 
-int screenWidth = 1340;
-int screenHeight = 1340;
+int screenWidth = 1024;
+int screenHeight = 1024;
 float screenRatioX;
 float screenRatioY;
 
 int targetFPS = 144;
 
-constexpr double G = 6.674e-11;
+double G = 6.674e-11;
+float gravityMultiplier = 1.0f;
 float softening = 2.0f;
-float theta = 0.5f;
+float theta = 0.7f;
 float timeStepMultiplier = 1.0f;
 const float fixedDeltaTime = 0.03f;
 
+float timeFactor;
+
 bool trailsEnabled = false;
-bool enablePixelDrawing = false;
+bool isPixelDrawingEnabled = false;
 bool isPeriodicBoundaryEnabled = true;
 bool isMultiThreadingEnabled = true;
-bool barnesHutEnabled = true;
+bool isBarnesHutEnabled = true;
 bool isDarkMatterEnabled = false;
+bool isCollisionsEnabled = false;
 
 bool solidColor = false;
 bool densityColor = true;
@@ -82,16 +86,16 @@ bool isDragging = false;
 int planetIndex = 0;
 
 
-static Vector2 calculateForceFromGrid(ParticlePhysics& p,
+static Vector2 calculateForceFromGrid(ParticlePhysics& pParticle,
 	const Quadtree& grid,
-	const std::vector<ParticlePhysics>& sortedParticles) {
+	const std::vector<ParticlePhysics>& pParticles) {
 	Vector2 totalForce = { 0.0f, 0.0f };
 
 	if (grid.gridMass <= 0)
 		return totalForce;
 
-	float dx = grid.centerOfMass.x - p.pos.x;
-	float dy = grid.centerOfMass.y - p.pos.y;
+	float dx = grid.centerOfMass.x - pParticle.pos.x;
+	float dy = grid.centerOfMass.y - pParticle.pos.y;
 
 
 	if (isPeriodicBoundaryEnabled) {
@@ -110,22 +114,20 @@ static Vector2 calculateForceFromGrid(ParticlePhysics& p,
 
 	float distance = sqrt(distanceSq);
 
-	float s_over_d = grid.size / distance;
-
-	if (s_over_d < theta || grid.subGrids.empty()) {
+	if (grid.size / distance < theta || grid.subGrids.empty()) {
 
 		if ((grid.endIndex - grid.startIndex) == 1 &&
-			fabs(sortedParticles[grid.startIndex].pos.x - p.pos.x) < 0.001f &&
-			fabs(sortedParticles[grid.startIndex].pos.y - p.pos.y) < 0.001f) {
+			fabs(pParticles[grid.startIndex].pos.x - pParticle.pos.x) < 0.001f &&
+			fabs(pParticles[grid.startIndex].pos.y - pParticle.pos.y) < 0.001f) {
 			return totalForce;
 		}
-		float force = static_cast<float>(G * p.mass * grid.gridMass / distanceSq);
+		float force = static_cast<float>(G * pParticle.mass * grid.gridMass / distanceSq);
 		totalForce.x = (dx / distance) * force;
 		totalForce.y = (dy / distance) * force;
 	}
 	else {
 		for (const auto& subGridPtr : grid.subGrids) {
-			Vector2 childForce = calculateForceFromGrid(p, *subGridPtr, sortedParticles);
+			Vector2 childForce = calculateForceFromGrid(pParticle, *subGridPtr, pParticles);
 			totalForce.x += childForce.x;
 			totalForce.y += childForce.y;
 		}
@@ -238,11 +240,13 @@ void pairWiseGravity(std::vector<ParticlePhysics>& pParticles) {
 
 Vector2 mouseWorldPos;
 static void updateScene(std::vector<ParticlePhysics>& pParticles,
-	std::vector<ParticleRendering>& rParticles, bool& isMouseNotHoveringUI, SceneCamera myCamera, Brush& brush) {
+	std::vector<ParticleRendering>& rParticles, bool& isMouseNotHoveringUI, SceneCamera& myCamera, Brush& brush) {
+
+	G = 6.674e-11 * gravityMultiplier;
+
+	timeFactor = fixedDeltaTime * timeStepMultiplier;
 
 	Quadtree grid = gridFunction(pParticles, rParticles);
-
-
 
 	mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), myCamera.camera);
 
@@ -254,12 +258,11 @@ static void updateScene(std::vector<ParticlePhysics>& pParticles,
 			pParticles.emplace_back(
 				Vector2{ static_cast<float>(mouseWorldPos.x), static_cast<float>(mouseWorldPos.y) },
 				Vector2{ slingshot.normalizedX * slingshot.length, slingshot.normalizedY * slingshot.length },
-				500000000000000.0f
+				1000000000000000.0f
 			);
 			rParticles.emplace_back(
 				Color{ 255, 255, 255, 255 },
 				0.3f,
-				true,
 				true,
 				true
 			);
@@ -295,7 +298,6 @@ static void updateScene(std::vector<ParticlePhysics>& pParticles,
 				rParticles.emplace_back(
 					Color{ 128, 128, 128, 100 },
 					0.125f,
-					true,
 					false,
 					true
 				);
@@ -332,7 +334,6 @@ static void updateScene(std::vector<ParticlePhysics>& pParticles,
 				rParticles.emplace_back(
 					Color{ 128, 128, 128, 100 },
 					0.125f,
-					true,
 					false,
 					true
 				);
@@ -350,7 +351,6 @@ static void updateScene(std::vector<ParticlePhysics>& pParticles,
 				rParticles.emplace_back(
 					Color{ 128, 128, 128, 100 },
 					0.125f,
-					true,
 					false,
 					true
 				);
@@ -369,7 +369,7 @@ static void updateScene(std::vector<ParticlePhysics>& pParticles,
 
 
 
-	if (barnesHutEnabled) {
+	if (isBarnesHutEnabled) {
 #pragma omp parallel for schedule(dynamic)
 		for (size_t i = 0; i < pParticles.size(); i++) {
 			ParticlePhysics& pParticle = pParticles[i];
@@ -390,17 +390,18 @@ static void updateScene(std::vector<ParticlePhysics>& pParticles,
 			accX = netForce.x / pParticle.mass;
 			accY = netForce.y / pParticle.mass;
 
-			pParticle.velocity.x += (fixedDeltaTime * ((3.0f / 2.0f) * accX - (1.0f / 2.0f) * prevAccX)) * timeStepMultiplier;
-			pParticle.velocity.y += (fixedDeltaTime * ((3.0f / 2.0f) * accY - (1.0f / 2.0f) * prevAccY)) * timeStepMultiplier;
+			pParticle.velocity.x += (timeFactor * ((3.0f / 2.0f) * accX - (1.0f / 2.0f) * prevAccX));
+			pParticle.velocity.y += (timeFactor * ((3.0f / 2.0f) * accY - (1.0f / 2.0f) * prevAccY));
 		}
 	}
 	else {
 		pairWiseGravity(pParticles);
 	}
-
-	for (ParticlePhysics& pParticle : pParticles) {
-		pParticle.pos.x += pParticle.velocity.x * fixedDeltaTime * timeStepMultiplier;
-		pParticle.pos.y += pParticle.velocity.y * fixedDeltaTime * timeStepMultiplier;
+#pragma omp parallel for schedule(dynamic)
+	for (size_t i = 0; i < pParticles.size(); i++) {
+		ParticlePhysics& pParticle = pParticles[i];
+		pParticle.pos.x += pParticle.velocity.x * timeFactor;
+		pParticle.pos.y += pParticle.velocity.y * timeFactor;
 
 		if (isPeriodicBoundaryEnabled) {
 			if (pParticle.pos.x < 0)
@@ -413,11 +414,92 @@ static void updateScene(std::vector<ParticlePhysics>& pParticles,
 			else if (pParticle.pos.y >= screenHeight)
 				pParticle.pos.y -= screenHeight;
 		}
+
+		if (isCollisionsEnabled) {
+			for (size_t j = i + 1; j < pParticles.size(); j++) {
+				ParticlePhysics& pParticleOther = pParticles[j];
+
+				float dx = pParticle.pos.x - pParticleOther.pos.x;
+				float dy = pParticle.pos.y - pParticleOther.pos.y;
+
+				float distanceSq = dx * dx + dy * dy + softening * softening;
+
+				float radiiSum = rParticles[i].size * 16.0f + rParticles[j].size * 16.0f;
+				float radiiSumSq = radiiSum * radiiSum;
+
+				if (distanceSq <= radiiSumSq) {
+					float distance = sqrt(distanceSq);
+					if (distance == 0.0f) {
+						// Avoid division by zero; assign a minimal distance.
+						distance = 10.00f;
+					}
+					float normalX = dx / distance;
+					float normalY = dy / distance;
+
+					float relativeVelX = pParticle.velocity.x - pParticleOther.velocity.x;
+					float relativeVelY = pParticle.velocity.y - pParticleOther.velocity.y;
+
+					float velocityAlongNormal = relativeVelX * normalX + relativeVelY * normalY;
+
+					if (velocityAlongNormal > 0)
+						continue;
+
+					float e = 0.9f;
+
+					float jImpulse = -(1 + e) * velocityAlongNormal;
+					jImpulse /= (1 / pParticle.mass + 1 / pParticleOther.mass);
+
+					float impulseX = jImpulse * normalX;
+					float impulseY = jImpulse * normalY;
+
+					pParticle.velocity.x += impulseX / pParticle.mass;
+					pParticle.velocity.y += impulseY / pParticle.mass;
+					pParticleOther.velocity.x -= impulseX / pParticleOther.mass;
+					pParticleOther.velocity.y -= impulseY / pParticleOther.mass;
+
+					//TODO: Work on particle overlapping and stability
+
+					float penetration = radiiSum - distance;
+					if (penetration > 0) {
+						// Correction factor to reduce jitter (commonly 20%).
+						float percent = 0.2f;
+						// Small tolerance to allow a little overlap (prevents oscillations).
+						float slop = 0.01f;
+						// Only correct if penetration is above a small threshold.
+						float correctionMagnitude = std::max(penetration - slop, 0.0f) /
+							(1 / pParticle.mass + 1 / pParticleOther.mass) * percent;
+						// Compute the correction vector.
+						float correctionX = correctionMagnitude * normalX;
+						float correctionY = correctionMagnitude * normalY;
+						// Adjust the positions to resolve the overlap.
+						pParticle.pos.x += correctionX / pParticle.mass;
+						pParticle.pos.y += correctionY / pParticle.mass;
+						pParticleOther.pos.x -= correctionX / pParticleOther.mass;
+						pParticleOther.pos.y -= correctionY / pParticleOther.mass;
+					}
+				}
+			}
+		}
+
+
 	}
+	if (!isPeriodicBoundaryEnabled) {
+		for (size_t i = 0; i < pParticles.size(); i++) {
+			ParticlePhysics& pParticle = pParticles[i];
+			if (pParticle.pos.x > screenWidth || pParticle.pos.x < 0 || pParticle.pos.y > screenHeight || pParticle.pos.y < 0) {
+				{
+					pParticles.erase(pParticles.begin() + i);
+					rParticles.erase(rParticles.begin() + i);
+				}
+			}
+
+		}
+	}
+
+	myCamera.cameraFollowObject(pParticles, rParticles);
 }
 
 static void particlesColorVisuals(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles) {
-
 
 	if (solidColor) {
 		for (size_t i = 0; i < pParticles.size(); i++) {
@@ -438,13 +520,12 @@ static void particlesColorVisuals(std::vector<ParticlePhysics>& pParticles, std:
 
 #pragma omp parallel for schedule(dynamic)
 		for (size_t i = 0; i < pParticles.size(); i++) {
-			const auto& pi = pParticles[i];
+			const auto& pParticle = pParticles[i];
 			for (size_t j = i + 1; j < pParticles.size(); j++) {
-				if (std::abs(pParticles[j].pos.x - pi.pos.x) > densityRadius) break;
-				float dx = pi.pos.x - pParticles[j].pos.x;
-				float dy = pi.pos.y - pParticles[j].pos.y;
+				if (std::abs(pParticles[j].pos.x - pParticle.pos.x) > densityRadius) break;
+				float dx = pParticle.pos.x - pParticles[j].pos.x;
+				float dy = pParticle.pos.y - pParticles[j].pos.y;
 				if (dx * dx + dy * dy < densityRadiusSq) {
-
 					neighborCounts[i]++;
 					neighborCounts[j]++;
 				}
@@ -489,12 +570,12 @@ static void particlesColorVisuals(std::vector<ParticlePhysics>& pParticles, std:
 		blendMode = 0;
 	}
 	else {
-		for (auto& rParticle : rParticles) {
+		/*for (auto& rParticle : rParticles) {
 			if (!rParticle.uniqueColor) {
 				rParticle.color = { 128,128,128,128 };
 			}
 		}
-		blendMode = 1;
+		blendMode = 1;*/
 	}
 }
 
@@ -529,7 +610,7 @@ static void mouseTrail(std::vector<MouseTrailDot>& dots, std::vector<ParticlePhy
 	}
 }
 
-std::array<Button, 9> settingsButtonsArray = {
+std::array<Button, 10> settingsButtonsArray = {
 
 Button
 	(
@@ -593,6 +674,13 @@ Button
 		{200, 50},
 		"Multi-Threading",
 		true
+	),
+Button
+	(
+		{780, 0},
+		{200, 50},
+		"Collisions (!!!)",
+		true
 	)
 };
 
@@ -604,20 +692,25 @@ Button toggleSettingsButtons
 	false
 );
 
-std::array<std::string, 9> controlsArray = {
-	"Hold LMB: Throw heavy particle",
-	"Hold RMB: Paint particles",
-	"Space + Hold LMB: Create small galaxy",
-	"Press 1: Create big galaxy",
-	"Press 2: Scatter particles",
-	"T: Toggle trails",
-	"P: Toggle pixel drawing",
-	"C: Clear all particles",
-	"U: Toggle UI"
-	"RMB on slider to set it to default"
+std::array<std::string, 14> controlsArray = {
+	"1. Hold LMB: Throw heavy particle",
+	"2. Hold RMB: Paint particles",
+	"3. Space + Hold LMB: Create small galaxy",
+	"4. Press 1: Create big galaxy",
+	"5. Press 2: Scatter particles",
+	"6. T: Toggle trails",
+	"7. P: Toggle pixel drawing",
+	"8. C: Clear all particles",
+	"9. U: Toggle UI"
+	"10. RMB on slider to set it to default",
+	"11. Move with RMB",
+	"12. Zoom with mouse wheel",
+	"13. CTRL + Mouse Wheel: Brush size",
+	"14. IT IS RECOMMENDED TO TURN GRAVITY OFF",
+	"FOR COLLISIONS!"
 };
 
-std::array<Slider, 9> slidersArray = {
+std::array<Slider, 10> slidersArray = {
 	Slider
 (
 	{20, static_cast<float>(screenHeight - 500)}, {250, 10}, {190, 128, 128, 255}, "Red"
@@ -645,12 +738,18 @@ Slider
 Slider
 (
 	{450, 450}, {250, 10}, {128, 128, 128, 255}, "Softening"
-),Slider
+),
+Slider
 (
 	{450, 450}, {250, 10}, {128, 128, 128, 255}, "Theta"
-),Slider
+),
+Slider
 (
 	{450, 450}, {250, 10}, {128, 128, 128, 255}, "Time Scale"
+),
+Slider
+(
+	{450, 450}, {250, 10}, {128, 128, 128, 255}, "Gravity Strength"
 )
 };
 
@@ -667,7 +766,7 @@ static void drawScene(std::vector<ParticlePhysics>& pParticles, std::vector<Part
 		ParticlePhysics& pParticle = pParticles[i];
 		ParticleRendering& rParticle = rParticles[i];
 
-		if (enablePixelDrawing && rParticle.drawPixel) {
+		if (isPixelDrawingEnabled && rParticle.drawPixel) {
 			DrawPixelV({ pParticle.pos.x, pParticle.pos.y }, rParticle.color);
 		}
 		else {
@@ -699,25 +798,26 @@ static void drawScene(std::vector<ParticlePhysics>& pParticles, std::vector<Part
 		{ toggleSettingsButtons.pos.x + 11.0f ,toggleSettingsButtons.pos.y + 5.0f }, WHITE);
 
 	if (showSettings) {
-		for (int i = 1; i < settingsButtonsArray.size(); ++i) {
+		for (size_t i = 1; i < settingsButtonsArray.size(); ++i) {
 			settingsButtonsArray[i].pos.x = settingsButtonsArray[i - 1].pos.x;
 			settingsButtonsArray[i].pos.y = settingsButtonsArray[i - 1].pos.y + settingsButtonsArray[i].size.y + 20;
 
 		}
-		bool buttonPixelDrawingHovering = settingsButtonsArray[0].buttonLogic(enablePixelDrawing);
+		bool buttonPixelDrawingHovering = settingsButtonsArray[0].buttonLogic(isPixelDrawingEnabled);
 		bool buttonTrailsHovering = settingsButtonsArray[1].buttonLogic(trailsEnabled);
 		bool buttonSolidColorHovering = settingsButtonsArray[2].buttonLogic(solidColor);
 		bool buttonDensityColorHovering = settingsButtonsArray[3].buttonLogic(densityColor);
 		bool buttonVelocityColorHovering = settingsButtonsArray[4].buttonLogic(velocityColor);
 		bool buttonDarkMatterHovering = settingsButtonsArray[5].buttonLogic(isDarkMatterEnabled);
 		bool buttonPeriodicBoundaryHovering = settingsButtonsArray[6].buttonLogic(isPeriodicBoundaryEnabled);
-		bool buttonBarnesHutHovering = settingsButtonsArray[7].buttonLogic(barnesHutEnabled);
+		bool buttonBarnesHutHovering = settingsButtonsArray[7].buttonLogic(isBarnesHutEnabled);
 		bool buttonMultiThreadingHovering = settingsButtonsArray[8].buttonLogic(isMultiThreadingEnabled);
-		for (int i = 0; i < controlsArray.size(); i++) {
+		bool buttonCollisionsHovering = settingsButtonsArray[9].buttonLogic(isCollisionsEnabled);
+		for (size_t i = 0; i < controlsArray.size(); i++) {
 			DrawText(TextFormat("%s", controlsArray[i].c_str()), 25, 100 + 20 * i, 15, WHITE);
 		}
 
-		for (int i = 1; i < slidersArray.size(); ++i) {
+		for (size_t i = 1; i < slidersArray.size(); ++i) {
 			slidersArray[i].sliderPos.x = slidersArray[i - 1].sliderPos.x;
 			slidersArray[i].sliderPos.y = slidersArray[i - 1].sliderPos.y + slidersArray[i].sliderSize.y + 40;
 		}
@@ -731,6 +831,10 @@ static void drawScene(std::vector<ParticlePhysics>& pParticles, std::vector<Part
 		bool sliderSofteningHovering = slidersArray[6].sliderLogic(0.1f, softening, 30.0f);
 		bool sliderThetaHovering = slidersArray[7].sliderLogic(0.1f, theta, 5.0f);
 		bool sliderTimeScaleHovering = slidersArray[8].sliderLogic(0.0f, timeStepMultiplier, 5.0f);
+		bool sliderGravityStrengthHovering = slidersArray[9].sliderLogic(0.0f, gravityMultiplier, 3.0f);
+
+
+
 
 
 		if (buttonPixelDrawingHovering ||
@@ -751,7 +855,9 @@ static void drawScene(std::vector<ParticlePhysics>& pParticles, std::vector<Part
 			sliderMaxNeighborsHovering ||
 			sliderSofteningHovering ||
 			sliderThetaHovering ||
-			sliderTimeScaleHovering
+			sliderTimeScaleHovering ||
+			buttonCollisionsHovering ||
+			sliderGravityStrengthHovering
 			) {
 			isMouseNotHoveringUI = false;
 			isDragging = false;
@@ -772,9 +878,6 @@ static void drawScene(std::vector<ParticlePhysics>& pParticles, std::vector<Part
 			densityColor = false;
 			solidColor = false;
 		}
-
-
-
 	}
 	else {
 
@@ -786,7 +889,7 @@ static void drawScene(std::vector<ParticlePhysics>& pParticles, std::vector<Part
 		}
 	}
 	if (IsKeyPressed(KEY_P)) {
-		enablePixelDrawing = !enablePixelDrawing;
+		isPixelDrawingEnabled = !isPixelDrawingEnabled;
 	}
 
 
