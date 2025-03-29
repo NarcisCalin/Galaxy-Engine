@@ -16,6 +16,6 @@ public:
 private:
 	bool isOnTop = false;
 	Color color = { 128,128,128,255 };
-	int textSize = 20;
+	int textSize = 15;
 	int textSeparation = 4;
 };

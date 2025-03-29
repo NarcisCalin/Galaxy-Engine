@@ -1,6 +1,7 @@
 #include "camera.h"
 #include <iostream>
 #include <algorithm>
+#include <limits>
 
 SceneCamera::SceneCamera() {
 	camera.offset = { 0.0f };
@@ -56,19 +57,20 @@ Camera2D SceneCamera::cameraLogic() {
 	return camera;
 }
 
-void SceneCamera::cameraFollowObject(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles) {
+void SceneCamera::cameraFollowObject(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, bool& isMouseNotHoveringUI,
+	bool& isSelectedTrailsEnabled, ParticleTrails& trails) {
 
 	mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), camera);
 
 	static bool isDragging = false;
 	static Vector2 dragStartPos = { 0 };
 
-	if (IsMouseButtonPressed(1)) {
+	if ((IsMouseButtonPressed(1) && isMouseNotHoveringUI) || (IsMouseButtonPressed(1) && IsKeyDown(KEY_LEFT_CONTROL) && isMouseNotHoveringUI)) {
 		dragStartPos = GetMousePosition();
 		isDragging = false;
 	}
 
-	if (IsMouseButtonDown(1)) {
+	if ((IsMouseButtonDown(1) && isMouseNotHoveringUI) || (IsMouseButtonDown(1) && IsKeyDown(KEY_LEFT_CONTROL) && isMouseNotHoveringUI)) {
 		Vector2 currentPos = GetMousePosition();
 		float dragThreshold = 5.0f;
 		float dx = currentPos.x - dragStartPos.x;
@@ -79,8 +81,8 @@ void SceneCamera::cameraFollowObject(std::vector<ParticlePhysics>& pParticles, s
 		}
 	}
 
-	if (IsMouseButtonReleased(1) && !isDragging) {
-		float cameraFollowThreshold = 10.0f;
+	if (IsMouseButtonReleased(1) && !IsKeyDown(KEY_LEFT_CONTROL) && !isDragging && isMouseNotHoveringUI) {
+		float distanceThreshold = 10.0f;
 		std::vector<int> neighborCountsSelect(pParticles.size(), 0);
 		for (size_t i = 0; i < pParticles.size(); i++) {
 			const auto& pParticle = pParticles[i];
@@ -88,7 +90,7 @@ void SceneCamera::cameraFollowObject(std::vector<ParticlePhysics>& pParticles, s
 				if (std::abs(pParticles[j].pos.x - pParticle.pos.x) > 2.4f) break;
 				float dx = pParticle.pos.x - pParticles[j].pos.x;
 				float dy = pParticle.pos.y - pParticles[j].pos.y;
-				if (dx * dx + dy * dy < cameraFollowThreshold * cameraFollowThreshold) {
+				if (dx * dx + dy * dy < distanceThreshold * distanceThreshold) {
 					neighborCountsSelect[i]++;
 					neighborCountsSelect[j]++;
 				}
@@ -97,18 +99,46 @@ void SceneCamera::cameraFollowObject(std::vector<ParticlePhysics>& pParticles, s
 
 		isFollowing = true;
 		panFollowingOffset = { 0 };
+
 		for (size_t i = 0; i < pParticles.size(); i++) {
-			//previousColor = rParticles[i].color;
 			rParticles[i].isSelected = false;
 			float dx = pParticles[i].pos.x - mouseWorldPos.x;
 			float dy = pParticles[i].pos.y - mouseWorldPos.y;
 			float distanceSq = dx * dx + dy * dy;
-			if (distanceSq < 100.0f) {
-				if (neighborCountsSelect[i] > 3) {
-					rParticles[i].isSelected = true;
-				}
+			if (distanceSq < selectionThresholdSq && neighborCountsSelect[i] > 3) {
+				rParticles[i].isSelected = true;
 			}
+		}
 
+		if (isSelectedTrailsEnabled) {
+			trails.trailsParameters.clear();
+		}
+	}
+
+	if (IsMouseButtonReleased(1) && IsKeyDown(KEY_LEFT_CONTROL) && !isDragging && isMouseNotHoveringUI) {
+
+		size_t closestIndex = 0;
+		float minDistanceSq = std::numeric_limits<float>::max();
+
+		for (size_t i = 0; i < pParticles.size(); i++) {
+			rParticles[i].isSelected = false;
+			float dx = pParticles[i].pos.x - mouseWorldPos.x;
+			float dy = pParticles[i].pos.y - mouseWorldPos.y;
+			float currentDistanceSq = dx * dx + dy * dy;
+			if (currentDistanceSq < minDistanceSq) {
+				minDistanceSq = currentDistanceSq;
+				closestIndex = i;
+			}
+		}
+
+		if (minDistanceSq < selectionThresholdSq && !pParticles.empty()) {
+			rParticles[closestIndex].isSelected = true;
+		}
+
+		isFollowing = true;
+		panFollowingOffset = { 0 };
+		if (isSelectedTrailsEnabled) {
+			trails.trailsParameters.clear();
 		}
 	}
 
@@ -124,7 +154,6 @@ void SceneCamera::cameraFollowObject(std::vector<ParticlePhysics>& pParticles, s
 				sumX += pParticles[i].pos.x;
 				sumY += pParticles[i].pos.y;
 				count++;
-				//rParticles[i].color = { 30, 128, 233, 255 };
 			}
 		}
 
@@ -142,10 +171,6 @@ void SceneCamera::cameraFollowObject(std::vector<ParticlePhysics>& pParticles, s
 			camera.target = { 0.0f };
 			camera.offset = { 0.0f };
 			panFollowingOffset = { 0 };
-			for (auto& rParticle : rParticles) {
-				rParticle.isSelected = false;
-				//rParticle.color = previousColor;
-			}
 		}
 	}
 

@@ -21,16 +21,13 @@
     <ClCompile Include="quadtree.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="mouseTrailDot.cpp">
+    <ClCompile Include="particleTrails.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ui.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="button.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="screenCapture.cpp">
@@ -51,6 +48,12 @@
     <ClCompile Include="brush.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="particleSelection.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="slingshot.h">
@@ -65,7 +68,7 @@
     <ClInclude Include="planet.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="mouseTrailDot.h">
+    <ClInclude Include="particleTrails.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ui.h">
@@ -87,6 +90,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="brush.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="particleSelection.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

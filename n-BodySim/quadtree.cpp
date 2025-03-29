@@ -68,39 +68,47 @@ void Quadtree::subGridMaker(std::vector<ParticlePhysics>& pParticles, std::vecto
 }
 
 void Quadtree::calculateMasses(const std::vector<ParticlePhysics>& pParticles) {
-	for (const auto& child : subGrids) {
-		child->calculateMasses(pParticles);
-	}
-	if (subGrids.empty()) {
-		if ((endIndex - startIndex) == 1) {
-			gridMass = pParticles[startIndex].mass;
-			centerOfMass = pParticles[startIndex].pos;
+	if (!subGrids.empty()) {
+		float totalMass = 0.0f;
+		Vector2 com = { 0.0f, 0.0f };
+		for (auto& child : subGrids) {
+			child->calculateMasses(pParticles);
+			totalMass += child->gridMass;
+			com.x += child->centerOfMass.x * child->gridMass;
+			com.y += child->centerOfMass.y * child->gridMass;
+		}
+		gridMass = totalMass;
+		if (totalMass > 0) {
+			centerOfMass.x = com.x / totalMass;
+			centerOfMass.y = com.y / totalMass;
 		}
 		else {
-			gridMass = 0;
 			centerOfMass = { 0, 0 };
-			for (int i = startIndex; i < endIndex; i++) {
-				gridMass += pParticles[i].mass;
-				centerOfMass.x += pParticles[i].pos.x * pParticles[i].mass;
-				centerOfMass.y += pParticles[i].pos.y * pParticles[i].mass;
-			}
-			if (gridMass > 0) {
-				centerOfMass.x /= gridMass;
-				centerOfMass.y /= gridMass;
-			}
 		}
+		return;
+	}
+
+	int count = endIndex - startIndex;
+	if (count == 1) {
+		gridMass = pParticles[startIndex].mass;
+		centerOfMass = pParticles[startIndex].pos;
+		return;
+	}
+
+	float massSum = 0.0f;
+	Vector2 com = { 0.0f, 0.0f };
+	for (int i = startIndex; i < endIndex; i++) {
+		float m = pParticles[i].mass;
+		massSum += m;
+		com.x += pParticles[i].pos.x * m;
+		com.y += pParticles[i].pos.y * m;
+	}
+	gridMass = massSum;
+	if (massSum > 0) {
+		centerOfMass.x = com.x / massSum;
+		centerOfMass.y = com.y / massSum;
 	}
 	else {
-		gridMass = 0;
 		centerOfMass = { 0, 0 };
-		for (const auto& child : subGrids) {
-			gridMass += child->gridMass;
-			centerOfMass.x += child->centerOfMass.x * child->gridMass;
-			centerOfMass.y += child->centerOfMass.y * child->gridMass;
-		}
-		if (gridMass > 0) {
-			centerOfMass.x /= gridMass;
-			centerOfMass.y /= gridMass;
-		}
 	}
 }

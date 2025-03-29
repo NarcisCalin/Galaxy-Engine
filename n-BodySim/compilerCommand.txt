@@ -1,14 +1,17 @@
 ////////USE THIS ONE!!!!//////// CLANG
-clang++ main.cpp slider.cpp morton.cpp brush.cpp camera.cpp quadtree.cpp slingshot.cpp button.cpp planet.cpp mouseTrailDot.cpp ui.cpp screenCapture.cpp -o nbodySim.exe -std=c++17 -pthread -I"C:\raylib\src" -L"C:\raylib\build\raylib\Release" -lraylib -lopengl32 -lgdi32 -lwinmm -luser32 -lshell32 -lkernel32 -static -O3 -march=native -flto -fuse-ld=lld -fopenmp -static
+clang++ main.cpp slider.cpp morton.cpp brush.cpp camera.cpp quadtree.cpp particleSelection.cpp slingshot.cpp button.cpp planet.cpp particleTrails.cpp ui.cpp screenCapture.cpp -o nbodySim.exe -std=c++17 -pthread -I"C:\raylib\src" -L"C:\raylib\build\raylib\Release" -lraylib -lopengl32 -lgdi32 -lwinmm -luser32 -lshell32 -lkernel32 -static -O3 -march=native -flto -fuse-ld=lld -fopenmp -static
 
 
 //////////////// G++
-g++ main.cpp slider.cpp morton.cpp brush.cpp camera.cpp quadtree.cpp slingshot.cpp button.cpp planet.cpp mouseTrailDot.cpp ui.cpp screenCapture.cpp -o nbodySim.exe -std=c++17 -pthread -I"C:\RaylibMingw\include" -L"C:\RaylibMingw\lib" -lraylib -lopengl32 -lgdi32 -lwinmm -luser32 -lshell32 -lkernel32 -static -O3 -march=native -flto -fopenmp
+g++ main.cpp slider.cpp morton.cpp brush.cpp particleSelection.cpp camera.cpp quadtree.cpp slingshot.cpp button.cpp planet.cpp particleTrails.cpp ui.cpp screenCapture.cpp -o nbodySim.exe -std=c++17 -pthread -I"C:\RaylibMingw\include" -L"C:\RaylibMingw\lib" -lraylib -lopengl32 -lgdi32 -lwinmm -luser32 -lshell32 -lkernel32 -static -O3 -march=native -flto -fopenmp
 
 
 
 
 /// ADD THIS FOR A LITTLE EXTRA ACCURACY (LOOK ON GOOGLE WHAT THEY REALLY DO): -ffp-model=precise -fno-fast-math
+
+clang++ main.cpp -o FMM.exe -std=c++17 -pthread -I"C:\raylib\src" -L"C:\raylib\build\raylib\Release" -lraylib -lopengl32 -lgdi32 -lwinmm -luser32 -lshell32 -lkernel32 -static -O3 -march=native -flto -fuse-ld=lld -fopenmp -static
+
  
 
 #pragma omp parallel for schedule(dynamic)

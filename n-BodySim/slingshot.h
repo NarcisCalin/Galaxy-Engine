@@ -9,6 +9,6 @@ public:
 	Slingshot(float normalizedX, float normalizedY, float length);
 
 	
-	static Slingshot planetSlingshot(bool &isDragging, bool &isMouse0Pressed, bool &isMouse2SpacePressed, SceneCamera myCamera);
+	static Slingshot planetSlingshot(bool &isDragging, SceneCamera myCamera);
 };
 

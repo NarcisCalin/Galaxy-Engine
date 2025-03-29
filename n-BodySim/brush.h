@@ -14,6 +14,8 @@ public:
 
 	void brushSize(Vector2 mouseWorldPos);
 
+	void drawBrush(Vector2 mouseWorldPos);
+
 private:
 	float brushRadius;
 	SceneCamera myCamera;

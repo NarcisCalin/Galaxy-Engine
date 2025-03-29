@@ -143,7 +143,8 @@
       <FileType>CppCode</FileType>
     </ClCompile>
     <ClCompile Include="morton.cpp" />
-    <ClCompile Include="mouseTrailDot.cpp" />
+    <ClCompile Include="particleSelection.cpp" />
+    <ClCompile Include="particleTrails.cpp" />
     <ClCompile Include="planet.cpp" />
     <ClCompile Include="quadtree.cpp" />
     <ClCompile Include="screenCapture.cpp" />
@@ -156,7 +157,8 @@
     <ClInclude Include="button.h" />
     <ClInclude Include="camera.h" />
     <ClInclude Include="morton.h" />
-    <ClInclude Include="mouseTrailDot.h" />
+    <ClInclude Include="particleSelection.h" />
+    <ClInclude Include="particleTrails.h" />
     <ClInclude Include="planet.h" />
     <ClInclude Include="quadtree.h" />
     <ClInclude Include="screenCapture.h" />

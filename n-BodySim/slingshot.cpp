@@ -12,25 +12,12 @@ Slingshot::Slingshot(float normalizedX, float normalizedY, float length) {
 
 
 
-Slingshot Slingshot::planetSlingshot(bool &isDragging, bool &isMouse0Pressed, bool & isMouse2ControlPressed, SceneCamera myCamera) {
+Slingshot Slingshot::planetSlingshot(bool &isDragging, SceneCamera myCamera) {
 
-	if (IsMouseButtonPressed(0) && !IsKeyDown(KEY_LEFT_CONTROL)) {
-		isMouse0Pressed = true;
-	}
-	else {
-		isMouse0Pressed = false;
-	}
-
-	if (IsMouseButtonPressed(0) && IsKeyDown(KEY_LEFT_CONTROL)) {
-		isMouse2ControlPressed = true;
-	}
-	else {
-		isMouse2ControlPressed = false;
-	}
 
 	Vector2 mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), myCamera.camera);
 
-	if (isMouse0Pressed || isMouse2ControlPressed) {
+	if (IsMouseButtonPressed(0) && !IsKeyDown(KEY_LEFT_CONTROL) && !IsKeyDown(KEY_LEFT_ALT) || IsKeyPressed(KEY_THREE)) {
 		isDragging = true;
 		slingshotPos = mouseWorldPos;
 	}
