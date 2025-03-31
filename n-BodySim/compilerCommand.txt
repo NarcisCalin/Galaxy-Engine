@@ -3,7 +3,7 @@ clang++ main.cpp slider.cpp morton.cpp brush.cpp camera.cpp quadtree.cpp particl
 
 
 //////////////// G++
-g++ main.cpp slider.cpp morton.cpp brush.cpp particleSelection.cpp camera.cpp quadtree.cpp slingshot.cpp button.cpp planet.cpp particleTrails.cpp ui.cpp screenCapture.cpp -o nbodySim.exe -std=c++17 -pthread -I"C:\RaylibMingw\include" -L"C:\RaylibMingw\lib" -lraylib -lopengl32 -lgdi32 -lwinmm -luser32 -lshell32 -lkernel32 -static -O3 -march=native -flto -fopenmp
+g++ main.cpp slider.cpp morton.cpp brush.cpp camera.cpp quadtree.cpp slingshot.cpp button.cpp planet.cpp particleTrails.cpp ui.cpp screenCapture.cpp -o nbodySim.exe -std=c++17 -pthread -I"C:\RaylibMingw\include" -L"C:\RaylibMingw\lib" -lraylib -lopengl32 -lgdi32 -lwinmm -luser32 -lshell32 -lkernel32 -static -O3 -march=native -flto -fopenmp
 
 
 
@@ -15,3 +15,70 @@ clang++ main.cpp -o FMM.exe -std=c++17 -pthread -I"C:\raylib\src" -L"C:\raylib\b
  
 
 #pragma omp parallel for schedule(dynamic)
+
+
+int quad0Start = startIndex;
+int quad0End = quad0Start;
+while (quad0End < endIndex && inQuadrant0(pParticles[quad0End])) {
+	quad0End++;
+}
+
+int quad1Start = quad0End;
+int quad1End = quad1Start;
+while (quad1End < endIndex && inQuadrant1(pParticles[quad1End])) {
+	quad1End++;
+}
+
+int quad2Start = quad1End;
+int quad2End = quad2Start;
+while (quad2End < endIndex && inQuadrant2(pParticles[quad2End])) {
+	quad2End++;
+}
+
+int quad3Start = quad2End;
+int quad3End = endIndex;
+
+
+
+
+
+
+
+
+
+
+CHECKPOINT JUST IN CASE
+
+void NewQuadtree::subdivide(size_t nodeIdx, std::vector<ParticlePhysics>& pParticles) {
+	Node& node = nodes[nodeIdx];
+	Vector2 center = node.quad.center;
+
+	auto start = pParticles.begin() + node.pParticles.start;
+	auto end = pParticles.begin() + node.pParticles.end;
+
+	auto midY = std::partition(start, end, [&center](const ParticlePhysics& pParticle) {
+		return pParticle.pos.y < center.y;
+		});
+	size_t split2 = midY - pParticles.begin();
+
+	auto midLowerX = std::partition(start, midY, [&center](const ParticlePhysics& pParticle) {
+		return pParticle.pos.x < center.x;
+		});
+	size_t split1 = midLowerX - pParticles.begin();
+
+	auto midUpperX = std::partition(midY, end, [&center](const ParticlePhysics& pParticle) {
+		return pParticle.pos.x < center.x;
+		});
+	size_t split3 = midUpperX - pParticles.begin();
+
+	parents.push_back(nodeIdx);
+	node.children = nodes.size();
+
+	std::array<Quad, 4> quads = node.quad.subdivide();
+	size_t nexts[4] = { node.children + 1, node.children + 2, node.children + 3, node.nextNode };
+
+	nodes.emplace_back(nexts[0], quads[0], Range{ node.pParticles.start, split1 });
+	nodes.emplace_back(nexts[1], quads[1], Range{ split1, split2 });
+	nodes.emplace_back(nexts[2], quads[2], Range{ split2, split3 });
+	nodes.emplace_back(nexts[3], quads[3], Range{ split3, node.pParticles.end });
+}

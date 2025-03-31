@@ -4,11 +4,11 @@
 #include "planet.h"
 
 struct Morton {
-	uint64_t scaleToGrid(float pos, float maxVal = 1023);
+	uint32_t scaleToGrid(float pos, float maxVal = 1023);
 
-	uint64_t spreadBits(uint64_t x);
+	uint32_t spreadBits(uint32_t x);
 
-	uint64_t morton2D(uint64_t x, uint64_t y);
+	uint32_t morton2D(uint32_t x, uint32_t y);
 
 	void computeMortonKeys(std::vector<ParticlePhysics>& pParticles, float screenSizeX, float screenSizeY);
 

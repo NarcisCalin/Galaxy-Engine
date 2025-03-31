@@ -23,7 +23,7 @@ Quadtree::Quadtree(float posX, float posY, float size,
 	this->centerOfMass = { 0,0 };
 	this->parent = parent;
 
-	if ((endIndex - startIndex) >= 1 && size > 1.0f) {
+	if ((endIndex - startIndex) > 1 && size > 1.0f) {
 		subGridMaker(const_cast<std::vector<ParticlePhysics>&>(pParticles), const_cast<std::vector<ParticleRendering>&>(rParticles));
 	}
 }
@@ -47,7 +47,7 @@ void Quadtree::subGridMaker(std::vector<ParticlePhysics>& pParticles, std::vecto
 			}
 		}
 		int qEnd = current;
-
+		
 		if (qEnd > qStart) {
 			switch (q) {
 			case 0:
@@ -111,4 +111,32 @@ void Quadtree::calculateMasses(const std::vector<ParticlePhysics>& pParticles) {
 	else {
 		centerOfMass = { 0, 0 };
 	}
+}
+
+Quadtree* Quadtree::boundingBox(const std::vector<ParticlePhysics>& pParticles,
+	const std::vector<ParticleRendering>& rParticles) {
+
+	float min_x = std::numeric_limits<float>::max();
+	float min_y = std::numeric_limits<float>::max();
+	float max_x = std::numeric_limits<float>::lowest();
+	float max_y = std::numeric_limits<float>::lowest();
+
+	for (const auto& particle : pParticles) {
+		min_x = std::min(min_x, particle.pos.x);
+		min_y = std::min(min_y, particle.pos.y);
+		max_x = std::max(max_x, particle.pos.x);
+		max_y = std::max(max_y, particle.pos.y);
+	}
+
+	float size = std::max(max_x - min_x, max_y - min_y);
+
+	float centerX = (min_x + max_x) * 0.5f;
+	float centerY = (min_y + max_y) * 0.5f;
+
+	float posX = centerX - size / 2.0f;
+	float posY = centerY - size / 2.0f;
+
+	//DrawRectangleLines(posX, posY, size, size, WHITE);
+	return new Quadtree(posX, posY, size, 0, static_cast<int>(pParticles.size()),
+		pParticles, rParticles, nullptr);
 }

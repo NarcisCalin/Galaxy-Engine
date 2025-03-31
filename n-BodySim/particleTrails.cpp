@@ -30,14 +30,15 @@ void ParticleTrails::trailLogic(std::vector<ParticlePhysics>& pParticles, std::v
 		}
 	}
 	else if (isSelectedTrailsEnabled) {
-
+		size_t selectedCount = 0;
 		for (size_t i = 0; i < pParticles.size(); i++) {
 			if (rParticles[i].isSelected) {
 			trailsParameters.push_back({ { pParticles[i].pos.x, pParticles[i].pos.y }, rParticles[i].color });
+			selectedCount++;
 			}
 		}
 
-		size_t MAX_DOTS = 1 * pParticles.size();
+		size_t MAX_DOTS = maxLength * selectedCount;
 		if (trailsParameters.size() > MAX_DOTS) {
 			size_t excess = trailsParameters.size() - MAX_DOTS;
 			trailsParameters.erase(trailsParameters.begin(), trailsParameters.begin() + excess);

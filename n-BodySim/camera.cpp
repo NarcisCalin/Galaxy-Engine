@@ -115,7 +115,7 @@ void SceneCamera::cameraFollowObject(std::vector<ParticlePhysics>& pParticles, s
 		}
 	}
 
-	if (IsMouseButtonReleased(1) && IsKeyDown(KEY_LEFT_CONTROL) && !isDragging && isMouseNotHoveringUI) {
+	if (IsMouseButtonReleased(1) && IsKeyDown(KEY_LEFT_ALT) && !isDragging && isMouseNotHoveringUI) {
 
 		size_t closestIndex = 0;
 		float minDistanceSq = std::numeric_limits<float>::max();

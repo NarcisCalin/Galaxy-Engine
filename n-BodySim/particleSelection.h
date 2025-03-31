@@ -16,6 +16,8 @@ public:
 	void particleSelection(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, SceneCamera& myCamera,
 		bool& isMouseNotHoveringUI, ParticleTrails& trails);
 
+	void manyClustersSelection(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, ParticleTrails& trails);
+
 private:
 	float selectionThresholdSq = 100.0f;
 };

@@ -95,5 +95,8 @@
     <ClInclude Include="particleSelection.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="range.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

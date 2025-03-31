@@ -52,6 +52,12 @@ void ParticleSelection::clusterSelection(std::vector<ParticlePhysics>& pParticle
 				rParticles[i].isSelected = true;
 				rParticles[i].color = { 255,128,128,255 };
 			}
+			else {
+				if (!IsKeyDown(KEY_LEFT_SHIFT)) {
+					rParticles[i].isSelected = false;
+					trails.trailsParameters.clear();
+				}
+			}
 		}
 	}
 }
@@ -98,6 +104,38 @@ void ParticleSelection::particleSelection(std::vector<ParticlePhysics>& pParticl
 		if (minDistanceSq < selectionThresholdSq && !pParticles.empty()) {
 			rParticles[closestIndex].isSelected = true;
 			rParticles[closestIndex].color = { 255,128,128,255 };
+		}
+		else {
+			if (!IsKeyDown(KEY_LEFT_SHIFT)) {
+				rParticles[closestIndex].isSelected = false;
+				trails.trailsParameters.clear();
+			}
+		}
+	}
+}
+
+void ParticleSelection::manyClustersSelection(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, ParticleTrails& trails) {
+	if (IsKeyPressed(KEY_D)) {
+		trails.trailsParameters.clear();
+		float distanceThreshold = 10.0f;
+		std::vector<int> neighborCountsSelect(pParticles.size(), 0);
+		for (size_t i = 0; i < pParticles.size(); i++) {
+			rParticles[i].isSelected = false;
+			const auto& pParticle = pParticles[i];
+			for (size_t j = i + 1; j < pParticles.size(); j++) {
+				if (std::abs(pParticles[j].pos.x - pParticle.pos.x) > 2.4f) break;
+				float dx = pParticle.pos.x - pParticles[j].pos.x;
+				float dy = pParticle.pos.y - pParticles[j].pos.y;
+				if (dx * dx + dy * dy < distanceThreshold * distanceThreshold) {
+					neighborCountsSelect[i]++;
+					neighborCountsSelect[j]++;
+				}
+			}
+
+			if (neighborCountsSelect[i] > 3) {
+				rParticles[i].isSelected = true;
+				rParticles[i].color = { 255,128,128,255 };
+			}
 		}
 	}
 }

@@ -6,6 +6,7 @@
 #include <omp.h>
 #include <thread>
 #include <algorithm>
+#include <bitset>
 
 #include "slingshot.h"
 #include "quadtree.h"
@@ -23,6 +24,9 @@
 
 int screenWidth = 1024;
 int screenHeight = 1024;
+float halfScreenWidth = screenWidth * 0.5f;
+float halfScreenHeight = screenHeight * 0.5f;
+
 float screenRatioX;
 float screenRatioY;
 
@@ -68,20 +72,10 @@ int trailMaxLength = 14;
 
 bool isRecording = false;
 
-static Quadtree gridFunction(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles) {
-	Quadtree grid(
-		0.0f,
-		0.0f,
-		static_cast<float>(screenWidth),
-		0,
-		static_cast<int>(pParticles.size()),
-		pParticles,
-		rParticles,
-		nullptr
-	);
-
-	grid.calculateMasses(pParticles);
-
+static Quadtree* gridFunction(std::vector<ParticlePhysics>& pParticles,
+	std::vector<ParticleRendering>& rParticles) {
+	Quadtree* grid = Quadtree::boundingBox(pParticles, rParticles);
+	grid->calculateMasses(pParticles);
 	return grid;
 }
 
@@ -101,33 +95,24 @@ static Vector2 calculateForceFromGrid(ParticlePhysics& pParticle,
 	float dx = grid.centerOfMass.x - pParticle.pos.x;
 	float dy = grid.centerOfMass.y - pParticle.pos.y;
 
-
 	if (isPeriodicBoundaryEnabled) {
-		if (dx > screenWidth * 0.5f)
-			dx -= screenWidth;
-		else if (dx < -screenWidth * 0.5f)
-			dx += screenWidth;
-
-		if (dy > screenHeight * 0.5f)
-			dy -= screenHeight;
-		else if (dy < -screenHeight * 0.5f)
-			dy += screenHeight;
+		dx -= screenWidth * ((dx > halfScreenWidth) - (dx < -halfScreenWidth));
+		dy -= screenHeight * ((dy > halfScreenHeight) - (dy < -halfScreenHeight));
 	}
 
 	float distanceSq = dx * dx + dy * dy + softening * softening;
 
-	float distance = sqrt(distanceSq);
-
-	if (grid.size / distance < theta || grid.subGrids.empty()) {
-
+	if ((grid.size * grid.size < theta * theta * distanceSq) || grid.subGrids.empty()) {
 		if ((grid.endIndex - grid.startIndex) == 1 &&
 			fabs(pParticles[grid.startIndex].pos.x - pParticle.pos.x) < 0.001f &&
 			fabs(pParticles[grid.startIndex].pos.y - pParticle.pos.y) < 0.001f) {
 			return totalForce;
 		}
-		float force = static_cast<float>(G * pParticle.mass * grid.gridMass / distanceSq);
-		totalForce.x = (dx / distance) * force;
-		totalForce.y = (dy / distance) * force;
+
+		float invDistance = 1.0f / sqrt(distanceSq);
+		float forceMagnitude = G * pParticle.mass * grid.gridMass * invDistance * invDistance * invDistance;
+		totalForce.x = dx * forceMagnitude;
+		totalForce.y = dy * forceMagnitude;
 	}
 	else {
 		for (const auto& subGridPtr : grid.subGrids) {
@@ -319,13 +304,21 @@ static void collisions(std::vector<ParticlePhysics>& particles,
 Vector2 mouseWorldPos;
 static void updateScene(std::vector<ParticlePhysics>& pParticles,
 	std::vector<ParticleRendering>& rParticles, bool& isMouseNotHoveringUI, SceneCamera& myCamera, Brush& brush, ParticleTrails& trails,
-	ParticleSelection& particleSelection) {
+	ParticleSelection& particleSelection, Morton morton) {
 
 	G = 6.674e-11 * gravityMultiplier;
 
 	timeFactor = fixedDeltaTime * timeStepMultiplier;
 
-	Quadtree grid = gridFunction(pParticles, rParticles);
+	morton.computeMortonKeys(pParticles, static_cast<float>(screenWidth), static_cast<float>(screenHeight));
+	morton.sortParticlesByMortonKey(pParticles, rParticles);
+
+
+	Quadtree* grid = nullptr;
+	if (timeFactor > 0) {
+		grid = gridFunction(pParticles, rParticles);
+	}
+
 
 	mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), myCamera.camera);
 
@@ -352,7 +345,7 @@ static void updateScene(std::vector<ParticlePhysics>& pParticles,
 		}
 
 		if (IsKeyPressed(KEY_ONE) && !isDragging) {
-			for (int i = 0; i < 2000000; i++) {
+			for (int i = 0; i < 40000; i++) {
 				float galaxyCenterX = static_cast<float>(screenWidth / 2);
 				float galaxyCenterY = static_cast<float>(screenHeight / 2);
 
@@ -372,7 +365,7 @@ static void updateScene(std::vector<ParticlePhysics>& pParticles,
 				pParticles.emplace_back(
 					Vector2{ posX, posY },
 					Vector2{ velocityX, velocityY },
-					1000000000.0f
+					50000000000.0f
 				);
 				rParticles.emplace_back(
 					Color{ 128, 128, 128, 100 },
@@ -405,8 +398,8 @@ static void updateScene(std::vector<ParticlePhysics>& pParticles,
 				pParticles.emplace_back(
 					Vector2{ posX, posY },
 					Vector2{
-						velocityX + (slingshot.normalizedX * slingshot.length),
-						velocityY + (slingshot.normalizedY * slingshot.length)
+						velocityX + (slingshot.normalizedX * slingshot.length * 0.3f),
+						velocityY + (slingshot.normalizedY * slingshot.length * 0.3f)
 					},
 					85000000000.0f
 				);
@@ -458,7 +451,7 @@ static void updateScene(std::vector<ParticlePhysics>& pParticles,
 				float prevAccX = accX;
 				float prevAccY = accY;
 
-				Vector2 netForce = calculateForceFromGrid(pParticle, grid, pParticles);
+				Vector2 netForce = calculateForceFromGrid(pParticle, *grid, pParticles);
 
 				if (isDarkMatterEnabled) {
 					Vector2 dmForce = darkMatterForce(pParticle);
@@ -477,11 +470,11 @@ static void updateScene(std::vector<ParticlePhysics>& pParticles,
 			pairWiseGravity(pParticles);
 		}
 
-		physicsUpdate(pParticles, rParticles);
-
 		if (isCollisionsEnabled) {
 			collisions(pParticles, rParticles, softening);
 		}
+
+		physicsUpdate(pParticles, rParticles);
 
 	}
 
@@ -491,6 +484,12 @@ static void updateScene(std::vector<ParticlePhysics>& pParticles,
 
 	particleSelection.clusterSelection(pParticles, rParticles, myCamera, isMouseNotHoveringUI, trails);
 	particleSelection.particleSelection(pParticles, rParticles, myCamera, isMouseNotHoveringUI, trails);
+	particleSelection.manyClustersSelection(pParticles, rParticles, trails);
+
+
+	if (grid != nullptr) {
+		delete grid;
+	}
 }
 
 static void particlesColorVisuals(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles) {
@@ -740,7 +739,7 @@ bool showSettings = true;
 static void drawScene(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles,
 	bool& isMouseNotHoveringUI,
 	Texture2D& particleBlur, SceneCamera myCamera, ScreenCapture& screenCapture, Brush& brush, ParticleTrails& trails) {
-
+	int selectedCount = 0;
 	for (int i = 0; i < pParticles.size(); ++i) {
 
 		ParticlePhysics& pParticle = pParticles[i];
@@ -753,6 +752,9 @@ static void drawScene(std::vector<ParticlePhysics>& pParticles, std::vector<Part
 			// I multiply by 32 because that is the particle texture size in pixels
 			DrawTextureEx(particleBlur, { static_cast<float>(pParticle.pos.x - rParticle.size * 32 / 2),
 				static_cast<float>(pParticle.pos.y - rParticle.size * 32 / 2) }, 0, rParticle.size, rParticle.color);
+		}
+		if (rParticle.isSelected) {
+			selectedCount++;
 		}
 	}
 
@@ -772,6 +774,15 @@ static void drawScene(std::vector<ParticlePhysics>& pParticles, std::vector<Part
 	brush.drawBrush(mouseWorldPos);
 
 	DrawRectangleLinesEx({ 0,0, (float)screenWidth, (float)screenHeight }, 3, GRAY);
+
+	// MORTON DRAW DEBUGGING
+	/*if (pParticles.size() > 1) {
+		for (size_t i = 0; i < pParticles.size() - 1; i++) {
+			DrawLineV(pParticles[i].pos, pParticles[i + 1].pos, WHITE);
+
+			DrawText(TextFormat("%i", i), pParticles[i].pos.x, pParticles[i].pos.y - 10, 10, { 128,128,128,128 });
+		}
+	}*/
 
 	// EVERYTHING NON-STATIC RELATIVE TO CAMERA ABOVE
 	EndMode2D();
@@ -898,6 +909,9 @@ static void drawScene(std::vector<ParticlePhysics>& pParticles, std::vector<Part
 
 
 	DrawText(TextFormat("Particles: %i", pParticles.size()), 50, 50, 25, WHITE);
+	if (selectedCount > 0) {
+		DrawText(TextFormat("Selected Particles: %i", selectedCount), 400, 50, 25, WHITE);
+	}
 
 	if (GetFPS() >= 60) {
 		DrawText(TextFormat("FPS: %i", GetFPS()), screenWidth - 150, 50, 18, GREEN);
@@ -909,14 +923,6 @@ static void drawScene(std::vector<ParticlePhysics>& pParticles, std::vector<Part
 	else {
 		DrawText(TextFormat("FPS: %i", GetFPS()), screenWidth - 150, 50, 18, RED);
 	}
-
-	/*if (pParticles.size() > 1) {
-		for (size_t i = 0; i < pParticles.size() - 1; i++) {
-			DrawLineV(pParticles[i].pos, pParticles[i + 1].pos, WHITE);
-
-			DrawText(TextFormat("%i", i), pParticles[i].pos.x, pParticles[i].pos.y - 10, 10, RED);
-		}
-	}*/
 }
 
 
@@ -929,7 +935,6 @@ static void enableMultiThreading() {
 		omp_set_num_threads(1);
 	}
 }
-
 int main() {
 
 	std::vector<ParticlePhysics> pParticles;
@@ -976,13 +981,22 @@ int main() {
 		DrawGrid(100, 50);
 		rlPopMatrix();*/
 
+		updateScene(pParticles, rParticles, isMouseNotHoveringUI, myCamera, brush, trails, particleSelection, morton);
 
-		updateScene(pParticles, rParticles, isMouseNotHoveringUI, myCamera, brush, trails, particleSelection);
 
-		if (timeFactor > 0) {
-		morton.computeMortonKeys(pParticles, static_cast<float>(screenWidth), static_cast<float>(screenHeight));
-		morton.sortParticlesByMortonKey(pParticles, rParticles);
-		}
+		/*for (size_t i = 0; i < pParticles.size(); i++) {
+			if (rParticles[i].isSelected) {
+
+				std::bitset<32> mortonBinary(pParticles[i].mortonKey);
+
+				std::cout
+					<< "Pos X: " << pParticles[i].pos.x << std::endl
+					<< "Pos Y:" << pParticles[i].pos.y << std::endl
+					<< "Morton Key:" << pParticles[i].mortonKey << std::endl
+					<< "Morton Binary: " << mortonBinary << std::endl
+					<<"----------------------" << std::endl;
+			}
+		}*/
 
 		drawScene(pParticles, rParticles, isMouseNotHoveringUI, particleBlurTex, myCamera, screenCapture, brush, trails);
 
