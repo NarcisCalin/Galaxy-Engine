@@ -159,8 +159,10 @@
     <ClInclude Include="brush.h" />
     <ClInclude Include="button.h" />
     <ClInclude Include="camera.h" />
+    <ClInclude Include="densitySize.h" />
     <ClInclude Include="morton.h" />
     <ClInclude Include="particleSelection.h" />
+    <ClInclude Include="particleSubdivision.h" />
     <ClInclude Include="particleTrails.h" />
     <ClInclude Include="planet.h" />
     <ClInclude Include="quadtree.h" />

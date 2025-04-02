@@ -98,5 +98,11 @@
     <ClInclude Include="range.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="particleSubdivision.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="densitySize.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

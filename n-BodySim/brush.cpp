@@ -19,7 +19,7 @@ void Brush::brushLogic(std::vector<ParticlePhysics>& pParticles, std::vector<Par
 		Vector2 particlePos = Vector2Add(mouseWorldPos, randomOffset);
 
 		pParticles.emplace_back(particlePos, Vector2{ 0, 0 }, 30000000000.0f);
-		rParticles.emplace_back(Color{ 128, 128, 128, 100 }, 0.125f, false, true);
+		rParticles.emplace_back(Color{ 128, 128, 128, 100 }, 0.125f, false, true, false);
 	}
 }
 

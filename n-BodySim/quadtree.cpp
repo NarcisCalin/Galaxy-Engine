@@ -26,6 +26,8 @@ Quadtree::Quadtree(float posX, float posY, float size,
 	if ((endIndex - startIndex) > 1 && size > 1.0f) {
 		subGridMaker(const_cast<std::vector<ParticlePhysics>&>(pParticles), const_cast<std::vector<ParticleRendering>&>(rParticles));
 	}
+
+	//DrawRectangleLines(pos.x, pos.y, this->size, this->size, WHITE);
 }
 
 void Quadtree::subGridMaker(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles) {

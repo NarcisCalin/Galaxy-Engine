@@ -4,7 +4,7 @@
 
 uint32_t Morton::scaleToGrid(float pos, float maxVal){
     float clamped = std::clamp(pos, 0.0f, maxVal);
-    return static_cast<uint64_t>((clamped / maxVal) * 1023.0f);
+    return static_cast<uint32_t>((clamped / maxVal) * 2048.0f);
 }
 
 uint32_t Morton::spreadBits(uint32_t x) {

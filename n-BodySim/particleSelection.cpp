@@ -4,7 +4,7 @@ ParticleSelection::ParticleSelection() {
 }
 
 void ParticleSelection::clusterSelection(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, SceneCamera& myCamera,
-	bool& isMouseNotHoveringUI, ParticleTrails& trails) {
+	bool& isMouseNotHoveringUI, ParticleTrails& trails, bool& isGlobalTrailsEnabled) {
 	static bool isDragging = false;
 	static Vector2 dragStartPos = { 0 };
 
@@ -43,7 +43,9 @@ void ParticleSelection::clusterSelection(std::vector<ParticlePhysics>& pParticle
 		for (size_t i = 0; i < pParticles.size(); i++) {
 			if (!IsKeyDown(KEY_LEFT_SHIFT)) {
 				rParticles[i].isSelected = false;
-				trails.trailsParameters.clear();
+				if (!isGlobalTrailsEnabled) {
+					trails.trailDots.clear();
+				}
 			}
 			float dx = pParticles[i].pos.x - myCamera.mouseWorldPos.x;
 			float dy = pParticles[i].pos.y - myCamera.mouseWorldPos.y;
@@ -55,7 +57,9 @@ void ParticleSelection::clusterSelection(std::vector<ParticlePhysics>& pParticle
 			else {
 				if (!IsKeyDown(KEY_LEFT_SHIFT)) {
 					rParticles[i].isSelected = false;
-					trails.trailsParameters.clear();
+					if (!isGlobalTrailsEnabled) {
+						trails.trailDots.clear();
+					}
 				}
 			}
 		}
@@ -63,7 +67,7 @@ void ParticleSelection::clusterSelection(std::vector<ParticlePhysics>& pParticle
 }
 
 void ParticleSelection::particleSelection(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, SceneCamera& myCamera,
-	bool& isMouseNotHoveringUI, ParticleTrails& trails) {
+	bool& isMouseNotHoveringUI, ParticleTrails& trails, bool& isGlobalTrailsEnabled) {
 	static bool isDragging = false;
 	static Vector2 dragStartPos = { 0 };
 
@@ -90,7 +94,10 @@ void ParticleSelection::particleSelection(std::vector<ParticlePhysics>& pParticl
 		for (size_t i = 0; i < pParticles.size(); i++) {
 			if (!IsKeyDown(KEY_LEFT_SHIFT)) {
 				rParticles[i].isSelected = false;
-				trails.trailsParameters.clear();
+
+				if (!isGlobalTrailsEnabled) {
+					trails.trailDots.clear();
+				}
 			}
 			float dx = pParticles[i].pos.x - myCamera.mouseWorldPos.x;
 			float dy = pParticles[i].pos.y - myCamera.mouseWorldPos.y;
@@ -108,15 +115,20 @@ void ParticleSelection::particleSelection(std::vector<ParticlePhysics>& pParticl
 		else {
 			if (!IsKeyDown(KEY_LEFT_SHIFT)) {
 				rParticles[closestIndex].isSelected = false;
-				trails.trailsParameters.clear();
+				if (!isGlobalTrailsEnabled) {
+					trails.trailDots.clear();
+				}
 			}
 		}
 	}
 }
 
-void ParticleSelection::manyClustersSelection(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, ParticleTrails& trails) {
+void ParticleSelection::manyClustersSelection(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, ParticleTrails& trails,
+	bool& isGlobalTrailsEnabled) {
 	if (IsKeyPressed(KEY_D)) {
-		trails.trailsParameters.clear();
+		if (!isGlobalTrailsEnabled) {
+			trails.trailDots.clear();
+		}
 		float distanceThreshold = 10.0f;
 		std::vector<int> neighborCountsSelect(pParticles.size(), 0);
 		for (size_t i = 0; i < pParticles.size(); i++) {
@@ -136,6 +148,18 @@ void ParticleSelection::manyClustersSelection(std::vector<ParticlePhysics>& pPar
 				rParticles[i].isSelected = true;
 				rParticles[i].color = { 255,128,128,255 };
 			}
+		}
+	}
+}
+
+void ParticleSelection::selectedParticlesStoring(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, std::vector<ParticleRendering>& rParticlesSelected,
+	std::vector<ParticlePhysics>& pParticlesSelected) {
+	rParticlesSelected.clear();
+	pParticlesSelected.clear();
+	for (size_t i = 0; i < pParticles.size(); i++) {
+		if (rParticles[i].isSelected) {
+			rParticlesSelected.push_back(rParticles[i]);
+			pParticlesSelected.push_back(pParticles[i]);
 		}
 	}
 }

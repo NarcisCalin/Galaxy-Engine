@@ -111,7 +111,7 @@ void SceneCamera::cameraFollowObject(std::vector<ParticlePhysics>& pParticles, s
 		}
 
 		if (isSelectedTrailsEnabled) {
-			trails.trailsParameters.clear();
+			trails.trailDots.clear();
 		}
 	}
 
@@ -138,14 +138,15 @@ void SceneCamera::cameraFollowObject(std::vector<ParticlePhysics>& pParticles, s
 		isFollowing = true;
 		panFollowingOffset = { 0 };
 		if (isSelectedTrailsEnabled) {
-			trails.trailsParameters.clear();
+			trails.trailDots.clear();
 		}
 	}
 
+	if (IsKeyPressed(KEY_Z)) {
+		panFollowingOffset = { 0 };
+		isFollowing = true;
+	}
 	if (isFollowing) {
-		if (IsKeyPressed(KEY_Z)) {
-			panFollowingOffset = { 0 };
-		}
 		float sumX = 0.0f;
 		float sumY = 0.0f;
 		int count = 0;
