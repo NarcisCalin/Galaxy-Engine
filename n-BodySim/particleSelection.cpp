@@ -55,7 +55,7 @@ void ParticleSelection::clusterSelection(std::vector<ParticlePhysics>& pParticle
 				rParticles[i].color = { 255,128,128,255 };
 			}
 			else {
-				if (!IsKeyDown(KEY_LEFT_SHIFT)) {
+				if (!IsKeyDown(KEY_LEFT_SHIFT) && pParticles.size() > 0) {
 					rParticles[i].isSelected = false;
 					if (!isGlobalTrailsEnabled) {
 						trails.trailDots.clear();
@@ -113,7 +113,7 @@ void ParticleSelection::particleSelection(std::vector<ParticlePhysics>& pParticl
 			rParticles[closestIndex].color = { 255,128,128,255 };
 		}
 		else {
-			if (!IsKeyDown(KEY_LEFT_SHIFT)) {
+			if (!IsKeyDown(KEY_LEFT_SHIFT) && pParticles.size() > 0) {
 				rParticles[closestIndex].isSelected = false;
 				if (!isGlobalTrailsEnabled) {
 					trails.trailDots.clear();

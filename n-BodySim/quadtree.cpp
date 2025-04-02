@@ -26,8 +26,6 @@ Quadtree::Quadtree(float posX, float posY, float size,
 	if ((endIndex - startIndex) > 1 && size > 1.0f) {
 		subGridMaker(const_cast<std::vector<ParticlePhysics>&>(pParticles), const_cast<std::vector<ParticleRendering>&>(rParticles));
 	}
-
-	//DrawRectangleLines(pos.x, pos.y, this->size, this->size, WHITE);
 }
 
 void Quadtree::subGridMaker(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles) {
@@ -115,8 +113,11 @@ void Quadtree::calculateMasses(const std::vector<ParticlePhysics>& pParticles) {
 	}
 }
 
+Vector2 Quadtree::boundingBoxPos = { 0.0f, 0.0f };
+float Quadtree::boundingBoxSize = 0.0f;
 Quadtree* Quadtree::boundingBox(const std::vector<ParticlePhysics>& pParticles,
 	const std::vector<ParticleRendering>& rParticles) {
+
 
 	float min_x = std::numeric_limits<float>::max();
 	float min_y = std::numeric_limits<float>::max();
@@ -130,15 +131,27 @@ Quadtree* Quadtree::boundingBox(const std::vector<ParticlePhysics>& pParticles,
 		max_y = std::max(max_y, particle.pos.y);
 	}
 
-	float size = std::max(max_x - min_x, max_y - min_y);
+	boundingBoxSize = std::max(max_x - min_x, max_y - min_y);
 
 	float centerX = (min_x + max_x) * 0.5f;
 	float centerY = (min_y + max_y) * 0.5f;
 
-	float posX = centerX - size / 2.0f;
-	float posY = centerY - size / 2.0f;
+	boundingBoxPos.x = centerX - boundingBoxSize / 2.0f;
+	boundingBoxPos.y = centerY - boundingBoxSize / 2.0f;
 
-	//DrawRectangleLines(posX, posY, size, size, WHITE);
-	return new Quadtree(posX, posY, size, 0, static_cast<int>(pParticles.size()),
+	//DrawRectangleLines(boundingBoxPos.x, boundingBoxPos.y, boundingBoxSize, boundingBoxSize, WHITE);
+	return new Quadtree(boundingBoxPos.x, boundingBoxPos.y, boundingBoxSize, 0, static_cast<int>(pParticles.size()),
 		pParticles, rParticles, nullptr);
+}
+
+void Quadtree::drawQuadtree() {
+	DrawRectangleLines(pos.x, pos.y, size, size, WHITE);
+
+	if (gridMass > 0) {
+		DrawCircle(centerOfMass.x, centerOfMass.y, 2.0f, YELLOW);
+	}
+
+	for (auto& child : subGrids) {
+		child->drawQuadtree();
+	}
 }

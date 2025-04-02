@@ -36,9 +36,6 @@
     <ClCompile Include="morton.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="planet.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="slider.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -93,9 +90,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="particleSelection.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="range.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="particleSubdivision.h">

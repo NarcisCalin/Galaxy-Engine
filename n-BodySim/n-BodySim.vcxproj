@@ -148,7 +148,6 @@
     </ClCompile>
     <ClCompile Include="particleSelection.cpp" />
     <ClCompile Include="particleTrails.cpp" />
-    <ClCompile Include="planet.cpp" />
     <ClCompile Include="quadtree.cpp" />
     <ClCompile Include="screenCapture.cpp" />
     <ClCompile Include="slider.cpp" />
@@ -166,7 +165,6 @@
     <ClInclude Include="particleTrails.h" />
     <ClInclude Include="planet.h" />
     <ClInclude Include="quadtree.h" />
-    <ClInclude Include="range.h" />
     <ClInclude Include="screenCapture.h" />
     <ClInclude Include="slider.h" />
     <ClInclude Include="ui.h" />

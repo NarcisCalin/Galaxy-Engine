@@ -24,6 +24,11 @@ struct Quadtree {
 
 	void calculateMasses(const std::vector<ParticlePhysics>& pParticles);
 
+	static Vector2 boundingBoxPos;
+	static float boundingBoxSize;
+
 	static Quadtree* boundingBox(const std::vector<ParticlePhysics>& pParticles,
 		const std::vector<ParticleRendering>& rParticles);
+
+	void drawQuadtree();
 };

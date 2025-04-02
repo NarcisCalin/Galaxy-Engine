@@ -345,19 +345,23 @@ static void collisions(std::vector<ParticlePhysics>& particles,
 Vector2 mouseWorldPos;
 static void updateScene(UpdateParameters& myParameters) {
 
+	Quadtree* grid = nullptr;
+
 	G = 6.674e-11 * gravityMultiplier;
 
 	timeFactor = fixedDeltaTime * timeStepMultiplier;
 
-	myParameters.morton.computeMortonKeys(myParameters.pParticles, static_cast<float>(screenWidth), static_cast<float>(screenHeight));
+	myParameters.morton.computeMortonKeys(myParameters.pParticles, grid->boundingBoxPos, grid->boundingBoxSize);
 	myParameters.morton.sortParticlesByMortonKey(myParameters.pParticles, myParameters.rParticles);
 
-
-	Quadtree* grid = nullptr;
 	if (timeFactor > 0) {
 		grid = gridFunction(myParameters.pParticles, myParameters.rParticles);
 	}
 
+	// DRAW QUADREE DEBUGGING
+	/*if (grid != nullptr) {
+		grid->drawQuadtree();
+	}*/
 
 	mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), myParameters.myCamera.camera);
 
@@ -369,12 +373,14 @@ static void updateScene(UpdateParameters& myParameters) {
 			myParameters.pParticles.emplace_back(
 				Vector2{ static_cast<float>(mouseWorldPos.x), static_cast<float>(mouseWorldPos.y) },
 				Vector2{ slingshot.normalizedX * slingshot.length, slingshot.normalizedY * slingshot.length },
-				1000000000000000.0f
+				300000000000000.0f
 			);
 			myParameters.rParticles.emplace_back(
 				Color{ 255, 255, 255, 255 },
 				0.3f,
 				true,
+				true,
+				false,
 				true,
 				false
 			);
@@ -412,7 +418,9 @@ static void updateScene(UpdateParameters& myParameters) {
 					0.125f,
 					false,
 					true,
-					false
+					false,
+					false,
+					true
 				);
 
 			}
@@ -449,7 +457,9 @@ static void updateScene(UpdateParameters& myParameters) {
 					0.125f,
 					false,
 					true,
-					false
+					false,
+					false,
+					true
 				);
 				isDragging = false;
 			}
@@ -467,7 +477,9 @@ static void updateScene(UpdateParameters& myParameters) {
 					0.125f,
 					false,
 					true,
-					false
+					false,
+					false,
+					true
 				);
 			}
 		}
@@ -523,18 +535,18 @@ static void updateScene(UpdateParameters& myParameters) {
 	myParameters.trails.trailLogic(myParameters.pParticles, myParameters.rParticles, myParameters.pParticlesSelected, myParameters.rParticlesSelected,
 		isGlobalTrailsEnabled, isSelectedTrailsEnabled, trailMaxLength, timeFactor, isLocalTrailsEnabled);
 
-	myParameters.myCamera.cameraFollowObject(myParameters.pParticles, myParameters.rParticles, myParameters.isMouseNotHoveringUI, isSelectedTrailsEnabled, 
+	myParameters.myCamera.cameraFollowObject(myParameters.pParticles, myParameters.rParticles, myParameters.isMouseNotHoveringUI, isSelectedTrailsEnabled,
 		myParameters.trails);
 
-	myParameters.particleSelection.clusterSelection(myParameters.pParticles, myParameters.rParticles, 
+	myParameters.particleSelection.clusterSelection(myParameters.pParticles, myParameters.rParticles,
 		myParameters.myCamera, myParameters.isMouseNotHoveringUI, myParameters.trails, isGlobalTrailsEnabled);
 
-	myParameters.particleSelection.particleSelection(myParameters.pParticles, myParameters.rParticles, myParameters.myCamera, 
+	myParameters.particleSelection.particleSelection(myParameters.pParticles, myParameters.rParticles, myParameters.myCamera,
 		myParameters.isMouseNotHoveringUI, myParameters.trails, isGlobalTrailsEnabled);
 
 	myParameters.particleSelection.manyClustersSelection(myParameters.pParticles, myParameters.rParticles, myParameters.trails, isGlobalTrailsEnabled);
 
-	myParameters.particleSelection.selectedParticlesStoring(myParameters.pParticles, myParameters.rParticles, myParameters.rParticlesSelected, 
+	myParameters.particleSelection.selectedParticlesStoring(myParameters.pParticles, myParameters.rParticles, myParameters.rParticlesSelected,
 		myParameters.pParticlesSelected);
 
 	myParameters.densitySize.sizeByDensity(myParameters.pParticles, myParameters.rParticles);
@@ -745,14 +757,33 @@ static void drawScene(UpdateParameters& myParameters) {
 
 	DrawRectangleLinesEx({ 0,0, (float)screenWidth, (float)screenHeight }, 3, GRAY);
 
-	// MORTON DRAW DEBUGGING
-	/*if (pParticles.size() > 1) {
-		for (size_t i = 0; i < pParticles.size() - 1; i++) {
-			DrawLineV(pParticles[i].pos, pParticles[i + 1].pos, WHITE);
+	// MORTON DEBUGGING
 
-			DrawText(TextFormat("%i", i), pParticles[i].pos.x, pParticles[i].pos.y - 10, 10, { 128,128,128,128 });
-		}
-	}*/
+	//if (myParameters.pParticles.size() > 1) {
+	//	for (size_t i = 0; i < myParameters.pParticles.size() - 1; i++) {
+	//		DrawLineV(myParameters.pParticles[i].pos, myParameters.pParticles[i + 1].pos, WHITE);
+
+	//		DrawText(TextFormat("%i", i), myParameters.pParticles[i].pos.x, myParameters.pParticles[i].pos.y - 10, 10, { 128,128,128,128 });
+	//	}
+	//}
+
+	//for (size_t i = 0; i < myParameters.pParticles.size(); i++) {
+	//	if (myParameters.rParticles[i].isSelected) {
+	//		// Bitset 22 because morton is computing 11 bits per axis
+	//		std::bitset<22> mortonBinary(myParameters.pParticles[i].mortonKey);
+
+	//		std::cout
+	//			<< "Pos X: " << myParameters.pParticles[i].pos.x << std::endl
+	//			<< "Pos Y:" << myParameters.pParticles[i].pos.y << std::endl
+	//			<< "Morton Key:" << myParameters.pParticles[i].mortonKey << std::endl
+	//			<< "Morton Binary: " << mortonBinary << std::endl
+	//			<< "----------------------" << std::endl;
+
+	//	}
+	//}
+
+	// MORTON DEBUGGING
+	
 
 	// EVERYTHING NON-STATIC RELATIVE TO CAMERA ABOVE
 	EndMode2D();
@@ -948,18 +979,6 @@ int main() {
 		rlPopMatrix();*/
 
 		updateScene(updateParameters);
-
-
-		/*for (size_t i = 0; i < pParticlesSelected.size(); i++) {
-			std::bitset<32> mortonBinary(pParticles[i].mortonKey);
-
-			std::cout
-				<< "Pos X: " << pParticles[i].pos.x << std::endl
-				<< "Pos Y:" << pParticles[i].pos.y << std::endl
-				<< "Morton Key:" << pParticles[i].mortonKey << std::endl
-				<< "Morton Binary: " << mortonBinary << std::endl
-				<< "----------------------" << std::endl;
-		}*/
 
 		drawScene(updateParameters);
 

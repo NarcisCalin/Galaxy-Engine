@@ -42,7 +42,7 @@ struct ParticleSubdivision {
 				size_t originalSize = pParticles.size();
 
 				for (int i = originalSize - 1; i >= 0; i--) {
-					if (subdivideAll || rParticles[i].isSelected) {
+					if ((subdivideAll || rParticles[i].isSelected) && rParticles[i].canBeSubdivided) {
 
 					pParticles.emplace_back
 					(
@@ -82,7 +82,9 @@ struct ParticleSubdivision {
 						rParticles[i].size / 2.0f,
 						rParticles[i].uniqueColor,
 						rParticles[i].drawPixel,
-						rParticles[i].isSelected
+						rParticles[i].isSelected,
+						rParticles[i].isSolid,
+						rParticles[i].canBeSubdivided
 					);
 
 					rParticles.emplace_back
@@ -91,7 +93,9 @@ struct ParticleSubdivision {
 						rParticles[i].size / 2.0f,
 						rParticles[i].uniqueColor,
 						rParticles[i].drawPixel,
-						rParticles[i].isSelected
+						rParticles[i].isSelected,
+						rParticles[i].isSolid,
+						rParticles[i].canBeSubdivided
 					);
 
 					rParticles.emplace_back
@@ -100,7 +104,9 @@ struct ParticleSubdivision {
 						rParticles[i].size / 2.0f,
 						rParticles[i].uniqueColor,
 						rParticles[i].drawPixel,
-						rParticles[i].isSelected
+						rParticles[i].isSelected,
+						rParticles[i].isSolid,
+						rParticles[i].canBeSubdivided
 					);
 
 					rParticles.emplace_back
@@ -109,7 +115,9 @@ struct ParticleSubdivision {
 						rParticles[i].size / 2.0f,
 						rParticles[i].uniqueColor,
 						rParticles[i].drawPixel,
-						rParticles[i].isSelected
+						rParticles[i].isSelected,
+						rParticles[i].isSolid,
+						rParticles[i].canBeSubdivided
 					);
 
 					pParticles.erase(pParticles.begin() + i);
