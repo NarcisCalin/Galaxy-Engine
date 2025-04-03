@@ -23,8 +23,12 @@ Quadtree::Quadtree(float posX, float posY, float size,
 	this->centerOfMass = { 0,0 };
 	this->parent = parent;
 
-	if ((endIndex - startIndex) > 1 && size > 1.0f) {
+	if ((endIndex - startIndex) <= 1 || size <= 1.0f) {
+		computeLeafMass(pParticles);
+	}
+	else {
 		subGridMaker(const_cast<std::vector<ParticlePhysics>&>(pParticles), const_cast<std::vector<ParticleRendering>&>(rParticles));
+		computeInternalMass();
 	}
 }
 
@@ -47,7 +51,7 @@ void Quadtree::subGridMaker(std::vector<ParticlePhysics>& pParticles, std::vecto
 			}
 		}
 		int qEnd = current;
-		
+
 		if (qEnd > qStart) {
 			switch (q) {
 			case 0:
@@ -64,52 +68,6 @@ void Quadtree::subGridMaker(std::vector<ParticlePhysics>& pParticles, std::vecto
 				break;
 			}
 		}
-	}
-}
-
-void Quadtree::calculateMasses(const std::vector<ParticlePhysics>& pParticles) {
-	if (!subGrids.empty()) {
-		float totalMass = 0.0f;
-		Vector2 com = { 0.0f, 0.0f };
-		for (auto& child : subGrids) {
-			child->calculateMasses(pParticles);
-			totalMass += child->gridMass;
-			com.x += child->centerOfMass.x * child->gridMass;
-			com.y += child->centerOfMass.y * child->gridMass;
-		}
-		gridMass = totalMass;
-		if (totalMass > 0) {
-			centerOfMass.x = com.x / totalMass;
-			centerOfMass.y = com.y / totalMass;
-		}
-		else {
-			centerOfMass = { 0, 0 };
-		}
-		return;
-	}
-
-	int count = endIndex - startIndex;
-	if (count == 1) {
-		gridMass = pParticles[startIndex].mass;
-		centerOfMass = pParticles[startIndex].pos;
-		return;
-	}
-
-	float massSum = 0.0f;
-	Vector2 com = { 0.0f, 0.0f };
-	for (int i = startIndex; i < endIndex; i++) {
-		float m = pParticles[i].mass;
-		massSum += m;
-		com.x += pParticles[i].pos.x * m;
-		com.y += pParticles[i].pos.y * m;
-	}
-	gridMass = massSum;
-	if (massSum > 0) {
-		centerOfMass.x = com.x / massSum;
-		centerOfMass.y = com.y / massSum;
-	}
-	else {
-		centerOfMass = { 0, 0 };
 	}
 }
 

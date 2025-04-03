@@ -84,6 +84,7 @@ bool isBarnesHutEnabled = true;
 bool isDarkMatterEnabled = false;
 bool isCollisionsEnabled = false;
 bool isShowControlsEnabled = true;
+bool isDensitySizeEnabled = false;
 
 
 bool solidColor = false;
@@ -108,6 +109,8 @@ int trailMaxLength = 14;
 
 bool isRecording = false;
 
+float particleSizeMultiplier = 1.0f;
+
 
 bool subdivideAll = false;
 bool subdivideSelected = false;
@@ -115,7 +118,7 @@ bool subdivideSelected = false;
 static Quadtree* gridFunction(std::vector<ParticlePhysics>& pParticles,
 	std::vector<ParticleRendering>& rParticles) {
 	Quadtree* grid = Quadtree::boundingBox(pParticles, rParticles);
-	grid->calculateMasses(pParticles);
+	//grid->calculateMasses(pParticles);
 	return grid;
 }
 
@@ -351,8 +354,10 @@ static void updateScene(UpdateParameters& myParameters) {
 
 	timeFactor = fixedDeltaTime * timeStepMultiplier;
 
-	myParameters.morton.computeMortonKeys(myParameters.pParticles, grid->boundingBoxPos, grid->boundingBoxSize);
-	myParameters.morton.sortParticlesByMortonKey(myParameters.pParticles, myParameters.rParticles);
+	if (timeFactor == 0) {
+		myParameters.morton.computeMortonKeys(myParameters.pParticles, grid->boundingBoxPos, grid->boundingBoxSize);
+		myParameters.morton.sortParticlesByMortonKey(myParameters.pParticles, myParameters.rParticles);
+	}
 
 	if (timeFactor > 0) {
 		grid = gridFunction(myParameters.pParticles, myParameters.rParticles);
@@ -391,7 +396,7 @@ static void updateScene(UpdateParameters& myParameters) {
 		}
 
 		if (IsKeyPressed(KEY_ONE) && !isDragging) {
-			for (int i = 0; i < 40000; i++) {
+			for (int i = 0; i < 10000; i++) {
 				float galaxyCenterX = static_cast<float>(screenWidth / 2);
 				float galaxyCenterY = static_cast<float>(screenHeight / 2);
 
@@ -411,7 +416,7 @@ static void updateScene(UpdateParameters& myParameters) {
 				myParameters.pParticles.emplace_back(
 					Vector2{ posX, posY },
 					Vector2{ velocityX, velocityY },
-					50000000000.0f
+					200000000000.0f
 				);
 				myParameters.rParticles.emplace_back(
 					Color{ 128, 128, 128, 100 },
@@ -549,7 +554,7 @@ static void updateScene(UpdateParameters& myParameters) {
 	myParameters.particleSelection.selectedParticlesStoring(myParameters.pParticles, myParameters.rParticles, myParameters.rParticlesSelected,
 		myParameters.pParticlesSelected);
 
-	myParameters.densitySize.sizeByDensity(myParameters.pParticles, myParameters.rParticles);
+	myParameters.densitySize.sizeByDensity(myParameters.pParticles, myParameters.rParticles, isDensitySizeEnabled);
 
 
 	if (grid != nullptr) {
@@ -630,9 +635,9 @@ static void particlesColorVisuals(std::vector<ParticlePhysics>& pParticles, std:
 	}
 }
 
-std::array<Button, 15> settingsButtonsArray = {
+std::array<Button, 16> settingsButtonsArray = {
 
-Button({(float)screenWidth - 195, 100}, {175, 40}, "Pixel Drawing", true),
+Button({(float)screenWidth - 195, 100}, {175, 35}, "Pixel Drawing", true),
 
 Button({780, 0}, {200, 50}, "Global Trails", true),
 
@@ -660,7 +665,9 @@ Button({780, 0}, {200, 50}, "Controls", true),
 
 Button({780, 0}, {200, 50}, "Subdivide All", true),
 
-Button({780, 0}, {200, 50}, "Subdivide Selec.", true)
+Button({780, 0}, {200, 50}, "Subdivide Selec.", true),
+
+Button({780, 0}, {200, 50}, "Density Size", true)
 
 };
 std::array<Button, 1> toggleSettingsButtons = {
@@ -695,7 +702,7 @@ std::array<std::string, 19> controlsArray = {
 	"19. COLLISIONS ARE STILL EXPERIMENTAL!"
 };
 
-std::array<Slider, 11> slidersArray = {
+std::array<Slider, 12> slidersArray = {
 	Slider
 (
 	{20, static_cast<float>(screenHeight - 500)}, {230, 7}, {190, 128, 128, 255}, "Red"
@@ -718,7 +725,9 @@ Slider({450, 450}, {250, 10}, {128, 128, 128, 255}, "Time Scale"),
 
 Slider({450, 450}, {250, 10}, {128, 128, 128, 255}, "Gravity Strength"),
 
-Slider({450, 450}, {250, 10}, {128, 128, 128, 255}, "Trails Length")
+Slider({450, 450}, {250, 10}, {128, 128, 128, 255}, "Trails Length"),
+
+Slider({450, 450}, {250, 10}, {128, 128, 128, 255}, "Particles Size")
 };
 
 
@@ -737,6 +746,12 @@ static void drawScene(UpdateParameters& myParameters) {
 			// Texture size is set to 32 because that is the particle texture size in pixels
 			DrawTextureEx(myParameters.particleBlurTex, { static_cast<float>(pParticle.pos.x - rParticle.size * particleTextureSize / 2),
 				static_cast<float>(pParticle.pos.y - rParticle.size * particleTextureSize / 2) }, 0, rParticle.size, rParticle.color);
+		}
+
+		if (!isDensitySizeEnabled) {
+
+			rParticle.size = rParticle.previousSize * particleSizeMultiplier;
+
 		}
 	}
 
@@ -759,13 +774,13 @@ static void drawScene(UpdateParameters& myParameters) {
 
 	// MORTON DEBUGGING
 
-	//if (myParameters.pParticles.size() > 1) {
-	//	for (size_t i = 0; i < myParameters.pParticles.size() - 1; i++) {
-	//		DrawLineV(myParameters.pParticles[i].pos, myParameters.pParticles[i + 1].pos, WHITE);
+	/*if (myParameters.pParticles.size() > 1) {
+		for (size_t i = 0; i < myParameters.pParticles.size() - 1; i++) {
+			DrawLineV(myParameters.pParticles[i].pos, myParameters.pParticles[i + 1].pos, WHITE);
 
-	//		DrawText(TextFormat("%i", i), myParameters.pParticles[i].pos.x, myParameters.pParticles[i].pos.y - 10, 10, { 128,128,128,128 });
-	//	}
-	//}
+			DrawText(TextFormat("%i", i), myParameters.pParticles[i].pos.x, myParameters.pParticles[i].pos.y - 10, 10, { 128,128,128,128 });
+		}
+	}*/
 
 	//for (size_t i = 0; i < myParameters.pParticles.size(); i++) {
 	//	if (myParameters.rParticles[i].isSelected) {
@@ -783,7 +798,7 @@ static void drawScene(UpdateParameters& myParameters) {
 	//}
 
 	// MORTON DEBUGGING
-	
+
 
 	// EVERYTHING NON-STATIC RELATIVE TO CAMERA ABOVE
 	EndMode2D();
@@ -822,6 +837,7 @@ static void drawScene(UpdateParameters& myParameters) {
 		bool buttonControlsHovering = settingsButtonsArray[12].buttonLogic(isShowControlsEnabled);
 		bool buttonSubdivideAllHovering = settingsButtonsArray[13].buttonLogic(subdivideAll);
 		bool buttonSubdivideSelectedHovering = settingsButtonsArray[14].buttonLogic(subdivideSelected);
+		bool buttonDensitySizeHovering = settingsButtonsArray[15].buttonLogic(isDensitySizeEnabled);
 
 		if (isShowControlsEnabled) {
 			for (size_t i = 0; i < controlsArray.size(); i++) {
@@ -846,6 +862,7 @@ static void drawScene(UpdateParameters& myParameters) {
 		bool sliderTimeScaleHovering = slidersArray[8].sliderLogic(0.0f, timeStepMultiplier, 5.0f);
 		bool sliderGravityStrengthHovering = slidersArray[9].sliderLogic(0.0f, gravityMultiplier, 3.0f);
 		bool sliderTrailsLengthHovering = slidersArray[10].sliderLogic(0, trailMaxLength, 400);
+		bool sliderParticlesSizeHovering = slidersArray[11].sliderLogic(0.1f, particleSizeMultiplier, 5.0f);
 
 
 		if (buttonPixelDrawingHovering ||
@@ -874,7 +891,9 @@ static void drawScene(UpdateParameters& myParameters) {
 			sliderTrailsLengthHovering ||
 			buttonLocalTrailsHovering ||
 			buttonSubdivideAllHovering ||
-			buttonSubdivideSelectedHovering
+			buttonSubdivideSelectedHovering ||
+			buttonDensitySizeHovering ||
+			sliderParticlesSizeHovering
 			) {
 			myParameters.isMouseNotHoveringUI = false;
 			isDragging = false;

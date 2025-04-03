@@ -22,8 +22,6 @@ struct Quadtree {
 
 	void subGridMaker(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles);
 
-	void calculateMasses(const std::vector<ParticlePhysics>& pParticles);
-
 	static Vector2 boundingBoxPos;
 	static float boundingBoxSize;
 
@@ -31,4 +29,37 @@ struct Quadtree {
 		const std::vector<ParticleRendering>& rParticles);
 
 	void drawQuadtree();
+
+private:
+    void computeLeafMass(const std::vector<ParticlePhysics>& pParticles) {
+        gridMass = 0.0f;
+        centerOfMass = { 0.0f, 0.0f };
+
+        for (int i = startIndex; i < endIndex; ++i) {
+            gridMass += pParticles[i].mass;
+            centerOfMass.x += pParticles[i].pos.x * pParticles[i].mass;
+            centerOfMass.y += pParticles[i].pos.y * pParticles[i].mass;
+        }
+
+        if (gridMass > 0) {
+            centerOfMass.x /= gridMass;
+            centerOfMass.y /= gridMass;
+        }
+    }
+
+    void computeInternalMass() {
+        gridMass = 0.0f;
+        centerOfMass = { 0.0f, 0.0f };
+
+        for (auto& child : subGrids) {
+            gridMass += child->gridMass;
+            centerOfMass.x += child->centerOfMass.x * child->gridMass;
+            centerOfMass.y += child->centerOfMass.y * child->gridMass;
+        }
+
+        if (gridMass > 0) {
+            centerOfMass.x /= gridMass;
+            centerOfMass.y /= gridMass;
+        }
+    }
 };
