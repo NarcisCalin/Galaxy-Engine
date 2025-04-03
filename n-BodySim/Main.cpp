@@ -154,7 +154,7 @@ static Vector2 calculateForceFromGrid(ParticlePhysics& pParticle,
 		}
 
 		float invDistance = 1.0f / sqrt(distanceSq);
-		float forceMagnitude = G * pParticle.mass * grid.gridMass * invDistance * invDistance * invDistance;
+		float forceMagnitude = static_cast<float>(G) * pParticle.mass * grid.gridMass * invDistance * invDistance * invDistance;
 		totalForce.x = dx * forceMagnitude;
 		totalForce.y = dy * forceMagnitude;
 	}
@@ -273,7 +273,6 @@ void pairWiseGravity(std::vector<ParticlePhysics>& pParticles) {
 
 static void physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles) {
 	if (isPeriodicBoundaryEnabled) {
-#pragma omp parallel for schedule(static)
 		for (size_t i = 0; i < pParticles.size(); i++) {
 			ParticlePhysics& pParticle = pParticles[i];
 			pParticle.pos.x += pParticle.velocity.x * timeFactor;
@@ -345,6 +344,16 @@ static void collisions(std::vector<ParticlePhysics>& particles,
 	}
 }
 
+void flattenQuadtree(Quadtree* node, std::vector<Quadtree*>& flatList) {
+	if (!node) return;
+
+	flatList.push_back(node);
+
+	for (const auto& child : node->subGrids) {
+		flattenQuadtree(child.get(), flatList);
+	}
+}
+
 Vector2 mouseWorldPos;
 static void updateScene(UpdateParameters& myParameters) {
 
@@ -362,6 +371,21 @@ static void updateScene(UpdateParameters& myParameters) {
 	if (timeFactor > 0) {
 		grid = gridFunction(myParameters.pParticles, myParameters.rParticles);
 	}
+
+	/*std::vector<Quadtree*> flatNodes;
+
+	flattenQuadtree(grid, flatNodes);*/
+
+	//int index = 0;
+	/*for (Quadtree* node : flatNodes) {
+		DrawRectangleLines(node->pos.x, node->pos.y, node->size, node->size, WHITE);
+
+		const char* textDisplay = TextFormat("%i", node->depth);
+
+		DrawText(textDisplay, node->pos.x + node->size / 2, node->pos.y + node->size / 2, 10, {128,128,128,140});
+
+		index++;
+	}*/
 
 	// DRAW QUADREE DEBUGGING
 	/*if (grid != nullptr) {
@@ -396,7 +420,7 @@ static void updateScene(UpdateParameters& myParameters) {
 		}
 
 		if (IsKeyPressed(KEY_ONE) && !isDragging) {
-			for (int i = 0; i < 10000; i++) {
+			for (int i = 0; i < 40000; i++) {
 				float galaxyCenterX = static_cast<float>(screenWidth / 2);
 				float galaxyCenterY = static_cast<float>(screenHeight / 2);
 
@@ -416,7 +440,7 @@ static void updateScene(UpdateParameters& myParameters) {
 				myParameters.pParticles.emplace_back(
 					Vector2{ posX, posY },
 					Vector2{ velocityX, velocityY },
-					200000000000.0f
+					50000000000.0f
 				);
 				myParameters.rParticles.emplace_back(
 					Color{ 128, 128, 128, 100 },
@@ -841,7 +865,7 @@ static void drawScene(UpdateParameters& myParameters) {
 
 		if (isShowControlsEnabled) {
 			for (size_t i = 0; i < controlsArray.size(); i++) {
-				DrawText(TextFormat("%s", controlsArray[i].c_str()), 25, 100 + 20 * i, 15, WHITE);
+				DrawText(TextFormat("%s", controlsArray[i].c_str()), 25, 100 + 20 * static_cast<int>(i), 15, WHITE);
 			}
 		}
 

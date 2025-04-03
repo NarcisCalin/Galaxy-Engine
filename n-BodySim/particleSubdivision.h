@@ -39,7 +39,7 @@ struct ParticleSubdivision {
 			}
 
 			if (pParticles.size() < particlesThreshold || confirmState) {
-				size_t originalSize = pParticles.size();
+				int originalSize = static_cast<int>(pParticles.size());
 
 				for (int i = originalSize - 1; i >= 0; i--) {
 					if ((subdivideAll || rParticles[i].isSelected) && rParticles[i].canBeSubdivided) {

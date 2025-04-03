@@ -30,8 +30,8 @@ Slingshot Slingshot::planetSlingshot(bool &isDragging, SceneCamera myCamera) {
 		if (slingshotLength != 0) {
 			float normalX = slingshotDistX / slingshotLength;
 			float normalY = slingshotDistY / slingshotLength;
-			DrawCircle(slingshotPos.x, slingshotPos.y, 5, BLUE);
-			DrawLine(mouseWorldPos.x, mouseWorldPos.y, slingshotPos.x, slingshotPos.y, RED);
+			DrawCircleV({ slingshotPos.x, slingshotPos.y }, 5, BLUE);
+			DrawLineV({ mouseWorldPos.x, mouseWorldPos.y }, { slingshotPos.x, slingshotPos.y }, RED);
 
 			Slingshot slingshot(normalX, normalY, slingshotLength);
 			return slingshot;

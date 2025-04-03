@@ -35,11 +35,12 @@ bool Button::buttonLogic(bool& isEnabled) {
         
     }
 
-    DrawRectangle(pos.x, pos.y, size.x, size.y, color);
+    DrawRectangleV({ pos.x, pos.y }, { size.x, size.y }, color);
 
     if (hasText) {
     Vector2 textCompensation = MeasureTextEx(GetFontDefault() , text.c_str(), textSize, textSeparation);
-    DrawTextEx(GetFontDefault(), text.c_str(), { static_cast<float>(pos.x + size.x / 2 - (textCompensation.x / 2)), static_cast<float>(pos.y + size.y / 2 - (textCompensation.y / 2)) }, textSize, textSeparation, WHITE);
+    DrawTextEx(GetFontDefault(), text.c_str(), { static_cast<float>(pos.x + size.x / 2 - (textCompensation.x / 2)), 
+        static_cast<float>(pos.y + size.y / 2 - (textCompensation.y / 2)) }, textSize, textSeparation, WHITE);
  }
 
     return isOnTop;

@@ -22,6 +22,8 @@ struct Quadtree {
 
 	void subGridMaker(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles);
 
+
+
 	static Vector2 boundingBoxPos;
 	static float boundingBoxSize;
 
@@ -29,6 +31,7 @@ struct Quadtree {
 		const std::vector<ParticleRendering>& rParticles);
 
 	void drawQuadtree();
+
 
 private:
     void computeLeafMass(const std::vector<ParticlePhysics>& pParticles) {
