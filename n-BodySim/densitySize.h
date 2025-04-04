@@ -5,10 +5,11 @@
 
 struct DensitySize {
 
-	float sizeDensityRadius = 12.0f;
-	int sizeMaxNeightbors = 130;
+	float sizeDensityRadius = 4.0f;
+	int sizeMaxNeightbors = 60;
 
-	void sizeByDensity(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, bool& isDensitySizeEnabled) {
+	void sizeByDensity(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, bool& isDensitySizeEnabled,
+		float& sizeMultiplier) {
 		if (isDensitySizeEnabled) {
 			float densityRadiusSq = sizeDensityRadius * sizeDensityRadius;
 			std::vector<int> neighborCounts(pParticles.size(), 0);
@@ -26,15 +27,11 @@ struct DensitySize {
 							neighborCounts[j]++;
 						}
 					}
-				}
-			}
 
-			for (size_t i = 0; i < pParticles.size(); i++) {
-				if (!rParticles[i].isSolid) {
 					float normalDensity = std::min(float(neighborCounts[i]) / sizeMaxNeightbors, 1.0f);
 					float invertedDensity = std::max(1.0f - normalDensity, 0.35f);
 
-					rParticles[i].size = invertedDensity * 0.5f;
+					rParticles[i].size = invertedDensity * sizeMultiplier * 0.5f;
 				}
 			}
 		}

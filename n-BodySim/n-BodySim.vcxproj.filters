@@ -98,5 +98,11 @@
     <ClInclude Include="densitySize.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="particleColorVisuals.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="rightClickSettings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

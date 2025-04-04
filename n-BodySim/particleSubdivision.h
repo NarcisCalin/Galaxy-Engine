@@ -6,10 +6,13 @@
 
 struct ParticleSubdivision {
 
-	int particlesThreshold = 15000;
+	int particlesThreshold = 80000;
+
+	bool subdivideAll = false;
+	bool subdivideSelected = false;
 
 	void subdivideParticles(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, float& particleTextureSize,
-		bool& subdivideAll, bool& subdivideSelected, bool& isMouseNotHoveringUI, bool& isDragging) {
+		bool& isMouseNotHoveringUI, bool& isDragging) {
 
 		if (subdivideAll || subdivideSelected) {
 
@@ -22,8 +25,8 @@ struct ParticleSubdivision {
 
 				Vector2 textCompensation = MeasureTextEx(GetFontDefault(), warningText.c_str(), textSize, textSpacing);
 
-				DrawTextEx(GetFontDefault(), warningText.c_str(), { static_cast<float>(GetScreenWidth() / 2 - (textCompensation.x / 2)), 
-					static_cast<float>(GetScreenHeight() / 2 - (textCompensation.y / 2) - 25.0f)}, textSize, textSpacing, WHITE);
+				DrawTextEx(GetFontDefault(), warningText.c_str(), { static_cast<float>(GetScreenWidth() / 2 - (textCompensation.x / 2)),
+					static_cast<float>(GetScreenHeight() / 2 - (textCompensation.y / 2) - 25.0f) }, textSize, textSpacing, WHITE);
 
 				bool confirmHovering = confirm.buttonLogic(confirmState);
 				bool quitHovering = quit.buttonLogic(quitState);
@@ -40,96 +43,41 @@ struct ParticleSubdivision {
 
 			if (pParticles.size() < particlesThreshold || confirmState) {
 				int originalSize = static_cast<int>(pParticles.size());
-
 				for (int i = originalSize - 1; i >= 0; i--) {
 					if ((subdivideAll || rParticles[i].isSelected) && rParticles[i].canBeSubdivided) {
 
-					pParticles.emplace_back
-					(
-						Vector2{ pParticles[i].pos.x - rParticles[i].size / 2.0f * particleTextureSize / 8.0f + rand() % 3 - 1, 
-						pParticles[i].pos.y - rParticles[i].size / 2.0f * particleTextureSize / 8.0f + rand() % 3 - 1 },
-						Vector2{ pParticles[i].velocity.x, pParticles[i].velocity.y },
-						pParticles[i].mass / 4.0f
-					);
+						float halfOffset = rParticles[i].previousSize / 2.0f * particleTextureSize / 8.0f;
+						float halfOffsetVisual = rParticles[i].previousSize / 2.0f;
 
-					pParticles.emplace_back
-					(
-						Vector2{ pParticles[i].pos.x + rParticles[i].size / 2.0f * particleTextureSize / 8.0f + rand() % 3 - 1,
-						pParticles[i].pos.y - rParticles[i].size / 2.0f * particleTextureSize / 8.0f + rand() % 3 - 1 },
-						Vector2{ pParticles[i].velocity.x, pParticles[i].velocity.y },
-						pParticles[i].mass / 4.0f
-					);
+						int multipliers[4][2] = { {-1, -1}, { 1, -1}, {-1, 1}, { 1, 1} };
 
-					pParticles.emplace_back
-					(
-						Vector2{ pParticles[i].pos.x - rParticles[i].size / 2.0f * particleTextureSize / 8.0f + rand() % 3 - 1,
-						pParticles[i].pos.y + rParticles[i].size / 2.0f * particleTextureSize / 8.0f + rand() % 3 - 1 },
-						Vector2{ pParticles[i].velocity.x, pParticles[i].velocity.y },
-						pParticles[i].mass / 4.0f
-					);
+						for (int j = 0; j < 4; j++) {
+							float offsetX = multipliers[j][0] * halfOffset + (rand() % 3 - 1);
+							float offsetY = multipliers[j][1] * halfOffset + (rand() % 3 - 1);
 
-					pParticles.emplace_back
-					(
-						Vector2{ pParticles[i].pos.x + rParticles[i].size / 2.0f * particleTextureSize / 8.0f + rand() % 3 - 1,
-						pParticles[i].pos.y + rParticles[i].size / 2.0f * particleTextureSize / 8.0f + rand() % 3 - 1 },
-						Vector2{ pParticles[i].velocity.x, pParticles[i].velocity.y },
-						pParticles[i].mass / 4.0f
-					);
+							Vector2 newPos{
+								pParticles[i].pos.x + offsetX,
+								pParticles[i].pos.y + offsetY
+							};
 
-					rParticles.emplace_back
-					(
-						Color{ rParticles[i].color },
-						rParticles[i].size / 2.0f,
-						rParticles[i].uniqueColor,
-						rParticles[i].drawPixel,
-						rParticles[i].isSelected,
-						rParticles[i].isSolid,
-						rParticles[i].canBeSubdivided
-					);
+							pParticles.emplace_back(newPos, pParticles[i].velocity, pParticles[i].mass / 4.0f);
 
-					rParticles.emplace_back
-					(
-						Color{ rParticles[i].color },
-						rParticles[i].size / 2.0f,
-						rParticles[i].uniqueColor,
-						rParticles[i].drawPixel,
-						rParticles[i].isSelected,
-						rParticles[i].isSolid,
-						rParticles[i].canBeSubdivided
-					);
+							rParticles.emplace_back(rParticles[i].color, halfOffsetVisual, rParticles[i].uniqueColor,
+								rParticles[i].drawPixel, rParticles[i].isSelected,
+								rParticles[i].isSolid, rParticles[i].canBeSubdivided);
+						}
 
-					rParticles.emplace_back
-					(
-						Color{ rParticles[i].color },
-						rParticles[i].size / 2.0f,
-						rParticles[i].uniqueColor,
-						rParticles[i].drawPixel,
-						rParticles[i].isSelected,
-						rParticles[i].isSolid,
-						rParticles[i].canBeSubdivided
-					);
-
-					rParticles.emplace_back
-					(
-						Color{ rParticles[i].color },
-						rParticles[i].size / 2.0f,
-						rParticles[i].uniqueColor,
-						rParticles[i].drawPixel,
-						rParticles[i].isSelected,
-						rParticles[i].isSolid,
-						rParticles[i].canBeSubdivided
-					);
-
-					pParticles.erase(pParticles.begin() + i);
-					rParticles.erase(rParticles.begin() + i);
+						pParticles[i] = std::move(pParticles.back());
+						pParticles.pop_back();
+						rParticles[i] = std::move(rParticles.back());
+						rParticles.pop_back();
 					}
 				}
-
 				subdivideAll = false;
 				subdivideSelected = false;
 			}
-				confirmState = false;
-				quitState = false;
+			confirmState = false;
+			quitState = false;
 		}
 	}
 

@@ -14,6 +14,9 @@ public:
 	Camera2D camera;
 	Vector2 mouseWorldPos;
 	Vector2 followPosition;
+	bool isFollowing;
+
+	bool centerCamera;
 
 	SceneCamera();
 
@@ -23,7 +26,6 @@ public:
 		bool& isSelectedTrailsEnabled, ParticleTrails& trails);
 
 private:
-	bool isFollowing;
 	Color previousColor;
 	Vector2 panFollowingOffset;
 	float selectionThresholdSq = 100.0f;

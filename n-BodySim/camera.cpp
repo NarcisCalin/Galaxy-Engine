@@ -11,6 +11,7 @@ SceneCamera::SceneCamera() {
 	mouseWorldPos = { 0.0f, 0.0f };
 	panFollowingOffset = { 0.0f };
 	isFollowing = false;
+	centerCamera = false;
 	previousColor = { 128,128,128,255 };
 	followPosition = { 0.0f };
 }
@@ -65,12 +66,12 @@ void SceneCamera::cameraFollowObject(std::vector<ParticlePhysics>& pParticles, s
 	static bool isDragging = false;
 	static Vector2 dragStartPos = { 0 };
 
-	if ((IsMouseButtonPressed(1) && isMouseNotHoveringUI) || (IsMouseButtonPressed(1) && IsKeyDown(KEY_LEFT_CONTROL) && isMouseNotHoveringUI)) {
+	if ((IsMouseButtonPressed(1) && IsKeyDown(KEY_LEFT_CONTROL) && isMouseNotHoveringUI) || (IsMouseButtonPressed(1) && IsKeyDown(KEY_LEFT_ALT) && isMouseNotHoveringUI)) {
 		dragStartPos = GetMousePosition();
 		isDragging = false;
 	}
 
-	if ((IsMouseButtonDown(1) && isMouseNotHoveringUI) || (IsMouseButtonDown(1) && IsKeyDown(KEY_LEFT_CONTROL) && isMouseNotHoveringUI)) {
+	if ((IsMouseButtonDown(1) && IsKeyDown(KEY_LEFT_CONTROL) && isMouseNotHoveringUI) || (IsMouseButtonDown(1) && IsKeyDown(KEY_LEFT_ALT) && isMouseNotHoveringUI)) {
 		Vector2 currentPos = GetMousePosition();
 		float dragThreshold = 5.0f;
 		float dx = currentPos.x - dragStartPos.x;
@@ -81,7 +82,7 @@ void SceneCamera::cameraFollowObject(std::vector<ParticlePhysics>& pParticles, s
 		}
 	}
 
-	if (IsMouseButtonReleased(1) && !IsKeyDown(KEY_LEFT_CONTROL) && !isDragging && isMouseNotHoveringUI) {
+	if (IsMouseButtonReleased(1) && IsKeyDown(KEY_LEFT_CONTROL) && !isDragging && isMouseNotHoveringUI) {
 		float distanceThreshold = 10.0f;
 		std::vector<int> neighborCountsSelect(pParticles.size(), 0);
 		for (size_t i = 0; i < pParticles.size(); i++) {
@@ -142,10 +143,12 @@ void SceneCamera::cameraFollowObject(std::vector<ParticlePhysics>& pParticles, s
 		}
 	}
 
-	if (IsKeyPressed(KEY_Z)) {
+	if (IsKeyPressed(KEY_Z) || centerCamera) {
 		panFollowingOffset = { 0 };
 		isFollowing = true;
+		centerCamera = false;
 	}
+
 	if (isFollowing) {
 		float sumX = 0.0f;
 		float sumY = 0.0f;
