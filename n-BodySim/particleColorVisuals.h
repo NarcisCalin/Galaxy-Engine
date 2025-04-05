@@ -10,7 +10,7 @@ struct ColorVisuals {
 	bool densityColor = true;
 	bool velocityColor = false;
 
-	bool selectedColor = false;
+	bool selectedColor = true;
 
 	int blendMode = 1;
 

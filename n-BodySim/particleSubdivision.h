@@ -64,7 +64,7 @@ struct ParticleSubdivision {
 
 							rParticles.emplace_back(rParticles[i].color, halfOffsetVisual, rParticles[i].uniqueColor,
 								rParticles[i].drawPixel, rParticles[i].isSelected,
-								rParticles[i].isSolid, rParticles[i].canBeSubdivided);
+								rParticles[i].isSolid, rParticles[i].canBeSubdivided, rParticles[i].canBeResized);
 						}
 
 						pParticles[i] = std::move(pParticles.back());

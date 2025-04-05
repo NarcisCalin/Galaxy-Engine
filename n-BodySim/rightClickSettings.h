@@ -6,6 +6,7 @@
 #include "particleSubdivision.h"
 #include "particleSelection.h"
 #include "camera.h"
+#include "particleDeletion.h"
 
 
 
@@ -43,7 +44,7 @@ public:
 	}
 
 	void rightClickMenu(bool& isMouseNotHoveringUI, bool& isDragging, ParticleSubdivision& subdivision, ParticleSelection& particleSelection,
-		SceneCamera& myCamera) {
+		SceneCamera& myCamera, ParticleDeletion& particleDeletion) {
 
 		menuSize = { buttonSizeX + 10.0f, buttonSizeY + 10.0f };
 
@@ -80,11 +81,18 @@ public:
 			bool buttonSubdivideSelectedHovering = menuSettings[1].buttonLogic(subdivision.subdivideSelected);
 			bool buttonInvertSelectionHovering = menuSettings[2].buttonLogic(particleSelection.invertParticleSelection);
 			bool buttonFollowSelectionHovering = menuSettings[3].buttonLogic(myCamera.centerCamera);
+			bool buttonClustersSelectionHovering = menuSettings[4].buttonLogic(particleSelection.selectManyClusters);
+			bool buttonDeleteSelectionHovering = menuSettings[5].buttonLogic(particleDeletion.deleteSelection);
+			bool buttonDeleteNonImportantParticlesHovering = menuSettings[6].buttonLogic(particleDeletion.deleteNonImportant);
 
 			if (buttonSubdivideAllHovering ||
 				buttonSubdivideSelectedHovering ||
 				buttonInvertSelectionHovering ||
-				buttonFollowSelectionHovering) {
+				buttonFollowSelectionHovering ||
+				buttonDeleteSelectionHovering ||
+				buttonClustersSelectionHovering ||
+				buttonDeleteNonImportantParticlesHovering
+				) {
 				isMouseNotHoveringUI = false;
 				isDragging = false;
 			}
@@ -108,7 +116,7 @@ private:
 
 	float menuButtonGap = 0.0f;
 
-	std::array<Button, 4> menuSettings = {
+	std::array<Button, 7> menuSettings = {
 
 Button({0.0f}, {0.0f}, "Subdivide All", true),
 
@@ -116,7 +124,14 @@ Button({0.0f}, {0.0f}, "Subdivide Selec.", true),
 
 Button({0.0f}, {0.0f}, "Invert Selection", true),
 
-Button({0.0f}, {0.0f}, "Follow Selection", true)
+Button({0.0f}, {0.0f}, "Follow Selection", true),
+
+Button({0.0f}, {0.0f}, "Select Clusters", true),
+
+Button({0.0f}, {0.0f}, "Delete Selection", true),
+
+Button({0.0f}, {0.0f}, "Delete Strays", true)
+
 
 	};
 };

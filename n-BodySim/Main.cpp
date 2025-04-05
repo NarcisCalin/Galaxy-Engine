@@ -25,6 +25,8 @@
 #include "densitySize.h"
 #include "particleColorVisuals.h"
 #include "rightClickSettings.h"
+#include "controls.h"
+#include "particleDeletion.h"
 
 struct UpdateParameters {
 	std::vector<ParticlePhysics> pParticles;
@@ -59,6 +61,10 @@ struct UpdateParameters {
 	ColorVisuals colorVisuals;
 
 	RightClickSettings rightClickSettings;
+
+	Controls controls;
+
+	ParticleDeletion particleDeletion;
 };
 
 int screenWidth = 1920;
@@ -78,6 +84,8 @@ float theta = 0.6f;
 float timeStepMultiplier = 1.0f;
 const float fixedDeltaTime = 0.03f;
 
+bool isTimeStopped = false;
+
 float timeFactor;
 
 bool isGlobalTrailsEnabled = false;
@@ -89,7 +97,6 @@ bool isMultiThreadingEnabled = true;
 bool isBarnesHutEnabled = true;
 bool isDarkMatterEnabled = false;
 bool isCollisionsEnabled = false;
-bool isShowControlsEnabled = true;
 bool isDensitySizeEnabled = false;
 
 
@@ -349,6 +356,13 @@ void flattenQuadtree(Quadtree* node, std::vector<Quadtree*>& flatList) {
 Vector2 mouseWorldPos;
 static void updateScene(UpdateParameters& myParameters) {
 
+	if (IsKeyPressed(KEY_SPACE)) {
+		isTimeStopped = !isTimeStopped;
+	}
+	if (isTimeStopped) {
+		timeStepMultiplier = 0.0f;
+	}
+
 	Quadtree* grid = nullptr;
 
 	G = 6.674e-11 * gravityMultiplier;
@@ -403,6 +417,7 @@ static void updateScene(UpdateParameters& myParameters) {
 				true,
 				false,
 				true,
+				false,
 				false
 			);
 			isDragging = false;
@@ -441,6 +456,7 @@ static void updateScene(UpdateParameters& myParameters) {
 					true,
 					false,
 					false,
+					true,
 					true
 				);
 
@@ -480,6 +496,7 @@ static void updateScene(UpdateParameters& myParameters) {
 					true,
 					false,
 					false,
+					true,
 					true
 				);
 				isDragging = false;
@@ -500,6 +517,7 @@ static void updateScene(UpdateParameters& myParameters) {
 					true,
 					false,
 					false,
+					true,
 					true
 				);
 			}
@@ -576,13 +594,17 @@ static void updateScene(UpdateParameters& myParameters) {
 
 	myParameters.densitySize.sizeByDensity(myParameters.pParticles, myParameters.rParticles, isDensitySizeEnabled, particleSizeMultiplier);
 
+	myParameters.particleDeletion.deleteSelected(myParameters.pParticles, myParameters.rParticles);
+
+	myParameters.particleDeletion.deleteNonImportanParticles(myParameters.pParticles, myParameters.rParticles);
+
 
 	if (grid != nullptr) {
 		delete grid;
 	}
 }
 
-std::array<Button, 15> settingsButtonsArray = {
+std::array<Button, 16> settingsButtonsArray = {
 
 Button({(float)screenWidth - 195.0f, 80.0f}, {175.0f, 35.0f}, "Pixel Drawing", true),
 
@@ -591,6 +613,8 @@ Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Global Trails", true),
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Selected Trails", true),
 
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Local Trails", true),
+
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "White Trails", true),
 
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Solid Color", true),
 
@@ -610,9 +634,10 @@ Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Multi-Threading", true),
 
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Collisions (!!!)", true),
 
-Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Controls", true),
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Density Size", true),
 
-Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Density Size", true)
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Controls", true)
+
 
 };
 std::array<Button, 1> toggleSettingsButtons = {
@@ -625,31 +650,9 @@ Button
 )
 };
 
-std::array<std::string, 19> controlsArray = {
-	"1. Hold LMB and Drag: Throw heavy particle",
-	"2. Hold MMB: Paint particles",
-	"3. Hold Key 3 and Drag: Create small galaxy",
-	"4. Press 1: Create big galaxy",
-	"5. Press 2: Create scattered particles",
-	"6. T: Toggle global trails",
-	"7. LCTRL + T: Toggle local trails",
-	"8. P: Toggle pixel drawing",
-	"9. C: Clear all particles",
-	"10. U: Toggle UI",
-	"11. RMB on slider to set it to default",
-	"12. Move with RMB",
-	"13. Zoom with mouse wheel",
-	"14. LCTRL + Scroll wheel: Brush size",
-	"15. RMB on particle cluster to follow it",
-	"16.  LCTRL + RMB on particle to follow it",
-	"17. Z: Center camera on selected particles",
-	"18. F: Reset camera ",
-	"19. COLLISIONS ARE STILL EXPERIMENTAL!"
-};
-
-std::array<Slider, 12> slidersArray = {
+std::array<Slider, 13> slidersArray = {
 	Slider
-({20, static_cast<float>(screenHeight - 500.0f)}, {230.0f, 7.0f}, {190, 128, 128, 255}, "Red"),
+({20, static_cast<float>(screenHeight - 530.0f)}, {230.0f, 7.0f}, {190, 128, 128, 255}, "Red"),
 
 Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 190, 128, 255}, "Green"),
 
@@ -671,7 +674,10 @@ Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Gravity Strengt
 
 Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Trails Length"),
 
+Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Trails Thickness"),
+
 Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Particles Size")
+
 };
 
 
@@ -694,7 +700,12 @@ static void drawScene(UpdateParameters& myParameters) {
 
 		if (!isDensitySizeEnabled) {
 
-			rParticle.size = rParticle.previousSize * particleSizeMultiplier;
+			if (rParticle.canBeResized) {
+				rParticle.size = rParticle.previousSize * particleSizeMultiplier;
+			}
+			else {
+				rParticle.size = rParticle.previousSize;
+			}
 
 		}
 	}
@@ -759,6 +770,11 @@ static void drawScene(UpdateParameters& myParameters) {
 		{ toggleSettingsButtons[0].pos.x + 7.0f, toggleSettingsButtons[0].pos.y + 11.0f },
 		{ toggleSettingsButtons[0].pos.x + 11.0f ,toggleSettingsButtons[0].pos.y + 5.0f }, WHITE);
 
+	if (timeStepMultiplier == 0.0f) {
+		DrawRectangleV({ screenWidth - 200.0f, 20.0f }, { 10.0f, 30.0f }, WHITE);
+		DrawRectangleV({ screenWidth - 220.0f, 20.0f }, { 10.0f, 30.0f }, WHITE);
+	}
+
 	if (showSettings) {
 		for (size_t i = 1; i < settingsButtonsArray.size(); ++i) {
 			settingsButtonsArray[i].pos.x = settingsButtonsArray[i - 1].pos.x;
@@ -770,27 +786,22 @@ static void drawScene(UpdateParameters& myParameters) {
 		bool buttonGlobalTrailsHovering = settingsButtonsArray[1].buttonLogic(isGlobalTrailsEnabled);
 		bool buttonSelectedTrailsHovering = settingsButtonsArray[2].buttonLogic(isSelectedTrailsEnabled);
 		bool buttonLocalTrailsHovering = settingsButtonsArray[3].buttonLogic(isLocalTrailsEnabled);
-		bool buttonSolidColorHovering = settingsButtonsArray[4].buttonLogic(myParameters.colorVisuals.solidColor);
-		bool buttonDensityColorHovering = settingsButtonsArray[5].buttonLogic(myParameters.colorVisuals.densityColor);
-		bool buttonVelocityColorHovering = settingsButtonsArray[6].buttonLogic(myParameters.colorVisuals.velocityColor);
-		bool buttonSelectedColorHovering = settingsButtonsArray[7].buttonLogic(myParameters.colorVisuals.selectedColor);
-		bool buttonDarkMatterHovering = settingsButtonsArray[8].buttonLogic(isDarkMatterEnabled);
-		bool buttonPeriodicBoundaryHovering = settingsButtonsArray[9].buttonLogic(isPeriodicBoundaryEnabled);
-		bool buttonBarnesHutHovering = settingsButtonsArray[10].buttonLogic(isBarnesHutEnabled);
-		bool buttonMultiThreadingHovering = settingsButtonsArray[11].buttonLogic(isMultiThreadingEnabled);
-		bool buttonCollisionsHovering = settingsButtonsArray[12].buttonLogic(isCollisionsEnabled);
-		bool buttonControlsHovering = settingsButtonsArray[13].buttonLogic(isShowControlsEnabled);
+		bool buttonWhiteTrailsHovering = settingsButtonsArray[4].buttonLogic(myParameters.trails.whiteTrails);
+		bool buttonSolidColorHovering = settingsButtonsArray[5].buttonLogic(myParameters.colorVisuals.solidColor);
+		bool buttonDensityColorHovering = settingsButtonsArray[6].buttonLogic(myParameters.colorVisuals.densityColor);
+		bool buttonVelocityColorHovering = settingsButtonsArray[7].buttonLogic(myParameters.colorVisuals.velocityColor);
+		bool buttonSelectedColorHovering = settingsButtonsArray[8].buttonLogic(myParameters.colorVisuals.selectedColor);
+		bool buttonDarkMatterHovering = settingsButtonsArray[9].buttonLogic(isDarkMatterEnabled);
+		bool buttonPeriodicBoundaryHovering = settingsButtonsArray[10].buttonLogic(isPeriodicBoundaryEnabled);
+		bool buttonBarnesHutHovering = settingsButtonsArray[11].buttonLogic(isBarnesHutEnabled);
+		bool buttonMultiThreadingHovering = settingsButtonsArray[12].buttonLogic(isMultiThreadingEnabled);
+		bool buttonCollisionsHovering = settingsButtonsArray[13].buttonLogic(isCollisionsEnabled);
 		bool buttonDensitySizeHovering = settingsButtonsArray[14].buttonLogic(isDensitySizeEnabled);
-
-		if (isShowControlsEnabled) {
-			for (size_t i = 0; i < controlsArray.size(); i++) {
-				DrawText(TextFormat("%s", controlsArray[i].c_str()), 25, 100 + 20 * static_cast<int>(i), 15, WHITE);
-			}
-		}
+		bool buttonControlsHovering = settingsButtonsArray[15].buttonLogic(myParameters.controls.isShowControlsEnabled);
 
 		for (size_t i = 1; i < slidersArray.size(); ++i) {
 			slidersArray[i].sliderPos.x = slidersArray[i - 1].sliderPos.x;
-			slidersArray[i].sliderPos.y = slidersArray[i - 1].sliderPos.y + slidersArray[i].sliderSize.y + 35;
+			slidersArray[i].sliderPos.y = slidersArray[i - 1].sliderPos.y + slidersArray[i].sliderSize.y + 34;
 			slidersArray[i].sliderSize = slidersArray[i - 1].sliderSize;
 		}
 
@@ -805,7 +816,8 @@ static void drawScene(UpdateParameters& myParameters) {
 		bool sliderTimeScaleHovering = slidersArray[8].sliderLogic(0.0f, timeStepMultiplier, 5.0f);
 		bool sliderGravityStrengthHovering = slidersArray[9].sliderLogic(0.0f, gravityMultiplier, 3.0f);
 		bool sliderTrailsLengthHovering = slidersArray[10].sliderLogic(0, trailMaxLength, 400);
-		bool sliderParticlesSizeHovering = slidersArray[11].sliderLogic(0.1f, particleSizeMultiplier, 5.0f);
+		bool sliderTrailsThicknessHovering = slidersArray[11].sliderLogic(0.007f, myParameters.trails.trailThickness, 0.5f);
+		bool sliderParticlesSizeHovering = slidersArray[12].sliderLogic(0.1f, particleSizeMultiplier, 5.0f);
 
 
 		if (buttonPixelDrawingHovering ||
@@ -835,7 +847,9 @@ static void drawScene(UpdateParameters& myParameters) {
 			buttonLocalTrailsHovering ||
 			buttonDensitySizeHovering ||
 			sliderParticlesSizeHovering ||
-			buttonSelectedColorHovering
+			buttonSelectedColorHovering ||
+			sliderTrailsThicknessHovering ||
+			buttonWhiteTrailsHovering
 			) {
 			myParameters.isMouseNotHoveringUI = false;
 			isDragging = false;
@@ -875,17 +889,18 @@ static void drawScene(UpdateParameters& myParameters) {
 			myParameters.isMouseNotHoveringUI = true;
 		}
 	}
+
 	if (IsKeyPressed(KEY_P)) {
 		isPixelDrawingEnabled = !isPixelDrawingEnabled;
 	}
 
+	myParameters.controls.showControls(myParameters.isMouseNotHoveringUI, isDragging, screenWidth, screenHeight);
+
 	myParameters.rightClickSettings.rightClickMenu(myParameters.isMouseNotHoveringUI, isDragging, myParameters.subdivision, myParameters.particleSelection,
-		myParameters.myCamera);
+		myParameters.myCamera, myParameters.particleDeletion);
 
 	myParameters.subdivision.subdivideParticles(myParameters.pParticles, myParameters.rParticles, particleTextureSize,
 		myParameters.isMouseNotHoveringUI, isDragging);
-
-
 
 	DrawText(TextFormat("Particles: %i", myParameters.pParticles.size()), 50, 50, 25, WHITE);
 	if (myParameters.pParticlesSelected.size() > 0) {

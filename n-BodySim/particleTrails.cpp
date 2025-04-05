@@ -54,9 +54,9 @@ void ParticleTrails::trailLogic(std::vector<ParticlePhysics>& pParticles, std::v
 					}
 					selectedParticlesAveragePos = { pParticlePosSumX / pParticlesSelected.size(), pParticlePosSumY / pParticlesSelected.size() };
 
-					for (auto& trailDot : trailDots) {
-						trailDot.pos.x = trailDot.offset.x + selectedParticlesAveragePos.x;
-						trailDot.pos.y = trailDot.offset.y + selectedParticlesAveragePos.y;
+					for (auto& TrailDot : trailDots) {
+						TrailDot.pos.x = TrailDot.offset.x + selectedParticlesAveragePos.x;
+						TrailDot.pos.y = TrailDot.offset.y + selectedParticlesAveragePos.y;
 					}
 				}
 				wasLocalTrailsEnabled = true;
@@ -98,9 +98,9 @@ void ParticleTrails::trailLogic(std::vector<ParticlePhysics>& pParticles, std::v
 					}
 					selectedParticlesAveragePos = { pParticlePosSumX / pParticlesSelected.size(), pParticlePosSumY / pParticlesSelected.size() };
 
-					for (auto& trailDot : trailDots) {
-						trailDot.pos.x = trailDot.offset.x + selectedParticlesAveragePos.x;
-						trailDot.pos.y = trailDot.offset.y + selectedParticlesAveragePos.y;
+					for (auto& TrailDot : trailDots) {
+						TrailDot.pos.x = TrailDot.offset.x + selectedParticlesAveragePos.x;
+						TrailDot.pos.y = TrailDot.offset.y + selectedParticlesAveragePos.y;
 					}
 				}
 				wasLocalTrailsEnabled = true;
@@ -126,8 +126,17 @@ void ParticleTrails::trailLogic(std::vector<ParticlePhysics>& pParticles, std::v
 
 void ParticleTrails::drawTrail(std::vector<ParticleRendering>& rParticles, Texture2D& particleBlur) {
 
-	for (size_t i = 0; i < trailDots.size(); i++) {
-		DrawTextureEx(particleBlur, { static_cast<float>(trailDots[i].pos.x - 0.04f * 32 / 2),
-				static_cast<float>(trailDots[i].pos.y - 0.04f * 32 / 2) }, 0, 0.04f, trailDots[i].color);
+	if (!whiteTrails) {
+		for (size_t i = 0; i < trailDots.size(); i++) {
+			DrawTextureEx(particleBlur, { static_cast<float>(trailDots[i].pos.x - trailThickness * 32 / 2),
+					static_cast<float>(trailDots[i].pos.y - trailThickness * 32 / 2) }, 0, trailThickness, trailDots[i].color);
+		}
 	}
+	else {
+		for (size_t i = 0; i < trailDots.size(); i++) {
+			DrawTextureEx(particleBlur, { static_cast<float>(trailDots[i].pos.x - trailThickness * 32 / 2),
+					static_cast<float>(trailDots[i].pos.y - trailThickness * 32 / 2) }, 0, trailThickness, {230,230,230,180});
+		}
+	}
+
 }

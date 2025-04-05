@@ -27,8 +27,9 @@ struct ParticleRendering {
 	bool isSelected;
 	bool isSolid;
 	bool canBeSubdivided;
+	bool canBeResized;
 	float previousSize;
-	ParticleRendering(Color color, float size, bool uniqueColor, bool drawPixel, bool isSelected, bool isSolid, bool canBeSubdivided) {
+	ParticleRendering(Color color, float size, bool uniqueColor, bool drawPixel, bool isSelected, bool isSolid, bool canBeSubdivided, bool canBeResized) {
 		this->color = color;
 		this->size = size;
 		this->uniqueColor = uniqueColor;
@@ -36,6 +37,7 @@ struct ParticleRendering {
 		this->isSelected = isSelected;
 		this->isSolid = isSolid;
 		this->canBeSubdivided = canBeSubdivided;
+		this->canBeResized = canBeResized;
 		this->previousSize = size;
 	}
 

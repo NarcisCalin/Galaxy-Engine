@@ -9,6 +9,8 @@ class ParticleSelection {
 public:
 
 	bool invertParticleSelection = false;
+
+	bool selectManyClusters = false;
 	
 	ParticleSelection();
 

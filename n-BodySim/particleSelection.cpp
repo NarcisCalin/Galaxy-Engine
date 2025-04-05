@@ -127,7 +127,7 @@ void ParticleSelection::particleSelection(std::vector<ParticlePhysics>& pParticl
 
 void ParticleSelection::manyClustersSelection(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, ParticleTrails& trails,
 	bool& isGlobalTrailsEnabled) {
-	if (IsKeyPressed(KEY_D)) {
+	if (selectManyClusters) {
 		if (!isGlobalTrailsEnabled) {
 			trails.trailDots.clear();
 		}
@@ -150,6 +150,7 @@ void ParticleSelection::manyClustersSelection(std::vector<ParticlePhysics>& pPar
 				rParticles[i].isSelected = true;
 			}
 		}
+		selectManyClusters = false;
 	}
 }
 
@@ -166,7 +167,9 @@ void ParticleSelection::boxSelection(std::vector<ParticlePhysics>& pParticles, s
 		float boxY = fmin(boxInitialPos.y, currentMousePos.y);
 		float boxWidth = fabs(currentMousePos.x - boxInitialPos.x);
 		float boxHeight = fabs(currentMousePos.y - boxInitialPos.y);
-		DrawRectangleV({ boxX, boxY }, { boxWidth, boxHeight }, RED);
+		DrawRectangleV({boxX, boxY }, { boxWidth, boxHeight }, {40,40,40,80});
+		DrawRectangleLinesEx({ boxX, boxY , boxWidth, boxHeight }, 0.6f, WHITE);
+
 	}
 
 	if (IsKeyDown(KEY_LEFT_ALT) && isBoxSelecting) {

@@ -10,13 +10,17 @@ class ParticleTrails {
 public:
 	float size = 5;
 
-	struct trailDot {
+	struct TrailDot {
 		Vector2 pos;
 		Vector2 offset;
 		Color color;
 	};
 
-	std::vector<trailDot> trailDots;
+	float trailThickness = 0.04f;
+
+	bool whiteTrails = false;
+
+	std::vector<TrailDot> trailDots;
 
 	Vector2 selectedParticlesAveragePos = { 0.0f };
 
