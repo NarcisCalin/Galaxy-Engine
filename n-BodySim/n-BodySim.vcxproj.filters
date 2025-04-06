@@ -24,7 +24,7 @@
     <ClCompile Include="particleTrails.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ui.cpp">
+    <ClCompile Include="UI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="button.cpp">
@@ -71,7 +71,7 @@
     <ClInclude Include="particleTrails.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ui.h">
+    <ClInclude Include="UI.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="button.h">
@@ -114,6 +114,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="particlesSpawning.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="parameters.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

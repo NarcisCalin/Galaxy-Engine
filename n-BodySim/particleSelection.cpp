@@ -222,6 +222,16 @@ void ParticleSelection::invertSelection(std::vector<ParticleRendering>& rParticl
 	}
 }
 
+void ParticleSelection::deselection(std::vector<ParticleRendering>& rParticles){
+
+	if (deselectParticles) {
+		for (auto& rParticle : rParticles) {
+			rParticle.isSelected = false;
+		}
+		deselectParticles = false;
+	}
+}
+
 void ParticleSelection::selectedParticlesStoring(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, std::vector<ParticleRendering>& rParticlesSelected,
 	std::vector<ParticlePhysics>& pParticlesSelected) {
 	rParticlesSelected.clear();

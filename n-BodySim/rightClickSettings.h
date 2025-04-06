@@ -7,6 +7,7 @@
 #include "particleSelection.h"
 #include "camera.h"
 #include "particleDeletion.h"
+#include <algorithm>
 
 
 
@@ -38,28 +39,31 @@ public:
 
 		if (IsMouseButtonReleased(1) && (!IsKeyDown(KEY_LEFT_CONTROL) && !IsKeyDown(KEY_LEFT_ALT)) && !isMouseMoving && isMouseNotHoveringUI) {
 			isMenuActive = true;
-			menuPos = { GetMousePosition() };
+
+			menuSize.x = buttonSizeX + 10.0f;
+			menuSize.y = (menuSettings.size() + 1) * (buttonSizeY + menuButtonGap);
+
+			menuPos.x = std::clamp(static_cast<float>(GetMouseX()), 0.0f, static_cast<float>(GetScreenWidth()) - menuSize.x);
+			menuPos.y = std::clamp(static_cast<float>(GetMouseY()), 0.0f, static_cast<float>(GetScreenHeight()) - menuSize.y);
+
 			menuSettings[0].pos = menuPos;
 		}
 	}
 
 	void rightClickMenu(bool& isMouseNotHoveringUI, bool& isDragging, ParticleSubdivision& subdivision, ParticleSelection& particleSelection,
-		SceneCamera& myCamera, ParticleDeletion& particleDeletion) {
-
-		menuSize = { buttonSizeX + 10.0f, buttonSizeY + 10.0f };
+		SceneCamera& myCamera, ParticleDeletion& particleDeletion, bool& drawZCurves, bool& drawQuadtree) {
 
 		rightClickMenuSpawnLogic(isMouseNotHoveringUI);
 
 
 		if (isMenuActive) {
 
-			menuButtonGap = (menuSize.x - buttonSizeX) / 2;
+			menuSettings[0].pos.x = menuPos.x + menuButtonGap;
 
-
-			menuSettings[0].pos = { menuPos.x + menuButtonGap ,
-				menuPos.y + menuButtonGap };
+			menuSettings[0].pos.y = menuPos.y + menuButtonGap;
 
 			menuSettings[0].size = { buttonSizeX, buttonSizeY };
+
 
 			for (size_t i = 1; i < menuSettings.size(); i++) {
 
@@ -70,20 +74,19 @@ public:
 
 			}
 
-			menuSize.x = menuSettings[0].size.x + 10.0f;
-
-			menuSize.y = menuSettings[menuSettings.size() - 1].pos.y - menuPos.y + menuSettings[0].size.y + menuButtonGap;
-
 
 			DrawRectangleV(menuPos, menuSize, menuColor);
 
 			bool buttonSubdivideAllHovering = menuSettings[0].buttonLogic(subdivision.subdivideAll);
 			bool buttonSubdivideSelectedHovering = menuSettings[1].buttonLogic(subdivision.subdivideSelected);
 			bool buttonInvertSelectionHovering = menuSettings[2].buttonLogic(particleSelection.invertParticleSelection);
-			bool buttonFollowSelectionHovering = menuSettings[3].buttonLogic(myCamera.centerCamera);
-			bool buttonClustersSelectionHovering = menuSettings[4].buttonLogic(particleSelection.selectManyClusters);
-			bool buttonDeleteSelectionHovering = menuSettings[5].buttonLogic(particleDeletion.deleteSelection);
-			bool buttonDeleteNonImportantParticlesHovering = menuSettings[6].buttonLogic(particleDeletion.deleteNonImportant);
+			bool buttonDeselectAllHovering = menuSettings[3].buttonLogic(particleSelection.deselectParticles);
+			bool buttonFollowSelectionHovering = menuSettings[4].buttonLogic(myCamera.centerCamera);
+			bool buttonClustersSelectionHovering = menuSettings[5].buttonLogic(particleSelection.selectManyClusters);
+			bool buttonDeleteSelectionHovering = menuSettings[6].buttonLogic(particleDeletion.deleteSelection);
+			bool buttonDeleteNonImportantParticlesHovering = menuSettings[7].buttonLogic(particleDeletion.deleteNonImportant);
+			bool buttonDrawZCurvesHovering = menuSettings[8].buttonLogic(drawZCurves);
+			bool buttonDrawQuadtreeHovering = menuSettings[9].buttonLogic(drawQuadtree);
 
 			if (buttonSubdivideAllHovering ||
 				buttonSubdivideSelectedHovering ||
@@ -91,7 +94,10 @@ public:
 				buttonFollowSelectionHovering ||
 				buttonDeleteSelectionHovering ||
 				buttonClustersSelectionHovering ||
-				buttonDeleteNonImportantParticlesHovering
+				buttonDeleteNonImportantParticlesHovering ||
+				buttonDrawZCurvesHovering ||
+				buttonDrawQuadtreeHovering ||
+				buttonDeselectAllHovering
 				) {
 				isMouseNotHoveringUI = false;
 				isDragging = false;
@@ -114,9 +120,9 @@ private:
 	float buttonSizeX = 175.0f;
 	float buttonSizeY = 35.0f;
 
-	float menuButtonGap = 0.0f;
+	float menuButtonGap = 5.5f;
 
-	std::array<Button, 7> menuSettings = {
+	std::array<Button, 10> menuSettings = {
 
 Button({0.0f}, {0.0f}, "Subdivide All", true),
 
@@ -124,13 +130,19 @@ Button({0.0f}, {0.0f}, "Subdivide Selec.", true),
 
 Button({0.0f}, {0.0f}, "Invert Selection", true),
 
+Button({0.0f}, {0.0f}, "Deselect All", true),
+
 Button({0.0f}, {0.0f}, "Follow Selection", true),
 
 Button({0.0f}, {0.0f}, "Select Clusters", true),
 
 Button({0.0f}, {0.0f}, "Delete Selection", true),
 
-Button({0.0f}, {0.0f}, "Delete Strays", true)
+Button({0.0f}, {0.0f}, "Delete Strays", true),
+
+Button({0.0f}, {0.0f}, "Debug Z Curves", true),
+
+Button({0.0f}, {0.0f}, "Debug Quadtree", true)
 
 
 	};

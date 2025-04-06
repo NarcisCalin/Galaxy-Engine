@@ -8,9 +8,9 @@
 #include <algorithm>
 #include <bitset>
 
-#include "slingshot.h"
-#include "quadtree.h"
 #include "particle.h"
+#include "quadtree.h"
+#include "slingshot.h"
 #include "particleTrails.h"
 #include "button.h"
 #include "screenCapture.h"
@@ -28,94 +28,12 @@
 #include "controls.h"
 #include "particleDeletion.h"
 #include "particlesSpawning.h"
+#include "UI.h"
+#include "parameters.h"
 
-struct UpdateParameters {
-	std::vector<ParticlePhysics> pParticles;
-	std::vector<ParticleRendering> rParticles;
-
-	std::vector<ParticlePhysics> pParticlesSelected;
-	std::vector<ParticleRendering> rParticlesSelected;
-
-	std::vector<ParticleTrails> trailDots;
-
-	bool isMouseNotHoveringUI = false;
-
-	ScreenCapture screenCapture;
-
-	Morton morton;
-
-	ParticleTrails trails;
-
-	ParticleSelection particleSelection;
-
-	Texture2D particleBlurTex = LoadTexture("Textures/ParticleBlur.png");
-	SceneCamera myCamera;
-
-	Brush brush;
-
-	UpdateParameters() : brush(myCamera, 25.0f) {}
-
-	ParticleSubdivision subdivision;
-
-	DensitySize densitySize;
-
-	ColorVisuals colorVisuals;
-
-	RightClickSettings rightClickSettings;
-
-	Controls controls;
-
-	ParticleDeletion particleDeletion;
-
-	ParticlesSpawning particlesSpawning;
-};
-
-int screenWidth = 1920;
-int screenHeight = 1024;
-float halfScreenWidth = screenWidth * 0.5f;
-float halfScreenHeight = screenHeight * 0.5f;
-
-float screenRatioX;
-float screenRatioY;
-
-int targetFPS = 144;
-
-double G = 6.674e-11;
-float gravityMultiplier = 1.0f;
-float softening = 1.0f;
-float theta = 0.6f;
-float timeStepMultiplier = 1.0f;
-const float fixedDeltaTime = 0.03f;
-
-bool isTimeStopped = false;
-
-float timeFactor;
-
-bool isGlobalTrailsEnabled = false;
-bool isSelectedTrailsEnabled = false;
-bool isLocalTrailsEnabled = false;
-bool isPixelDrawingEnabled = false;
-bool isPeriodicBoundaryEnabled = true;
-bool isMultiThreadingEnabled = true;
-bool isBarnesHutEnabled = true;
-bool isDarkMatterEnabled = false;
-bool isCollisionsEnabled = false;
-bool isDensitySizeEnabled = false;
-
-
-bool isSpawningAllowed = true;
-
-float particleTextureSize = 32.0f;
-
-int trailMaxLength = 14;
-
-bool isRecording = false;
-
-float particleSizeMultiplier = 1.0f;
-
-
-bool subdivideAll = false;
-bool subdivideSelected = false;
+UpdateParameters myParam;
+UpdateVariables myVar;
+UI myUI;
 
 static Quadtree* gridFunction(std::vector<ParticlePhysics>& pParticles,
 	std::vector<ParticleRendering>& rParticles) {
@@ -123,10 +41,6 @@ static Quadtree* gridFunction(std::vector<ParticlePhysics>& pParticles,
 	//grid->calculateMasses(pParticles);
 	return grid;
 }
-
-bool isDragging = false;
-
-int planetIndex = 0;
 
 
 
@@ -141,14 +55,14 @@ static Vector2 calculateForceFromGrid(ParticlePhysics& pParticle,
 	float dx = grid.centerOfMass.x - pParticle.pos.x;
 	float dy = grid.centerOfMass.y - pParticle.pos.y;
 
-	if (isPeriodicBoundaryEnabled) {
-		dx -= screenWidth * ((dx > halfScreenWidth) - (dx < -halfScreenWidth));
-		dy -= screenHeight * ((dy > halfScreenHeight) - (dy < -halfScreenHeight));
+	if (myVar.isPeriodicBoundaryEnabled) {
+		dx -= myVar.screenWidth * ((dx > myVar.halfScreenWidth) - (dx < -myVar.halfScreenWidth));
+		dy -= myVar.screenHeight * ((dy > myVar.halfScreenHeight) - (dy < -myVar.halfScreenHeight));
 	}
 
-	float distanceSq = dx * dx + dy * dy + softening * softening;
+	float distanceSq = dx * dx + dy * dy + myVar.softening * myVar.softening;
 
-	if ((grid.size * grid.size < theta * theta * distanceSq) || grid.subGrids.empty()) {
+	if ((grid.size * grid.size < myVar.theta * myVar.theta * distanceSq) || grid.subGrids.empty()) {
 		if ((grid.endIndex - grid.startIndex) == 1 &&
 			fabs(pParticles[grid.startIndex].pos.x - pParticle.pos.x) < 0.001f &&
 			fabs(pParticles[grid.startIndex].pos.y - pParticle.pos.y) < 0.001f) {
@@ -156,7 +70,7 @@ static Vector2 calculateForceFromGrid(ParticlePhysics& pParticle,
 		}
 
 		float invDistance = 1.0f / sqrt(distanceSq);
-		float forceMagnitude = static_cast<float>(G) * pParticle.mass * grid.gridMass * invDistance * invDistance * invDistance;
+		float forceMagnitude = static_cast<float>(myVar.G) * pParticle.mass * grid.gridMass * invDistance * invDistance * invDistance;
 		totalForce.x = dx * forceMagnitude;
 		totalForce.y = dy * forceMagnitude;
 	}
@@ -185,8 +99,8 @@ struct DarkMatterHalo {
 
 
 static Vector2 darkMatterForce(const ParticlePhysics& pParticles) {
-	float centerX = screenWidth / 2.0f;
-	float centerY = screenHeight / 2.0f;
+	float centerX = myVar.screenWidth / 2.0f;
+	float centerY = myVar.screenHeight / 2.0f;
 
 	float dx = pParticles.pos.x - centerX;
 	float dy = pParticles.pos.y - centerY;
@@ -201,7 +115,7 @@ static Vector2 darkMatterForce(const ParticlePhysics& pParticles) {
 	float M_enclosed = static_cast<float>(haloMass * (log(1 + r_ratio) - r_ratio / (1 + r_ratio)))
 		/ (log(1 + concentration) - concentration / (1 + concentration));
 
-	float acceleration = static_cast<float>(G * M_enclosed) / (radius * radius);
+	float acceleration = static_cast<float>(myVar.G * M_enclosed) / (radius * radius);
 
 	Vector2 force;
 	force.x = static_cast<float>(-(dx / radius) * acceleration * pParticles.mass);
@@ -234,24 +148,24 @@ void pairWiseGravity(std::vector<ParticlePhysics>& pParticles) {
 			float dx = pParticleB.pos.x - pParticleA.pos.x;
 			float dy = pParticleB.pos.y - pParticleA.pos.y;
 
-			if (isPeriodicBoundaryEnabled) {
-				if (isPeriodicBoundaryEnabled) {
-					if (dx > screenWidth / 2)
-						dx -= screenWidth;
-					else if (dx < -screenWidth / 2)
-						dx += screenWidth;
+			if (myVar.isPeriodicBoundaryEnabled) {
+				if (myVar.isPeriodicBoundaryEnabled) {
+					if (dx > myVar.screenWidth / 2)
+						dx -= myVar.screenWidth;
+					else if (dx < -myVar.screenWidth / 2)
+						dx += myVar.screenWidth;
 
-					if (dy > screenHeight / 2)
-						dy -= screenHeight;
-					else if (dy < -screenHeight / 2)
-						dy += screenHeight;
+					if (dy > myVar.screenHeight / 2)
+						dy -= myVar.screenHeight;
+					else if (dy < -myVar.screenHeight / 2)
+						dy += myVar.screenHeight;
 				}
 			}
 
-			float distanceSq = dx * dx + dy * dy + softening * softening;
+			float distanceSq = dx * dx + dy * dy + myVar.softening * myVar.softening;
 
 			float distance = sqrt(distanceSq);
-			float force = static_cast<float>(G * pParticleA.mass * pParticleB.mass / distanceSq);
+			float force = static_cast<float>(myVar.G * pParticleA.mass * pParticleB.mass / distanceSq);
 
 			float fx = (dx / distance) * force;
 			float fy = (dy / distance) * force;
@@ -263,35 +177,35 @@ void pairWiseGravity(std::vector<ParticlePhysics>& pParticles) {
 			accelPlanetBX = fx / pParticleB.mass;
 			accelPlanetBY = fy / pParticleB.mass;
 
-			pParticleA.velocity.x += (fixedDeltaTime * ((3.0f / 2.0f)) * accelPlanetAX - ((1.0f / 2.0f)) * prevAccAX) * timeStepMultiplier;
-			pParticleA.velocity.y += (fixedDeltaTime * ((3.0f / 2.0f)) * accelPlanetAY - ((1.0f / 2.0f)) * prevAccAY) * timeStepMultiplier;
+			pParticleA.velocity.x += (myVar.fixedDeltaTime * ((3.0f / 2.0f)) * accelPlanetAX - ((1.0f / 2.0f)) * prevAccAX) * myVar.timeStepMultiplier;
+			pParticleA.velocity.y += (myVar.fixedDeltaTime * ((3.0f / 2.0f)) * accelPlanetAY - ((1.0f / 2.0f)) * prevAccAY) * myVar.timeStepMultiplier;
 
-			pParticleB.velocity.x -= (fixedDeltaTime * ((3.0f / 2.0f)) * accelPlanetBX - ((1.0f / 2.0f)) * prevAccBX) * timeStepMultiplier;
-			pParticleB.velocity.y -= (fixedDeltaTime * ((3.0f / 2.0f)) * accelPlanetBY - ((1.0f / 2.0f)) * prevAccBY) * timeStepMultiplier;
+			pParticleB.velocity.x -= (myVar.fixedDeltaTime * ((3.0f / 2.0f)) * accelPlanetBX - ((1.0f / 2.0f)) * prevAccBX) * myVar.timeStepMultiplier;
+			pParticleB.velocity.y -= (myVar.fixedDeltaTime * ((3.0f / 2.0f)) * accelPlanetBY - ((1.0f / 2.0f)) * prevAccBY) * myVar.timeStepMultiplier;
 
 		}
 	}
 }
 
 static void physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles) {
-	if (isPeriodicBoundaryEnabled) {
+	if (myVar.isPeriodicBoundaryEnabled) {
 		for (size_t i = 0; i < pParticles.size(); i++) {
 			ParticlePhysics& pParticle = pParticles[i];
-			pParticle.pos.x += pParticle.velocity.x * timeFactor;
-			pParticle.pos.y += pParticle.velocity.y * timeFactor;
-			if (pParticle.pos.x < 0) pParticle.pos.x += screenWidth;
-			else if (pParticle.pos.x >= screenWidth) pParticle.pos.x -= screenWidth;
+			pParticle.pos.x += pParticle.velocity.x * myVar.timeFactor;
+			pParticle.pos.y += pParticle.velocity.y * myVar.timeFactor;
+			if (pParticle.pos.x < 0) pParticle.pos.x += myVar.screenWidth;
+			else if (pParticle.pos.x >= myVar.screenWidth) pParticle.pos.x -= myVar.screenWidth;
 
-			if (pParticle.pos.y < 0) pParticle.pos.y += screenHeight;
-			else if (pParticle.pos.y >= screenHeight) pParticle.pos.y -= screenHeight;
+			if (pParticle.pos.y < 0) pParticle.pos.y += myVar.screenHeight;
+			else if (pParticle.pos.y >= myVar.screenHeight) pParticle.pos.y -= myVar.screenHeight;
 		}
 	}
 	else {
 		for (size_t i = 0; i < pParticles.size(); i++) {
 			ParticlePhysics& pParticle = pParticles[i];
-			pParticle.pos.x += pParticle.velocity.x * timeFactor;
-			pParticle.pos.y += pParticle.velocity.y * timeFactor;
-			if (pParticles[i].pos.x < 0 || pParticles[i].pos.x >= screenWidth || pParticles[i].pos.y < 0 || pParticles[i].pos.y >= screenHeight) {
+			pParticle.pos.x += pParticle.velocity.x * myVar.timeFactor;
+			pParticle.pos.y += pParticle.velocity.y * myVar.timeFactor;
+			if (pParticles[i].pos.x < 0 || pParticles[i].pos.x >= myVar.screenWidth || pParticles[i].pos.y < 0 || pParticles[i].pos.y >= myVar.screenHeight) {
 				pParticles.erase(pParticles.begin() + i);
 				rParticles.erase(rParticles.begin() + i);
 
@@ -357,29 +271,29 @@ void flattenQuadtree(Quadtree* node, std::vector<Quadtree*>& flatList) {
 }
 
 Vector2 mouseWorldPos;
-static void updateScene(UpdateParameters& myParameters) {
+static void updateScene() {
 
 	if (IsKeyPressed(KEY_SPACE)) {
-		isTimeStopped = !isTimeStopped;
+		myVar.isTimeStopped = !myVar.isTimeStopped;
 	}
-	if (isTimeStopped) {
-		timeStepMultiplier = 0.0f;
+	if (myVar.isTimeStopped) {
+		myVar.timeStepMultiplier = 0.0f;
 	}
 
 	Quadtree* grid = nullptr;
 
-	G = 6.674e-11 * gravityMultiplier;
+	myVar.G = 6.674e-11 * myVar.gravityMultiplier;
 
-	timeFactor = fixedDeltaTime * timeStepMultiplier;
+	myVar.timeFactor = myVar.fixedDeltaTime * myVar.timeStepMultiplier;
 
-	if (timeFactor == 0) {
-		myParameters.morton.computeMortonKeys(myParameters.pParticles, grid->boundingBoxPos, grid->boundingBoxSize);
-		myParameters.morton.sortParticlesByMortonKey(myParameters.pParticles, myParameters.rParticles);
+	if (myVar.timeFactor == 0) {
+		myParam.morton.computeMortonKeys(myParam.pParticles, grid->boundingBoxPos, grid->boundingBoxSize);
+		myParam.morton.sortParticlesByMortonKey(myParam.pParticles, myParam.rParticles);
 	}
 
-	if (timeFactor > 0) {
+	if (myVar.timeFactor > 0) {
 
-		grid = gridFunction(myParameters.pParticles, myParameters.rParticles);
+		grid = gridFunction(myParam.pParticles, myParam.rParticles);
 	}
 
 	/*std::vector<Quadtree*> flatNodes;
@@ -397,28 +311,29 @@ static void updateScene(UpdateParameters& myParameters) {
 		index++;
 	}*/
 
-	// DRAW QUADREE DEBUGGING
-	/*if (grid != nullptr) {
+	if (grid != nullptr && myVar.drawQuadtree) {
 		grid->drawQuadtree();
-	}*/
+	}
 
-	myParameters.particlesSpawning.particlesInitialConditions(myParameters.pParticles, myParameters.rParticles, isDragging,
-		myParameters.isMouseNotHoveringUI, myParameters.myCamera, screenHeight, screenWidth, myParameters.brush);
+	myParam.brush.brushSize(myParam.myCamera.mouseWorldPos);
 
-	if (timeFactor > 0.0f) {
-		if (isBarnesHutEnabled) {
+	myParam.particlesSpawning.particlesInitialConditions(myParam.pParticles, myParam.rParticles, myVar.isDragging,
+		myVar.isMouseNotHoveringUI, myParam.myCamera, myVar.screenHeight, myVar.screenWidth, myParam.brush);
+
+	if (myVar.timeFactor > 0.0f) {
+		if (myVar.isBarnesHutEnabled) {
 #pragma omp parallel for schedule(dynamic)
-			for (size_t i = 0; i < myParameters.pParticles.size(); i++) {
-				ParticlePhysics& pParticle = myParameters.pParticles[i];
+			for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+				ParticlePhysics& pParticle = myParam.pParticles[i];
 
 				float accX = 0;
 				float accY = 0;
 				float prevAccX = accX;
 				float prevAccY = accY;
 
-				Vector2 netForce = calculateForceFromGrid(pParticle, *grid, myParameters.pParticles);
+				Vector2 netForce = calculateForceFromGrid(pParticle, *grid, myParam.pParticles);
 
-				if (isDarkMatterEnabled) {
+				if (myVar.isDarkMatterEnabled) {
 					Vector2 dmForce = darkMatterForce(pParticle);
 					netForce.x += dmForce.x;
 					netForce.y += dmForce.y;
@@ -427,47 +342,52 @@ static void updateScene(UpdateParameters& myParameters) {
 				accX = netForce.x / pParticle.mass;
 				accY = netForce.y / pParticle.mass;
 
-				pParticle.velocity.x += (timeFactor * ((3.0f / 2.0f) * accX - (1.0f / 2.0f) * prevAccX));
-				pParticle.velocity.y += (timeFactor * ((3.0f / 2.0f) * accY - (1.0f / 2.0f) * prevAccY));
+				pParticle.velocity.x += (myVar.timeFactor * ((3.0f / 2.0f) * accX - (1.0f / 2.0f) * prevAccX));
+				pParticle.velocity.y += (myVar.timeFactor * ((3.0f / 2.0f) * accY - (1.0f / 2.0f) * prevAccY));
 			}
 		}
 		else {
-			pairWiseGravity(myParameters.pParticles);
+			pairWiseGravity(myParam.pParticles);
 		}
 
-		if (isCollisionsEnabled) {
-			collisions(myParameters.pParticles, myParameters.rParticles, softening);
+		if (myVar.isCollisionsEnabled) {
+			collisions(myParam.pParticles, myParam.rParticles, myVar.softening);
 		}
 
-		physicsUpdate(myParameters.pParticles, myParameters.rParticles);
+		physicsUpdate(myParam.pParticles, myParam.rParticles);
 
 	}
-	myParameters.trails.trailLogic(myParameters.pParticles, myParameters.rParticles, myParameters.pParticlesSelected, myParameters.rParticlesSelected,
-		isGlobalTrailsEnabled, isSelectedTrailsEnabled, trailMaxLength, timeFactor, isLocalTrailsEnabled);
+	myParam.trails.trailLogic(myParam.pParticles, myParam.rParticles, myParam.pParticlesSelected, myParam.rParticlesSelected,
+		myVar.isGlobalTrailsEnabled, myVar.isSelectedTrailsEnabled, myVar.trailMaxLength, myVar.timeFactor, myVar.isLocalTrailsEnabled);
 
-	myParameters.myCamera.cameraFollowObject(myParameters.pParticles, myParameters.rParticles, myParameters.isMouseNotHoveringUI, isSelectedTrailsEnabled,
-		myParameters.trails);
+	myParam.myCamera.cameraFollowObject(myParam.pParticles, myParam.rParticles, myVar.isMouseNotHoveringUI, myVar.isSelectedTrailsEnabled,
+		myParam.trails);
 
-	myParameters.particleSelection.clusterSelection(myParameters.pParticles, myParameters.rParticles,
-		myParameters.myCamera, myParameters.isMouseNotHoveringUI, myParameters.trails, isGlobalTrailsEnabled);
+	myParam.particleSelection.clusterSelection(myParam.pParticles, myParam.rParticles,
+		myParam.myCamera, myVar.isMouseNotHoveringUI, myParam.trails, myVar.isGlobalTrailsEnabled);
 
-	myParameters.particleSelection.particleSelection(myParameters.pParticles, myParameters.rParticles, myParameters.myCamera,
-		myParameters.isMouseNotHoveringUI, myParameters.trails, isGlobalTrailsEnabled);
+	myParam.particleSelection.particleSelection(myParam.pParticles, myParam.rParticles, myParam.myCamera,
+		myVar.isMouseNotHoveringUI, myParam.trails, myVar.isGlobalTrailsEnabled);
 
-	myParameters.particleSelection.manyClustersSelection(myParameters.pParticles, myParameters.rParticles, myParameters.trails, isGlobalTrailsEnabled);
+	myParam.particleSelection.manyClustersSelection(myParam.pParticles, myParam.rParticles, myParam.trails, myVar.isGlobalTrailsEnabled);
 
-	myParameters.particleSelection.boxSelection(myParameters.pParticles, myParameters.rParticles, myParameters.myCamera);
+	myParam.particleSelection.boxSelection(myParam.pParticles, myParam.rParticles, myParam.myCamera);
 
-	myParameters.particleSelection.invertSelection(myParameters.rParticles);
+	myParam.particleSelection.invertSelection(myParam.rParticles);
 
-	myParameters.particleSelection.selectedParticlesStoring(myParameters.pParticles, myParameters.rParticles, myParameters.rParticlesSelected,
-		myParameters.pParticlesSelected);
+	myParam.particleSelection.deselection(myParam.rParticles);
 
-	myParameters.densitySize.sizeByDensity(myParameters.pParticles, myParameters.rParticles, isDensitySizeEnabled, particleSizeMultiplier);
+	myParam.particleSelection.selectedParticlesStoring(myParam.pParticles, myParam.rParticles, myParam.rParticlesSelected,
+		myParam.pParticlesSelected);
 
-	myParameters.particleDeletion.deleteSelected(myParameters.pParticles, myParameters.rParticles);
+	myParam.densitySize.sizeByDensity(myParam.pParticles, myParam.rParticles, myVar.isDensitySizeEnabled, myVar.particleSizeMultiplier);
 
-	myParameters.particleDeletion.deleteNonImportanParticles(myParameters.pParticles, myParameters.rParticles);
+	myParam.particleDeletion.deleteSelected(myParam.pParticles, myParam.rParticles);
+
+	myParam.particleDeletion.deleteNonImportanParticles(myParam.pParticles, myParam.rParticles);
+
+	myParam.subdivision.subdivideParticles(myParam.pParticles, myParam.rParticles, myVar.particleTextureSize,
+		myVar.isMouseNotHoveringUI, myVar.isDragging);
 
 
 	if (grid != nullptr) {
@@ -475,104 +395,27 @@ static void updateScene(UpdateParameters& myParameters) {
 	}
 }
 
-std::array<Button, 16> settingsButtonsArray = {
 
-Button({(float)screenWidth - 195.0f, 80.0f}, {175.0f, 35.0f}, "Pixel Drawing", true),
+static void drawScene(Texture2D& particleBlurTex) {
 
-Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Global Trails", true),
+	for (int i = 0; i < myParam.pParticles.size(); ++i) {
 
-Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Selected Trails", true),
+		ParticlePhysics& pParticle = myParam.pParticles[i];
+		ParticleRendering& rParticle = myParam.rParticles[i];
 
-Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Local Trails", true),
-
-Button({780.0f, 0.0f}, {200.0f, 50.0f}, "White Trails", true),
-
-Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Solid Color", true),
-
-Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Density Color", true),
-
-Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Velocity Color", true),
-
-Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Selected Color", true),
-
-Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Dark Matter", true),
-
-Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Looping Space", true),
-
-Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Barnes-Hut", true),
-
-Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Multi-Threading", true),
-
-Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Collisions (!!!)", true),
-
-Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Density Size", true),
-
-Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Controls", true)
-
-
-};
-std::array<Button, 1> toggleSettingsButtons = {
-Button
-(
-	{ (float)screenWidth - 34.0f, 65.0f },
-	{ 14.0f,14.0f },
-	"",
-	false
-)
-};
-
-std::array<Slider, 13> slidersArray = {
-	Slider
-({20, static_cast<float>(screenHeight - 530.0f)}, {230.0f, 7.0f}, {190, 128, 128, 255}, "Red"),
-
-Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 190, 128, 255}, "Green"),
-
-Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 190, 255}, "Blue"),
-
-Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Alpha"),
-
-Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Density Radius"),
-
-Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Max Neighbors"),
-
-Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Softening"),
-
-Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Theta"),
-
-Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Time Scale"),
-
-Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Gravity Strength"),
-
-Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Trails Length"),
-
-Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Trails Thickness"),
-
-Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Particles Size")
-
-};
-
-
-bool showSettings = true;
-static void drawScene(UpdateParameters& myParameters) {
-
-	for (int i = 0; i < myParameters.pParticles.size(); ++i) {
-
-		ParticlePhysics& pParticle = myParameters.pParticles[i];
-		ParticleRendering& rParticle = myParameters.rParticles[i];
-
-		if (isPixelDrawingEnabled && rParticle.drawPixel) {
+		if (myVar.isPixelDrawingEnabled && rParticle.drawPixel) {
 			DrawPixelV({ pParticle.pos.x, pParticle.pos.y }, rParticle.color);
 		}
 		else {
 			// Texture size is set to 32 because that is the particle texture size in pixels
-			DrawTextureEx(myParameters.particleBlurTex, { static_cast<float>(pParticle.pos.x - rParticle.size * particleTextureSize / 2),
-				static_cast<float>(pParticle.pos.y - rParticle.size * particleTextureSize / 2) }, 0, rParticle.size, rParticle.color);
+			DrawTextureEx(particleBlurTex, { static_cast<float>(pParticle.pos.x - rParticle.size * myVar.particleTextureSize / 2),
+				static_cast<float>(pParticle.pos.y - rParticle.size * myVar.particleTextureSize / 2) }, 0, rParticle.size, rParticle.color);
 		}
 
-		if (!isDensitySizeEnabled) {
+		if (!myVar.isDensitySizeEnabled) {
 
 			if (rParticle.canBeResized) {
-				rParticle.size = rParticle.previousSize * particleSizeMultiplier;
+				rParticle.size = rParticle.previousSize * myVar.particleSizeMultiplier;
 			}
 			else {
 				rParticle.size = rParticle.previousSize;
@@ -581,220 +424,45 @@ static void drawScene(UpdateParameters& myParameters) {
 		}
 	}
 
-	myParameters.colorVisuals.particlesColorVisuals(myParameters.pParticles, myParameters.rParticles);
+	myParam.colorVisuals.particlesColorVisuals(myParam.pParticles, myParam.rParticles);
 
-	myParameters.trails.drawTrail(myParameters.rParticles, myParameters.particleBlurTex);
+	myParam.trails.drawTrail(myParam.rParticles, particleBlurTex);
 
 
 	//EVERYTHING INTENDED TO APPEAR WHILE RECORDING ABOVE
-	isRecording = myParameters.screenCapture.screenGrab();
+	myVar.isRecording = myParam.screenCapture.screenGrab();
 	//EVERYTHING NOT INTENDED TO APPEAR WHILE RECORDING BELOW
 
-	mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), myParameters.myCamera.camera);
-	myParameters.brush.drawBrush(mouseWorldPos);
+	mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), myParam.myCamera.camera);
 
-	DrawRectangleLinesEx({ 0,0, (float)screenWidth, (float)screenHeight }, 3, GRAY);
+	myParam.brush.drawBrush(mouseWorldPos);
 
-	// MORTON DEBUGGING
+	DrawRectangleLinesEx({ 0,0, static_cast<float>(myVar.screenWidth), static_cast<float>(myVar.screenHeight) }, 3, GRAY);
 
-	/*if (myParameters.pParticles.size() > 1) {
-		for (size_t i = 0; i < myParameters.pParticles.size() - 1; i++) {
-			DrawLineV(myParameters.pParticles[i].pos, myParameters.pParticles[i + 1].pos, WHITE);
+	// Z-Curves debug toggle
+	if (myParam.pParticles.size() > 1 && myVar.drawZCurves) {
+		for (size_t i = 0; i < myParam.pParticles.size() - 1; i++) {
+			DrawLineV(myParam.pParticles[i].pos, myParam.pParticles[i + 1].pos, WHITE);
 
-			DrawText(TextFormat("%i", i), myParameters.pParticles[i].pos.x, myParameters.pParticles[i].pos.y - 10, 10, { 128,128,128,128 });
+			DrawText(TextFormat("%i", i), myParam.pParticles[i].pos.x, myParam.pParticles[i].pos.y - 10, 10, { 128,128,128,128 });
 		}
-	}*/
-
-	//for (size_t i = 0; i < myParameters.pParticles.size(); i++) {
-	//	if (myParameters.rParticles[i].isSelected) {
-	//		// Bitset 22 because morton is computing 11 bits per axis
-	//		std::bitset<22> mortonBinary(myParameters.pParticles[i].mortonKey);
-
-	//		std::cout
-	//			<< "Pos X: " << myParameters.pParticles[i].pos.x << std::endl
-	//			<< "Pos Y:" << myParameters.pParticles[i].pos.y << std::endl
-	//			<< "Morton Key:" << myParameters.pParticles[i].mortonKey << std::endl
-	//			<< "Morton Binary: " << mortonBinary << std::endl
-	//			<< "----------------------" << std::endl;
-
-	//	}
-	//}
-
-	// MORTON DEBUGGING
-
+	}
 
 	// EVERYTHING NON-STATIC RELATIVE TO CAMERA ABOVE
 	EndMode2D();
 	// EVERYTHING STATIC RELATIVE TO CAMERA BELOW
 
-	if (isRecording) {
-		DrawRectangleLinesEx({ 0,0, (float)screenWidth, (float)screenHeight }, 3, RED);
-	}
-
-	bool buttonShowSettingsHovering = toggleSettingsButtons[0].buttonLogic(showSettings);
-
-	if (IsKeyPressed(KEY_U)) {
-		showSettings = !showSettings;
-	}
-
-	DrawTriangle(
-		{ toggleSettingsButtons[0].pos.x + 3.0f, toggleSettingsButtons[0].pos.y + 5.0f },
-		{ toggleSettingsButtons[0].pos.x + 7.0f, toggleSettingsButtons[0].pos.y + 11.0f },
-		{ toggleSettingsButtons[0].pos.x + 11.0f ,toggleSettingsButtons[0].pos.y + 5.0f }, WHITE);
-
-	if (timeStepMultiplier == 0.0f) {
-		DrawRectangleV({ screenWidth - 200.0f, 20.0f }, { 10.0f, 30.0f }, WHITE);
-		DrawRectangleV({ screenWidth - 220.0f, 20.0f }, { 10.0f, 30.0f }, WHITE);
-	}
-
-	if (showSettings) {
-		for (size_t i = 1; i < settingsButtonsArray.size(); ++i) {
-			settingsButtonsArray[i].pos.x = settingsButtonsArray[i - 1].pos.x;
-			settingsButtonsArray[i].pos.y = settingsButtonsArray[i - 1].pos.y + settingsButtonsArray[i].size.y + 20;
-			settingsButtonsArray[i].size = settingsButtonsArray[i - 1].size;
-
-		}
-		bool buttonPixelDrawingHovering = settingsButtonsArray[0].buttonLogic(isPixelDrawingEnabled);
-		bool buttonGlobalTrailsHovering = settingsButtonsArray[1].buttonLogic(isGlobalTrailsEnabled);
-		bool buttonSelectedTrailsHovering = settingsButtonsArray[2].buttonLogic(isSelectedTrailsEnabled);
-		bool buttonLocalTrailsHovering = settingsButtonsArray[3].buttonLogic(isLocalTrailsEnabled);
-		bool buttonWhiteTrailsHovering = settingsButtonsArray[4].buttonLogic(myParameters.trails.whiteTrails);
-		bool buttonSolidColorHovering = settingsButtonsArray[5].buttonLogic(myParameters.colorVisuals.solidColor);
-		bool buttonDensityColorHovering = settingsButtonsArray[6].buttonLogic(myParameters.colorVisuals.densityColor);
-		bool buttonVelocityColorHovering = settingsButtonsArray[7].buttonLogic(myParameters.colorVisuals.velocityColor);
-		bool buttonSelectedColorHovering = settingsButtonsArray[8].buttonLogic(myParameters.colorVisuals.selectedColor);
-		bool buttonDarkMatterHovering = settingsButtonsArray[9].buttonLogic(isDarkMatterEnabled);
-		bool buttonPeriodicBoundaryHovering = settingsButtonsArray[10].buttonLogic(isPeriodicBoundaryEnabled);
-		bool buttonBarnesHutHovering = settingsButtonsArray[11].buttonLogic(isBarnesHutEnabled);
-		bool buttonMultiThreadingHovering = settingsButtonsArray[12].buttonLogic(isMultiThreadingEnabled);
-		bool buttonCollisionsHovering = settingsButtonsArray[13].buttonLogic(isCollisionsEnabled);
-		bool buttonDensitySizeHovering = settingsButtonsArray[14].buttonLogic(isDensitySizeEnabled);
-		bool buttonControlsHovering = settingsButtonsArray[15].buttonLogic(myParameters.controls.isShowControlsEnabled);
-
-		for (size_t i = 1; i < slidersArray.size(); ++i) {
-			slidersArray[i].sliderPos.x = slidersArray[i - 1].sliderPos.x;
-			slidersArray[i].sliderPos.y = slidersArray[i - 1].sliderPos.y + slidersArray[i].sliderSize.y + 34;
-			slidersArray[i].sliderSize = slidersArray[i - 1].sliderSize;
-		}
-
-		bool sliderRedHovering = slidersArray[0].sliderLogic(0, myParameters.colorVisuals.densityR, 255);
-		bool sliderGreenHovering = slidersArray[1].sliderLogic(0, myParameters.colorVisuals.densityG, 255);
-		bool sliderBlueHovering = slidersArray[2].sliderLogic(0, myParameters.colorVisuals.densityB, 255);
-		bool sliderAlphaHovering = slidersArray[3].sliderLogic(0, myParameters.colorVisuals.densityA, 255);
-		bool sliderDensityHovering = slidersArray[4].sliderLogic(0.0f, myParameters.colorVisuals.densityRadius, 30.0f);
-		bool sliderMaxNeighborsHovering = slidersArray[5].sliderLogic(0, myParameters.colorVisuals.maxNeighbors, 300);
-		bool sliderSofteningHovering = slidersArray[6].sliderLogic(0.1f, softening, 30.0f);
-		bool sliderThetaHovering = slidersArray[7].sliderLogic(0.1f, theta, 5.0f);
-		bool sliderTimeScaleHovering = slidersArray[8].sliderLogic(0.0f, timeStepMultiplier, 5.0f);
-		bool sliderGravityStrengthHovering = slidersArray[9].sliderLogic(0.0f, gravityMultiplier, 3.0f);
-		bool sliderTrailsLengthHovering = slidersArray[10].sliderLogic(0, trailMaxLength, 400);
-		bool sliderTrailsThicknessHovering = slidersArray[11].sliderLogic(0.007f, myParameters.trails.trailThickness, 0.5f);
-		bool sliderParticlesSizeHovering = slidersArray[12].sliderLogic(0.1f, particleSizeMultiplier, 5.0f);
-
-
-		if (buttonPixelDrawingHovering ||
-			buttonDarkMatterHovering ||
-			buttonPeriodicBoundaryHovering ||
-			buttonGlobalTrailsHovering ||
-			buttonBarnesHutHovering ||
-			buttonMultiThreadingHovering ||
-			buttonSolidColorHovering ||
-			buttonDensityColorHovering ||
-			buttonVelocityColorHovering ||
-			buttonShowSettingsHovering ||
-			sliderRedHovering ||
-			sliderGreenHovering ||
-			sliderBlueHovering ||
-			sliderAlphaHovering ||
-			sliderDensityHovering ||
-			sliderMaxNeighborsHovering ||
-			sliderSofteningHovering ||
-			sliderThetaHovering ||
-			sliderTimeScaleHovering ||
-			buttonCollisionsHovering ||
-			sliderGravityStrengthHovering ||
-			buttonControlsHovering ||
-			buttonSelectedTrailsHovering ||
-			sliderTrailsLengthHovering ||
-			buttonLocalTrailsHovering ||
-			buttonDensitySizeHovering ||
-			sliderParticlesSizeHovering ||
-			buttonSelectedColorHovering ||
-			sliderTrailsThicknessHovering ||
-			buttonWhiteTrailsHovering
-			) {
-			myParameters.isMouseNotHoveringUI = false;
-			isDragging = false;
-		}
-		else {
-			myParameters.isMouseNotHoveringUI = true;
-		}
-
-		if (buttonSolidColorHovering && IsMouseButtonPressed(0)) {
-			myParameters.colorVisuals.velocityColor = false;
-			myParameters.colorVisuals.densityColor = false;
-		}
-		if (buttonDensityColorHovering && IsMouseButtonPressed(0)) {
-			myParameters.colorVisuals.velocityColor = false;
-			myParameters.colorVisuals.solidColor = false;
-		}
-		if (buttonVelocityColorHovering && IsMouseButtonPressed(0)) {
-			myParameters.colorVisuals.densityColor = false;
-			myParameters.colorVisuals.solidColor = false;
-		}
-
-		if (buttonGlobalTrailsHovering && IsMouseButtonPressed(0)) {
-			isSelectedTrailsEnabled = false;
-			myParameters.trails.trailDots.clear();
-		}
-		if (buttonSelectedTrailsHovering && IsMouseButtonPressed(0)) {
-			isGlobalTrailsEnabled = false;
-			myParameters.trails.trailDots.clear();
-		}
-	}
-	else {
-
-		if (buttonShowSettingsHovering) {
-			myParameters.isMouseNotHoveringUI = false;
-		}
-		else {
-			myParameters.isMouseNotHoveringUI = true;
-		}
-	}
+	myUI.uiLogic(myParam, myVar);
 
 	if (IsKeyPressed(KEY_P)) {
-		isPixelDrawingEnabled = !isPixelDrawingEnabled;
-	}
-
-	myParameters.controls.showControls(myParameters.isMouseNotHoveringUI, isDragging, screenWidth, screenHeight);
-
-	myParameters.rightClickSettings.rightClickMenu(myParameters.isMouseNotHoveringUI, isDragging, myParameters.subdivision, myParameters.particleSelection,
-		myParameters.myCamera, myParameters.particleDeletion);
-
-	myParameters.subdivision.subdivideParticles(myParameters.pParticles, myParameters.rParticles, particleTextureSize,
-		myParameters.isMouseNotHoveringUI, isDragging);
-
-	DrawText(TextFormat("Particles: %i", myParameters.pParticles.size()), 50, 50, 25, WHITE);
-	if (myParameters.pParticlesSelected.size() > 0) {
-		DrawText(TextFormat("Selected Particles: %i", myParameters.pParticlesSelected.size()), 400, 50, 25, WHITE);
-	}
-
-	if (GetFPS() >= 60) {
-		DrawText(TextFormat("FPS: %i", GetFPS()), screenWidth - 150, 50, 18, GREEN);
-
-	}
-	else if (GetFPS() < 60 && GetFPS() > 30) {
-		DrawText(TextFormat("FPS: %i", GetFPS()), screenWidth - 150, 50, 18, YELLOW);
-	}
-	else {
-		DrawText(TextFormat("FPS: %i", GetFPS()), screenWidth - 150, 50, 18, RED);
+		myVar.isPixelDrawingEnabled = !myVar.isPixelDrawingEnabled;
 	}
 }
 
 
 
 static void enableMultiThreading() {
-	if (isMultiThreadingEnabled) {
+	if (myVar.isMultiThreadingEnabled) {
 		omp_set_num_threads(16);
 	}
 	else {
@@ -803,13 +471,11 @@ static void enableMultiThreading() {
 }
 int main() {
 
-	InitWindow(screenWidth, screenHeight, "n-Body");
+	InitWindow(myVar.screenWidth, myVar.screenHeight, "n-Body");
 
+	Texture2D particleBlurTex = LoadTexture("Textures/ParticleBlur.png");
 
-	SetTargetFPS(targetFPS);
-
-
-	UpdateParameters updateParameters;
+	SetTargetFPS(myVar.targetFPS);
 
 	SetConfigFlags(FLAG_MSAA_4X_HINT);
 
@@ -820,19 +486,13 @@ int main() {
 
 		ClearBackground(BLACK);
 
-		BeginBlendMode(updateParameters.colorVisuals.blendMode);
+		BeginBlendMode(myParam.colorVisuals.blendMode);
 
-		BeginMode2D(updateParameters.myCamera.cameraLogic());
+		BeginMode2D(myParam.myCamera.cameraLogic());
 
-		/*rlPushMatrix();
-		rlTranslatef(0, 25 * 50, 0);
-		rlRotatef(90, 1, 0, 0);
-		DrawGrid(100, 50);
-		rlPopMatrix();*/
+		updateScene();
 
-		updateScene(updateParameters);
-
-		drawScene(updateParameters);
+		drawScene(particleBlurTex);
 
 		EndBlendMode();
 
@@ -842,7 +502,7 @@ int main() {
 		EndDrawing();
 	}
 
-	UnloadTexture(updateParameters.particleBlurTex);
+	UnloadTexture(particleBlurTex);
 
 	CloseWindow();
 

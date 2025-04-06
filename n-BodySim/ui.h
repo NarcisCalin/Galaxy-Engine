@@ -1,10 +1,95 @@
 #pragma once
 #include <iostream>
+#include <array>
 #include "raylib.h"
+#include "particle.h"
+#include "button.h"
+#include "parameters.h"
+#include "slider.h"
 
-class Ui {
+class UI {
 public:
-	
-	Ui();
+
+	void uiLogic(UpdateParameters& myParam, UpdateVariables& myVar);
+
+private:
+
+	std::array<Button, 16>settingsButtonsArray = {
+
+Button({195.0f, 80.0f}, {175.0f, 35.0f}, "Pixel Drawing", true),
+
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Global Trails", true),
+
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Selected Trails", true),
+
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Local Trails", true),
+
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "White Trails", true),
+
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Solid Color", true),
+
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Density Color", true),
+
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Velocity Color", true),
+
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Selected Color", true),
+
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Dark Matter", true),
+
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Looping Space", true),
+
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Barnes-Hut", true),
+
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Multi-Threading", true),
+
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Collisions (!!!)", true),
+
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Density Size", true),
+
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Controls", true)
+
+
+	};
+	std::array<Button, 1> toggleSettingsButtons = {
+	Button
+	(
+		{ 34.0f, 65.0f },
+		{ 14.0f,14.0f },
+		"",
+		false
+	)
+	};
+
+	std::array<Slider, 13>slidersArray = {
+		Slider
+	({20, 530.0f}, {230.0f, 7.0f}, {190, 128, 128, 255}, "Red"),
+
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 190, 128, 255}, "Green"),
+
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 190, 255}, "Blue"),
+
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Alpha"),
+
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Density Radius"),
+
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Max Neighbors"),
+
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Softening"),
+
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Theta"),
+
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Time Scale"),
+
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Gravity Strength"),
+
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Trails Length"),
+
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Trails Thickness"),
+
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Particles Size")
+
+	};
+
+	bool showSettings = true;
 
 };

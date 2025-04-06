@@ -16,7 +16,7 @@ public:
 	Slider(Vector2 sliderPos, Vector2 sliderSize, Color sliderColor, std::string name);
 
 	template <typename T>
-	bool sliderLogic(T minValue, T& value, T maxValue) {
+	inline bool sliderLogic(T minValue, T& value, T maxValue) {
 
 		this->handleColor = {
 			static_cast<unsigned char>(sliderColor.r * 1.2f),

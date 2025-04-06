@@ -9,6 +9,7 @@ class ParticleSelection {
 public:
 
 	bool invertParticleSelection = false;
+	bool deselectParticles = false;
 
 	bool selectManyClusters = false;
 	
@@ -26,6 +27,8 @@ public:
 	void boxSelection(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, SceneCamera& myCamera);
 
 	void invertSelection(std::vector<ParticleRendering>& rParticles);
+
+	void deselection(std::vector<ParticleRendering>& rParticles);
 
 	void selectedParticlesStoring(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, std::vector<ParticleRendering>& rParticlesSelected,
 		std::vector<ParticlePhysics>& pParticlesSelected);

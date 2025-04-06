@@ -153,7 +153,7 @@
     <ClCompile Include="screenCapture.cpp" />
     <ClCompile Include="slider.cpp" />
     <ClCompile Include="slingshot.cpp" />
-    <ClCompile Include="ui.cpp" />
+    <ClCompile Include="UI.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="brush.h" />
@@ -162,6 +162,7 @@
     <ClInclude Include="densitySize.h" />
     <ClInclude Include="controls.h" />
     <ClInclude Include="morton.h" />
+    <ClInclude Include="parameters.h" />
     <ClInclude Include="particleColorVisuals.h" />
     <ClInclude Include="particleDeletion.h" />
     <ClInclude Include="particleSelection.h" />
@@ -173,7 +174,7 @@
     <ClInclude Include="rightClickSettings.h" />
     <ClInclude Include="screenCapture.h" />
     <ClInclude Include="slider.h" />
-    <ClInclude Include="ui.h" />
+    <ClInclude Include="UI.h" />
     <ClInclude Include="updateScene.h" />
     <ClInclude Include="slingshot.h" />
   </ItemGroup>
