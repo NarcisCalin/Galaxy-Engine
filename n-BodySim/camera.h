@@ -5,7 +5,7 @@
 #include "raylib.h"
 #include "rlgl.h"
 #include "raymath.h"
-#include "planet.h"
+#include "particle.h"
 #include "particleTrails.h"
 
 

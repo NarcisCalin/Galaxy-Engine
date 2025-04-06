@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 #include "raylib.h"
-#include "planet.h"
+#include "particle.h"
 #include "button.h"
 
 struct ParticleSubdivision {

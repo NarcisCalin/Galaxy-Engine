@@ -3,10 +3,8 @@
 #include <iostream>
 #include <algorithm>
 #include "quadtree.h"
-#include "planet.h"
+#include "particle.h"
 #include "omp.h"
-
-
 
 
 Quadtree::Quadtree(float posX, float posY, float size,
@@ -32,41 +30,55 @@ Quadtree::Quadtree(float posX, float posY, float size,
 	}
 }
 
+template<typename T, typename U, typename Predicate>
+int dualPartition(std::vector<T>& pParticlesVector, std::vector<U>& rParticlesVector, int begin, int end, Predicate predicate) {
+	int i = begin;
+	for (int j = begin; j < end; ++j) {
+		if (predicate(pParticlesVector[j])) {
+			if (i != j) {
+				std::swap(pParticlesVector[i], pParticlesVector[j]);
+				std::swap(rParticlesVector[i], rParticlesVector[j]);
+			}
+			++i;
+		}
+	}
+	return i;
+}
+
 void Quadtree::subGridMaker(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles) {
 	float midX = pos.x + size / 2.0f;
 	float midY = pos.y + size / 2.0f;
 
-	int current = startIndex;
+	int originalStart = startIndex;
+	int originalEnd = endIndex;
+	int boundaries[5];
+	boundaries[0] = originalStart;
+
+	auto isQuad0 = [midX, midY](const ParticlePhysics& pParticle) {
+		return (pParticle.pos.x < midX && pParticle.pos.y < midY);
+		};
+	boundaries[1] = dualPartition(pParticles, rParticles, originalStart, originalEnd, isQuad0);
+
+	auto isQuad1 = [midX, midY](const ParticlePhysics& pParticle) {
+		return (pParticle.pos.x >= midX && pParticle.pos.y < midY);
+		};
+	boundaries[2] = dualPartition(pParticles, rParticles, boundaries[1], originalEnd, isQuad1);
+
+	auto isQuad2 = [midX, midY](const ParticlePhysics& pParticle) {
+		return (pParticle.pos.x < midX && pParticle.pos.y >= midY);
+		};
+	boundaries[3] = dualPartition(pParticles, rParticles, boundaries[2], originalEnd, isQuad2);
+
+	boundaries[4] = originalEnd;
+
 	for (int q = 0; q < 4; ++q) {
-		int qStart = current;
-		for (int i = current; i < endIndex; ++i) {
-			int quadrant = 0;
-			if (pParticles[i].pos.x >= midX) quadrant += 1;
-			if (pParticles[i].pos.y >= midY) quadrant += 2;
-
-			if (quadrant == q) {
-				std::swap(pParticles[i], pParticles[current]);
-				std::swap(rParticles[i], rParticles[current]);
-				current++;
-			}
-		}
-		int qEnd = current;
-
-		if (qEnd > qStart) {
-			switch (q) {
-			case 0:
-				subGrids.push_back(std::make_unique<Quadtree>(pos.x, pos.y, size / 2, qStart, qEnd, pParticles, rParticles, this));
-				break;
-			case 1:
-				subGrids.push_back(std::make_unique<Quadtree>(pos.x + size / 2, pos.y, size / 2, qStart, qEnd, pParticles, rParticles, this));
-				break;
-			case 2:
-				subGrids.push_back(std::make_unique<Quadtree>(pos.x, pos.y + size / 2, size / 2, qStart, qEnd, pParticles, rParticles, this));
-				break;
-			case 3:
-				subGrids.push_back(std::make_unique<Quadtree>(pos.x + size / 2, pos.y + size / 2, size / 2, qStart, qEnd, pParticles, rParticles, this));
-				break;
-			}
+		if (boundaries[q + 1] > boundaries[q]) {
+			float newPosX = pos.x + ((q & 1) ? size / 2.0f : 0.0f);
+			float newPosY = pos.y + ((q & 2) ? size / 2.0f : 0.0f);
+			subGrids.push_back(std::make_unique<Quadtree>(
+				newPosX, newPosY, size / 2.0f,
+				boundaries[q], boundaries[q + 1],
+				pParticles, rParticles, this));
 		}
 	}
 }

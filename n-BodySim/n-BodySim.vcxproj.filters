@@ -51,6 +51,9 @@
     <ClCompile Include="particleSelection.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="particlesSpawning.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="slingshot.h">
@@ -62,7 +65,7 @@
     <ClInclude Include="quadtree.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="planet.h">
+    <ClInclude Include="particle.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="particleTrails.h">
@@ -108,6 +111,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="particleDeletion.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="particlesSpawning.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

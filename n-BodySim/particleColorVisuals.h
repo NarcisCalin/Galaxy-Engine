@@ -1,6 +1,6 @@
 #pragma once
 #include "raylib.h"
-#include "planet.h"
+#include "particle.h"
 #include <vector>
 #include <algorithm>
 

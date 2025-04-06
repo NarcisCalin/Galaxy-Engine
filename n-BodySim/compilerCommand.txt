@@ -1,9 +1,9 @@
 ////////USE THIS ONE!!!!//////// CLANG
-clang++ main.cpp slider.cpp morton.cpp brush.cpp camera.cpp quadtree.cpp particleSelection.cpp slingshot.cpp button.cpp particleTrails.cpp ui.cpp screenCapture.cpp -o nbodySim.exe -std=c++20 -pthread -I"C:\raylib\src" -L"C:\raylib\build\raylib\Release" -lraylib -lopengl32 -lgdi32 -lwinmm -luser32 -lshell32 -lkernel32 -static -O3 -march=native -flto -fuse-ld=lld -fopenmp -static
+clang++ main.cpp slider.cpp morton.cpp brush.cpp camera.cpp quadtree.cpp particleSelection.cpp particlesSpawning.cpp slingshot.cpp button.cpp particleTrails.cpp ui.cpp screenCapture.cpp -o nbodySim.exe -std=c++20 -pthread -I"C:\raylib\src" -L"C:\raylib\build\raylib\Release" -lraylib -lopengl32 -lgdi32 -lwinmm -luser32 -lshell32 -lkernel32 -static -O3 -march=native -flto -fuse-ld=lld -fopenmp -static
 
 
 //////////////// G++
-g++ main.cpp slider.cpp morton.cpp brush.cpp camera.cpp quadtree.cpp particleSelection.cpp slingshot.cpp button.cpp particleTrails.cpp ui.cpp screenCapture.cpp -o nbodySim.exe -std=c++20 -pthread -I"C:\RaylibMingw\include" -L"C:\RaylibMingw\lib" -lraylib -lopengl32 -lgdi32 -lwinmm -luser32 -lshell32 -lkernel32 -static -O3 -march=native -flto -fopenmp
+g++ main.cpp slider.cpp morton.cpp brush.cpp camera.cpp quadtree.cpp particlesSpawning.cpp particleSelection.cpp slingshot.cpp button.cpp particleTrails.cpp ui.cpp screenCapture.cpp -o nbodySim.exe -std=c++20 -pthread -I"C:\RaylibMingw\include" -L"C:\RaylibMingw\lib" -lraylib -lopengl32 -lgdi32 -lwinmm -luser32 -lshell32 -lkernel32 -static -O3 -march=native -flto -fopenmp
 
 
 

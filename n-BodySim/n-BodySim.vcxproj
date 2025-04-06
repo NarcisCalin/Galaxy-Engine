@@ -147,6 +147,7 @@
       <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">stdcpp17</LanguageStandard>
     </ClCompile>
     <ClCompile Include="particleSelection.cpp" />
+    <ClCompile Include="particlesSpawning.cpp" />
     <ClCompile Include="particleTrails.cpp" />
     <ClCompile Include="quadtree.cpp" />
     <ClCompile Include="screenCapture.cpp" />
@@ -164,9 +165,10 @@
     <ClInclude Include="particleColorVisuals.h" />
     <ClInclude Include="particleDeletion.h" />
     <ClInclude Include="particleSelection.h" />
+    <ClInclude Include="particlesSpawning.h" />
     <ClInclude Include="particleSubdivision.h" />
     <ClInclude Include="particleTrails.h" />
-    <ClInclude Include="planet.h" />
+    <ClInclude Include="particle.h" />
     <ClInclude Include="quadtree.h" />
     <ClInclude Include="rightClickSettings.h" />
     <ClInclude Include="screenCapture.h" />

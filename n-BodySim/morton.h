@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <vector>
-#include "planet.h"
+#include "particle.h"
 
 struct Morton {
 	uint32_t scaleToGrid(float pos, float minVal, float maxVal = 1023);

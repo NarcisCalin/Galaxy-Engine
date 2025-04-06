@@ -3,7 +3,8 @@
 #include <vector>
 #include <iostream>
 #include <memory>
-#include "planet.h"
+#include "particle.h"
+#include "omp.h"
 
 struct Quadtree {
 	Vector2 pos;
@@ -34,7 +35,7 @@ struct Quadtree {
 
 
 private:
-    void computeLeafMass(const std::vector<ParticlePhysics>& pParticles) {
+    inline void computeLeafMass(const std::vector<ParticlePhysics>& pParticles) {
         gridMass = 0.0f;
         centerOfMass = { 0.0f, 0.0f };
 
@@ -50,7 +51,7 @@ private:
         }
     }
 
-    void computeInternalMass() {
+    inline void computeInternalMass() {
         gridMass = 0.0f;
         centerOfMass = { 0.0f, 0.0f };
 

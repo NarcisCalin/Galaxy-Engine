@@ -2,7 +2,7 @@
 #include <vector>
 #include "raylib.h"
 #include "button.h"
-#include "planet.h"
+#include "particle.h"
 #include "particleSubdivision.h"
 #include "particleSelection.h"
 #include "camera.h"

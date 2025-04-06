@@ -3,7 +3,7 @@
 #include <iostream>
 #include <vector>
 #include "raylib.h"
-#include "planet.h"
+#include "particle.h"
 
 
 class ParticleTrails {

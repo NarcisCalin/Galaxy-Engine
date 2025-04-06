@@ -1,6 +1,6 @@
 #pragma once
 #include "raylib.h"
-#include "planet.h"
+#include "particle.h"
 #include <vector>
 
 struct DensitySize {
@@ -29,9 +29,9 @@ struct DensitySize {
 					}
 
 					float normalDensity = std::min(float(neighborCounts[i]) / sizeMaxNeightbors, 1.0f);
-					float invertedDensity = std::max(1.0f - normalDensity, 0.35f);
+					float invertedDensity = std::max(1.0f - normalDensity, 0.22f);
 
-					rParticles[i].size = invertedDensity * sizeMultiplier * 0.5f;
+					rParticles[i].size = invertedDensity * sizeMultiplier * 0.65f;
 				}
 			}
 		}
