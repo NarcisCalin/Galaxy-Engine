@@ -149,6 +149,7 @@
     <ClCompile Include="particleSelection.cpp" />
     <ClCompile Include="particlesSpawning.cpp" />
     <ClCompile Include="particleTrails.cpp" />
+    <ClCompile Include="physics.cpp" />
     <ClCompile Include="quadtree.cpp" />
     <ClCompile Include="screenCapture.cpp" />
     <ClCompile Include="slider.cpp" />
@@ -170,6 +171,7 @@
     <ClInclude Include="particleSubdivision.h" />
     <ClInclude Include="particleTrails.h" />
     <ClInclude Include="particle.h" />
+    <ClInclude Include="physics.h" />
     <ClInclude Include="quadtree.h" />
     <ClInclude Include="rightClickSettings.h" />
     <ClInclude Include="screenCapture.h" />

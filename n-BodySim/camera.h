@@ -16,6 +16,8 @@ public:
 	Vector2 followPosition;
 	bool isFollowing;
 
+	Vector2 delta;
+
 	bool centerCamera;
 
 	SceneCamera();

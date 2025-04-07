@@ -14,7 +14,7 @@ public:
 
 private:
 
-	std::array<Button, 16>settingsButtonsArray = {
+	std::array<Button, 17>settingsButtonsArray = {
 
 Button({195.0f, 80.0f}, {175.0f, 35.0f}, "Pixel Drawing", true),
 
@@ -29,6 +29,8 @@ Button({780.0f, 0.0f}, {200.0f, 50.0f}, "White Trails", true),
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Solid Color", true),
 
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Density Color", true),
+
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Force Color", true),
 
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Velocity Color", true),
 
@@ -60,15 +62,23 @@ Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Controls", true)
 	)
 	};
 
-	std::array<Slider, 13>slidersArray = {
+	std::array<Slider, 17>slidersArray = {
 		Slider
-	({20, 530.0f}, {230.0f, 7.0f}, {190, 128, 128, 255}, "Red"),
+	({20, 530.0f}, {230.0f, 7.0f}, {190, 128, 128, 255}, "Primary Red"),
 
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 190, 128, 255}, "Green"),
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 190, 128, 255}, "Primary Green"),
 
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 190, 255}, "Blue"),
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 190, 255}, "Primary Blue"),
 
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Alpha"),
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Primary Alpha"),
+
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {190, 128, 128, 255}, "Secondary Red"),
+
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 190, 128, 255}, "Secondary Green"),
+
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 190, 255}, "Secondary Blue"),
+
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Secondary Alpha"),
 
 	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Density Radius"),
 

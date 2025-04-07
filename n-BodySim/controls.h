@@ -55,11 +55,11 @@ struct Controls {
 
 	void showControls(bool& isMouseNotHoveringUI, bool& isDragging, int& screenWidth, int& screenHeight) {
 
-		Button extendedControlsButton = { Vector2{ 20.0f, 300.0f }, Vector2{ 200.0f, 50.0f }, "Extended Controls", true };
+		Button extendedControlsButton = { Vector2{ 20.0f, 230.0f }, Vector2{ 200.0f, 30.0f }, "Extended Controls", true };
 
 		if (isShowControlsEnabled) {
 			for (size_t i = 0; i < controlsArray.size(); i++) {
-				DrawText(TextFormat("%s", controlsArray[i].c_str()), 25, 100 + 20 * static_cast<int>(i), 15, WHITE);
+				DrawText(TextFormat("%s", controlsArray[i].c_str()), 25, 20 + 20 * static_cast<int>(i), 15, WHITE);
 			}
 			bool buttonExtendedControlsHovering = extendedControlsButton.buttonLogic(isShowExtendedControlsEnabled);
 

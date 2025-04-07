@@ -30,10 +30,14 @@
 #include "particlesSpawning.h"
 #include "UI.h"
 #include "parameters.h"
+#include "physics.h"
+
 
 UpdateParameters myParam;
 UpdateVariables myVar;
 UI myUI;
+Physics physics;
+
 
 static Quadtree* gridFunction(std::vector<ParticlePhysics>& pParticles,
 	std::vector<ParticleRendering>& rParticles) {
@@ -42,223 +46,6 @@ static Quadtree* gridFunction(std::vector<ParticlePhysics>& pParticles,
 	return grid;
 }
 
-
-
-static Vector2 calculateForceFromGrid(ParticlePhysics& pParticle,
-	const Quadtree& grid,
-	const std::vector<ParticlePhysics>& pParticles) {
-	Vector2 totalForce = { 0.0f, 0.0f };
-
-	if (grid.gridMass <= 0)
-		return totalForce;
-
-	float dx = grid.centerOfMass.x - pParticle.pos.x;
-	float dy = grid.centerOfMass.y - pParticle.pos.y;
-
-	if (myVar.isPeriodicBoundaryEnabled) {
-		dx -= myVar.screenWidth * ((dx > myVar.halfScreenWidth) - (dx < -myVar.halfScreenWidth));
-		dy -= myVar.screenHeight * ((dy > myVar.halfScreenHeight) - (dy < -myVar.halfScreenHeight));
-	}
-
-	float distanceSq = dx * dx + dy * dy + myVar.softening * myVar.softening;
-
-	if ((grid.size * grid.size < myVar.theta * myVar.theta * distanceSq) || grid.subGrids.empty()) {
-		if ((grid.endIndex - grid.startIndex) == 1 &&
-			fabs(pParticles[grid.startIndex].pos.x - pParticle.pos.x) < 0.001f &&
-			fabs(pParticles[grid.startIndex].pos.y - pParticle.pos.y) < 0.001f) {
-			return totalForce;
-		}
-
-		float invDistance = 1.0f / sqrt(distanceSq);
-		float forceMagnitude = static_cast<float>(myVar.G) * pParticle.mass * grid.gridMass * invDistance * invDistance * invDistance;
-		totalForce.x = dx * forceMagnitude;
-		totalForce.y = dy * forceMagnitude;
-	}
-	else {
-		for (const auto& subGridPtr : grid.subGrids) {
-			Vector2 childForce = calculateForceFromGrid(pParticle, *subGridPtr, pParticles);
-			totalForce.x += childForce.x;
-			totalForce.y += childForce.y;
-		}
-	}
-	return totalForce;
-}
-
-
-struct DarkMatterHalo {
-	Vector2 pos;
-	double mass;
-	double radius;
-
-	DarkMatterHalo(Vector2 position = { 0.0f, 0.0f },
-		double m = 1e19,
-		double r = 200.0)
-		: pos(position), mass(m), radius(r) {
-	}
-};
-
-
-static Vector2 darkMatterForce(const ParticlePhysics& pParticles) {
-	float centerX = myVar.screenWidth / 2.0f;
-	float centerY = myVar.screenHeight / 2.0f;
-
-	float dx = pParticles.pos.x - centerX;
-	float dy = pParticles.pos.y - centerY;
-	float radius = sqrt(dx * dx + dy * dy);
-	if (radius < 1.0f) radius = 1.0f;
-
-	const double haloMass = 7e17;
-	const float haloRadius = 650.0;
-
-	float concentration = 10;
-	float r_ratio = radius / haloRadius;
-	float M_enclosed = static_cast<float>(haloMass * (log(1 + r_ratio) - r_ratio / (1 + r_ratio)))
-		/ (log(1 + concentration) - concentration / (1 + concentration));
-
-	float acceleration = static_cast<float>(myVar.G * M_enclosed) / (radius * radius);
-
-	Vector2 force;
-	force.x = static_cast<float>(-(dx / radius) * acceleration * pParticles.mass);
-	force.y = static_cast<float>(-(dy / radius) * acceleration * pParticles.mass);
-
-	return force;
-}
-
-
-void pairWiseGravity(std::vector<ParticlePhysics>& pParticles) {
-
-#pragma omp parallel for schedule(dynamic)
-	for (size_t i = 0; i < pParticles.size(); ++i) {
-		for (size_t j = i + 1; j < pParticles.size(); ++j) {
-			ParticlePhysics& pParticleA = pParticles[i];
-			ParticlePhysics& pParticleB = pParticles[j];
-
-			float accelPlanetAX = 0;
-			float accelPlanetAY = 0;
-
-			float prevAccAX = accelPlanetAX;
-			float prevAccAY = accelPlanetAY;
-
-			float accelPlanetBX = 0;
-			float accelPlanetBY = 0;
-
-			float prevAccBX = accelPlanetBX;
-			float prevAccBY = accelPlanetBY;
-
-			float dx = pParticleB.pos.x - pParticleA.pos.x;
-			float dy = pParticleB.pos.y - pParticleA.pos.y;
-
-			if (myVar.isPeriodicBoundaryEnabled) {
-				if (myVar.isPeriodicBoundaryEnabled) {
-					if (dx > myVar.screenWidth / 2)
-						dx -= myVar.screenWidth;
-					else if (dx < -myVar.screenWidth / 2)
-						dx += myVar.screenWidth;
-
-					if (dy > myVar.screenHeight / 2)
-						dy -= myVar.screenHeight;
-					else if (dy < -myVar.screenHeight / 2)
-						dy += myVar.screenHeight;
-				}
-			}
-
-			float distanceSq = dx * dx + dy * dy + myVar.softening * myVar.softening;
-
-			float distance = sqrt(distanceSq);
-			float force = static_cast<float>(myVar.G * pParticleA.mass * pParticleB.mass / distanceSq);
-
-			float fx = (dx / distance) * force;
-			float fy = (dy / distance) * force;
-
-			accelPlanetAX = fx / pParticleA.mass;
-			accelPlanetAY = fy / pParticleA.mass;
-
-
-			accelPlanetBX = fx / pParticleB.mass;
-			accelPlanetBY = fy / pParticleB.mass;
-
-			pParticleA.velocity.x += (myVar.fixedDeltaTime * ((3.0f / 2.0f)) * accelPlanetAX - ((1.0f / 2.0f)) * prevAccAX) * myVar.timeStepMultiplier;
-			pParticleA.velocity.y += (myVar.fixedDeltaTime * ((3.0f / 2.0f)) * accelPlanetAY - ((1.0f / 2.0f)) * prevAccAY) * myVar.timeStepMultiplier;
-
-			pParticleB.velocity.x -= (myVar.fixedDeltaTime * ((3.0f / 2.0f)) * accelPlanetBX - ((1.0f / 2.0f)) * prevAccBX) * myVar.timeStepMultiplier;
-			pParticleB.velocity.y -= (myVar.fixedDeltaTime * ((3.0f / 2.0f)) * accelPlanetBY - ((1.0f / 2.0f)) * prevAccBY) * myVar.timeStepMultiplier;
-
-		}
-	}
-}
-
-static void physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles) {
-	if (myVar.isPeriodicBoundaryEnabled) {
-		for (size_t i = 0; i < pParticles.size(); i++) {
-			ParticlePhysics& pParticle = pParticles[i];
-			pParticle.pos.x += pParticle.velocity.x * myVar.timeFactor;
-			pParticle.pos.y += pParticle.velocity.y * myVar.timeFactor;
-			if (pParticle.pos.x < 0) pParticle.pos.x += myVar.screenWidth;
-			else if (pParticle.pos.x >= myVar.screenWidth) pParticle.pos.x -= myVar.screenWidth;
-
-			if (pParticle.pos.y < 0) pParticle.pos.y += myVar.screenHeight;
-			else if (pParticle.pos.y >= myVar.screenHeight) pParticle.pos.y -= myVar.screenHeight;
-		}
-	}
-	else {
-		for (size_t i = 0; i < pParticles.size(); i++) {
-			ParticlePhysics& pParticle = pParticles[i];
-			pParticle.pos.x += pParticle.velocity.x * myVar.timeFactor;
-			pParticle.pos.y += pParticle.velocity.y * myVar.timeFactor;
-			if (pParticles[i].pos.x < 0 || pParticles[i].pos.x >= myVar.screenWidth || pParticles[i].pos.y < 0 || pParticles[i].pos.y >= myVar.screenHeight) {
-				pParticles.erase(pParticles.begin() + i);
-				rParticles.erase(rParticles.begin() + i);
-
-			}
-		}
-	}
-
-}
-
-static void collisions(std::vector<ParticlePhysics>& particles,
-	std::vector<ParticleRendering>& renderings,
-	float softening) {
-	size_t n = particles.size();
-#pragma omp parallel for schedule(dynamic)
-	for (size_t i = 0; i < n; i++) {
-		ParticlePhysics& a = particles[i];
-		for (size_t j = i + 1; j < n; j++) {
-			ParticlePhysics& b = particles[j];
-			float dx = a.pos.x - b.pos.x;
-			float dy = a.pos.y - b.pos.y;
-			float distSq = dx * dx + dy * dy + softening * softening;
-			// TODO: MAYBE PRECOMPUTE radiiSum
-			float radiiSum = renderings[i].size * 16.0f + renderings[j].size * 16.0f;
-			float rsq = radiiSum * radiiSum;
-			if (distSq > rsq) continue;
-
-			float distance = std::sqrt(distSq);
-			if (distance == 0.0f) distance = 10.0f;
-			float normalX = dx / distance;
-			float normalY = dy / distance;
-			float relVel = (a.velocity.x - b.velocity.x) * normalX +
-				(a.velocity.y - b.velocity.y) * normalY;
-			if (relVel > 0) continue;
-			float e = 0.9f;
-			float impulse = -(1 + e) * relVel / (1 / a.mass + 1 / b.mass);
-			float ix = impulse * normalX;
-			float iy = impulse * normalY;
-			a.velocity.x += ix / a.mass;
-			a.velocity.y += iy / a.mass;
-			b.velocity.x -= ix / b.mass;
-			b.velocity.y -= iy / b.mass;
-			float penetration = radiiSum - distance;
-			if (penetration > 0) {
-				float percent = 0.2f, slop = 0.01f;
-				float correction = std::max(penetration - slop, 0.0f) / (1 / a.mass + 1 / b.mass) * percent;
-				a.pos.x += (correction * normalX) / a.mass;
-				a.pos.y += (correction * normalY) / a.mass;
-				b.pos.x -= (correction * normalX) / b.mass;
-				b.pos.y -= (correction * normalY) / b.mass;
-			}
-		}
-	}
-}
 
 void flattenQuadtree(Quadtree* node, std::vector<Quadtree*>& flatList) {
 	if (!node) return;
@@ -270,7 +57,7 @@ void flattenQuadtree(Quadtree* node, std::vector<Quadtree*>& flatList) {
 	}
 }
 
-Vector2 mouseWorldPos;
+
 static void updateScene() {
 
 	if (IsKeyPressed(KEY_SPACE)) {
@@ -326,37 +113,35 @@ static void updateScene() {
 			for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 				ParticlePhysics& pParticle = myParam.pParticles[i];
 
-				float accX = 0;
-				float accY = 0;
-				float prevAccX = accX;
-				float prevAccY = accY;
-
-				Vector2 netForce = calculateForceFromGrid(pParticle, *grid, myParam.pParticles);
+				Vector2 netForce = physics.calculateForceFromGrid(*grid, myParam.pParticles, myVar, pParticle);
 
 				if (myVar.isDarkMatterEnabled) {
-					Vector2 dmForce = darkMatterForce(pParticle);
+					Vector2 dmForce = physics.darkMatterForce(pParticle, myVar);
 					netForce.x += dmForce.x;
 					netForce.y += dmForce.y;
 				}
 
-				accX = netForce.x / pParticle.mass;
-				accY = netForce.y / pParticle.mass;
+				pParticle.acc.x = netForce.x / pParticle.mass;
+				pParticle.acc.y = netForce.y / pParticle.mass;
 
-				pParticle.velocity.x += (myVar.timeFactor * ((3.0f / 2.0f) * accX - (1.0f / 2.0f) * prevAccX));
-				pParticle.velocity.y += (myVar.timeFactor * ((3.0f / 2.0f) * accY - (1.0f / 2.0f) * prevAccY));
+				pParticle.velocity.x += (myVar.timeFactor * ((3.0f / 2.0f) * pParticle.acc.x - (1.0f / 2.0f) * pParticle.prevAcc.x));
+				pParticle.velocity.y += (myVar.timeFactor * ((3.0f / 2.0f) * pParticle.acc.y - (1.0f / 2.0f) * pParticle.prevAcc.y));
 			}
 		}
 		else {
-			pairWiseGravity(myParam.pParticles);
+			physics.pairWiseGravity(myParam.pParticles, myVar);
 		}
 
 		if (myVar.isCollisionsEnabled) {
-			collisions(myParam.pParticles, myParam.rParticles, myVar.softening);
+			physics.collisions(myParam.pParticles, myParam.rParticles, myVar.softening);
 		}
 
-		physicsUpdate(myParam.pParticles, myParam.rParticles);
+		physics.physicsUpdate(myParam.pParticles, myParam.rParticles, myVar);
 
 	}
+
+
+
 	myParam.trails.trailLogic(myParam.pParticles, myParam.rParticles, myParam.pParticlesSelected, myParam.rParticlesSelected,
 		myVar.isGlobalTrailsEnabled, myVar.isSelectedTrailsEnabled, myVar.trailMaxLength, myVar.timeFactor, myVar.isLocalTrailsEnabled);
 
@@ -386,8 +171,11 @@ static void updateScene() {
 
 	myParam.particleDeletion.deleteNonImportanParticles(myParam.pParticles, myParam.rParticles);
 
-	myParam.subdivision.subdivideParticles(myParam.pParticles, myParam.rParticles, myVar.particleTextureSize,
-		myVar.isMouseNotHoveringUI, myVar.isDragging);
+	myParam.brush.particlesAttractor(myParam.pParticles, myParam.myCamera.mouseWorldPos, myVar.G, myVar.softening, myVar.timeFactor);
+
+	myParam.brush.particlesSpinner(myParam.pParticles, myParam.myCamera.mouseWorldPos, myVar.softening, myVar.timeFactor);
+
+	myParam.brush.particlesGrabber(myParam.pParticles, myParam.myCamera.mouseWorldPos, myParam.myCamera.camera.zoom);
 
 
 	if (grid != nullptr) {
@@ -433,9 +221,9 @@ static void drawScene(Texture2D& particleBlurTex) {
 	myVar.isRecording = myParam.screenCapture.screenGrab();
 	//EVERYTHING NOT INTENDED TO APPEAR WHILE RECORDING BELOW
 
-	mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), myParam.myCamera.camera);
+	myVar.mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), myParam.myCamera.camera);
 
-	myParam.brush.drawBrush(mouseWorldPos);
+	myParam.brush.drawBrush(myVar.mouseWorldPos);
 
 	DrawRectangleLinesEx({ 0,0, static_cast<float>(myVar.screenWidth), static_cast<float>(myVar.screenHeight) }, 3, GRAY);
 
@@ -444,7 +232,7 @@ static void drawScene(Texture2D& particleBlurTex) {
 		for (size_t i = 0; i < myParam.pParticles.size() - 1; i++) {
 			DrawLineV(myParam.pParticles[i].pos, myParam.pParticles[i + 1].pos, WHITE);
 
-			DrawText(TextFormat("%i", i), myParam.pParticles[i].pos.x, myParam.pParticles[i].pos.y - 10, 10, { 128,128,128,128 });
+			DrawText(TextFormat("%i", i), static_cast<int>(myParam.pParticles[i].pos.x), static_cast<int>(myParam.pParticles[i].pos.y) - 10, 10, { 128,128,128,128 });
 		}
 	}
 
@@ -454,11 +242,13 @@ static void drawScene(Texture2D& particleBlurTex) {
 
 	myUI.uiLogic(myParam, myVar);
 
+	myParam.subdivision.subdivideParticles(myParam.pParticles, myParam.rParticles, myVar.particleTextureSize,
+		myVar.isMouseNotHoveringUI, myVar.isDragging);
+
 	if (IsKeyPressed(KEY_P)) {
 		myVar.isPixelDrawingEnabled = !myVar.isPixelDrawingEnabled;
 	}
 }
-
 
 
 static void enableMultiThreading() {

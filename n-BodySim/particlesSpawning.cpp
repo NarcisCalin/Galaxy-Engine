@@ -6,6 +6,7 @@ void ParticlesSpawning::particlesInitialConditions(std::vector<ParticlePhysics>&
 
 		Slingshot slingshot = slingshot.planetSlingshot(isDragging, myCamera);
 
+
 		if (IsMouseButtonReleased(0) && !IsKeyDown(KEY_LEFT_CONTROL) && !IsKeyDown(KEY_LEFT_ALT) && isDragging) {
 			pParticles.emplace_back(
 				Vector2{ static_cast<float>(myCamera.mouseWorldPos.x), static_cast<float>(myCamera.mouseWorldPos.y) },

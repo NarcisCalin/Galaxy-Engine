@@ -8,6 +8,7 @@
 
 class ParticlesSpawning {
 public:
+
 	void particlesInitialConditions(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, 
 		bool& isDragging, bool& isMouseNotHoveringUI, SceneCamera& myCamera, int& screenHeight, int& screenWidth, Brush& brush);
 

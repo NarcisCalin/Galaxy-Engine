@@ -9,17 +9,27 @@ struct ColorVisuals {
 	bool solidColor = false;
 	bool densityColor = true;
 	bool velocityColor = false;
+	bool forceColor = false;
 
 	bool selectedColor = true;
 
 	int blendMode = 1;
 
-	int densityR = 225;
-	int densityG = 120;
-	int densityB = 125;
-	int densityA = 200;
+	int density1R = 0;
+	int density1G = 40;
+	int density1B = 120;
+	int density1A = 50;
 
-	float densityRadius = 2.4f;
+	int density2R = 155;
+	int density2G = 80;
+	int density2B = 40;
+	int density2A = 75;
+
+	float hue = 180.0f;
+	float saturation = 0.8f;
+	float value = 0.5f;
+
+	float densityRadius = 4.5f;
 	int maxNeighbors = 60;
 
 	void particlesColorVisuals(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles) {
@@ -27,10 +37,10 @@ struct ColorVisuals {
 		if (solidColor) {
 			for (size_t i = 0; i < pParticles.size(); i++) {
 				if (!rParticles[i].uniqueColor) {
-					rParticles[i].color.r = static_cast<unsigned char>(densityR);
-					rParticles[i].color.g = static_cast<unsigned char>(densityG);
-					rParticles[i].color.b = static_cast<unsigned char>(densityB);
-					rParticles[i].color.a = densityA;
+					rParticles[i].color.r = static_cast<unsigned char>(density1R);
+					rParticles[i].color.g = static_cast<unsigned char>(density1G);
+					rParticles[i].color.b = static_cast<unsigned char>(density1B);
+					rParticles[i].color.a = density1A;
 				}
 			}
 			blendMode = 1;
@@ -40,7 +50,6 @@ struct ColorVisuals {
 			float densityRadiusSq = densityRadius * densityRadius;
 
 			std::vector<int> neighborCounts(pParticles.size(), 0);
-
 #pragma omp parallel for schedule(dynamic)
 			for (size_t i = 0; i < pParticles.size(); i++) {
 				const auto& pParticle = pParticles[i];
@@ -58,10 +67,19 @@ struct ColorVisuals {
 				float invertedDensity = 1.0f - normalDensity;
 
 				if (!rParticles[i].uniqueColor) {
-					rParticles[i].color.r = static_cast<unsigned char>(normalDensity * densityR);
-					rParticles[i].color.g = static_cast<unsigned char>(normalDensity * densityG);
-					rParticles[i].color.b = static_cast<unsigned char>(invertedDensity * densityB);
-					rParticles[i].color.a = densityA;
+					Color lowDensityColor = {
+						static_cast<unsigned char>(density1R),
+						static_cast<unsigned char>(density1G),
+						static_cast<unsigned char>(density1B),
+						static_cast<unsigned char>(density1A) };
+
+					Color highDensityColor = {
+						static_cast<unsigned char>(density2R),
+						static_cast<unsigned char>(density2G),
+						static_cast<unsigned char>(density2B),
+						static_cast<unsigned char>(density2A) };
+
+					rParticles[i].color = ColorLerp(lowDensityColor, highDensityColor, normalDensity);
 				}
 			}
 			blendMode = 1;
@@ -79,9 +97,9 @@ struct ColorVisuals {
 				float clampedVel = std::clamp(particleVelSq, minVel, maxVel);
 				float normalizedVel = clampedVel / maxVel;
 
-				float hue = (1.0f - normalizedVel) * 240.0f;
-				float saturation = 1.0f;
-				float value = 1.0f;
+				hue = (1.0f - normalizedVel) * 240.0f;
+				saturation = 1.0f;
+				value = 1.0f;
 
 				if (!rParticles[i].uniqueColor) {
 					rParticles[i].color = ColorFromHSV(hue, saturation, value);
@@ -90,14 +108,43 @@ struct ColorVisuals {
 
 			blendMode = 0;
 		}
+		else if (forceColor) {
+			for (size_t i = 0; i < pParticles.size(); i++) {
+				float maxAcc = 1000.0f;
+				float minAcc = 0.0f;
 
-		if (selectedColor) {
-			for (size_t i = 0; i < rParticles.size(); i++) {
-				if (rParticles[i].isSelected) {
-					rParticles[i].color = { 230, 128,128, 180 };
+				float particleAccSq = pParticles[i].acc.x * pParticles[i].acc.x +
+					pParticles[i].acc.y * pParticles[i].acc.y;
+
+				float clampedAcc = std::clamp(particleAccSq, minAcc, maxAcc);
+				float normalizedAcc = clampedAcc / maxAcc;
+
+				if (!rParticles[i].uniqueColor) {
+					Color lowDensityColor = {
+						static_cast<unsigned char>(density1R),
+						static_cast<unsigned char>(density1G),
+						static_cast<unsigned char>(density1B),
+						static_cast<unsigned char>(density1A) };
+
+					Color highDensityColor = {
+						static_cast<unsigned char>(density2R),
+						static_cast<unsigned char>(density2G),
+						static_cast<unsigned char>(density2B),
+						static_cast<unsigned char>(density2A) };
+
+					//rParticles[i].color = ColorLerp(lowDensityColor, highDensityColor, normalDensity);
+					rParticles[i].color = ColorLerp(lowDensityColor, highDensityColor, normalizedAcc);
 				}
 			}
 
+			if (selectedColor) {
+				for (size_t i = 0; i < rParticles.size(); i++) {
+					if (rParticles[i].isSelected) {
+						rParticles[i].color = { 230, 128,128, 180 };
+					}
+				}
+
+			}
 		}
 	}
 };

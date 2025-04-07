@@ -14,13 +14,14 @@ SceneCamera::SceneCamera() {
 	centerCamera = false;
 	previousColor = { 128,128,128,255 };
 	followPosition = { 0.0f };
+	delta = { 0.0f };
 }
 
 Camera2D SceneCamera::cameraLogic() {
 
 	if (IsMouseButtonDown(1))
 	{
-		Vector2 delta = GetMouseDelta();
+		delta = GetMouseDelta();
 		delta = Vector2Scale(delta, -1.0f / camera.zoom);
 		camera.target = Vector2Add(camera.target, delta);
 		panFollowingOffset = Vector2Add(panFollowingOffset, delta);

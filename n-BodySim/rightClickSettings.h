@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <array>
 #include "raylib.h"
 #include "button.h"
 #include "particle.h"

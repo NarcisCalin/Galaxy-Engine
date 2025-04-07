@@ -7,12 +7,16 @@ struct ParticlePhysics {
 
 	Vector2 pos;
 	Vector2 velocity;
+	Vector2 acc;
+	Vector2 prevAcc;
 	float mass;
 	uint32_t mortonKey;
 
 	ParticlePhysics(Vector2 pos, Vector2 velocity, float mass) {
 		this->pos = pos;
 		this->velocity = velocity;
+		this->acc = { 0.0f, 0.0f };
+		this->prevAcc = acc;
 		this->mass = mass;
 		mortonKey = 0;
 	}

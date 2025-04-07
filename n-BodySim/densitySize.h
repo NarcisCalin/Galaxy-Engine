@@ -2,11 +2,16 @@
 #include "raylib.h"
 #include "particle.h"
 #include <vector>
+#include <algorithm>
 
 struct DensitySize {
 
 	float sizeDensityRadius = 4.0f;
-	int sizeMaxNeightbors = 60;
+	int sizeMaxNeighbors = 60;
+
+	float minSize = 0.1f;
+	float maxSize = 0.25f;
+
 
 	void sizeByDensity(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, bool& isDensitySizeEnabled,
 		float& sizeMultiplier) {
@@ -15,23 +20,19 @@ struct DensitySize {
 			std::vector<int> neighborCounts(pParticles.size(), 0);
 
 #pragma omp parallel for schedule(dynamic)
+			
 			for (size_t i = 0; i < pParticles.size(); i++) {
 				if (!rParticles[i].isSolid) {
-					const auto& pParticle = pParticles[i];
-					for (size_t j = i + 1; j < pParticles.size(); j++) {
-						if (std::abs(pParticles[j].pos.x - pParticle.pos.x) > sizeDensityRadius) break;
-						float dx = pParticle.pos.x - pParticles[j].pos.x;
-						float dy = pParticle.pos.y - pParticles[j].pos.y;
-						if (dx * dx + dy * dy < densityRadiusSq) {
-							neighborCounts[i]++;
-							neighborCounts[j]++;
-						}
-					}
+					float maxAcc = 300.0f;
+					float minAcc = 0.0f;
 
-					float normalDensity = std::min(float(neighborCounts[i]) / sizeMaxNeightbors, 1.0f);
-					float invertedDensity = std::max(1.0f - normalDensity, 0.22f);
+					float particleAccSq = pParticles[i].acc.x * pParticles[i].acc.x +
+						pParticles[i].acc.y * pParticles[i].acc.y;
 
-					rParticles[i].size = invertedDensity * sizeMultiplier * 0.65f;
+					float clampedAcc = std::clamp(particleAccSq, minAcc, maxAcc);
+					float normalizedAcc = clampedAcc / maxAcc;
+
+					rParticles[i].size = Lerp(maxSize * sizeMultiplier, minSize * sizeMultiplier, log(normalizedAcc));
 				}
 			}
 		}
