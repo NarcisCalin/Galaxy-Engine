@@ -39,7 +39,7 @@ public:
 		if (IsMouseButtonReleased(1) && (!IsKeyDown(KEY_LEFT_CONTROL) && !IsKeyDown(KEY_LEFT_ALT)) && !isMouseMoving && isMouseNotHoveringUI) {
 			isMenuActive = true;
 
-			menuSize.x = buttonSizeX + 10.0f;
+			menuSize.x = buttonSizeX + 5.0f;
 			menuSize.y = (menuSettings.size() + 1) * (buttonSizeY + menuButtonGap);
 
 			menuPos.x = std::clamp(static_cast<float>(GetMouseX()), 0.0f, static_cast<float>(GetScreenWidth()) - menuSize.x);
@@ -68,7 +68,7 @@ public:
 
 
 				menuSettings[i].pos.x = menuSettings[i - 1].pos.x;
-				menuSettings[i].pos.y = menuSettings[i - 1].pos.y + menuSettings[i].size.y + 10;
+				menuSettings[i].pos.y = menuSettings[i - 1].pos.y + menuSettings[i].size.y + 5;
 				menuSettings[i].size = menuSettings[i - 1].size;
 
 			}
@@ -119,9 +119,9 @@ private:
 	Color menuColor = { 30,30,30,255 };
 
 	float buttonSizeX = 175.0f;
-	float buttonSizeY = 35.0f;
+	float buttonSizeY = 20.0f;
 
-	float menuButtonGap = 5.5f;
+	float menuButtonGap = 3.0f;
 
 	std::array<Button, 11> menuSettings = {
 

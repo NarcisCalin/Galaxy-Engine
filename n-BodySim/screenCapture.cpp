@@ -1,19 +1,42 @@
 #include "screenCapture.h"
+#include <filesystem>
+#include <string>
+#include <algorithm>
+#include <regex>
 
 bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, bool& isDragging, bool& isMouseNotHoveringUI) {
 
-	/*if (IsKeyPressed(KEY_S)) {
-		TakeScreenshot(TextFormat("Screenshot_%i.png", screenshotIndex));
-		screenshotIndex++;
-	}*/
-
 	if (IsKeyPressed(KEY_S)) {
+		if (!std::filesystem::exists("Screenshots")) {
+			std::filesystem::create_directory("Screenshots");
+		}
+
+		int nextAvailableIndex = 0;
+		for (const auto& entry : std::filesystem::directory_iterator("Screenshots")) {
+
+			std::string filename = entry.path().filename().string();
+			if (filename.rfind("Screenshot_", 0) == 0 && filename.find(".png") != std::string::npos) {
+
+				size_t startPos = filename.find_last_of('_') + 1;
+				size_t endPos = filename.find(".png");
+				int index = std::stoi(filename.substr(startPos, endPos - startPos));
+
+				if (index >= nextAvailableIndex) {
+					nextAvailableIndex = index + 1;
+				}
+			}
+		}
+
 		Image renderImage = LoadImageFromTexture(myParticlesTexture.texture);
 		ImageFlipVertical(&renderImage);
-		ExportImage(renderImage, TextFormat("Screenshot_%i.png", screenshotIndex));
+
+		std::string screenshotPath = "Screenshots/Screenshot_" + std::to_string(nextAvailableIndex) + ".png";
+		ExportImage(renderImage, screenshotPath.c_str());
+
 		UnloadImage(renderImage);
 		screenshotIndex++;
 	}
+
 
 	if (IsKeyPressed(KEY_R)) {
 		if (!isRecording) {
@@ -57,26 +80,40 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, bool& isDrag
 		isRecording = false;
 
 		int numFrames = static_cast<int>(myFrames.size());
-		int currentVideoIndex = videoIndex;
+
+		int maxNumberFound = 0;
+		std::regex folderRegex(R"(VideoFrames_(\d+))");
+
+		for (const auto& entry : std::filesystem::directory_iterator(std::filesystem::current_path())) {
+			if (entry.is_directory()) {
+				std::string folderName = entry.path().filename().string();
+				std::smatch match;
+				if (std::regex_match(folderName, match, folderRegex)) {
+					int number = std::stoi(match[1].str());
+					maxNumberFound = std::max(maxNumberFound, number);
+				}
+			}
+		}
+
+		int nextAvailableNumber = maxNumberFound + 1;
+		std::string folderName = "Video_" + std::to_string(nextAvailableNumber);
+
+		std::filesystem::create_directory(folderName);
 
 #pragma omp parallel for
 		for (int i = 0; i < numFrames; ++i) {
 			Image frame = myFrames[i];
-
 			ImageFlipVertical(&frame);
 
-			char filename[256];
-			snprintf(filename, sizeof(filename), "Video%d_Frame_%d.png", currentVideoIndex, i);
-			ExportImage(frame, filename);
+			std::string filename = folderName + "/" + folderName + "_Frame_" + std::to_string(i) + ".png";
+			ExportImage(frame, filename.c_str());
 
 			UnloadImage(frame);
 		}
-		
+
 		myFrames.clear();
 
 		exportFrames = false;
-		frameIndex = 0;
-		videoIndex++;
 	}
 
 	return isRecording;

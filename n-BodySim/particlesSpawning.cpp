@@ -1,17 +1,26 @@
 #include "particlesSpawning.h"
+#include "physics.h"
+#include "quadtree.h"
+#include "parameters.h"
+
 
 void ParticlesSpawning::particlesInitialConditions(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles,
-	bool& isDragging, bool& isMouseNotHoveringUI, SceneCamera& myCamera, int& screenHeight, int& screenWidth, Brush& brush){
+	bool& isDragging, bool& isMouseNotHoveringUI, SceneCamera& myCamera, int& screenHeight, int& screenWidth, Brush& brush,
+	Physics physics, Quadtree& quadtree, UpdateVariables& myVar) {
+
 	if (isMouseNotHoveringUI && isSpawningAllowed) {
 
 		Slingshot slingshot = slingshot.planetSlingshot(isDragging, myCamera);
 
+		if (isDragging && enablePathPrediction) {
+			predictTrajectory(pParticles, myCamera, physics, quadtree, myVar, slingshot);
+		}
 
 		if (IsMouseButtonReleased(0) && !IsKeyDown(KEY_LEFT_CONTROL) && !IsKeyDown(KEY_LEFT_ALT) && isDragging) {
 			pParticles.emplace_back(
 				Vector2{ static_cast<float>(myCamera.mouseWorldPos.x), static_cast<float>(myCamera.mouseWorldPos.y) },
 				Vector2{ slingshot.normalizedX * slingshot.length, slingshot.normalizedY * slingshot.length },
-				300000000000000.0f
+				300000000000000.0f * heavyParticleWeightMultiplier
 			);
 			rParticles.emplace_back(
 				Color{ 255, 255, 255, 255 },
@@ -140,5 +149,57 @@ void ParticlesSpawning::particlesInitialConditions(std::vector<ParticlePhysics>&
 
 	if (IsMouseButtonReleased(0)) {
 		isSpawningAllowed = true;
+	}
+}
+
+void ParticlesSpawning::predictTrajectory(const std::vector<ParticlePhysics>& pParticles,
+	SceneCamera& myCamera, Physics physics, Quadtree& quadtree,
+	UpdateVariables& myVar, Slingshot& slingshot) {
+
+	if (!IsMouseButtonDown(0)) return;
+
+	std::vector<ParticlePhysics> currentParticles = pParticles;
+
+	ParticlePhysics predictedParticle(
+		Vector2{ static_cast<float>(myCamera.mouseWorldPos.x), static_cast<float>(myCamera.mouseWorldPos.y) },
+		Vector2{ slingshot.normalizedX * slingshot.length, slingshot.normalizedY * slingshot.length },
+		300000000000000.0f * heavyParticleWeightMultiplier
+	);
+
+	predictedParticle.prevAcc = Vector2{ 0.0f, 0.0f };
+
+	currentParticles.push_back(predictedParticle);
+
+	int predictedIndex = currentParticles.size() - 1;
+
+	std::vector<Vector2> predictedPath;
+
+	for (int step = 0; step < predictPathLength; ++step) {
+		ParticlePhysics& p = currentParticles[predictedIndex];
+
+		Vector2 netForce = physics.calculateForceFromGrid(quadtree, currentParticles, myVar, p);
+		if (myVar.isDarkMatterEnabled) {
+			Vector2 dmForce = physics.darkMatterForce(p, myVar);
+			netForce.x += dmForce.x;
+			netForce.y += dmForce.y;
+		}
+
+		Vector2 acc;
+		acc.x = netForce.x / p.mass;
+		acc.y = netForce.y / p.mass;
+
+		p.velocity.x += myVar.timeFactor * ((3.0f / 2.0f) * acc.x - (1.0f / 2.0f) * p.prevAcc.x);
+		p.velocity.y += myVar.timeFactor * ((3.0f / 2.0f) * acc.y - (1.0f / 2.0f) * p.prevAcc.y);
+
+		p.pos.x += p.velocity.x * myVar.timeFactor;
+		p.pos.y += p.velocity.y * myVar.timeFactor;
+
+		p.prevAcc = acc;
+
+		predictedPath.push_back(p.pos);
+	}
+
+	for (size_t i = 1; i < predictedPath.size(); ++i) {
+		DrawLineV(predictedPath[i - 1], predictedPath[i], WHITE);
 	}
 }

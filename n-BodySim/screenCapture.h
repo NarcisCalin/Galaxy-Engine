@@ -13,7 +13,5 @@ public:
 
 private:
 	int screenshotIndex = 0;
-	int frameIndex = 0;
-	int videoIndex = 0;
 	std::vector<Image> myFrames;
 };

@@ -38,7 +38,7 @@ void Brush::drawBrush(Vector2 mouseWorldPos) {
 void Brush::eraseBrush(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, Vector2 mouseWorldPos) {
 
 	if (IsKeyDown(KEY_X) && IsMouseButtonDown(2)) {
-		for (size_t i = 0; i < pParticles.size(); i++) {
+		for (size_t i = 0; i < pParticles.size();) {
 			Vector2 distanceFromBrush = {
 				pParticles[i].pos.x - mouseWorldPos.x,
 				pParticles[i].pos.y - mouseWorldPos.y
@@ -48,8 +48,14 @@ void Brush::eraseBrush(std::vector<ParticlePhysics>& pParticles, std::vector<Par
 				distanceFromBrush.y * distanceFromBrush.y);
 
 			if (distance < brushRadius) {
-				pParticles.erase(pParticles.begin() + i);
-				rParticles.erase(rParticles.begin() + i);
+				std::swap(pParticles[i], pParticles.back());
+				std::swap(rParticles[i], rParticles.back());
+
+				pParticles.pop_back();
+				rParticles.pop_back();
+			}
+			else {
+				i++;
 			}
 		}
 	}

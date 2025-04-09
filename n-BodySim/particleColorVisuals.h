@@ -18,7 +18,7 @@ struct ColorVisuals {
 	int primaryR = 0;
 	int primaryG = 40;
 	int primaryB = 120;
-	int primaryA = 50;
+	int primaryA = 100;
 
 	int secondaryR = 155;
 	int secondaryG = 80;
@@ -139,7 +139,7 @@ struct ColorVisuals {
 		}
 		if (selectedColor) {
 			for (size_t i = 0; i < rParticles.size(); i++) {
-				if (rParticles[i].isSelected) {
+				if (rParticles[i].isSelected && !rParticles[i].uniqueColor) {
 					rParticles[i].color = { 230, 128,128, 30 };
 				}
 			}

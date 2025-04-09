@@ -22,7 +22,7 @@ Quadtree::Quadtree(float posX, float posY, float size,
 	this->centerOfMass = { 0,0 };
 	this->parent = parent;
 
-	if ((endIndex - startIndex) <= 1 || size <= 1.0f) {
+	if ((endIndex - startIndex) <= particlesPerLeaf || size <= minLeafSize) {
 		computeLeafMass(pParticles);
 	}
 	else {

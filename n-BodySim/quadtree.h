@@ -16,6 +16,9 @@ struct Quadtree {
 	Quadtree* parent;
 	std::vector<std::unique_ptr<Quadtree>> subGrids;
 
+    int particlesPerLeaf = 1;
+    float minLeafSize = 1.0f;
+
 	Quadtree(float posX, float posY, float size,
 		int startIndex, int endIndex,
 		const std::vector<ParticlePhysics>& pParticles, const std::vector<ParticleRendering>& rParticles,

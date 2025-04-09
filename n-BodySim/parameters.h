@@ -67,8 +67,10 @@ struct UpdateVariables{
 	double G = 6.674e-11;
 	float gravityMultiplier = 1.0f;
 	float softening = 1.8f;
-	float theta = 0.6f;
+	float theta = 0.8f;
+	float timeStepMultiplierSlider = 1.0f;
 	float timeStepMultiplier = 1.0f;
+
 	const float fixedDeltaTime = 0.03f;
 
 	bool isTimeStopped = false;
@@ -85,7 +87,6 @@ struct UpdateVariables{
 	bool isDarkMatterEnabled = false;
 	bool isCollisionsEnabled = false;
 	bool isDensitySizeEnabled = false;
-
 
 	bool isSpawningAllowed = true;
 

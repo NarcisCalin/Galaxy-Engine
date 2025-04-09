@@ -1,9 +1,17 @@
 #include "UI.h"
 
-void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar){
+void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 
 	toggleSettingsButtons[0].pos = { static_cast<float>(myVar.screenWidth) - 34.0f, 65.0f };
 	bool buttonShowSettingsHovering = toggleSettingsButtons[0].buttonLogic(showSettings);
+
+	if (buttonShowSettingsHovering) {
+		myVar.isMouseNotHoveringUI = false;
+		myVar.isDragging = false;
+	}
+	else {
+		myVar.isMouseNotHoveringUI = true;
+	}
 
 	if (IsKeyPressed(KEY_U)) {
 		showSettings = !showSettings;
@@ -22,10 +30,10 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar){
 
 	if (showSettings) {
 
-		settingsButtonsArray[0].pos = {static_cast<float>(myVar.screenWidth) - 195.0f, 80.0f};
+		settingsButtonsArray[0].pos = { static_cast<float>(myVar.screenWidth) - 195.0f, 80.0f };
 		for (size_t i = 1; i < settingsButtonsArray.size(); ++i) {
 			settingsButtonsArray[i].pos.x = settingsButtonsArray[i - 1].pos.x;
-			settingsButtonsArray[i].pos.y = settingsButtonsArray[i - 1].pos.y + settingsButtonsArray[i].size.y + 15;
+			settingsButtonsArray[i].pos.y = settingsButtonsArray[i - 1].pos.y + settingsButtonsArray[i].size.y + 13;
 			settingsButtonsArray[i].size = settingsButtonsArray[i - 1].size;
 
 		}
@@ -52,12 +60,14 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar){
 
 		bool buttonGlowHovering = settingsButtonsArray[16].buttonLogic(myVar.isGlowEnabled);
 
-		bool buttonControlsHovering = settingsButtonsArray[17].buttonLogic(myParam.controls.isShowControlsEnabled);
+		bool buttonPredictPathsHovering = settingsButtonsArray[17].buttonLogic(myParam.particlesSpawning.enablePathPrediction);
+
+		bool buttonControlsHovering = settingsButtonsArray[18].buttonLogic(myParam.controls.isShowControlsEnabled);
 
 		slidersArray[0].sliderPos = { 20.0f, 210.0f };
 		for (size_t i = 1; i < slidersArray.size(); ++i) {
 			slidersArray[i].sliderPos.x = slidersArray[i - 1].sliderPos.x;
-			slidersArray[i].sliderPos.y = slidersArray[i - 1].sliderPos.y + slidersArray[i].sliderSize.y + 34;
+			slidersArray[i].sliderPos.y = slidersArray[i - 1].sliderPos.y + slidersArray[i].sliderSize.y + 32;
 			slidersArray[i].sliderSize = slidersArray[i - 1].sliderSize;
 		}
 
@@ -79,13 +89,16 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar){
 
 		bool sliderSofteningHovering = slidersArray[12].sliderLogic(0.1f, myVar.softening, 30.0f);
 		bool sliderThetaHovering = slidersArray[13].sliderLogic(0.1f, myVar.theta, 5.0f);
-		bool sliderTimeScaleHovering = slidersArray[14].sliderLogic(0.0f, myVar.timeStepMultiplier, 5.0f);
+		bool sliderTimeScaleHovering = slidersArray[14].sliderLogic(0.0f, myVar.timeStepMultiplierSlider, 5.0f);
 		bool sliderGravityStrengthHovering = slidersArray[15].sliderLogic(0.0f, myVar.gravityMultiplier, 3.0f);
 
 		bool sliderTrailsLengthHovering = slidersArray[16].sliderLogic(0, myVar.trailMaxLength, 400);
 		bool sliderTrailsThicknessHovering = slidersArray[17].sliderLogic(0.007f, myParam.trails.trailThickness, 0.5f);
 
 		bool sliderParticlesSizeHovering = slidersArray[18].sliderLogic(0.1f, myVar.particleSizeMultiplier, 5.0f);
+
+		bool sliderHeavyParticleMassHovering = slidersArray[19].sliderLogic(0.05f, myParam.particlesSpawning.heavyParticleWeightMultiplier, 15.0f);
+		bool sliderPathPredictionLengthHovering = slidersArray[20].sliderLogic(300, myParam.particlesSpawning.predictPathLength, 1300);
 
 
 		if (buttonPixelDrawingHovering ||
@@ -97,7 +110,6 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar){
 			buttonSolidColorHovering ||
 			buttonDensityColorHovering ||
 			buttonVelocityColorHovering ||
-			buttonShowSettingsHovering ||
 			sliderRed1Hovering ||
 			sliderGreen1Hovering ||
 			sliderBlue1Hovering ||
@@ -125,7 +137,10 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar){
 			buttonForceColorHovering ||
 			buttonGlowHovering ||
 			sliderMaxColorForceHovering ||
-			sliderMaxSizeForceHovering
+			sliderMaxSizeForceHovering ||
+			sliderHeavyParticleMassHovering ||
+			sliderPathPredictionLengthHovering ||
+			buttonPredictPathsHovering
 			) {
 			myVar.isMouseNotHoveringUI = false;
 			myVar.isDragging = false;
@@ -174,6 +189,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar){
 		else {
 			myVar.isMouseNotHoveringUI = true;
 		}
+
 	}
 
 	myParam.rightClickSettings.rightClickMenu(myVar.isMouseNotHoveringUI, myVar.isDragging, myParam.subdivision, myParam.particleSelection,

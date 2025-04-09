@@ -57,19 +57,23 @@ void flattenQuadtree(Quadtree* node, std::vector<Quadtree*>& flatList) {
 	}
 }
 
-
 static void updateScene() {
 
-	if (IsKeyPressed(KEY_SPACE)) {
-		myVar.isTimeStopped = !myVar.isTimeStopped;
-	}
-	if (myVar.isTimeStopped) {
-		myVar.timeStepMultiplier = 0.0f;
-	}
 
 	Quadtree* grid = nullptr;
 
 	myVar.G = 6.674e-11 * myVar.gravityMultiplier;
+
+	if (IsKeyPressed(KEY_SPACE)) {
+		myVar.isTimeStopped = !myVar.isTimeStopped;
+	}
+
+	if (myVar.isTimeStopped) {
+		myVar.timeStepMultiplier = 0.0f;
+	}
+	else {
+		myVar.timeStepMultiplier = myVar.timeStepMultiplierSlider;
+	}
 
 	myVar.timeFactor = myVar.fixedDeltaTime * myVar.timeStepMultiplier;
 
@@ -79,7 +83,6 @@ static void updateScene() {
 	}
 
 	if (myVar.timeFactor > 0) {
-
 		grid = gridFunction(myParam.pParticles, myParam.rParticles);
 	}
 
@@ -105,7 +108,7 @@ static void updateScene() {
 	myParam.brush.brushSize(myParam.myCamera.mouseWorldPos);
 
 	myParam.particlesSpawning.particlesInitialConditions(myParam.pParticles, myParam.rParticles, myVar.isDragging,
-		myVar.isMouseNotHoveringUI, myParam.myCamera, myVar.screenHeight, myVar.screenWidth, myParam.brush);
+		myVar.isMouseNotHoveringUI, myParam.myCamera, myVar.screenHeight, myVar.screenWidth, myParam.brush, physics, *grid, myVar);
 
 	if (myVar.timeFactor > 0.0f) {
 		if (myVar.isBarnesHutEnabled) {
