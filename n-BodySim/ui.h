@@ -14,7 +14,7 @@ public:
 
 private:
 
-	std::array<Button, 17>settingsButtonsArray = {
+	std::array<Button, 18>settingsButtonsArray = {
 
 Button({195.0f, 80.0f}, {175.0f, 35.0f}, "Pixel Drawing", true),
 
@@ -48,8 +48,9 @@ Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Collisions (!!!)", true),
 
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Density Size", true),
 
-Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Controls", true)
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Glow", true),
 
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Controls", true)
 
 	};
 	std::array<Button, 1> toggleSettingsButtons = {
@@ -62,7 +63,7 @@ Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Controls", true)
 	)
 	};
 
-	std::array<Slider, 17>slidersArray = {
+	std::array<Slider, 19>slidersArray = {
 		Slider
 	({20, 530.0f}, {230.0f, 7.0f}, {190, 128, 128, 255}, "Primary Red"),
 
@@ -83,6 +84,10 @@ Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Controls", true)
 	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Density Radius"),
 
 	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Max Neighbors"),
+
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Max Color Force"),
+
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Max Size Force"),
 
 	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Softening"),
 

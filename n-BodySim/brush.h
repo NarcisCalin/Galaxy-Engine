@@ -16,6 +16,8 @@ public:
 
 	void drawBrush(Vector2 mouseWorldPos);
 
+	void eraseBrush(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, Vector2 mouseWorldPos);
+
 	void particlesAttractor(std::vector<ParticlePhysics>& pParticles, Vector2 mouseWorldPos, double& G, float& softening, float& timeFactor);
 
 	void particlesSpinner(std::vector<ParticlePhysics>& pParticles, Vector2 mouseWorldPos, float& softening,
@@ -26,8 +28,6 @@ public:
 private:
 	float brushRadius;
 	SceneCamera myCamera;
-
-	Vector2 attractorPos = { 0.0f };
 
 	float spinForce = 140.0f;
 

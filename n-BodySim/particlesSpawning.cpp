@@ -25,7 +25,7 @@ void ParticlesSpawning::particlesInitialConditions(std::vector<ParticlePhysics>&
 			);
 			isDragging = false;
 		}
-		if (IsMouseButtonDown(2) && !IsKeyDown(KEY_LEFT_CONTROL) && !IsKeyDown(KEY_LEFT_ALT)) {
+		if (IsMouseButtonDown(2) && !IsKeyDown(KEY_LEFT_CONTROL) && !IsKeyDown(KEY_LEFT_ALT) && !IsKeyDown(KEY_X)) {
 			brush.brushLogic(pParticles, rParticles, myCamera.mouseWorldPos);
 		}
 
@@ -72,7 +72,10 @@ void ParticlesSpawning::particlesInitialConditions(std::vector<ParticlePhysics>&
 				float galaxyCenterY = static_cast<float>(myCamera.mouseWorldPos.y);
 
 				float angle = static_cast<float>(rand()) / RAND_MAX * 2 * PI;
-				float radius = static_cast<float>(rand()) / RAND_MAX * 100.0f + 2;
+
+				float u = static_cast<float>(rand()) / RAND_MAX;
+				float biasedU = pow(u, 2.0f);
+				float radius = biasedU * 100.0f + 2;
 
 				float posX = galaxyCenterX + radius * cos(angle);
 				float posY = galaxyCenterY + radius * sin(angle);
@@ -80,7 +83,10 @@ void ParticlesSpawning::particlesInitialConditions(std::vector<ParticlePhysics>&
 				float dx = posX - galaxyCenterX;
 				float dy = posY - galaxyCenterY;
 
-				float angularSpeed = 60 / (radius + 60);
+				float baseAngularSpeed = 150 / (radius + 120);
+				float scalingFactor = 0.5f;
+				float angularSpeed = baseAngularSpeed * scalingFactor;
+
 				float velocityX = -dy * angularSpeed;
 				float velocityY = dx * angularSpeed;
 

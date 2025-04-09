@@ -177,6 +177,8 @@ static void updateScene() {
 
 	myParam.brush.particlesGrabber(myParam.pParticles, myParam.myCamera.mouseWorldPos, myParam.myCamera.camera.zoom);
 
+	myParam.brush.eraseBrush(myParam.pParticles, myParam.rParticles, myParam.myCamera.mouseWorldPos);
+
 
 	if (grid != nullptr) {
 		delete grid;
@@ -184,7 +186,7 @@ static void updateScene() {
 }
 
 
-static void drawScene(Texture2D& particleBlurTex) {
+static void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture) {
 
 	for (int i = 0; i < myParam.pParticles.size(); ++i) {
 
@@ -216,15 +218,26 @@ static void drawScene(Texture2D& particleBlurTex) {
 
 	myParam.trails.drawTrail(myParam.rParticles, particleBlurTex);
 
-
+	EndTextureMode();
 	//EVERYTHING INTENDED TO APPEAR WHILE RECORDING ABOVE
-	myVar.isRecording = myParam.screenCapture.screenGrab();
+
+
+	//END OF PARTICLES RENDER PASS
+	//-------------------------------------------------\\
+	//BEGINNNG OF UI RENDER PASS
+
+
 	//EVERYTHING NOT INTENDED TO APPEAR WHILE RECORDING BELOW
+	BeginTextureMode(myUITexture);
+
+	ClearBackground({ 0,0,0,0 });
+
+	Vector2 mouseScreenPos = GetMousePosition();
+
+	BeginMode2D(myParam.myCamera.camera);
 
 	myVar.mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), myParam.myCamera.camera);
-
 	myParam.brush.drawBrush(myVar.mouseWorldPos);
-
 	DrawRectangleLinesEx({ 0,0, static_cast<float>(myVar.screenWidth), static_cast<float>(myVar.screenHeight) }, 3, GRAY);
 
 	// Z-Curves debug toggle
@@ -236,8 +249,10 @@ static void drawScene(Texture2D& particleBlurTex) {
 		}
 	}
 
-	// EVERYTHING NON-STATIC RELATIVE TO CAMERA ABOVE
 	EndMode2D();
+
+	// EVERYTHING NON-STATIC RELATIVE TO CAMERA ABOVE
+
 	// EVERYTHING STATIC RELATIVE TO CAMERA BELOW
 
 	myUI.uiLogic(myParam, myVar);
@@ -245,6 +260,8 @@ static void drawScene(Texture2D& particleBlurTex) {
 	myParam.subdivision.subdivideParticles(myParam.pParticles, myParam.rParticles, myVar.particleTextureSize,
 		myVar.isMouseNotHoveringUI, myVar.isDragging);
 
+
+	EndTextureMode();
 	if (IsKeyPressed(KEY_P)) {
 		myVar.isPixelDrawingEnabled = !myVar.isPixelDrawingEnabled;
 	}
@@ -261,18 +278,23 @@ static void enableMultiThreading() {
 }
 int main() {
 
+	SetConfigFlags(FLAG_MSAA_4X_HINT);
+
 	InitWindow(myVar.screenWidth, myVar.screenHeight, "n-Body");
 
 	Texture2D particleBlurTex = LoadTexture("Textures/ParticleBlur.png");
 
-	SetTargetFPS(myVar.targetFPS);
+	Shader myBloom = LoadShader(nullptr, "Shaders/bloom.fs");
 
-	SetConfigFlags(FLAG_MSAA_4X_HINT);
+	RenderTexture2D myParticlesTexture = LoadRenderTexture(myVar.screenWidth, myVar.screenHeight);
+	RenderTexture2D myUITexture = LoadRenderTexture(myVar.screenWidth, myVar.screenHeight);
+
+	SetTargetFPS(myVar.targetFPS);
 
 	while (!WindowShouldClose()) {
 
 
-		BeginDrawing();
+		BeginTextureMode(myParticlesTexture);
 
 		ClearBackground(BLACK);
 
@@ -281,18 +303,52 @@ int main() {
 		BeginMode2D(myParam.myCamera.cameraLogic());
 
 		updateScene();
+		drawScene(particleBlurTex, myUITexture);
 
-		drawScene(particleBlurTex);
+		EndMode2D();
 
 		EndBlendMode();
 
+		//------------------------ RENDER TEXTURES BELOW ------------------------\\
+		
+		if (myVar.isGlowEnabled) {
+			BeginShaderMode(myBloom);
+		}
 
-		enableMultiThreading();
+		DrawTextureRec(
+			myParticlesTexture.texture,
+			Rectangle{ 0, 0, static_cast<float>(myParticlesTexture.texture.width), -static_cast<float>(myParticlesTexture.texture.height) },
+			Vector2{ 0, 0 },
+			WHITE
+		);
+
+		if (myVar.isGlowEnabled) {
+			EndShaderMode();
+		}
+
+		DrawTextureRec(
+			myUITexture.texture,
+			Rectangle{ 0, 0, static_cast<float>(myUITexture.texture.width), -static_cast<float>(myUITexture.texture.height) },
+			Vector2{ 0, 0 },
+			WHITE
+		);
+
+		myVar.isRecording = myParam.screenCapture.screenGrab(myParticlesTexture, myVar.isDragging, myVar.isMouseNotHoveringUI);
+
+		if (myVar.isRecording) {
+			DrawRectangleLinesEx({ 0,0, static_cast<float>(myVar.screenWidth), static_cast<float>(myVar.screenHeight) }, 3, RED);
+		}
 
 		EndDrawing();
+
+
+		enableMultiThreading();
 	}
 
+	UnloadShader(myBloom);
 	UnloadTexture(particleBlurTex);
+	UnloadRenderTexture(myParticlesTexture);
+	UnloadRenderTexture(myUITexture);
 
 	CloseWindow();
 

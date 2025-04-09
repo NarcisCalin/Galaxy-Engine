@@ -113,7 +113,7 @@ private:
 	bool isHoveringHandle;
 	bool isOnTop;
 
-	float textSize = 19;
+	float textSize = 17;
 
 	float initialMouseX;
 	bool isClicked;

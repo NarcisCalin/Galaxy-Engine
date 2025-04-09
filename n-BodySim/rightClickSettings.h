@@ -10,8 +10,6 @@
 #include "particleDeletion.h"
 #include <algorithm>
 
-
-
 class RightClickSettings {
 public:
 	Vector2 menuPos = {0.0f};
@@ -52,7 +50,7 @@ public:
 	}
 
 	void rightClickMenu(bool& isMouseNotHoveringUI, bool& isDragging, ParticleSubdivision& subdivision, ParticleSelection& particleSelection,
-		SceneCamera& myCamera, ParticleDeletion& particleDeletion, bool& drawZCurves, bool& drawQuadtree) {
+		SceneCamera& myCamera, ParticleDeletion& particleDeletion, bool& drawZCurves, bool& drawQuadtree, bool& isRecording) {
 
 		rightClickMenuSpawnLogic(isMouseNotHoveringUI);
 
@@ -88,6 +86,7 @@ public:
 			bool buttonDeleteNonImportantParticlesHovering = menuSettings[7].buttonLogic(particleDeletion.deleteNonImportant);
 			bool buttonDrawZCurvesHovering = menuSettings[8].buttonLogic(drawZCurves);
 			bool buttonDrawQuadtreeHovering = menuSettings[9].buttonLogic(drawQuadtree);
+			bool buttonStartRecordingHovering = menuSettings[10].buttonLogic(isRecording);
 
 			if (buttonSubdivideAllHovering ||
 				buttonSubdivideSelectedHovering ||
@@ -98,7 +97,8 @@ public:
 				buttonDeleteNonImportantParticlesHovering ||
 				buttonDrawZCurvesHovering ||
 				buttonDrawQuadtreeHovering ||
-				buttonDeselectAllHovering
+				buttonDeselectAllHovering ||
+				buttonStartRecordingHovering
 				) {
 				isMouseNotHoveringUI = false;
 				isDragging = false;
@@ -123,7 +123,7 @@ private:
 
 	float menuButtonGap = 5.5f;
 
-	std::array<Button, 10> menuSettings = {
+	std::array<Button, 11> menuSettings = {
 
 Button({0.0f}, {0.0f}, "Subdivide All", true),
 
@@ -143,7 +143,9 @@ Button({0.0f}, {0.0f}, "Delete Strays", true),
 
 Button({0.0f}, {0.0f}, "Debug Z Curves", true),
 
-Button({0.0f}, {0.0f}, "Debug Quadtree", true)
+Button({0.0f}, {0.0f}, "Debug Quadtree", true),
+
+Button({0.0f}, {0.0f}, "Start Recording", true)
 
 
 	};

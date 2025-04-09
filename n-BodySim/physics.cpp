@@ -169,7 +169,7 @@ void Physics::collisions(std::vector<ParticlePhysics>& pParticles, std::vector<P
 			if (distSq > rsq) continue;
 
 			float distance = std::sqrt(distSq);
-			if (distance == 0.0f) distance = 10.0f;
+			if (distance == 0.0f) distance = 0.001f;
 			float normalX = dx / distance;
 			float normalY = dy / distance;
 			float relVel = (a.velocity.x - b.velocity.x) * normalX +

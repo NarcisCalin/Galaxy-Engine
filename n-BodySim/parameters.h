@@ -106,5 +106,7 @@ struct UpdateVariables{
 	bool drawQuadtree = false;
 	bool drawZCurves = false;
 
+	bool isGlowEnabled = false;
+
 	Vector2 mouseWorldPos = { 0.0f };
 };

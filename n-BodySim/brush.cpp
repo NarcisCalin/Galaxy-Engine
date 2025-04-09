@@ -35,14 +35,33 @@ void Brush::drawBrush(Vector2 mouseWorldPos) {
 	DrawCircleLinesV({ mouseWorldPos.x, mouseWorldPos.y }, brushRadius, WHITE);
 }
 
+void Brush::eraseBrush(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, Vector2 mouseWorldPos) {
+
+	if (IsKeyDown(KEY_X) && IsMouseButtonDown(2)) {
+		for (size_t i = 0; i < pParticles.size(); i++) {
+			Vector2 distanceFromBrush = {
+				pParticles[i].pos.x - mouseWorldPos.x,
+				pParticles[i].pos.y - mouseWorldPos.y
+			};
+
+			float distance = sqrt(distanceFromBrush.x * distanceFromBrush.x +
+				distanceFromBrush.y * distanceFromBrush.y);
+
+			if (distance < brushRadius) {
+				pParticles.erase(pParticles.begin() + i);
+				rParticles.erase(rParticles.begin() + i);
+			}
+		}
+	}
+}
+
 void Brush::particlesAttractor(std::vector<ParticlePhysics>& pParticles, Vector2 mouseWorldPos, double& G, float& softening, float& timeFactor) {
 
 	if (IsKeyDown(KEY_B)) {
 
 		for (size_t i = 0; i < pParticles.size(); i++) {
-			attractorPos = mouseWorldPos;
-			float dx = pParticles[i].pos.x - attractorPos.x;
-			float dy = pParticles[i].pos.y - attractorPos.y;
+			float dx = pParticles[i].pos.x - mouseWorldPos.x;
+			float dy = pParticles[i].pos.y - mouseWorldPos.y;
 			float radius = sqrt(dx * dx + dy * dy);
 			if (radius < 1.0f) radius = 1.0f;
 
@@ -118,7 +137,7 @@ void Brush::particlesGrabber(std::vector<ParticlePhysics>& pParticles, Vector2 m
 		}
 	}
 	else if (dragging) {
-		float impulseFactor = 10.0f;
+		float impulseFactor = 5.0f;
 
 		for (size_t i = 0; i < pParticles.size(); i++) {
 			Vector2 distanceFromBrush = {
