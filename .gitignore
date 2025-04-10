@@ -3,6 +3,9 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+# Rider Files
+.idea/
+
 # User-specific files
 *.rsuser
 *.suo
@@ -97,6 +100,10 @@ StyleCopReport.xml
 *.pidb
 *.svclog
 *.scc
+
+# Extra files
+# - Ignore screenshots
+Screenshot_*
 
 # Chutzpah Test files
 _Chutzpah*
