@@ -14,7 +14,7 @@ public:
 
 private:
 
-	std::array<Button, 19>settingsButtonsArray = {
+	std::array<Button, 20>settingsButtonsArray = {
 
 Button({195.0f, 80.0f}, {175.0f, 32.0f}, "Pixel Drawing", true),
 
@@ -52,7 +52,9 @@ Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Glow", true),
 
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Predict Path", true),
 
-Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Controls", true)
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Controls", true),
+
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Information", true)
 
 	};
 	std::array<Button, 1> toggleSettingsButtons = {

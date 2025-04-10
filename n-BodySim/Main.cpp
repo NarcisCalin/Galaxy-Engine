@@ -107,8 +107,7 @@ static void updateScene() {
 
 	myParam.brush.brushSize(myParam.myCamera.mouseWorldPos);
 
-	myParam.particlesSpawning.particlesInitialConditions(myParam.pParticles, myParam.rParticles, myVar.isDragging,
-		myVar.isMouseNotHoveringUI, myParam.myCamera, myVar.screenHeight, myVar.screenWidth, myParam.brush, physics, *grid, myVar);
+	myParam.particlesSpawning.particlesInitialConditions(*grid, physics, myVar, myParam);
 
 	if (myVar.timeFactor > 0.0f) {
 		if (myVar.isBarnesHutEnabled) {
@@ -145,28 +144,23 @@ static void updateScene() {
 
 
 
-	myParam.trails.trailLogic(myParam.pParticles, myParam.rParticles, myParam.pParticlesSelected, myParam.rParticlesSelected,
-		myVar.isGlobalTrailsEnabled, myVar.isSelectedTrailsEnabled, myVar.trailMaxLength, myVar.timeFactor, myVar.isLocalTrailsEnabled);
+	myParam.trails.trailLogic(myVar, myParam);
 
-	myParam.myCamera.cameraFollowObject(myParam.pParticles, myParam.rParticles, myVar.isMouseNotHoveringUI, myVar.isSelectedTrailsEnabled,
-		myParam.trails);
+	myParam.myCamera.cameraFollowObject(myVar, myParam);
 
-	myParam.particleSelection.clusterSelection(myParam.pParticles, myParam.rParticles,
-		myParam.myCamera, myVar.isMouseNotHoveringUI, myParam.trails, myVar.isGlobalTrailsEnabled);
+	myParam.particleSelection.clusterSelection(myVar, myParam);
 
-	myParam.particleSelection.particleSelection(myParam.pParticles, myParam.rParticles, myParam.myCamera,
-		myVar.isMouseNotHoveringUI, myParam.trails, myVar.isGlobalTrailsEnabled);
+	myParam.particleSelection.particleSelection(myVar, myParam);
 
-	myParam.particleSelection.manyClustersSelection(myParam.pParticles, myParam.rParticles, myParam.trails, myVar.isGlobalTrailsEnabled);
+	myParam.particleSelection.manyClustersSelection(myVar, myParam);
 
-	myParam.particleSelection.boxSelection(myParam.pParticles, myParam.rParticles, myParam.myCamera);
+	myParam.particleSelection.boxSelection(myParam);
 
 	myParam.particleSelection.invertSelection(myParam.rParticles);
 
 	myParam.particleSelection.deselection(myParam.rParticles);
 
-	myParam.particleSelection.selectedParticlesStoring(myParam.pParticles, myParam.rParticles, myParam.rParticlesSelected,
-		myParam.pParticlesSelected);
+	myParam.particleSelection.selectedParticlesStoring(myParam);
 
 	myParam.densitySize.sizeByDensity(myParam.pParticles, myParam.rParticles, myVar.isDensitySizeEnabled, myVar.particleSizeMultiplier);
 
@@ -174,13 +168,13 @@ static void updateScene() {
 
 	myParam.particleDeletion.deleteNonImportanParticles(myParam.pParticles, myParam.rParticles);
 
-	myParam.brush.particlesAttractor(myParam.pParticles, myParam.myCamera.mouseWorldPos, myVar.G, myVar.softening, myVar.timeFactor);
+	myParam.brush.particlesAttractor(myVar, myParam);
 
-	myParam.brush.particlesSpinner(myParam.pParticles, myParam.myCamera.mouseWorldPos, myVar.softening, myVar.timeFactor);
+	myParam.brush.particlesSpinner(myVar, myParam);
 
-	myParam.brush.particlesGrabber(myParam.pParticles, myParam.myCamera.mouseWorldPos, myParam.myCamera.camera.zoom);
+	myParam.brush.particlesGrabber(myVar, myParam);
 
-	myParam.brush.eraseBrush(myParam.pParticles, myParam.rParticles, myParam.myCamera.mouseWorldPos);
+	myParam.brush.eraseBrush(myVar, myParam);
 
 
 	if (grid != nullptr) {
@@ -260,8 +254,7 @@ static void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture) 
 
 	myUI.uiLogic(myParam, myVar);
 
-	myParam.subdivision.subdivideParticles(myParam.pParticles, myParam.rParticles, myVar.particleTextureSize,
-		myVar.isMouseNotHoveringUI, myVar.isDragging);
+	myParam.subdivision.subdivideParticles(myVar, myParam);
 
 
 	EndTextureMode();
@@ -336,7 +329,7 @@ int main() {
 			WHITE
 		);
 
-		myVar.isRecording = myParam.screenCapture.screenGrab(myParticlesTexture, myVar.isDragging, myVar.isMouseNotHoveringUI);
+		myVar.isRecording = myParam.screenCapture.screenGrab(myParticlesTexture, myVar);
 
 		if (myVar.isRecording) {
 			DrawRectangleLinesEx({ 0,0, static_cast<float>(myVar.screenWidth), static_cast<float>(myVar.screenHeight) }, 3, RED);

@@ -5,6 +5,9 @@
 #include "raylib.h"
 #include "particle.h"
 
+struct UpdateVariables;
+struct UpdateParameters;
+
 
 class ParticleTrails {
 public:
@@ -26,9 +29,7 @@ public:
 
 	ParticleTrails();
 
-	void trailLogic(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles,
-		std::vector<ParticlePhysics>& pParticlesSelected, std::vector<ParticleRendering>& rParticlesSelected, bool& isTrailsEnabled, 
-		bool& isSelectedTrailsEnabled, int& maxLength, float& timeFactor, bool& isLocalTrailsEnabled);
+	void trailLogic(UpdateVariables& myVar, UpdateParameters& myParam);
 
 	void drawTrail(std::vector<ParticleRendering>& rParticles, Texture2D& particleBlur);
 

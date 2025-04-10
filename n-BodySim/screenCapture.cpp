@@ -3,8 +3,9 @@
 #include <string>
 #include <algorithm>
 #include <regex>
+#include "parameters.h"
 
-bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, bool& isDragging, bool& isMouseNotHoveringUI) {
+bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariables& myVar) {
 
 	if (IsKeyPressed(KEY_S)) {
 		if (!std::filesystem::exists("Screenshots")) {
@@ -39,32 +40,27 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, bool& isDrag
 
 
 	if (IsKeyPressed(KEY_R)) {
-		if (!isRecording) {
+		if (!isFunctionRecording) {
 			myFrames.clear();
 
 		}
-		isRecording = !isRecording;
+		isFunctionRecording = !isFunctionRecording;
 	}
 
-	if (isRecording) {
+	if (isFunctionRecording) {
 		myFrames.push_back(LoadImageFromTexture(myParticlesTexture.texture));
 	}
 
-	if (myFrames.size() > 0 && !isRecording) {
+	if (myFrames.size() > 0 && !isFunctionRecording) {
 		Button exportFramesButton({ static_cast<float>(GetScreenWidth()) - 600.0f, 70.0f },
 			{ 150.0f, 35.0f }, "Export Frames", true);
 		Button deleteFramesButton({ static_cast<float>(GetScreenWidth()) - 600.0f, 110.0f },
 			{ 150.0f, 35.0f }, "Delete Frames", true);
 
-		bool isExportFramesButtonHovering = exportFramesButton.buttonLogic(exportFrames);
-		bool isDeleteFramesButtonHovering = deleteFramesButton.buttonLogic(deleteFrames);
+		bool isExportFramesButtonHovering = exportFramesButton.buttonLogic(exportFrames, myVar);
+		bool isDeleteFramesButtonHovering = deleteFramesButton.buttonLogic(deleteFrames, myVar);
 
 		DrawText("Might take a while", GetScreenWidth() - 440, 70, 20, RED);
-
-		if (isExportFramesButtonHovering || isDeleteFramesButtonHovering) {
-			isDragging = false;
-			isMouseNotHoveringUI = false;
-		}
 	}
 
 	if (myFrames.size() > 0) {
@@ -77,7 +73,7 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, bool& isDrag
 	}
 
 	if (exportFrames) {
-		isRecording = false;
+		isFunctionRecording = false;
 
 		int numFrames = static_cast<int>(myFrames.size());
 
@@ -116,5 +112,5 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, bool& isDrag
 		exportFrames = false;
 	}
 
-	return isRecording;
+	return isFunctionRecording;
 }

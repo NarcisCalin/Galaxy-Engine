@@ -14,6 +14,9 @@ Slingshot::Slingshot(float normalizedX, float normalizedY, float length) {
 
 Slingshot Slingshot::planetSlingshot(bool &isDragging, SceneCamera myCamera) {
 
+	if (IsMouseButtonPressed(1)) {
+		isDragging = false;
+	}
 
 	Vector2 mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), myCamera.camera);
 

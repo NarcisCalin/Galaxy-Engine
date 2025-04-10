@@ -1,4 +1,5 @@
 #include "brush.h"
+#include "parameters.h"
 
 Brush::Brush(SceneCamera myCamera, float brushRadius) {
 	this->myCamera = myCamera;
@@ -6,7 +7,7 @@ Brush::Brush(SceneCamera myCamera, float brushRadius) {
 	mouseWorldPos = { 0 };
 }
 
-void Brush::brushLogic(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, Vector2 mouseWorldPos) {
+void Brush::brushLogic(UpdateParameters& myParam) {
 	for (int i = 0; i < 140; i++) {
 		float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 		float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
@@ -16,10 +17,10 @@ void Brush::brushLogic(std::vector<ParticlePhysics>& pParticles, std::vector<Par
 			sin(angle) * distance
 		};
 
-		Vector2 particlePos = Vector2Add(mouseWorldPos, randomOffset);
+		Vector2 particlePos = Vector2Add(myParam.myCamera.mouseWorldPos, randomOffset);
 
-		pParticles.emplace_back(particlePos, Vector2{ 0, 0 }, 30000000000.0f);
-		rParticles.emplace_back(Color{ 128, 128, 128, 100 }, 0.125f, false, true, false, false, true, true);
+		myParam.pParticles.emplace_back(particlePos, Vector2{ 0, 0 }, 30000000000.0f);
+		myParam.rParticles.emplace_back(Color{ 128, 128, 128, 100 }, 0.125f, false, true, false, false, true, true);
 	}
 }
 
@@ -35,24 +36,24 @@ void Brush::drawBrush(Vector2 mouseWorldPos) {
 	DrawCircleLinesV({ mouseWorldPos.x, mouseWorldPos.y }, brushRadius, WHITE);
 }
 
-void Brush::eraseBrush(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, Vector2 mouseWorldPos) {
+void Brush::eraseBrush(UpdateVariables& myVar, UpdateParameters& myParam) {
 
 	if (IsKeyDown(KEY_X) && IsMouseButtonDown(2)) {
-		for (size_t i = 0; i < pParticles.size();) {
+		for (size_t i = 0; i < myParam.pParticles.size();) {
 			Vector2 distanceFromBrush = {
-				pParticles[i].pos.x - mouseWorldPos.x,
-				pParticles[i].pos.y - mouseWorldPos.y
+				myParam.pParticles[i].pos.x - myParam.myCamera.mouseWorldPos.x,
+				myParam.pParticles[i].pos.y - myParam.myCamera.mouseWorldPos.y
 			};
 
 			float distance = sqrt(distanceFromBrush.x * distanceFromBrush.x +
 				distanceFromBrush.y * distanceFromBrush.y);
 
 			if (distance < brushRadius) {
-				std::swap(pParticles[i], pParticles.back());
-				std::swap(rParticles[i], rParticles.back());
+				std::swap(myParam.pParticles[i], myParam.pParticles.back());
+				std::swap(myParam.rParticles[i], myParam.rParticles.back());
 
-				pParticles.pop_back();
-				rParticles.pop_back();
+				myParam.pParticles.pop_back();
+				myParam.rParticles.pop_back();
 			}
 			else {
 				i++;
@@ -61,39 +62,38 @@ void Brush::eraseBrush(std::vector<ParticlePhysics>& pParticles, std::vector<Par
 	}
 }
 
-void Brush::particlesAttractor(std::vector<ParticlePhysics>& pParticles, Vector2 mouseWorldPos, double& G, float& softening, float& timeFactor) {
+void Brush::particlesAttractor(UpdateVariables& myVar, UpdateParameters& myParam) {
 
 	if (IsKeyDown(KEY_B)) {
 
-		for (size_t i = 0; i < pParticles.size(); i++) {
-			float dx = pParticles[i].pos.x - mouseWorldPos.x;
-			float dy = pParticles[i].pos.y - mouseWorldPos.y;
+		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+			float dx = myParam.pParticles[i].pos.x - myParam.myCamera.mouseWorldPos.x;
+			float dy = myParam.pParticles[i].pos.y - myParam.myCamera.mouseWorldPos.y;
 			float radius = sqrt(dx * dx + dy * dy);
 			if (radius < 1.0f) radius = 1.0f;
 
 
-			float acceleration = static_cast<float>(G * 10000.0f * brushRadius) / (radius * radius);
+			float acceleration = static_cast<float>(myVar.G * 10000.0f * brushRadius) / (radius * radius);
 
-			attractorForce.x = static_cast<float>(-(dx / radius) * acceleration * pParticles[i].mass);
-			attractorForce.y = static_cast<float>(-(dy / radius) * acceleration * pParticles[i].mass);
+			attractorForce.x = static_cast<float>(-(dx / radius) * acceleration * myParam.pParticles[i].mass);
+			attractorForce.y = static_cast<float>(-(dy / radius) * acceleration * myParam.pParticles[i].mass);
 
 			if (IsKeyDown(KEY_LEFT_CONTROL)) {
 				attractorForce = { -attractorForce.x, -attractorForce.y };
 			}
 
-			pParticles[i].velocity.x += attractorForce.x * timeFactor;
-			pParticles[i].velocity.y += attractorForce.y * timeFactor;
+			myParam.pParticles[i].velocity.x += attractorForce.x * myVar.timeFactor;
+			myParam.pParticles[i].velocity.y += attractorForce.y * myVar.timeFactor;
 		}
 	}
 }
 
-void Brush::particlesSpinner(std::vector<ParticlePhysics>& pParticles, Vector2 mouseWorldPos, float& softening,
-	float& timeFactor) {
+void Brush::particlesSpinner(UpdateVariables& myVar, UpdateParameters& myParam) {
 
 	if (IsKeyDown(KEY_N)) {
-		for (auto& pParticle : pParticles) {
+		for (auto& pParticle : myParam.pParticles) {
 
-			Vector2 distanceFromBrush = { pParticle.pos.x - mouseWorldPos.x, pParticle.pos.y - mouseWorldPos.y };
+			Vector2 distanceFromBrush = { pParticle.pos.x - myParam.myCamera.mouseWorldPos.x, pParticle.pos.y - myParam.myCamera.mouseWorldPos.y };
 
 			float distance = sqrt(distanceFromBrush.x * distanceFromBrush.x + distanceFromBrush.y * distanceFromBrush.y);
 
@@ -101,7 +101,7 @@ void Brush::particlesSpinner(std::vector<ParticlePhysics>& pParticles, Vector2 m
 
 				float falloff = distance / brushRadius;
 
-				float inverseDistance = 1.0f / (distance + softening);
+				float inverseDistance = 1.0f / (distance + myVar.softening);
 				Vector2 radialDirection = { distanceFromBrush.x * inverseDistance, distanceFromBrush.y * inverseDistance };
 
 				Vector2 spinDirection = { -radialDirection.y, radialDirection.x };
@@ -110,53 +110,53 @@ void Brush::particlesSpinner(std::vector<ParticlePhysics>& pParticles, Vector2 m
 					spinDirection = { -spinDirection.x, -spinDirection.y };
 				}
 
-				pParticle.velocity.x += spinDirection.x * spinForce * falloff * timeFactor;
-				pParticle.velocity.y += spinDirection.y * spinForce * falloff * timeFactor;
+				pParticle.velocity.x += spinDirection.x * spinForce * falloff * myVar.timeFactor;
+				pParticle.velocity.y += spinDirection.y * spinForce * falloff * myVar.timeFactor;
 			}
 		}
 	}
 
 }
 
-void Brush::particlesGrabber(std::vector<ParticlePhysics>& pParticles, Vector2 mouseWorldPos, float& zoom) {
+void Brush::particlesGrabber(UpdateVariables& myVar, UpdateParameters& myParam) {
 
 	Vector2 mouseDelta = GetMouseDelta();
-	mouseDelta = Vector2Scale(mouseDelta, -1.0f / zoom);
+	mouseDelta = Vector2Scale(mouseDelta, -1.0f / myParam.myCamera.camera.zoom);
 
 	if (IsKeyDown(KEY_M)) {
 		dragging = true;
 		lastMouseVelocity = mouseDelta;
 
-		for (size_t i = 0; i < pParticles.size(); i++) {
+		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 			Vector2 distanceFromBrush = {
-				pParticles[i].pos.x - mouseWorldPos.x,
-				pParticles[i].pos.y - mouseWorldPos.y
+				myParam.pParticles[i].pos.x - myParam.myCamera.mouseWorldPos.x,
+				myParam.pParticles[i].pos.y - myParam.myCamera.mouseWorldPos.y
 			};
 
 			float distance = sqrt(distanceFromBrush.x * distanceFromBrush.x +
 				distanceFromBrush.y * distanceFromBrush.y);
 
 			if (distance < brushRadius) {
-				pParticles[i].pos.x -= mouseDelta.x;
-				pParticles[i].pos.y -= mouseDelta.y;
+				myParam.pParticles[i].pos.x -= mouseDelta.x;
+				myParam.pParticles[i].pos.y -= mouseDelta.y;
 			}
 		}
 	}
 	else if (dragging) {
 		float impulseFactor = 5.0f;
 
-		for (size_t i = 0; i < pParticles.size(); i++) {
+		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 			Vector2 distanceFromBrush = {
-				pParticles[i].pos.x - mouseWorldPos.x,
-				pParticles[i].pos.y - mouseWorldPos.y
+				myParam.pParticles[i].pos.x - myParam.myCamera.mouseWorldPos.x,
+				myParam.pParticles[i].pos.y - myParam.myCamera.mouseWorldPos.y
 			};
 
 			float distance = sqrt(distanceFromBrush.x * distanceFromBrush.x +
 				distanceFromBrush.y * distanceFromBrush.y);
 
 			if (distance < brushRadius) {
-				pParticles[i].velocity.x -= lastMouseVelocity.x * impulseFactor;
-				pParticles[i].velocity.y -= lastMouseVelocity.y * impulseFactor;
+				myParam.pParticles[i].velocity.x -= lastMouseVelocity.x * impulseFactor;
+				myParam.pParticles[i].velocity.y -= lastMouseVelocity.y * impulseFactor;
 			}
 		}
 		dragging = false;

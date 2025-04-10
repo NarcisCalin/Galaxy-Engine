@@ -4,6 +4,8 @@
 #include <array>
 #include <string>
 
+struct UpdateVariables;
+
 struct Controls {
 	std::array<std::string, 6> controlsArray = {
 	"1. Hold LMB and Drag: Throw heavy particle",
@@ -59,6 +61,32 @@ struct Controls {
 	"33. X + MMB: Eraser"
 	};
 
+	std::array<std::string, 23> informationArray = {
+		"INFORMATION",
+		"This is a personal project done for learning purposes",
+		"by Narcis Calin. The project was entirely made with raylib",
+		"and C++. The code is available for anyone on Github.",
+		"Down below you can find some useful information:",
+		"1. Theta: is controls the quality of the Barnes-Hut simulation",
+		"2. Barnes-Hut: This is the main simulation algorithm. Disabling",
+		"it will switch to a pairwise algorithm which is technically more",
+		"accurate but also much slower.",
+		"3. Dark Matter: Currently this is a very basic implementation",
+		"which simulates a dark matter halo in the center of the domain.",
+		"It is intented to be used with the big galaxy. Dark matter only",
+		"works with Barnes-Hut enabled",
+		"4. Multi-Threading: The default value for multi-threading",
+		"is 16 threads.",
+		"5. Screen Capture: You can start recording with R and you can",
+		"take screenshots with S. Once you are done recording, you will",
+		"see an export button at the top of the window. This should export",
+		"all your frames to the executable's directory",
+		"6. Density Size: This will give the simulation a gas-like look.",
+		"7. Collisions: Currently collisions are experimental. They do not",
+		"respect conservation of energy when they are enabled with gravity.",
+		"They work as intended when gravity is disabled."
+	};
+
 	bool isShowControlsEnabled = true;
 	bool isShowExtendedControlsEnabled = false;
 	bool nextPage = false;
@@ -66,69 +94,7 @@ struct Controls {
 	int controlsBoxSizeX = 435;
 	int controlsBoxSizeY = 810;
 
-	void showControls(bool& isMouseNotHoveringUI, bool& isDragging, int& screenWidth, int& screenHeight) {
+	void showControls(UpdateVariables& myVar);
 
-		Button extendedControlsButton = { Vector2{ 20.0f, 140.0f }, Vector2{ 200.0f, 30.0f }, "Extended Controls", true };
-
-		if (isShowControlsEnabled) {
-			for (size_t i = 0; i < controlsArray.size(); i++) {
-				DrawText(TextFormat("%s", controlsArray[i].c_str()), 25, 20 + 20 * static_cast<int>(i), 15, WHITE);
-			}
-			bool buttonExtendedControlsHovering = extendedControlsButton.buttonLogic(isShowExtendedControlsEnabled);
-
-			if (buttonExtendedControlsHovering) {
-				isMouseNotHoveringUI = false;
-				isDragging = false;
-			}
-
-			if (isShowExtendedControlsEnabled) {
-				Vector2 pageButtonPos = {
-					static_cast<float>(screenWidth) / 2.0f,
-					static_cast<float>(screenHeight) / 2.0f - controlsBoxSizeY / 2.0f - 14.0f };
-				Button changePageButton(pageButtonPos,
-					{ 14.0f, 14.0f }, "", false);
-
-				bool buttonNextPageHovering = changePageButton.buttonLogic(nextPage);
-
-				if (buttonNextPageHovering) {
-					isMouseNotHoveringUI = false;
-					isDragging = false;
-				}
-
-				DrawTriangle(
-					{ pageButtonPos.x + 3.0f, pageButtonPos.y + 5.0f },
-					{ pageButtonPos.x + 7.0f, pageButtonPos.y + 11.0f },
-					{ pageButtonPos.x + 11.0f ,pageButtonPos.y + 5.0f }, WHITE);
-
-				DrawRectangle(screenWidth / 2 - controlsBoxSizeX / 2,
-					screenHeight / 2 - controlsBoxSizeY / 2,
-					controlsBoxSizeX, controlsBoxSizeY,
-					{ 170,170,170,170 });
-
-				if (!nextPage) {
-					DrawText("PAGE 1.", screenWidth / 2 - controlsBoxSizeX / 2 + 20, screenHeight / 2 - controlsBoxSizeY / 2 + 20, 30, WHITE);
-					for (size_t i = 0; i < extendedControlsArrayParticles.size(); i++) {
-						DrawText(TextFormat("%s", extendedControlsArrayParticles[i].c_str()),
-							(screenWidth / 2 - controlsBoxSizeX / 2) + 20,
-							((screenHeight / 2 - controlsBoxSizeY / 2) + 70) + 30 * static_cast<int>(i), 18, WHITE);
-					}
-
-					for (size_t i = 0; i < extendedControlsArrayCamAndSelec.size(); i++) {
-						DrawText(TextFormat("%s", extendedControlsArrayCamAndSelec[i].c_str()),
-							(screenWidth / 2 - controlsBoxSizeX / 2) + 20,
-							((screenHeight / 2 - controlsBoxSizeY / 2) + 340) + 30 * static_cast<int>(i), 18, WHITE);
-					}
-				}
-				else {
-					DrawText("PAGE 2.", screenWidth / 2 - controlsBoxSizeX / 2 + 20, screenHeight / 2 - controlsBoxSizeY / 2 + 20, 30, WHITE);
-					for (size_t i = 0; i < extendedControlsArrayUtility.size(); i++) {
-						DrawText(TextFormat("%s", extendedControlsArrayUtility[i].c_str()),
-							(screenWidth / 2 - controlsBoxSizeX / 2) + 20,
-							((screenHeight / 2 - controlsBoxSizeY / 2) + 70) + 30 * static_cast<int>(i), 18, WHITE);
-					}
-				}
-
-			}
-		}
-	}
+	void showMoreInfo(UpdateVariables& myVar);
 };

@@ -5,6 +5,10 @@
 #include "camera.h"
 #include "particleTrails.h"
 
+struct UpdateVariables;
+struct UpdateParameters;
+
+
 class ParticleSelection {
 public:
 
@@ -15,23 +19,19 @@ public:
 	
 	ParticleSelection();
 
-	void clusterSelection(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, SceneCamera& myCamera,
-		bool& isMouseNotHoveringUI, ParticleTrails& trails, bool& isGlobalTrailsEnabled);
+	void clusterSelection(UpdateVariables& myVar, UpdateParameters& myParam);
 
-	void particleSelection(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, SceneCamera& myCamera,
-		bool& isMouseNotHoveringUI, ParticleTrails& trails, bool& isGlobalTrailsEnabled);
+	void particleSelection(UpdateVariables& myVar, UpdateParameters& myParam);
 
-	void manyClustersSelection(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, ParticleTrails& trails,
-		bool& isGlobalTrailsEnabled);
+	void manyClustersSelection(UpdateVariables& myVar, UpdateParameters& myParam);
 
-	void boxSelection(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, SceneCamera& myCamera);
+	void boxSelection(UpdateParameters& myParam);
 
 	void invertSelection(std::vector<ParticleRendering>& rParticles);
 
 	void deselection(std::vector<ParticleRendering>& rParticles);
 
-	void selectedParticlesStoring(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, std::vector<ParticleRendering>& rParticlesSelected,
-		std::vector<ParticlePhysics>& pParticlesSelected);
+	void selectedParticlesStoring(UpdateParameters& myParam);
 
 private:
 	float selectionThresholdSq = 100.0f;

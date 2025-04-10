@@ -3,13 +3,15 @@
 #include "button.h"
 #include <vector>
 
+struct UpdateVariables;
+
 class ScreenCapture {
 public:
 	bool exportFrames = false;
 	bool deleteFrames = false;
-	bool isRecording = false;
+	bool isFunctionRecording = false;
 
-	bool screenGrab(RenderTexture2D& myParticlesTexture, bool& isDragging, bool& isMouseNotHoveringUI);
+	bool screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariables& myVar);
 
 private:
 	int screenshotIndex = 0;

@@ -1,6 +1,7 @@
 #include <iostream>
 #include "raylib.h"
 #include "button.h"
+#include "parameters.h"
 
 Button::Button(Vector2 pos, Vector2 size, std::string text, bool hasText) {
 	this->pos = pos;
@@ -9,7 +10,7 @@ Button::Button(Vector2 pos, Vector2 size, std::string text, bool hasText) {
     this->hasText = hasText;
 }
 
-bool Button::buttonLogic(bool& isEnabled) {
+bool Button::buttonLogic(bool& isEnabled, UpdateVariables& myVar) {
     if (isEnabled) {
         color = { 70, 140, 70, 255 };
     }
@@ -32,7 +33,6 @@ bool Button::buttonLogic(bool& isEnabled) {
         if (IsMouseButtonPressed(0)) {
             isEnabled = !isEnabled;
         }
-        
     }
 
     DrawRectangleV({ pos.x, pos.y }, { size.x, size.y }, color);

@@ -109,5 +109,7 @@ struct UpdateVariables{
 
 	bool isGlowEnabled = false;
 
+	bool isInformationEnabled = false;
+
 	Vector2 mouseWorldPos = { 0.0f };
 };

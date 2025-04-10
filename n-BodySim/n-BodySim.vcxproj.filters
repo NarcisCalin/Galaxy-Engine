@@ -57,6 +57,15 @@
     <ClCompile Include="physics.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="particleSubdivision.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="rightClickSettings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="controls.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="slingshot.h">

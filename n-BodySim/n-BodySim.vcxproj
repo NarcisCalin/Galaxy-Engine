@@ -140,6 +140,7 @@
     <ClCompile Include="brush.cpp" />
     <ClCompile Include="button.cpp" />
     <ClCompile Include="camera.cpp" />
+    <ClCompile Include="controls.cpp" />
     <ClCompile Include="main.cpp">
       <FileType>CppCode</FileType>
     </ClCompile>
@@ -148,9 +149,11 @@
     </ClCompile>
     <ClCompile Include="particleSelection.cpp" />
     <ClCompile Include="particlesSpawning.cpp" />
+    <ClCompile Include="particleSubdivision.cpp" />
     <ClCompile Include="particleTrails.cpp" />
     <ClCompile Include="physics.cpp" />
     <ClCompile Include="quadtree.cpp" />
+    <ClCompile Include="rightClickSettings.cpp" />
     <ClCompile Include="screenCapture.cpp" />
     <ClCompile Include="slider.cpp" />
     <ClCompile Include="slingshot.cpp" />

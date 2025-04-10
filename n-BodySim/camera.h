@@ -24,8 +24,7 @@ public:
 
 	Camera2D cameraLogic();
 
-	void cameraFollowObject(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, bool& isMouseNotHoveringUI,
-		bool& isSelectedTrailsEnabled, ParticleTrails& trails);
+	void cameraFollowObject(UpdateVariables& myVar, UpdateParameters& myParam);
 
 private:
 	Color previousColor;

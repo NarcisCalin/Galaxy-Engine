@@ -2,6 +2,8 @@
 #include <iostream>
 #include "raylib.h"
 
+struct UpdateVariables;
+
 class Button {
 public:
 	Vector2 pos;
@@ -11,7 +13,7 @@ public:
 
 	Button(Vector2 pos, Vector2 size, std::string text, bool hasText);
 
-	bool buttonLogic(bool& isEnabled);
+	bool buttonLogic(bool& isEnabled, UpdateVariables& myVar);
 
 private:
 	bool isOnTop = false;

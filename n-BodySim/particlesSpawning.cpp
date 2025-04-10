@@ -4,25 +4,23 @@
 #include "parameters.h"
 
 
-void ParticlesSpawning::particlesInitialConditions(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles,
-	bool& isDragging, bool& isMouseNotHoveringUI, SceneCamera& myCamera, int& screenHeight, int& screenWidth, Brush& brush,
-	Physics physics, Quadtree& quadtree, UpdateVariables& myVar) {
+void ParticlesSpawning::particlesInitialConditions(Quadtree& quadtree, Physics& physics, UpdateVariables& myVar, UpdateParameters& myParam) {
 
-	if (isMouseNotHoveringUI && isSpawningAllowed) {
+	if (myVar.isMouseNotHoveringUI && isSpawningAllowed) {
 
-		Slingshot slingshot = slingshot.planetSlingshot(isDragging, myCamera);
+		Slingshot slingshot = slingshot.planetSlingshot(myVar.isDragging, myParam.myCamera);
 
-		if (isDragging && enablePathPrediction) {
-			predictTrajectory(pParticles, myCamera, physics, quadtree, myVar, slingshot);
+		if (myVar.isDragging && enablePathPrediction) {
+			predictTrajectory(myParam.pParticles, myParam.myCamera, physics, quadtree, myVar, slingshot);
 		}
 
-		if (IsMouseButtonReleased(0) && !IsKeyDown(KEY_LEFT_CONTROL) && !IsKeyDown(KEY_LEFT_ALT) && isDragging) {
-			pParticles.emplace_back(
-				Vector2{ static_cast<float>(myCamera.mouseWorldPos.x), static_cast<float>(myCamera.mouseWorldPos.y) },
+		if (IsMouseButtonReleased(0) && !IsKeyDown(KEY_LEFT_CONTROL) && !IsKeyDown(KEY_LEFT_ALT) && myVar.isDragging) {
+			myParam.pParticles.emplace_back(
+				Vector2{ static_cast<float>(myParam.myCamera.mouseWorldPos.x), static_cast<float>(myParam.myCamera.mouseWorldPos.y) },
 				Vector2{ slingshot.normalizedX * slingshot.length, slingshot.normalizedY * slingshot.length },
-				300000000000000.0f * heavyParticleWeightMultiplier
+				heavyParticleInitMass * heavyParticleWeightMultiplier
 			);
-			rParticles.emplace_back(
+			myParam.rParticles.emplace_back(
 				Color{ 255, 255, 255, 255 },
 				0.3f,
 				true,
@@ -32,16 +30,16 @@ void ParticlesSpawning::particlesInitialConditions(std::vector<ParticlePhysics>&
 				false,
 				false
 			);
-			isDragging = false;
+			myVar.isDragging = false;
 		}
 		if (IsMouseButtonDown(2) && !IsKeyDown(KEY_LEFT_CONTROL) && !IsKeyDown(KEY_LEFT_ALT) && !IsKeyDown(KEY_X)) {
-			brush.brushLogic(pParticles, rParticles, myCamera.mouseWorldPos);
+			myParam.brush.brushLogic(myParam);
 		}
 
-		if (IsKeyPressed(KEY_ONE) && !isDragging) {
+		if (IsKeyPressed(KEY_ONE) && !myVar.isDragging) {
 			for (int i = 0; i < 40000; i++) {
-				float galaxyCenterX = static_cast<float>(screenWidth / 2);
-				float galaxyCenterY = static_cast<float>(screenHeight / 2);
+				float galaxyCenterX = static_cast<float>(myVar.screenWidth / 2);
+				float galaxyCenterY = static_cast<float>(myVar.screenHeight / 2);
 
 				float angle = static_cast<float>(rand()) / RAND_MAX * 2 * PI;
 				float radius = static_cast<float>(rand()) / RAND_MAX * 200.0f + 8;
@@ -56,12 +54,12 @@ void ParticlesSpawning::particlesInitialConditions(std::vector<ParticlePhysics>&
 				float velocityX = -dy * angularSpeed;
 				float velocityY = dx * angularSpeed;
 
-				pParticles.emplace_back(
+				myParam.pParticles.emplace_back(
 					Vector2{ posX, posY },
 					Vector2{ velocityX, velocityY },
 					50000000000.0f
 				);
-				rParticles.emplace_back(
+				myParam.rParticles.emplace_back(
 					Color{ 128, 128, 128, 100 },
 					0.125f,
 					false,
@@ -75,10 +73,10 @@ void ParticlesSpawning::particlesInitialConditions(std::vector<ParticlePhysics>&
 			}
 		}
 
-		if (IsKeyReleased(KEY_THREE) && isDragging) {
+		if (IsKeyReleased(KEY_THREE) && myVar.isDragging) {
 			for (int i = 0; i < 12000; i++) {
-				float galaxyCenterX = static_cast<float>(myCamera.mouseWorldPos.x);
-				float galaxyCenterY = static_cast<float>(myCamera.mouseWorldPos.y);
+				float galaxyCenterX = static_cast<float>(myParam.myCamera.mouseWorldPos.x);
+				float galaxyCenterY = static_cast<float>(myParam.myCamera.mouseWorldPos.y);
 
 				float angle = static_cast<float>(rand()) / RAND_MAX * 2 * PI;
 
@@ -99,7 +97,7 @@ void ParticlesSpawning::particlesInitialConditions(std::vector<ParticlePhysics>&
 				float velocityX = -dy * angularSpeed;
 				float velocityY = dx * angularSpeed;
 
-				pParticles.emplace_back(
+				myParam.pParticles.emplace_back(
 					Vector2{ posX, posY },
 					Vector2{
 						velocityX + (slingshot.normalizedX * slingshot.length * 0.3f),
@@ -107,7 +105,7 @@ void ParticlesSpawning::particlesInitialConditions(std::vector<ParticlePhysics>&
 					},
 					85000000000.0f
 				);
-				rParticles.emplace_back(
+				myParam.rParticles.emplace_back(
 					Color{ 128, 128, 128, 100 },
 					0.125f,
 					false,
@@ -117,18 +115,18 @@ void ParticlesSpawning::particlesInitialConditions(std::vector<ParticlePhysics>&
 					true,
 					true
 				);
-				isDragging = false;
+				myVar.isDragging = false;
 			}
 		}
 
 		if (IsKeyPressed(KEY_TWO)) {
 			for (int i = 0; i < 10000; i++) {
-				pParticles.emplace_back(
-					Vector2{ static_cast<float>(rand() % screenWidth), static_cast<float>(rand() % screenHeight) },
+				myParam.pParticles.emplace_back(
+					Vector2{ static_cast<float>(rand() % myVar.screenWidth), static_cast<float>(rand() % myVar.screenHeight) },
 					Vector2{ 0, 0 },
 					500000000000.0f
 				);
-				rParticles.emplace_back(
+				myParam.rParticles.emplace_back(
 					Color{ 128, 128, 128, 100 },
 					0.125f,
 					false,
@@ -156,14 +154,16 @@ void ParticlesSpawning::predictTrajectory(const std::vector<ParticlePhysics>& pP
 	SceneCamera& myCamera, Physics physics, Quadtree& quadtree,
 	UpdateVariables& myVar, Slingshot& slingshot) {
 
-	if (!IsMouseButtonDown(0)) return;
+	if (!IsMouseButtonDown(0)) {
+		return;
+	}
 
 	std::vector<ParticlePhysics> currentParticles = pParticles;
 
 	ParticlePhysics predictedParticle(
 		Vector2{ static_cast<float>(myCamera.mouseWorldPos.x), static_cast<float>(myCamera.mouseWorldPos.y) },
 		Vector2{ slingshot.normalizedX * slingshot.length, slingshot.normalizedY * slingshot.length },
-		300000000000000.0f * heavyParticleWeightMultiplier
+		heavyParticleInitMass* heavyParticleWeightMultiplier
 	);
 
 	predictedParticle.prevAcc = Vector2{ 0.0f, 0.0f };

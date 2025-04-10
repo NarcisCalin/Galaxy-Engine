@@ -4,26 +4,28 @@
 #include "particle.h"
 #include "camera.h"
 
+struct UpdateVariables;
+struct UpdateParameters;
+
 class Brush {
 public:
 	Vector2 mouseWorldPos;
 
 	Brush(SceneCamera myCamera, float brushRadius);
 
-	void brushLogic(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, Vector2 mouseWorldPos);
+	void brushLogic(UpdateParameters& myParam);
 
 	void brushSize(Vector2 mouseWorldPos);
 
 	void drawBrush(Vector2 mouseWorldPos);
 
-	void eraseBrush(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, Vector2 mouseWorldPos);
+	void eraseBrush(UpdateVariables& myVar, UpdateParameters& myParam);
 
-	void particlesAttractor(std::vector<ParticlePhysics>& pParticles, Vector2 mouseWorldPos, double& G, float& softening, float& timeFactor);
+	void particlesAttractor(UpdateVariables& myVar, UpdateParameters& myParam);
 
-	void particlesSpinner(std::vector<ParticlePhysics>& pParticles, Vector2 mouseWorldPos, float& softening,
-		float& timeFactor);
+	void particlesSpinner(UpdateVariables& myVar, UpdateParameters& myParam);
 
-	void particlesGrabber(std::vector<ParticlePhysics>& pParticles, Vector2 mouseWorldPos, float& zoom);
+	void particlesGrabber(UpdateVariables& myVar, UpdateParameters& myParam);
 
 private:
 	float brushRadius;
