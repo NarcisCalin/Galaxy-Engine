@@ -136,6 +136,7 @@ struct ColorVisuals {
 					rParticles[i].color = ColorLerp(lowDensityColor, highDensityColor, normalizedAcc);
 				}
 			}
+			blendMode = 1;
 		}
 		if (selectedColor) {
 			for (size_t i = 0; i < rParticles.size(); i++) {
@@ -143,7 +144,6 @@ struct ColorVisuals {
 					rParticles[i].color = { 230, 128,128, 30 };
 				}
 			}
-			blendMode = 1;
 		}
 	}
 };

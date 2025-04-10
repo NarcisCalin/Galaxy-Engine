@@ -61,6 +61,14 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 		bool isDeleteFramesButtonHovering = deleteFramesButton.buttonLogic(deleteFrames, myVar);
 
 		DrawText("Might take a while", GetScreenWidth() - 440, 70, 20, RED);
+
+		if (isExportFramesButtonHovering || isDeleteFramesButtonHovering) {
+			myVar.isMouseNotHoveringUI = false;
+			myVar.isDragging = false;
+		}
+		else {
+			myVar.isMouseNotHoveringUI = true;
+		}
 	}
 
 	if (myFrames.size() > 0) {
@@ -78,7 +86,7 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 		int numFrames = static_cast<int>(myFrames.size());
 
 		int maxNumberFound = 0;
-		std::regex folderRegex(R"(VideoFrames_(\d+))");
+		std::regex folderRegex(R"(Video_(\d+))");
 
 		for (const auto& entry : std::filesystem::directory_iterator(std::filesystem::current_path())) {
 			if (entry.is_directory()) {

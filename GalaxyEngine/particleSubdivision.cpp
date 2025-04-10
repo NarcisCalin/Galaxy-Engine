@@ -19,6 +19,14 @@ void ParticleSubdivision::subdivideParticles(UpdateVariables& myVar, UpdateParam
 
 			bool confirmHovering = confirm.buttonLogic(confirmState, myVar);
 			bool quitHovering = quit.buttonLogic(quitState, myVar);
+
+			if (confirmHovering || quitHovering) {
+				myVar.isMouseNotHoveringUI = false;
+				myVar.isDragging = false;
+			}
+			else {
+				myVar.isMouseNotHoveringUI = true;
+			}
 		}
 
 		if (quitState) {
