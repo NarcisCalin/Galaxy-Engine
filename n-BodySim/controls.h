@@ -77,7 +77,7 @@ struct Controls {
 		"It is intented to be used with the big galaxy. Dark matter only",
 		"works with Barnes-Hut enabled",
 		"4. Multi-Threading: The default value for multi-threading",
-		"is 16 threads.",
+		"is 16 threads, but it should dynamically change.",
 		"5. Screen Capture: You can start recording with R and you can",
 		"take screenshots with S. Once you are done recording, you will",
 		"see an export button at the top of the window. This should export",

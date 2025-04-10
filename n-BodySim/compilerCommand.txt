@@ -4,7 +4,3 @@ clang++ main.cpp slider.cpp morton.cpp brush.cpp camera.cpp controls.cpp particl
 
 //////////////// G++
 g++ main.cpp slider.cpp morton.cpp brush.cpp controls.cpp particleSubdivision.cpp rightClickSettings.cpp physics.cpp camera.cpp quadtree.cpp particlesSpawning.cpp particleSelection.cpp slingshot.cpp button.cpp particleTrails.cpp UI.cpp screenCapture.cpp -o nbodySim.exe -std=c++20 -pthread -I"C:\RaylibMingw\include" -L"C:\RaylibMingw\lib" -lraylib -lopengl32 -lgdi32 -lwinmm -luser32 -lshell32 -lkernel32 -static -O3 -march=native -flto -fopenmp
-
-
-
-/// ADD THIS FOR A LITTLE EXTRA ACCURACY (LOOK ON GOOGLE WHAT THEY REALLY DO): -ffp-model=precise -fno-fast-math
