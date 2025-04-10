@@ -26,7 +26,7 @@ struct Controls {
 	"6. C: Clear all particles"
 	};
 
-	std::array<std::string, 20> extendedControlsArrayCamAndSelec = {
+	std::array<std::string, 21> extendedControlsArrayCamAndSelec = {
 	"CAMERA AND SELECTION",
 	"7. Move with RMB",
 	"8. Zoom with mouse wheel",
@@ -40,25 +40,26 @@ struct Controls {
 	"16. Hold SHIFT to add to selection",
 	"17. I: Invert selection",
 	"18. Z: Center camera on selected particles",
-	"19. F: Reset camera "
+	"19. F: Reset camera ",
+	"20. D: Deselect all particles"
 	};
 
 	std::array<std::string, 15> extendedControlsArrayUtility = {
 	"UTILITY",
-	"20. T: Toggle global trails",
-	"21. LCTRL + T: Toggle local trails",
-	"22. P: Toggle pixel drawing",
-	"23. U: Toggle UI",
-	"24. RMB on slider to set it to default",
-	"25. Right click to open extra settings",
-	"26. LCTRL + Scroll wheel : Brush size",
-	"27. B: Brush attract particles",
-	"28. N: Brush spin particles",
-	"29. M: Brush grab particles",
-	"30. Hold CTRL to invert brush effects",
-	"31. R: Record frames",
-	"32. S: Take screenshot",
-	"33. X + MMB: Eraser"
+	"21. T: Toggle global trails",
+	"22. LCTRL + T: Toggle local trails",
+	"23. P: Toggle pixel drawing",
+	"24. U: Toggle UI",
+	"25. RMB on slider to set it to default",
+	"26. Right click to open extra settings",
+	"27. LCTRL + Scroll wheel : Brush size",
+	"28. B: Brush attract particles",
+	"29. N: Brush spin particles",
+	"30. M: Brush grab particles",
+	"31. Hold CTRL to invert brush effects",
+	"32. R: Record frames",
+	"33. S: Take screenshot",
+	"34. X + MMB: Eraser"
 	};
 
 	std::array<std::string, 23> informationArray = {
