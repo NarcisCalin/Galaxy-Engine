@@ -7,3 +7,5 @@ $temp = Get-ChildItem -Path . -Recurse -File -Filter *.cpp | ForEach-Object { Re
 
 // Put the "temporary" variable, of relative files in Src, into the clang executable flags for compilation
 clang++ $temp -o GalaxyEngine.exe -Wl",/machine:x64,/subsystem:console" -std=c++20 -L"C:\raylib\build\raylib\Release" -lraylib -lopengl32 -lgdi32 -lwinmm -luser32 -lshell32 -lkernel32 -O3 -march=native -flto -fuse-ld=lld -fopenmp -static
+
+// BE SURE TO CHANGE THE "-L"C:\..." PATH TO WHERE YOUR "raylib.lib" FILE IS LOCATED
