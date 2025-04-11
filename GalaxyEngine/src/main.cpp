@@ -1,6 +1,6 @@
 #include <iostream>
 #include <vector>
-#include "raylib.h"
+#include "../include/raylib/raylib.h"
 #include <cmath>
 #include <array>
 #include <omp.h>
@@ -8,6 +8,28 @@
 #include <algorithm>
 #include <bitset>
 
+#include "../include/Particles/particle.h"
+#include "../include/Physics/quadtree.h"
+#include "../include/Physics/slingshot.h"
+#include "../include/Particles/particleTrails.h"
+#include "../include/UI/button.h"
+#include "../include/UX/screenCapture.h"
+#include "../include/Physics/morton.h"
+#include "../include/UI/slider.h"
+#include "../include/UX/camera.h"
+#include "../include/raylib/rlgl.h"
+#include "../include/raylib/raymath.h"
+#include "../include/UI/brush.h"
+#include "../include/Particles/particleSelection.h"
+#include "../include/Particles/particleSubdivision.h"
+#include "../include/Particles/densitySize.h"
+#include "../include/Particles/particleColorVisuals.h"
+#include "../include/UI/rightClickSettings.h"
+#include "../include/UI/controls.h"
+#include "../include/Particles/particleDeletion.h"
+#include "../include/Particles/particlesSpawning.h"
+#include "../include/UI/UI.h"
+#include "../include/Physics/physics.h"
 #include "../include/parameters.h"
 #include "../include/UI/UI.h"
 #include "../include/Physics/physics.h"

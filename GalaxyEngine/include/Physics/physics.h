@@ -1,5 +1,5 @@
 #pragma once
-#include "raylib.h"
+#include "../raylib/raylib.h"
 #include "../Particles/particle.h"
 #include "quadtree.h"
 #include "../parameters.h"

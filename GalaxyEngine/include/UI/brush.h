@@ -1,6 +1,7 @@
 #pragma once
+
 #include <vector>
-#include "raylib.h"
+#include "../raylib/raylib.h"
 #include "../Particles/particle.h"
 #include "../UX/camera.h"
 

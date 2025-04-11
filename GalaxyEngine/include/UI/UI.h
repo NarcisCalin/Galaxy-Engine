@@ -1,7 +1,7 @@
 #pragma once
 #include <iostream>
 #include <array>
-#include "raylib.h"
+#include "../raylib/raylib.h"
 #include "../Particles/particle.h"
 #include "button.h"
 #include "../parameters.h"

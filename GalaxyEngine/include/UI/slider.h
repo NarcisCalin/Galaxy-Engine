@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <type_traits>
 #include <cmath>
-#include "raylib.h"
+#include "../raylib/raylib.h"
 #include "../parameters.h"
 
 struct UpdateVariables;

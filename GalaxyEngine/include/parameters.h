@@ -1,5 +1,5 @@
 #pragma once
-#include "raylib.h"
+#include "raylib/raylib.h"
 #include <vector>
 #include "Particles/particle.h"
 #include "UX/screenCapture.h"

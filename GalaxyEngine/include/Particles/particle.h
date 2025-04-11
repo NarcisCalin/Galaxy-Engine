@@ -1,6 +1,7 @@
 #pragma once
+
 #include <cstdint>
-#include "raylib.h"
+#include "../raylib/raylib.h"
 
 
 struct ParticlePhysics {

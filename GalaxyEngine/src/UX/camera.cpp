@@ -6,17 +6,17 @@
 
 
 SceneCamera::SceneCamera() {
-	camera.offset = { 0.0f };
-	camera.target = { 0.0f };
+	camera.offset = { 0.0f, 0.0f };
+	camera.target = { 0.0f, 0.0f };
 	camera.rotation = 0.0f;
 	camera.zoom = 1.0f;
 	mouseWorldPos = { 0.0f, 0.0f };
-	panFollowingOffset = { 0.0f };
+	panFollowingOffset = { 0.0f, 0.0f };
 	isFollowing = false;
 	centerCamera = false;
 	previousColor = { 128,128,128,255 };
-	followPosition = { 0.0f };
-	delta = { 0.0f };
+	followPosition = { 0.0f, 0.0f };
+	delta = { 0.0f, 0.0f };
 }
 
 Camera2D SceneCamera::cameraLogic() {

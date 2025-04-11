@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include <vector>
-#include "raylib.h"
+#include "../raylib/raylib.h"
 #include "particle.h"
 
 struct UpdateVariables;
@@ -28,6 +28,7 @@ public:
 	Vector2 selectedParticlesAveragePos = { 0.0f };
 
 	ParticleTrails();
+	~ParticleTrails();
 
 	void trailLogic(UpdateVariables& myVar, UpdateParameters& myParam);
 

@@ -1,5 +1,6 @@
 #pragma once
-#include "raylib.h"
+
+#include "../raylib/raylib.h"
 #include "button.h"
 #include <array>
 #include <string>

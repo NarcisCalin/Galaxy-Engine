@@ -1,5 +1,5 @@
 #include "../../include/Physics/slingshot.h"
-#include "raylib.h"
+#include "../../include/raylib/raylib.h"
 #include <cmath>
 
 Vector2 slingshotPos = { 0, 0 };

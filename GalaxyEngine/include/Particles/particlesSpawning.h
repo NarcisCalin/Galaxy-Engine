@@ -1,5 +1,6 @@
 #pragma once
-#include "raylib.h"
+
+#include "../raylib/raylib.h"
 #include "particle.h"
 #include "../UX/camera.h"
 #include "../Physics/slingshot.h"

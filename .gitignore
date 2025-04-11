@@ -104,6 +104,9 @@ StyleCopReport.xml
 # Extra files
 # - Ignore screenshots
 Screenshot_*
+Video_*
+Frame_*
+*.exe
 
 # Chutzpah Test files
 _Chutzpah*

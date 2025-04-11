@@ -21,6 +21,7 @@ Global
 		{551B92C6-7DA7-4A60-A898-064DACDF6F9A}.Release|x64.Build.0 = Release|x64
 		{551B92C6-7DA7-4A60-A898-064DACDF6F9A}.Release|x86.ActiveCfg = Release|Win32
 		{551B92C6-7DA7-4A60-A898-064DACDF6F9A}.Release|x86.Build.0 = Release|Win32
+		{551B92C6-7DA7-4A60-A898-064DACDF6F9A}.Release|x64.Deploy.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

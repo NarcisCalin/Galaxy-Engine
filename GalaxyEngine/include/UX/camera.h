@@ -1,10 +1,10 @@
 #pragma once
-#include <iostream>
 
+#include <iostream>
 #include <vector>
-#include "raylib.h"
-#include "rlgl.h"
-#include "raymath.h"
+#include "../raylib/raylib.h"
+#include "../raylib/rlgl.h"
+#include "../raylib/raymath.h"
 #include "../Particles/particle.h"
 #include "../Particles/particleTrails.h"
 

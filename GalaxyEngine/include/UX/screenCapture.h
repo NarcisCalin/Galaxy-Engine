@@ -1,5 +1,6 @@
 #pragma once
-#include "raylib.h"
+
+#include "../raylib/raylib.h"
 #include "../UI/button.h"
 #include <vector>
 

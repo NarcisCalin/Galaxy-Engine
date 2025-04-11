@@ -1,6 +1,7 @@
 #pragma once
+
 #include <iostream>
-#include "raylib.h"
+#include "../raylib/raylib.h"
 
 struct UpdateVariables;
 

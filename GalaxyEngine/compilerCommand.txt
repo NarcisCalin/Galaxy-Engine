@@ -1,15 +1,20 @@
 ////////USE THIS ONE FOR YOUR MACHINE!!!!//////// CLANG
 // clang++ main.cpp slider.cpp morton.cpp brush.cpp camera.cpp controls.cpp particleSubdivision.cpp rightClickSettings.cpp physics.cpp quadtree.cpp particleSelection.cpp particlesSpawning.cpp slingshot.cpp button.cpp particleTrails.cpp UI.cpp screenCapture.cpp -o GalaxyEngine.exe -std=c++20 -pthread -I"C:\raylib\src" -L"C:\raylib\build\raylib\Release" -lraylib -lopengl32 -lgdi32 -lwinmm -luser32 -lshell32 -lkernel32 -static -O3 -march=native -flto -fuse-ld=lld -fopenmp -static
-clang++ src/*.cpp -o GalaxyEngine.exe -std=c++20 -pthread -I"C:\raylib\src" -L"C:\raylib\build\raylib\Release" -lraylib -lopengl32 -lgdi32 -lwinmm -luser32 -lshell32 -lkernel32 -static -O3 -march=native -flto -fuse-ld=lld -fopenmp -static
+clang++ src/* -o GalaxyEngine.exe -std=c++20 -pthread -I"C:\raylib\src" -L"C:\raylib\build\raylib\Release" -lraylib -lopengl32 -lgdi32 -lwinmm -luser32 -lshell32 -lkernel32 -static -O3 -march=native -flto -fuse-ld=lld -fopenmp -static
 
+// This is Jeff's / Crisosphinx's
+// Get all files in the directory, recursively, and only with extension named .cpp
+$temp = Get-ChildItem -Path . -Recurse -File -Filter *.cpp | ForEach-Object { Resolve-Path -Relative $_.Fullname }
+// Put the "temporary" variable, of relative files in Src, into the clang executable flags for compilation
+clang++ $temp -o GalaxyEngine.exe -Wl",/machine:x64,/subsystem:console" -std=c++20 -L"C:\Users\jeff3\vcpkg\installed\x64-windows\lib\" -lraylib -lopengl32 -lgdi32 -lwinmm -luser32 -lshell32 -lkernel32 -static -O3 -march=native -flto -fuse-ld=lld -fopenmp -static
 
 
 ///////////////// CLANG FOR OTHER MACHINES
 // clang++ main.cpp slider.cpp morton.cpp brush.cpp camera.cpp controls.cpp particleSubdivision.cpp rightClickSettings.cpp physics.cpp quadtree.cpp particleSelection.cpp particlesSpawning.cpp slingshot.cpp button.cpp particleTrails.cpp UI.cpp screenCapture.cpp -o GalaxyEngine.exe -std=c++20 -pthread -I"C:\raylib\src" -L"C:\raylib\build\raylib\Release" -lraylib -lopengl32 -lgdi32 -lwinmm -luser32 -lshell32 -lkernel32 -O3 -flto -fuse-ld=lld -fopenmp
-clang++ src/*.cpp -std=c++20 -pthread -I"C:\raylib\src" -L"C:\raylib\build\raylib\Release" -lraylib -lopengl32 -lgdi32 -lwinmm -luser32 -lshell32 -lkernel32 -O3 -flto -fuse-ld=lld -fopenmp
+clang++ src/* -std=c++20 -pthread -I"C:\raylib\src" -L"C:\raylib\build\raylib\Release" -lraylib -lopengl32 -lgdi32 -lwinmm -luser32 -lshell32 -lkernel32 -O3 -flto -fuse-ld=lld -fopenmp
 
 
 
 //////////////// G++
 // g++ main.cpp slider.cpp morton.cpp brush.cpp controls.cpp particleSubdivision.cpp rightClickSettings.cpp physics.cpp camera.cpp quadtree.cpp particlesSpawning.cpp particleSelection.cpp slingshot.cpp button.cpp particleTrails.cpp UI.cpp screenCapture.cpp -o GalaxyEngine.exe -std=c++20 -pthread -I"C:\RaylibMingw\include" -L"C:\RaylibMingw\lib" -lraylib -lopengl32 -lgdi32 -lwinmm -luser32 -lshell32 -lkernel32 -static -O3 -march=native -flto -fopenmp
-g++ src/*.cpp -o GalaxyEngine.exe -std=c++20 -pthread -I"C:\RaylibMingw\include" -L"C:\RaylibMingw\lib" -lraylib -lopengl32 -lgdi32 -lwinmm -luser32 -lshell32 -lkernel32 -static -O3 -march=native -flto -fopenmp
+g++ src/* -o GalaxyEngine.exe -std=c++20 -pthread -I"C:\RaylibMingw\include" -L"C:\RaylibMingw\lib" -lraylib -lopengl32 -lgdi32 -lwinmm -luser32 -lshell32 -lkernel32 -static -O3 -march=native -flto -fopenmp

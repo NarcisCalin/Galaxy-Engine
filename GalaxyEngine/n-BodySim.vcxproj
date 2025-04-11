@@ -1455,6 +1455,9 @@
     <ClInclude Include="include\UX\camera.h" />
     <ClInclude Include="include\UX\screenCapture.h" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="include\raylib\" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
 </Project>

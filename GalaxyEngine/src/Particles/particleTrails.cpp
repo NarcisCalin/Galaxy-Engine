@@ -1,7 +1,14 @@
 #include "../../include/Particles/particleTrails.h"
 #include "../../include/parameters.h"
 
-ParticleTrails::ParticleTrails() {
+ParticleTrails::ParticleTrails()
+{
+	// This is a constructor
+}
+
+ParticleTrails::~ParticleTrails()
+{
+	// This is a destructor
 }
 
 void ParticleTrails::trailLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
