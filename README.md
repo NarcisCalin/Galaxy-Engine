@@ -20,7 +20,7 @@ https://github.com/user-attachments/assets/6c6abbad-e795-41e9-840d-89f7f0c43f69
 https://github.com/user-attachments/assets/18a18f4b-b97e-4e4e-8dac-61bd5b2d9157
 
 ### CUSTOMIZATION
-There are multiple parameters to be able to achieve the look you like
+There are multiple parameters to allow you to achieve the look you want
 
 
 https://github.com/user-attachments/assets/493f3aba-70ae-4381-8cad-0d149b0720ac
