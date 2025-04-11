@@ -71,7 +71,7 @@ https://github.com/user-attachments/assets/1ea4d2bc-2435-4fde-a1b2-5aaac7b1186d
 - Download clang from here: https://clang.llvm.org/get_started.html
   - Or get it from Visual Studio Installer
   - ![image](https://github.com/user-attachments/assets/b46a0e7d-188e-43a3-bf7e-fb3edced233a)
-- Install [Raylib](https://github.com/raysan5/raylib) though vcpkg
+- Install [Raylib](https://github.com/raysan5/raylib) through vcpkg
 - Open the powershell terminal in the project folder (where the src folder is located)
 - Manually compile the project with the commands inside the "compilerCommand.txt" file
 
