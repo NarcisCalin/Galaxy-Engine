@@ -31,8 +31,6 @@
 #include "../include/UI/UI.h"
 #include "../include/Physics/physics.h"
 #include "../include/parameters.h"
-#include "../include/UI/UI.h"
-#include "../include/Physics/physics.h"
 
 
 UpdateParameters myParam;
@@ -77,10 +75,10 @@ static void updateScene() {
 
 	myVar.timeFactor = myVar.fixedDeltaTime * myVar.timeStepMultiplier;
 
-	if (myVar.timeFactor == 0) {
-		myParam.morton.computeMortonKeys(myParam.pParticles, grid->boundingBoxPos, grid->boundingBoxSize);
-		myParam.morton.sortParticlesByMortonKey(myParam.pParticles, myParam.rParticles);
-	}
+	//if (myVar.timeFactor == 0) {
+	//	myParam.morton.computeMortonKeys(myParam.pParticles, grid->boundingBoxPos, grid->boundingBoxSize);
+	//	myParam.morton.sortParticlesByMortonKey(myParam.pParticles, myParam.rParticles);
+	//}
 
 	if (myVar.timeFactor > 0) {
 		grid = gridFunction(myParam.pParticles, myParam.rParticles);
