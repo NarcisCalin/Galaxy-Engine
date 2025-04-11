@@ -61,9 +61,13 @@ Engine Galaxy includes a recorder so you can compile videos showcasing millions 
 https://github.com/user-attachments/assets/1ea4d2bc-2435-4fde-a1b2-5aaac7b1186d
 
 
+## HOW TO INSTALL
+---
+- Download the latest release version from the releases tab and unzip the zip file.
+- Run the .exe file inside the folder.
+- (Currently Galaxy Engine is only available on Windows)
 
-
-## BUILD INSTRUCTIONS
+## HOW TO COMPILE
 ---
 
 ### Step-by-Step
