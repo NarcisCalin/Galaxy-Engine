@@ -79,11 +79,9 @@ void RightClickSettings::rightClickMenu(UpdateVariables& myVar, UpdateParameters
 		bool buttonDrawZCurvesHovering = menuSettings[8].buttonLogic(myVar.drawZCurves, myVar);
 		bool buttonDrawQuadtreeHovering = menuSettings[9].buttonLogic(myVar.drawQuadtree, myVar);
 
-		bool buttonStartRecordingHovering = menuSettings[10].buttonLogic(myParam.screenCapture.isFunctionRecording, myVar);
-
 		bool buttonRecordDiskModeHovering = false;
 		if (!myParam.screenCapture.isFunctionRecording) { // If it is recording, lock the setting
-			buttonRecordDiskModeHovering = menuSettings[11].buttonLogic(myParam.screenCapture.isDiskModeEnabled, myVar);
+			buttonRecordDiskModeHovering = menuSettings[10].buttonLogic(myParam.screenCapture.isDiskModeEnabled, myVar);
 		}
 
 
@@ -97,7 +95,6 @@ void RightClickSettings::rightClickMenu(UpdateVariables& myVar, UpdateParameters
 			buttonDrawZCurvesHovering ||
 			buttonDrawQuadtreeHovering ||
 			buttonDeselectAllHovering ||
-			buttonStartRecordingHovering ||
 			buttonRecordDiskModeHovering
 			) {
 			myVar.isMouseNotHoveringUI = false;
