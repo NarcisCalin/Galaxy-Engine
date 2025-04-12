@@ -15,15 +15,24 @@ Special thanks to [SergioCelso](https://github.com/SCelso) for making the learni
 ### INTERACTIVITY
 Galaxy Engine was built with interactivity in mind
 
-https://github.com/user-attachments/assets/6c6abbad-e795-41e9-840d-89f7f0c43f69
 
-https://github.com/user-attachments/assets/18a18f4b-b97e-4e4e-8dac-61bd5b2d9157
+
+https://github.com/user-attachments/assets/def3a318-fcf7-47c3-9366-42e9edcef53a
+
+
+
+https://github.com/user-attachments/assets/4c33d196-cec2-4538-a5ca-67de1621603e
+
+
 
 ### CUSTOMIZATION
 There are multiple parameters to allow you to achieve the look you want
 
 
-https://github.com/user-attachments/assets/493f3aba-70ae-4381-8cad-0d149b0720ac
+
+
+https://github.com/user-attachments/assets/f828fd1e-a713-4680-82fb-5ccd52eb6fc5
+
 
 
 
@@ -32,24 +41,40 @@ Follow individual particles or entire clusters
 
 
 
-https://github.com/user-attachments/assets/43f8a5f1-c735-4a5b-a149-ac30b784059e
+https://github.com/user-attachments/assets/514ef7b0-d4d0-485e-9f92-d3fc6ae9c2b5
 
 
-https://github.com/user-attachments/assets/36aba299-f4e2-4fb9-900f-52a73251da8a
+
+
+
+https://github.com/user-attachments/assets/720aaec9-8558-4717-bc7f-d6c590a3d4c8
+
+
+
+
+
 
 ### SUBDIVISION
 Add more quality to the simulation easily by subdividing the particles
 
 
 
-https://github.com/user-attachments/assets/01c0b5dd-b414-4b69-be35-70773cac1728
+
+https://github.com/user-attachments/assets/b60d88f4-22f4-497d-8818-72e12e3a4934
+
+
+
 
 
 ### REAL TIME PHYSICS
 Thanks to the Barnes-Hut algorithm, Galaxy Engine can simulate tens or even hundreds of thousands of particles in real time
 
 
-https://github.com/user-attachments/assets/1c5dc4fe-f36d-4b4b-880c-7d44c5d6d083
+
+
+https://github.com/user-attachments/assets/dc8823d6-69be-4934-b9d1-f04cd039b41b
+
+
 
 
 
@@ -58,7 +83,11 @@ Engine Galaxy includes a recorder so you can compile videos showcasing millions 
 
 
 
-https://github.com/user-attachments/assets/1ea4d2bc-2435-4fde-a1b2-5aaac7b1186d
+
+https://github.com/user-attachments/assets/9b51780c-7dff-4e53-965d-e5f29677669d
+
+
+
 
 
 ## HOW TO INSTALL
