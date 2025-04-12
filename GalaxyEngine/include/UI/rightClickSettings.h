@@ -33,7 +33,7 @@ private:
 
 	float menuButtonGap = 3.0f;
 
-	std::array<Button, 11> menuSettings = {
+	std::array<Button, 12> menuSettings = {
 
 Button({0.0f}, {0.0f}, "Subdivide All", true),
 
@@ -55,8 +55,8 @@ Button({0.0f}, {0.0f}, "Debug Z Curves", true),
 
 Button({0.0f}, {0.0f}, "Debug Quadtree", true),
 
-Button({0.0f}, {0.0f}, "Start Recording", true)
+Button({0.0f}, {0.0f}, "Start Recording", true),
 
-
+Button({0.0f}, {0.0f}, "Record Disk Mode", true)
 	};
 };

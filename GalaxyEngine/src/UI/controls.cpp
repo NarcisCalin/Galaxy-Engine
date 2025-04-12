@@ -72,13 +72,13 @@ void Controls::showMoreInfo(UpdateVariables& myVar){
 	if (myVar.isInformationEnabled) {
 		DrawRectangle(myVar.screenWidth / 2 - controlsBoxSizeX / 2,
 			myVar.screenHeight / 2 - controlsBoxSizeY / 2,
-			controlsBoxSizeX + 175, controlsBoxSizeY,
+			controlsBoxSizeX + 180, controlsBoxSizeY + 15,
 			{ 170,170,170,170 });
 
 		for (size_t i = 0; i < informationArray.size(); i++) {
 			DrawText(TextFormat("%s", informationArray[i].c_str()),
 				(myVar.screenWidth / 2 - controlsBoxSizeX / 2) + 20,
-				((myVar.screenHeight / 2 - controlsBoxSizeY / 2) + 70) + 30 * static_cast<int>(i), 18, WHITE);
+				((myVar.screenHeight / 2 - controlsBoxSizeY / 2) + 10) + 30 * static_cast<int>(i), 18, WHITE);
 		}
 	}
 }

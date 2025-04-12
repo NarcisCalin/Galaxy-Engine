@@ -40,18 +40,47 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 
 
 	if (IsKeyPressed(KEY_R)) {
-		if (!isFunctionRecording) {
+		if (!isFunctionRecording && !isDiskModeEnabled) {
+			for (Image& frame : myFrames) {
+				UnloadImage(frame);
+			}
 			myFrames.clear();
-
+			std::vector<Image>().swap(myFrames);
 		}
+		else if (!isFunctionRecording && isDiskModeEnabled) {
+
+			diskModeFrameIdx = 0;
+
+			int numFrames = static_cast<int>(myFrames.size());
+
+			int maxNumberFound = 0;
+			std::regex folderRegex(R"(Video_(\d+))");
+
+			for (const auto& entry : std::filesystem::directory_iterator(std::filesystem::current_path())) {
+				if (entry.is_directory()) {
+					std::string folderName = entry.path().filename().string();
+					std::smatch match;
+					if (std::regex_match(folderName, match, folderRegex)) {
+						int number = std::stoi(match[1].str());
+						maxNumberFound = std::max(maxNumberFound, number);
+					}
+				}
+			}
+
+			int nextAvailableNumber = maxNumberFound + 1;
+			folderName = "Video_" + std::to_string(nextAvailableNumber);
+
+			std::filesystem::create_directory(folderName);
+		}
+
 		isFunctionRecording = !isFunctionRecording;
 	}
 
-	if (isFunctionRecording) {
+	if (isFunctionRecording && !isDiskModeEnabled) {
 		myFrames.push_back(LoadImageFromTexture(myParticlesTexture.texture));
 	}
 
-	if (myFrames.size() > 0 && !isFunctionRecording) {
+	if (myFrames.size() > 0 && !isFunctionRecording && !isDiskModeEnabled) {
 		Button exportFramesButton({ static_cast<float>(GetScreenWidth()) - 600.0f, 70.0f },
 			{ 150.0f, 35.0f }, "Export Frames", true);
 		Button deleteFramesButton({ static_cast<float>(GetScreenWidth()) - 600.0f, 110.0f },
@@ -71,16 +100,27 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 		}
 	}
 
-	if (myFrames.size() > 0) {
+	if (diskModeFrameIdx > 0 && isDiskModeEnabled) {
+		DrawText(TextFormat("Rendered Frames: %i", diskModeFrameIdx), GetScreenWidth() - 600, 40, 25, RED);
+	}
+	else if (myFrames.size() > 0 && !isDiskModeEnabled) {
 		DrawText(TextFormat("Rendered Frames: %i", myFrames.size()), GetScreenWidth() - 600, 40, 25, RED);
 	}
 
+	if (!isFunctionRecording && diskModeFrameIdx > 0 && isDiskModeEnabled) {
+		diskModeFrameIdx = 0;
+	}
+
 	if (deleteFrames) {
+		for (Image& frame : myFrames) {
+			UnloadImage(frame);
+		}
 		myFrames.clear();
+		std::vector<Image>().swap(myFrames);
 		deleteFrames = false;
 	}
 
-	if (exportFrames) {
+	if (exportFrames && !isDiskModeEnabled) {
 		isFunctionRecording = false;
 
 		int numFrames = static_cast<int>(myFrames.size());
@@ -100,24 +140,38 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 		}
 
 		int nextAvailableNumber = maxNumberFound + 1;
-		std::string folderName = "Video_" + std::to_string(nextAvailableNumber);
+		folderName = "Video_" + std::to_string(nextAvailableNumber);
 
 		std::filesystem::create_directory(folderName);
 
-#pragma omp parallel for
-		for (int i = 0; i < numFrames; ++i) {
-			Image frame = myFrames[i];
-			ImageFlipVertical(&frame);
-
-			std::string filename = folderName + "/" + folderName + "_Frame_" + std::to_string(i) + ".png";
-			ExportImage(frame, filename.c_str());
-
-			UnloadImage(frame);
-		}
+		#pragma omp parallel for
+				for (int i = 0; i < numFrames; ++i) {
+					Image frame = myFrames[i];
+					ImageFlipVertical(&frame);
+		
+					std::string filename = folderName + "/" + folderName + "_Frame_" + std::to_string(i) + ".png";
+					ExportImage(frame, filename.c_str());
+		
+					UnloadImage(frame);
+				}
 
 		myFrames.clear();
-
+		std::vector<Image>().swap(myFrames);
 		exportFrames = false;
+		diskModeFrameIdx++;
+	}
+
+	if (isFunctionRecording && isDiskModeEnabled) {
+
+		Image frame = LoadImageFromTexture(myParticlesTexture.texture);
+		ImageFlipVertical(&frame);
+
+		std::string filename = folderName + "/" + folderName + "_Frame_" + std::to_string(diskModeFrameIdx) + ".png";
+		ExportImage(frame, filename.c_str());
+
+		UnloadImage(frame);
+
+		diskModeFrameIdx++;
 	}
 
 	return isFunctionRecording;

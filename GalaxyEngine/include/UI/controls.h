@@ -63,7 +63,7 @@ struct Controls {
 	"34. X + MMB: Eraser"
 	};
 
-	std::array<std::string, 23> informationArray = {
+	std::array<std::string, 27> informationArray = {
 		"INFORMATION",
 		"This is a personal project done for learning purposes",
 		"by Narcis Calin. The project was entirely made with raylib",
@@ -86,7 +86,11 @@ struct Controls {
 		"6. Density Size: This will give the simulation a gas-like look.",
 		"7. Collisions: Currently collisions are experimental. They do not",
 		"respect conservation of energy when they are enabled with gravity.",
-		"They work as intended when gravity is disabled."
+		"They work as intended when gravity is disabled.",
+		"8. Recording Disk Mode: This is the safe mode of recording, It is",
+		"enabled by default. It stores your frames directly in your folder",
+		"after they have been processed. Runs slower but it doesn't fill up",
+		"your memory."
 	};
 
 	bool isShowControlsEnabled = true;

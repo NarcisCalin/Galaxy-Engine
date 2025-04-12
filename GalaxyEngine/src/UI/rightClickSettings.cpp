@@ -22,7 +22,7 @@ void RightClickSettings::rightClickMenuSpawnLogic(bool& isMouseNotHoveringUI) {
 		}
 	}
 
-	if (IsMouseButtonReleased(1) && (!IsKeyDown(KEY_LEFT_CONTROL) && !IsKeyDown(KEY_LEFT_ALT)) && 
+	if (IsMouseButtonReleased(1) && (!IsKeyDown(KEY_LEFT_CONTROL) && !IsKeyDown(KEY_LEFT_ALT)) &&
 		!isMouseMoving && isMouseNotHoveringUI && !IsMouseButtonDown(0)) {
 		isMenuActive = true;
 
@@ -65,15 +65,26 @@ void RightClickSettings::rightClickMenu(UpdateVariables& myVar, UpdateParameters
 
 		bool buttonSubdivideAllHovering = menuSettings[0].buttonLogic(myParam.subdivision.subdivideAll, myVar);
 		bool buttonSubdivideSelectedHovering = menuSettings[1].buttonLogic(myParam.subdivision.subdivideSelected, myVar);
+
 		bool buttonInvertSelectionHovering = menuSettings[2].buttonLogic(myParam.particleSelection.invertParticleSelection, myVar);
 		bool buttonDeselectAllHovering = menuSettings[3].buttonLogic(myParam.particleSelection.deselectParticles, myVar);
+
 		bool buttonFollowSelectionHovering = menuSettings[4].buttonLogic(myParam.myCamera.centerCamera, myVar);
+
 		bool buttonClustersSelectionHovering = menuSettings[5].buttonLogic(myParam.particleSelection.selectManyClusters, myVar);
+
 		bool buttonDeleteSelectionHovering = menuSettings[6].buttonLogic(myParam.particleDeletion.deleteSelection, myVar);
 		bool buttonDeleteNonImportantParticlesHovering = menuSettings[7].buttonLogic(myParam.particleDeletion.deleteNonImportant, myVar);
+
 		bool buttonDrawZCurvesHovering = menuSettings[8].buttonLogic(myVar.drawZCurves, myVar);
 		bool buttonDrawQuadtreeHovering = menuSettings[9].buttonLogic(myVar.drawQuadtree, myVar);
+
 		bool buttonStartRecordingHovering = menuSettings[10].buttonLogic(myParam.screenCapture.isFunctionRecording, myVar);
+
+		bool buttonRecordDiskModeHovering = false;
+		if (!myParam.screenCapture.isFunctionRecording) { // If it is recording, lock the setting
+			buttonRecordDiskModeHovering = menuSettings[11].buttonLogic(myParam.screenCapture.isDiskModeEnabled, myVar);
+		}
 
 
 		if (buttonSubdivideAllHovering ||
@@ -86,7 +97,8 @@ void RightClickSettings::rightClickMenu(UpdateVariables& myVar, UpdateParameters
 			buttonDrawZCurvesHovering ||
 			buttonDrawQuadtreeHovering ||
 			buttonDeselectAllHovering ||
-			buttonStartRecordingHovering
+			buttonStartRecordingHovering ||
+			buttonRecordDiskModeHovering
 			) {
 			myVar.isMouseNotHoveringUI = false;
 			myVar.isDragging = false;
