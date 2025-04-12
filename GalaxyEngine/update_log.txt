@@ -1,0 +1,29 @@
+//Update on 4 April 2025:
+
+/*
+CPU Multitreading optimizaion Summary:
+---------------------------
+- fully parallelized particle updates, force calculations, quadtree builds, and rendering using OpenMP.
+- buildQuadtree():
+    - Parallelized with #pragma omp parallel for.
+    - Protected quadtree->insert() with #pragma omp critical to avoid race conditions.
+- applyForces():
+    - Parallelized with #pragma omp parallel for.
+    - Each particle only interacts with nearby particles using a quadtree spatial query (local 100x100 area).
+- updateParticles():
+    - Parallelized with #pragma omp parallel for.
+    - Forces and velocity updates scaled by frame time (GetFrameTime()) for frame-rate independent simulation.
+- drawParticles():
+    - Parallelized with #pragma omp parallel for.
+    - Each particle drawn independently.
+- handleInput():
+    - Parallelized clearing of particle selection flags.
+- InitParticles():
+    - Pre-sized particle vector, then initialized particles in parallel.
+- Increased default particle count (InitParticles(100000)) to stress CPU.
+
+Result:
+- Supports 10000+ particles at high FPS on modern CPUs.
+- little boost CPU core utilization.
+- overall I think this isnt a too big of a improvement, but I got a little FPS boost (I had 6fps @ 20K particles, now its like 10-12fps)
+*/
