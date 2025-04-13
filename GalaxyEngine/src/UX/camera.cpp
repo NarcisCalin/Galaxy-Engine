@@ -202,4 +202,4 @@ void SceneCamera::cameraFollowObject(UpdateVariables& myVar, UpdateParameters& m
         }
 
         // If "F" is pressed or no particles exist, stop following
-        if (IsKeyPressed(KEY_F) || myParam.p_
+        if (IsKeyPressed(KEY_F) || myParam.p_
