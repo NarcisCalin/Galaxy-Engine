@@ -4,27 +4,7 @@
 #include <limits>
 #include "../../include/parameters.h"
 
-/*
-  April 13, 2025, optimizations:
-
- Unified selection logic into a handleSelection() lambda (DRY principle).
- Shortened vector math using Vector2Subtract and Vector2LengthSqr.
- Default initialized everything in the constructor initializer list.
- Reused conditions like dragStarted and dragging.
- Kept all variable names the same to preserve meaning.
-
- I wrote negative lines of code, like -45 or something,
- I don't know if that's good or bad, but if it's short, simple, works and readable, then I'm not complaining.
-
- micro optimization at line 173
-
-
-        /* For Line 173:
-
-        / 2.0f -> slow division
-
-            * 0.5f -> fast multiplication
-        */
+// update list is provided, check that out for changes.
 
 SceneCamera::SceneCamera() :
     // Initialize everything with default values
@@ -202,4 +182,4 @@ void SceneCamera::cameraFollowObject(UpdateVariables& myVar, UpdateParameters& m
         }
 
         // If "F" is pressed or no particles exist, stop following
-        if (IsKeyPressed(KEY_F) || myParam.p_
+        if (IsKeyPressed(KEY_F) || myParam.p_
