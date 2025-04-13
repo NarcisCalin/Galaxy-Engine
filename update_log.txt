@@ -23,8 +23,8 @@ CPU Multitreading optimizaion Summary:
 - Increased default particle count (InitParticles(100000)) to stress CPU.
 
  heres the result:
-- Supports 10000+ particles at high FPS on modern CPUs.
-- little boost CPU core utilization.
+- Supports 10000+ particles at higher FPS (like from 8 to 12fps) on modern CPUs, I havent tested if this is more effective on low end CPUs yet.
+- I noticed a little less CPU utilization.
 - overall I think this isnt a too big of a improvement, but I got a little FPS boost (I had 6fps @ 20K particles, now its like 10-12fps)
 */
 
