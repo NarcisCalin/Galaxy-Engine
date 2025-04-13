@@ -156,6 +156,7 @@ void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vecto
 void Physics::collisions(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, float& softening) {
 	size_t n = pParticles.size();
 #pragma omp parallel for schedule(dynamic)
+
 	for (size_t i = 0; i < n; i++) {
 		ParticlePhysics& a = pParticles[i];
 		for (size_t j = i + 1; j < n; j++) {

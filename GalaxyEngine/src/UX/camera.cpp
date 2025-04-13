@@ -4,184 +4,202 @@
 #include <limits>
 #include "../../include/parameters.h"
 
+/*
+  April 13, 2025, optimizations:
 
-SceneCamera::SceneCamera() {
-	camera.offset = { 0.0f, 0.0f };
-	camera.target = { 0.0f, 0.0f };
-	camera.rotation = 0.0f;
-	camera.zoom = 1.0f;
-	mouseWorldPos = { 0.0f, 0.0f };
-	panFollowingOffset = { 0.0f, 0.0f };
-	isFollowing = false;
-	centerCamera = false;
-	previousColor = { 128,128,128,255 };
-	followPosition = { 0.0f, 0.0f };
-	delta = { 0.0f, 0.0f };
+ Unified selection logic into a handleSelection() lambda (DRY principle).
+ Shortened vector math using Vector2Subtract and Vector2LengthSqr.
+ Default initialized everything in the constructor initializer list.
+ Reused conditions like dragStarted and dragging.
+ Kept all variable names the same to preserve meaning.
+
+ I wrote negative lines of code, like -45 or something,
+ I don't know if that's good or bad, but if it's short, simple, works and readable, then I'm not complaining.
+
+ micro optimization at line 173
+
+
+        /* For Line 173:
+
+        / 2.0f -> slow division
+
+            * 0.5f -> fast multiplication
+        */
+
+SceneCamera::SceneCamera() :
+    // Initialize everything with default values
+    camera{ {0, 0}, {0, 0}, 0.0f, 1.0f },
+    mouseWorldPos{ 0, 0 },
+    panFollowingOffset{ 0, 0 },
+    previousColor{ 128, 128, 128, 255 },
+    followPosition{ 0, 0 },
+    delta{ 0, 0 },
+    isFollowing(false),
+    centerCamera(false) {
 }
 
+// Main camera logic that handles panning, zooming, and resets
 Camera2D SceneCamera::cameraLogic() {
+    // Right mouse button dragging = panning the camera
+    if (IsMouseButtonDown(1)) {
+        delta = Vector2Scale(GetMouseDelta(), -1.0f / camera.zoom); // Scale by zoom for smoothness
+        camera.target = Vector2Add(camera.target, delta);           // Move the target
+        panFollowingOffset = Vector2Add(panFollowingOffset, delta); // Offset if following something
+    }
 
-	if (IsMouseButtonDown(1))
-	{
-		delta = GetMouseDelta();
-		delta = Vector2Scale(delta, -1.0f / camera.zoom);
-		camera.target = Vector2Add(camera.target, delta);
-		panFollowingOffset = Vector2Add(panFollowingOffset, delta);
+    // Zooming with the mouse wheel
+    float wheel = GetMouseWheelMove();
+    if (wheel != 0 && !IsKeyDown(KEY_LEFT_CONTROL)) {
+        Vector2 screenCenter = { GetScreenWidth() / 2.0f, GetScreenHeight() / 2.0f };
+        camera.offset = isFollowing ? screenCenter : GetMousePosition(); // Zoom on center or cursor
+        mouseWorldPos = GetScreenToWorld2D(camera.offset, camera);
+        camera.target = mouseWorldPos;
 
-	}
+        // Zoom in or out smoothly
+        float scale = 0.2f * wheel;
+        camera.zoom = Clamp(expf(logf(camera.zoom) + scale), 0.95f, 64.0f);
+    }
 
-	float wheel = GetMouseWheelMove();
-	if (wheel != 0 && !IsKeyDown(KEY_LEFT_CONTROL)) {
-		mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), camera);
+    /*
+       // Smooth zoom in or out, experienmental, idk, havent seen if it works yet.
+        camera.zoom = Clamp(camera.zoom * (1.0f + 0.05f * wheel), 0.95f, 64.0f);
 
-		if (isFollowing) {
-			Vector2 screenCenter = { GetScreenWidth() / 2.0f, GetScreenHeight() / 2.0f };
-			mouseWorldPos = GetScreenToWorld2D(screenCenter, camera);
-			camera.offset = screenCenter;
-			camera.target = mouseWorldPos;
-		}
-		else {
+    }
+    */
 
-			mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), camera);
-			camera.offset = GetMousePosition();
-			camera.target = mouseWorldPos;
-		}
-
-		float scale = 0.2f * wheel;
-		camera.zoom = Clamp(expf(logf(camera.zoom) + scale), 0.95f, 64.0f);
-	}
-
-	// RESET CAMERA
-	if (IsKeyPressed(KEY_F)) {
-		camera.zoom = 1.0f;
-		camera.target = { 0.0f };
-		camera.offset = { 0.0f };
-		panFollowingOffset = { 0.0f };
-	}
-	return camera;
+    // Reset camera if "F" is pressed
+    if (IsKeyPressed(KEY_F)) {
+        camera = { {0, 0}, {0, 0}, 0.0f, 1.0f };
+        panFollowingOffset = { 0, 0 };
+    }
+    return camera;
 }
 
+// Handles camera following an object or selection logic
 void SceneCamera::cameraFollowObject(UpdateVariables& myVar, UpdateParameters& myParam) {
+    // Update mouse world position
+    mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), camera);
 
-	mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), camera);
+    static bool isDragging = false;
+    static Vector2 dragStartPos = { 0, 0 };
 
-	static bool isDragging = false;
-	static Vector2 dragStartPos = { 0 };
+    // Check if dragging starts (click + holding CTRL or ALT + not hovering UI)
+    auto dragStarted = (IsMouseButtonPressed(1) && myVar.isMouseNotHoveringUI &&
+        (IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_LEFT_ALT)));
+    auto dragging = (IsMouseButtonDown(1) && myVar.isMouseNotHoveringUI &&
+        (IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_LEFT_ALT)));
 
-	if ((IsMouseButtonPressed(1) && IsKeyDown(KEY_LEFT_CONTROL) && myVar.isMouseNotHoveringUI) || 
-		(IsMouseButtonPressed(1) && IsKeyDown(KEY_LEFT_ALT) && myVar.isMouseNotHoveringUI)) {
-		dragStartPos = GetMousePosition();
-		isDragging = false;
-	}
+    // Start of drag
+    if (dragStarted) {
+        dragStartPos = GetMousePosition();
+        isDragging = false;
+    }
 
-	if ((IsMouseButtonDown(1) && IsKeyDown(KEY_LEFT_CONTROL) && myVar.isMouseNotHoveringUI) ||
-		(IsMouseButtonDown(1) && IsKeyDown(KEY_LEFT_ALT) && myVar.isMouseNotHoveringUI)) {
-		Vector2 currentPos = GetMousePosition();
-		float dragThreshold = 5.0f;
-		float dx = currentPos.x - dragStartPos.x;
-		float dy = currentPos.y - dragStartPos.y;
+    // Update dragging status if moved enough
+    if (dragging) {
+        Vector2 d = Vector2Subtract(GetMousePosition(), dragStartPos);
+        if (Vector2LengthSqr(d) > 25.0f) isDragging = true; // Only count as drag if moved > threshold
+    }
 
-		if (dx * dx + dy * dy > dragThreshold * dragThreshold) {
-			isDragging = true;
-		}
-	}
+    // Lambda to handle selection of particles
+    auto handleSelection = [&](bool selectNeighbors) {
+        size_t closestIndex = 0;
+        float minDistSq = std::numeric_limits<float>::max();
+        std::vector<int> neighborCounts(myParam.pParticles.size(), 0);
 
-	if (IsMouseButtonReleased(1) && IsKeyDown(KEY_LEFT_CONTROL) && !isDragging && myVar.isMouseNotHoveringUI) {
-		float distanceThreshold = 10.0f;
-		std::vector<int> neighborCountsSelect(myParam.pParticles.size(), 0);
-		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-			const auto& pParticle = myParam.pParticles[i];
-			for (size_t j = i + 1; j < myParam.pParticles.size(); j++) {
-				if (std::abs(myParam.pParticles[j].pos.x - pParticle.pos.x) > 2.4f) break;
-				float dx = pParticle.pos.x - myParam.pParticles[j].pos.x;
-				float dy = pParticle.pos.y - myParam.pParticles[j].pos.y;
-				if (dx * dx + dy * dy < distanceThreshold * distanceThreshold) {
-					neighborCountsSelect[i]++;
-					neighborCountsSelect[j]++;
-				}
-			}
-		}
+        // If selecting neighbors, count neighbors around each particle
+        if (selectNeighbors) {
+            for (size_t i = 0; i < myParam.pParticles.size(); ++i) {
+                const auto& pi = myParam.pParticles[i];
+                for (size_t j = i + 1; j < myParam.pParticles.size(); ++j) {
+                    if (std::abs(myParam.pParticles[j].pos.x - pi.pos.x) > 2.4f) break;
+                    float dx = pi.pos.x - myParam.pParticles[j].pos.x;
+                    float dy = pi.pos.y - myParam.pParticles[j].pos.y;
+                    if (dx * dx + dy * dy < 100.0f) {
+                        neighborCounts[i]++;
+                        neighborCounts[j]++;
+                    }
+                }
+            }
+        }
 
-		isFollowing = true;
-		panFollowingOffset = { 0 };
+        // Loop over particles to find the closest one (or neighbors)
+        for (size_t i = 0; i < myParam.pParticles.size(); ++i) {
+            myParam.rParticles[i].isSelected = false;
+            float dx = myParam.pParticles[i].pos.x - mouseWorldPos.x;
+            float dy = myParam.pParticles[i].pos.y - mouseWorldPos.y;
+            float distSq = dx * dx + dy * dy;
 
-		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-			myParam.rParticles[i].isSelected = false;
-			float dx = myParam.pParticles[i].pos.x - mouseWorldPos.x;
-			float dy = myParam.pParticles[i].pos.y - mouseWorldPos.y;
-			float distanceSq = dx * dx + dy * dy;
-			if (distanceSq < selectionThresholdSq && neighborCountsSelect[i] > 3) {
-				myParam.rParticles[i].isSelected = true;
-			}
-		}
+            // If selecting neighbors and close enough, select it
+            if (selectNeighbors && neighborCounts[i] > 3 && distSq < selectionThresholdSq)
+                myParam.rParticles[i].isSelected = true;
 
-		if (myVar.isSelectedTrailsEnabled) {
-			myParam.trails.trailDots.clear();
-		}
-	}
+            // If just finding closest one
+            if (!selectNeighbors && distSq < minDistSq) {
+                minDistSq = distSq;
+                closestIndex = i;
+            }
+        }
 
-	if (IsMouseButtonReleased(1) && IsKeyDown(KEY_LEFT_ALT) && !isDragging && myVar.isMouseNotHoveringUI) {
+        // Select the closest particle if needed
+        if (!selectNeighbors && minDistSq < selectionThresholdSq && !myParam.pParticles.empty())
+            myParam.rParticles[closestIndex].isSelected = true;
 
-		size_t closestIndex = 0;
-		float minDistanceSq = std::numeric_limits<float>::max();
+        // Set camera to follow the selected particle(s)
+        isFollowing = true;
+        panFollowingOffset = { 0, 0 };
 
-		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-			myParam.rParticles[i].isSelected = false;
-			float dx = myParam.pParticles[i].pos.x - mouseWorldPos.x;
-			float dy = myParam.pParticles[i].pos.y - mouseWorldPos.y;
-			float currentDistanceSq = dx * dx + dy * dy;
-			if (currentDistanceSq < minDistanceSq) {
-				minDistanceSq = currentDistanceSq;
-				closestIndex = i;
-			}
-		}
+        // If trails are enabled, clear previous trails
+        if (myVar.isSelectedTrailsEnabled) myParam.trails.trailDots.clear();
+        };
 
-		if (minDistanceSq < selectionThresholdSq && !myParam.pParticles.empty()) {
-			myParam.rParticles[closestIndex].isSelected = true;
-		}
+    // Handle mouse release (click selection, no dragging)
+    if (IsMouseButtonReleased(1) && !isDragging && myVar.isMouseNotHoveringUI) {
+        if (IsKeyDown(KEY_LEFT_CONTROL)) handleSelection(true);  // Select neighbors
+        if (IsKeyDown(KEY_LEFT_ALT)) handleSelection(false);     // Select single
+    }
 
-		isFollowing = true;
-		panFollowingOffset = { 0 };
-		if (myVar.isSelectedTrailsEnabled) {
-			myParam.trails.trailDots.clear();
-		}
-	}
+    // Center camera on selection manually (Z key or centerCamera flag)
+    if (IsKeyPressed(KEY_Z) || centerCamera) {
+        isFollowing = true;
+        panFollowingOffset = { 0, 0 };
+        centerCamera = false;
+    }
 
-	if (IsKeyPressed(KEY_Z) || centerCamera) {
-		panFollowingOffset = { 0 };
-		isFollowing = true;
-		centerCamera = false;
-	}
+    // If we are following something
+    if (isFollowing) {
+        float sumX = 0.0f, sumY = 0.0f;
+        int count = 0;
 
-	if (isFollowing) {
-		float sumX = 0.0f;
-		float sumY = 0.0f;
-		int count = 0;
-		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-			if (myParam.rParticles[i].isSelected) {
-				sumX += myParam.pParticles[i].pos.x;
-				sumY += myParam.pParticles[i].pos.y;
-				count++;
-			}
-		}
+        // Average the position of all selected particles
+        for (size_t i = 0; i < myParam.pParticles.size(); ++i) {
+            if (myParam.rParticles[i].isSelected) {
+                sumX += myParam.pParticles[i].pos.x;
+                sumY += myParam.pParticles[i].pos.y;
+                count++;
+            }
+        }
 
-		followPosition.x = sumX / count;
-		followPosition.y = sumY / count;
+        // If there are selected particles, follow them
+        if (count > 0) {
+            followPosition = Vector2Add({ sumX / count, sumY / count }, panFollowingOffset);
+            camera.target = followPosition;
+            camera.offset = { GetScreenWidth() * 0.5f, GetScreenHeight() * 0.5f };
+        }
 
-		followPosition = Vector2Add(followPosition, panFollowingOffset);
+        /* For Line 173:
 
-		camera.target = followPosition;
-		camera.offset = { GetScreenWidth() / 2.0f, GetScreenHeight() / 2.0f };
+        / 2.0f -> slow division
 
-		if (IsKeyPressed(KEY_F) || count == 0 || myParam.pParticles.size() == 0) {
-			isFollowing = false;
-			camera.zoom = 1.0f;
-			camera.target = { 0.0f };
-			camera.offset = { 0.0f };
-			panFollowingOffset = { 0 };
-		}
-	}
+            * 0.5f -> fast multiplication
+        */
 
-}
+        else {
+            // Nothing selected anymore, stop following
+            isFollowing = false;
+            camera = { {0, 0}, {0, 0}, 0.0f, 1.0f };
+            panFollowingOffset = { 0, 0 };
+        }
 
-
+        // If "F" is pressed or no particles exist, stop following
+        if (IsKeyPressed(KEY_F) || myParam.p_

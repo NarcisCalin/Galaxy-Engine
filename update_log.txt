@@ -22,8 +22,30 @@ CPU Multitreading optimizaion Summary:
     - Pre-sized particle vector, then initialized particles in parallel.
 - Increased default particle count (InitParticles(100000)) to stress CPU.
 
-Result:
+ heres the result:
 - Supports 10000+ particles at high FPS on modern CPUs.
 - little boost CPU core utilization.
 - overall I think this isnt a too big of a improvement, but I got a little FPS boost (I had 6fps @ 20K particles, now its like 10-12fps)
 */
+
+/*
+  April 13, 2025, optimizations:
+
+ Unified selection logic into a handleSelection() lambda (DRY principle).
+ Shortened vector math using Vector2Subtract and Vector2LengthSqr.
+ Default initialized everything in the constructor initializer list.
+ Reused conditions like dragStarted and dragging.
+ Kept all variable names the same to preserve meaning.
+
+ I wrote negative lines of code, like -45 or something,
+ I don't know if that's good or bad, but if it's short, simple, works and readable, then I'm not complaining.
+
+ micro optimization at line 173
+
+
+        /* For Line 173:
+
+        / 2.0f -> slow division
+
+            * 0.5f -> fast multiplication
+        */

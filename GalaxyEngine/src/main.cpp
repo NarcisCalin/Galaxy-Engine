@@ -25,7 +25,7 @@ CPU Multitreading optimizaion Summary:
     - Parallelized clearing of particle selection flags.
 - InitParticles():
     - Pre-sized particle vector, then initialized particles in parallel.
-- Increased default particle count (InitParticles(100000)) to stress CPU.
+- Increased default particle count (InitParticles(10000)) to utilize CPU more
 
 Result:
 - Supports 10000+ particles at higher FPS on modern CPUs than previously
