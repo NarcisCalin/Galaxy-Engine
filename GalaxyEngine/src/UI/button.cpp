@@ -3,8 +3,6 @@
 #include "../../include/UI/button.h"
 #include "../../include/parameters.h"
 
-// ALL CHANGES AND UPDATES ARE IN THE UPDATE LOG!
-
 Button::Button(Vector2 pos, Vector2 size, std::string text, bool hasText) {
 	this->pos = pos;
 	this->size = size;
