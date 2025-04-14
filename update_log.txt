@@ -64,10 +64,13 @@ anyways, I hope I get better at this...
 second update today:
 
 I fixed the code, but it appears as the compiler breaks some code.
-=======
+
 April 13 2025 continued:
 
-I fixed some compiler errors I had for release, but I got a strange bug where only invidiual particles are on the screen.
+I fixed some compiler errors I had for release in main.cpp, but I got a strange bug where only invidiual particles are on the screen.
 
 Strange indeed... I will try to fix it soon.
->>>>>>> f6c91c3f4a4652aaff287770a52ee3291a793c20
+
+April 13 2025 micro update:
+
+Made some changes in main.cpp, like reducing not needed code, therefore making it simpler
