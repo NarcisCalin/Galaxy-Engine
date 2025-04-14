@@ -18,7 +18,7 @@ SceneCamera::SceneCamera() :
     followPosition{ 0, 0 },                 // The position the camera will follow
     delta{ 0, 0 },                          // Difference in position used for panning
     isFollowing(false),                     // Camera not following anything initially
-    centerCamera(false)                     // Camera not centered initially
+    centerCamera(true)                     // Camera centered initially
 {
 }
 
@@ -173,4 +173,7 @@ void SceneCamera::cameraFollowObject(UpdateVariables& myVar, UpdateParameters& m
         else {
             // If no particles are selected, stop following and reset the camera
             isFollowing = false;
-            camera = { {0,
+            camera = { {0, 0}, {0, 0}, 0.0f, 1.0f };
+        }
+    }
+}

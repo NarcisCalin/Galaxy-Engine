@@ -15,6 +15,7 @@
 #include "../include/Particles/particleSelection.h"
 #include "../include/Physics/physics.h"
 #include "../include/parameters.h"
+#include "../include/UI/ui.h"
 
 // Global Instances of key classes (parameters, UI, physics)
 UpdateParameters myParam;
@@ -206,4 +207,43 @@ int main() {
         }
 
         // Draw particles with optional bloom effect
-        DrawTextureRec(myParticlesTexture
+        DrawTextureRec(myParticlesTexture.texture, { 0, 0, static_cast<float>(myVar.screenWidth), static_cast<float>(myVar.screenHeight) },
+            { 0, 0 }, WHITE);
+
+        // End the shader mode for bloom if enabled
+        if (myVar.isGlowEnabled) {
+            EndShaderMode();
+        }
+
+        // Handle UI interactions, e.g., buttons, sliders, etc.
+        BeginTextureMode(myUITexture);
+        ClearBackground({ 0, 0, 0, 0 });
+
+        // Update the UI elements (buttons, sliders, etc.)
+        myUI.uiLogic(myParam, myVar);
+
+        EndTextureMode();
+
+        // Draw UI texture on the screen (HUD)
+        DrawTexture(myUITexture.texture, 0, 0, WHITE);
+
+        // Poll events and update user input
+        if (IsKeyPressed(KEY_ESCAPE)) {
+            break;  // Exit the simulation
+        }
+
+        // Wait until the next frame (sync with FPS)
+        EndDrawing();
+    }
+
+    // Clean up resources before exiting
+    UnloadTexture(particleBlurTex);
+    UnloadShader(myBloom);
+    UnloadRenderTexture(myParticlesTexture);
+    UnloadRenderTexture(myUITexture);
+
+    // Close the window and terminate the program
+    CloseWindow();
+
+    return 0;
+}
