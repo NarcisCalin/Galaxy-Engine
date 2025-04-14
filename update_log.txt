@@ -78,3 +78,7 @@ Made some changes in main.cpp, like reducing not needed code, therefore making i
 April 14 2025: 
 
 fixed UI not appearing, some changes I reverted as they didnt work out too well.
+
+April 14 2025 (continued):
+
+I updated main, camera, ui, button, I fixed all compiler errors, but now I have a flipped and unusable UI bug. I will have to look into it.

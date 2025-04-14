@@ -1,5 +1,7 @@
 #include "../../include/UI/UI.h"
 
+// ALL CHANGES AND UPDATES ARE IN THE UPDATE LOG!
+
 void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
     float screenWidth = myVar.screenWidth; // Store screenWidth for later use
     bool anyUIHovered = false;  // Could be used if more hover logic is added

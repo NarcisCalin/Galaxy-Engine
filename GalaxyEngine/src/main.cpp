@@ -17,10 +17,15 @@
 #include "../include/parameters.h"
 #include "../include/UI/ui.h"
 
+// ALL CHANGES AND UPDATES ARE IN THE UPDATE LOG!
+
 // Global Instances of key classes (parameters, UI, physics)
 UpdateParameters myParam;
 UpdateVariables myVar;
 UI myUI;
+
+// for line 23: Don't forget to add a Header File or it will output a Compiler error
+
 Physics physics;
 
 // Function to build a Quadtree grid (spatial partitioning structure for efficient calculations)
@@ -54,7 +59,7 @@ static void updateScene() {
     if (myVar.timeFactor > 0.0f) {
         if (myVar.isBarnesHutEnabled) {
             // Parallelize the particle calculations using OpenMP for performance
-#pragma omp parallel for schedule(dynamic)
+            #pragma omp parallel for schedule(dynamic)
             for (size_t i = 0; i < myParam.pParticles.size(); i++) {
                 ParticlePhysics& pParticle = myParam.pParticles[i];
 

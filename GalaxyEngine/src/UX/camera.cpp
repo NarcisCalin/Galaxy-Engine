@@ -22,6 +22,9 @@ SceneCamera::SceneCamera() :
 {
 }
 
+// Define the selection threshold for selecting particles (adjust as needed)
+const float selectionThresholdSq = 100.0f * 100.0f;  // Adjust this value as needed
+
 // Main camera logic function, handles panning, zooming, and resets
 Camera2D SceneCamera::cameraLogic() {
     // Handle camera panning with right mouse button drag
