@@ -49,3 +49,17 @@ CPU Multitreading optimizaion Summary:
 
             * 0.5f -> fast multiplication
         */
+
+update for 13 april 2025:
+
+I fixed lots of compiler errors, I dont know if the compiler tells me im good or if there is a warning, it dosent really tell me directly.
+
+anyways, I fixed lots of bugs, there was this strange bug where individual particles appeared on the screen, that was probably my bad coding.
+
+but that dosent matter, I fixed it now (I think)
+
+anyways, I hope I get better at this...
+
+second update today:
+
+I fixed the code, but it appears as the compiler breaks some code.
