@@ -1,17 +1,28 @@
-# Compiler
+# Compiler and flags
 CXX = clang++
 CXXFLAGS = -std=c++17 -Iinclude
 
-# Src files
-SRC = $(wildcard src/*.cpp src/UI/*.cpp src/Particles/*.cpp)
+# Directory for source and object files
+SRC_DIR = src
+OBJ_DIR = obj
 
-# Output
+# Find all .cpp files in the src directory
+SRC = $(wildcard $(SRC_DIR)/**/*.cpp)
+
+# Convert .cpp files to .o files in the obj directory
+OBJ = $(SRC:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
+
+# Output executable
 OUT = GalaxyEngine.exe
 
-# Build rule
-$(OUT): $(SRC)
-	$(CXX) $(CXXFLAGS) $(SRC) -o $(OUT)
+# Default target to build the executable
+$(OUT): $(OBJ)
+	$(CXX) $(OBJ) -o $(OUT)
 
-# Clean rule
+# Rule to compile .cpp files into .o object files
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Clean up the build (remove object files and the executable)
 clean:
-	del $(OUT)
+	del /f /q $(OBJ) $(OUT)

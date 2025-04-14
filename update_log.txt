@@ -74,3 +74,7 @@ Strange indeed... I will try to fix it soon.
 April 13 2025 micro update:
 
 Made some changes in main.cpp, like reducing not needed code, therefore making it simpler
+
+April 14 2025: 
+
+fixed UI not appearing, some changes I reverted as they didnt work out too well.
