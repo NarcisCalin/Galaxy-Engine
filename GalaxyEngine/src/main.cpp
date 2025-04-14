@@ -1,4 +1,5 @@
 #include "raylib.h"
+#include "raymath.h"
 #include <vector>
 #include <cmath>
 #include <omp.h>
@@ -83,7 +84,7 @@ void buildQuadtree() {
     if (quadtree) {
         delete quadtree;
     }
-    quadtree = new Quadtree({ 0, 0, GetScreenWidth(), GetScreenHeight() }, 4);
+    quadtree = new Quadtree({ 0, 0, static_cast<float>(GetScreenWidth()), static_cast<float>(GetScreenHeight()) }, 4);
 
 #pragma omp parallel
     {
@@ -103,9 +104,9 @@ void applyForces() {
         Vector2 force = { 0, 0 };
 
         Rectangle range = {
-            particles[i].position.x - 50,
-            particles[i].position.y - 50,
-            100, 100
+            static_cast<float>(particles[i].position.x - 50),
+            static_cast<float>(particles[i].position.y - 50),
+            static_cast<float>(100), static_cast<float>(100)
         };
         std::vector<Particle*> neighbors;
         quadtree->query(range, neighbors);
@@ -172,14 +173,21 @@ void handleInput() {
 
 void InitParticles(int count) {
     particles.resize(count);
+
 #pragma omp parallel for
     for (int i = 0; i < count; i++) {
-        particles[i].position = { GetRandomValue(0, GetScreenWidth()), GetRandomValue(0, GetScreenHeight()) };
+        // Get random values for x and y and cast them to float
+        float x = static_cast<float>(GetRandomValue(0, GetScreenWidth()));
+        float y = static_cast<float>(GetRandomValue(0, GetScreenHeight()));
+
+        // Initialize particle properties
+        particles[i].position = { x, y };
         particles[i].velocity = { 0, 0 };
         particles[i].radius = 2.0f;
         particles[i].selected = false;
     }
 }
+
 
 int main() {
     InitWindow(1280, 720, "Galaxy Engine");
