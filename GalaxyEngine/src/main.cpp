@@ -1,209 +1,209 @@
-#include "raylib.h"
-#include "raymath.h"
+#include <iostream>
 #include <vector>
+#include "../include/raylib/raylib.h"
 #include <cmath>
+#include <array>
 #include <omp.h>
+#include <thread>
+#include <algorithm>
+#include <bitset>
 
-// update list provided, check that for changes.
+#include "../include/Particles/particle.h"
+#include "../include/Physics/quadtree.h"
+#include "../include/Physics/slingshot.h"
+#include "../include/Particles/particleTrails.h"
+#include "../include/UI/button.h"
+#include "../include/UX/screenCapture.h"
+#include "../include/Physics/morton.h"
+#include "../include/UI/slider.h"
+#include "../include/UX/camera.h"
+#include "../include/raylib/rlgl.h"
+#include "../include/raylib/raymath.h"
+#include "../include/UI/brush.h"
+#include "../include/Particles/particleSelection.h"
+#include "../include/Particles/particleSubdivision.h"
+#include "../include/Particles/densitySize.h"
+#include "../include/Particles/particleColorVisuals.h"
+#include "../include/UI/rightClickSettings.h"
+#include "../include/UI/controls.h"
+#include "../include/Particles/particleDeletion.h"
+#include "../include/Particles/particlesSpawning.h"
+#include "../include/UI/UI.h"
+#include "../include/Physics/physics.h"
+#include "../include/parameters.h"
 
-struct Particle {
-    Vector2 position;
-    Vector2 velocity;
-    float radius;
-    bool selected;
-};
+/*
+    refer to all updates/changes in the log
+*/
 
-struct Quadtree {
-    Rectangle bounds;
-    std::vector<Particle*> particles;
-    Quadtree* NW;
-    Quadtree* NE;
-    Quadtree* SW;
-    Quadtree* SE;
-    int capacity;
-    bool divided;
+UpdateParameters myParam;
+UpdateVariables myVar;
+UI myUI;
+Physics physics;
 
-    Quadtree(Rectangle bounds, int capacity) : bounds(bounds), capacity(capacity), divided(false), NW(nullptr), NE(nullptr), SW(nullptr), SE(nullptr) {}
+Quadtree* gridFunction(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles) {
+    return Quadtree::boundingBox(pParticles, rParticles);
+}
 
-    ~Quadtree() {
-        delete NW;
-        delete NE;
-        delete SW;
-        delete SE;
+void flattenQuadtree(Quadtree* node, std::vector<Quadtree*>& flatList) {
+    if (node) {
+        flatList.push_back(node);
+        for (const auto& child : node->subGrids) flattenQuadtree(child.get(), flatList);
     }
+}
 
-    void subdivide() {
-        float x = bounds.x;
-        float y = bounds.y;
-        float w = bounds.width / 2;
-        float h = bounds.height / 2;
-        NW = new Quadtree({ x, y, w, h }, capacity);
-        NE = new Quadtree({ x + w, y, w, h }, capacity);
-        SW = new Quadtree({ x, y + h, w, h }, capacity);
-        SE = new Quadtree({ x + w, y + h, w, h }, capacity);
-        divided = true;
-    }
+void updateScene() {
+    Quadtree* grid = nullptr;
+    myVar.G = 6.674e-11 * myVar.gravityMultiplier;
 
-    void insert(Particle* p) {
-        if (!CheckCollisionPointRec(p->position, bounds)) return;
+    if (IsKeyPressed(KEY_SPACE)) myVar.isTimeStopped = !myVar.isTimeStopped;
+    myVar.timeStepMultiplier = myVar.isTimeStopped ? 0.0f : myVar.timeStepMultiplierSlider;
+    myVar.timeFactor = myVar.fixedDeltaTime * myVar.timeStepMultiplier;
 
-        if (particles.size() < capacity) {
-            particles.push_back(p);
-        }
-        else {
-            if (!divided) subdivide();
-            NW->insert(p);
-            NE->insert(p);
-            SW->insert(p);
-            SE->insert(p);
-        }
-    }
+    if (myVar.timeFactor > 0) grid = gridFunction(myParam.pParticles, myParam.rParticles);
 
-    void query(Rectangle range, std::vector<Particle*>& found) {
-        if (!CheckCollisionRecs(bounds, range)) return;
+    if (grid && myVar.drawQuadtree) grid->drawQuadtree();
+    myParam.brush.brushSize(myParam.myCamera.mouseWorldPos);
+    myParam.particlesSpawning.particlesInitialConditions(*grid, physics, myVar, myParam);
 
-        for (auto* p : particles) {
-            if (CheckCollisionPointRec(p->position, range)) {
-                found.push_back(p);
+    if (myVar.timeFactor > 0.0f) {
+        if (myVar.isBarnesHutEnabled) {
+#pragma omp parallel for schedule(dynamic)
+            for (size_t i = 0; i < myParam.pParticles.size(); ++i) {
+                ParticlePhysics& pParticle = myParam.pParticles[i];
+                Vector2 netForce = physics.calculateForceFromGrid(*grid, myParam.pParticles, myVar, pParticle);
+
+                if (myVar.isDarkMatterEnabled) {
+                    Vector2 dmForce = physics.darkMatterForce(pParticle, myVar);
+                    netForce.x += dmForce.x;
+                    netForce.y += dmForce.y;
+                }
+
+                pParticle.acc.x = netForce.x / pParticle.mass;
+                pParticle.acc.y = netForce.y / pParticle.mass;
+                pParticle.velocity.x += (myVar.timeFactor * ((3.0f / 2.0f) * pParticle.acc.x - (1.0f / 2.0f) * pParticle.prevAcc.x));
+                pParticle.velocity.y += (myVar.timeFactor * ((3.0f / 2.0f) * pParticle.acc.y - (1.0f / 2.0f) * pParticle.prevAcc.y));
             }
         }
-
-        if (divided) {
-            NW->query(range, found);
-            NE->query(range, found);
-            SW->query(range, found);
-            SE->query(range, found);
+        else {
+            physics.pairWiseGravity(myParam.pParticles, myVar);
         }
-    }
-};
 
-std::vector<Particle> particles;
-Quadtree* quadtree = nullptr;
-
-void buildQuadtree() {
-    if (quadtree) {
-        delete quadtree;
+        if (myVar.isCollisionsEnabled) physics.collisions(myParam.pParticles, myParam.rParticles, myVar.softening);
+        physics.physicsUpdate(myParam.pParticles, myParam.rParticles, myVar);
     }
-    quadtree = new Quadtree({ 0, 0, static_cast<float>(GetScreenWidth()), static_cast<float>(GetScreenHeight()) }, 4);
 
-#pragma omp parallel
-    {
-#pragma omp for schedule(dynamic)
-        for (int i = 0; i < particles.size(); i++) {
-#pragma omp critical
-            quadtree->insert(&particles[i]);
-        }
-    }
+    myParam.trails.trailLogic(myVar, myParam);
+    myParam.myCamera.cameraFollowObject(myVar, myParam);
+    myParam.particleSelection.clusterSelection(myVar, myParam);
+    myParam.particleSelection.particleSelection(myVar, myParam);
+    myParam.particleSelection.manyClustersSelection(myVar, myParam);
+    myParam.particleSelection.boxSelection(myParam);
+    myParam.particleSelection.invertSelection(myParam.rParticles);
+    myParam.particleSelection.deselection(myParam.rParticles);
+    myParam.particleSelection.selectedParticlesStoring(myParam);
+    myParam.densitySize.sizeByDensity(myParam.pParticles, myParam.rParticles, myVar.isDensitySizeEnabled, myVar.particleSizeMultiplier);
+    myParam.particleDeletion.deleteSelected(myParam.pParticles, myParam.rParticles);
+    myParam.particleDeletion.deleteNonImportanParticles(myParam.pParticles, myParam.rParticles);
+    myParam.brush.particlesAttractor(myVar, myParam);
+    myParam.brush.particlesSpinner(myVar, myParam);
+    myParam.brush.particlesGrabber(myVar, myParam);
+    myParam.brush.eraseBrush(myVar, myParam);
+
+    if (grid) delete grid;
 }
 
-void applyForces() {
-    const float G = 500.0f;
+void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture) {
+    for (size_t i = 0; i < myParam.pParticles.size(); ++i) {
+        ParticlePhysics& pParticle = myParam.pParticles[i];
+        ParticleRendering& rParticle = myParam.rParticles[i];
 
-#pragma omp parallel for schedule(dynamic)
-    for (int i = 0; i < particles.size(); i++) {
-        Vector2 force = { 0, 0 };
-
-        Rectangle range = {
-            static_cast<float>(particles[i].position.x - 50),
-            static_cast<float>(particles[i].position.y - 50),
-            static_cast<float>(100), static_cast<float>(100)
-        };
-        std::vector<Particle*> neighbors;
-        quadtree->query(range, neighbors);
-
-        for (auto* neighbor : neighbors) {
-            if (neighbor == &particles[i]) continue;
-            Vector2 dir = Vector2Subtract(neighbor->position, particles[i].position);
-            float distSq = dir.x * dir.x + dir.y * dir.y + 1.0f;
-            float strength = G / distSq;
-            dir = Vector2Normalize(dir);
-            force = Vector2Add(force, Vector2Scale(dir, strength));
+        if (myVar.isPixelDrawingEnabled && rParticle.drawPixel) {
+            DrawPixelV({ pParticle.pos.x, pParticle.pos.y }, rParticle.color);
+        }
+        else {
+            DrawTextureEx(particleBlurTex, { pParticle.pos.x - rParticle.size * myVar.particleTextureSize / 2, pParticle.pos.y - rParticle.size * myVar.particleTextureSize / 2 }, 0, rParticle.size, rParticle.color);
         }
 
-        particles[i].velocity = Vector2Add(particles[i].velocity, Vector2Scale(force, GetFrameTime()));
-    }
-}
-
-void updateParticles() {
-#pragma omp parallel for schedule(dynamic)
-    for (int i = 0; i < particles.size(); i++) {
-        particles[i].position = Vector2Add(particles[i].position, Vector2Scale(particles[i].velocity, GetFrameTime()));
-
-        if (particles[i].position.x < 0 || particles[i].position.x > GetScreenWidth()) {
-            particles[i].velocity.x *= -1;
-        }
-        if (particles[i].position.y < 0 || particles[i].position.y > GetScreenHeight()) {
-            particles[i].velocity.y *= -1;
+        if (!myVar.isDensitySizeEnabled) {
+            rParticle.size = rParticle.canBeResized ? rParticle.previousSize * myVar.particleSizeMultiplier : rParticle.previousSize;
         }
     }
-}
 
-void drawParticles() {
-    BeginDrawing();
-    ClearBackground(BLACK);
+    myParam.colorVisuals.particlesColorVisuals(myParam.pParticles, myParam.rParticles);
+    myParam.trails.drawTrail(myParam.rParticles, particleBlurTex);
+    EndTextureMode();
 
-#pragma omp parallel for
-    for (int i = 0; i < particles.size(); i++) {
-        Color color = particles[i].selected ? RED : RAYWHITE;
-        DrawCircleV(particles[i].position, particles[i].radius, color);
-    }
+    BeginTextureMode(myUITexture);
+    ClearBackground({ 0,0,0,0 });
+    Vector2 mouseScreenPos = GetMousePosition();
+    BeginMode2D(myParam.myCamera.camera);
 
-    EndDrawing();
-}
+    myVar.mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), myParam.myCamera.camera);
+    myParam.brush.drawBrush(myVar.mouseWorldPos);
+    DrawRectangleLinesEx({ 0,0, static_cast<float>(myVar.screenWidth), static_cast<float>(myVar.screenHeight) }, 3, GRAY);
 
-void handleInput() {
-    if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-        Vector2 mousePos = GetMousePosition();
-
-        Rectangle range = { mousePos.x - 5, mousePos.y - 5, 10, 10 };
-        std::vector<Particle*> found;
-        quadtree->query(range, found);
-
-        for (auto* p : found) {
-            p->selected = true;
+    if (myParam.pParticles.size() > 1 && myVar.drawZCurves) {
+        for (size_t i = 0; i < myParam.pParticles.size() - 1; ++i) {
+            DrawLineV(myParam.pParticles[i].pos, myParam.pParticles[i + 1].pos, WHITE);
+            DrawText(TextFormat("%i", i), static_cast<int>(myParam.pParticles[i].pos.x), static_cast<int>(myParam.pParticles[i].pos.y) - 10, 10, { 128,128,128,128 });
         }
     }
-    else {
-#pragma omp parallel for
-        for (int i = 0; i < particles.size(); i++) {
-            particles[i].selected = false;
-        }
-    }
+
+    EndMode2D();
+    myUI.uiLogic(myParam, myVar);
+    myParam.subdivision.subdivideParticles(myVar, myParam);
+    EndTextureMode();
+
+    if (IsKeyPressed(KEY_P)) myVar.isPixelDrawingEnabled = !myVar.isPixelDrawingEnabled;
 }
 
-void InitParticles(int count) {
-    particles.resize(count);
-
-#pragma omp parallel for
-    for (int i = 0; i < count; i++) {
-        // Get random values for x and y and cast them to float
-        float x = static_cast<float>(GetRandomValue(0, GetScreenWidth()));
-        float y = static_cast<float>(GetRandomValue(0, GetScreenHeight()));
-
-        // Initialize particle properties
-        particles[i].position = { x, y };
-        particles[i].velocity = { 0, 0 };
-        particles[i].radius = 2.0f;
-        particles[i].selected = false;
-    }
+void enableMultiThreading() {
+    omp_set_num_threads(myVar.isMultiThreadingEnabled ? 16 : 1);
 }
-
 
 int main() {
-    InitWindow(1280, 720, "Galaxy Engine");
-    SetTargetFPS(60);
+    SetConfigFlags(FLAG_MSAA_4X_HINT);
+    InitWindow(myVar.screenWidth, myVar.screenHeight, "n-Body");
+    Texture2D particleBlurTex = LoadTexture("Textures/ParticleBlur.png");
+    Shader myBloom = LoadShader(nullptr, "Shaders/bloom.fs");
+    RenderTexture2D myParticlesTexture = LoadRenderTexture(myVar.screenWidth, myVar.screenHeight);
+    RenderTexture2D myUITexture = LoadRenderTexture(myVar.screenWidth, myVar.screenHeight);
 
-    InitParticles(10000);
+    SetTargetFPS(myVar.targetFPS);
 
     while (!WindowShouldClose()) {
-        handleInput();
-        buildQuadtree();
-        applyForces();
-        updateParticles();
-        drawParticles();
+        BeginTextureMode(myParticlesTexture);
+        ClearBackground(BLACK);
+        BeginBlendMode(myParam.colorVisuals.blendMode);
+        BeginMode2D(myParam.myCamera.cameraLogic());
+
+        updateScene();
+        drawScene(particleBlurTex, myUITexture);
+
+        EndMode2D();
+        EndBlendMode();
+
+        if (myVar.isGlowEnabled) BeginShaderMode(myBloom);
+
+        DrawTextureRec(myParticlesTexture.texture, Rectangle{ 0, 0, static_cast<float>(myParticlesTexture.texture.width), -static_cast<float>(myParticlesTexture.texture.height) }, Vector2{ 0, 0 }, WHITE);
+
+        if (myVar.isGlowEnabled) EndShaderMode();
+
+        DrawTextureRec(myUITexture.texture, Rectangle{ 0, 0, static_cast<float>(myUITexture.texture.width), -static_cast<float>(myUITexture.texture.height) }, Vector2{ 0, 0 }, WHITE);
+
+        myVar.isRecording = myParam.screenCapture.screenGrab(myParticlesTexture, myVar);
+        if (myVar.isRecording) DrawRectangleLinesEx({ 0,0, static_cast<float>(myVar.screenWidth), static_cast<float>(myVar.screenHeight) }, 3, RED);
+
+        EndDrawing();
+        enableMultiThreading();
     }
 
-    delete quadtree;
+    UnloadShader(myBloom);
+    UnloadTexture(particleBlurTex);
+    UnloadRenderTexture(myParticlesTexture);
+    UnloadRenderTexture(myUITexture);
+
     CloseWindow();
     return 0;
 }
