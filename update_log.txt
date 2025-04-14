@@ -49,3 +49,8 @@ CPU Multitreading optimizaion Summary:
 
             * 0.5f -> fast multiplication
         */
+April 13 2025 continued:
+
+I fixed some compiler errors I had for release, but I got a strange bug where only invidiual particles are on the screen.
+
+Strange indeed... I will try to fix it soon.
