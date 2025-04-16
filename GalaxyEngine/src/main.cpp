@@ -106,7 +106,7 @@ static void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture) 
 static void enableMultiThreading() {
     int maxThreads = std::thread::hardware_concurrency(); 
     if (maxThreads == 0) maxThreads = 1; 
-    omp_set_num_threads(myVar.isMultiThreadingEnabled ? maxThreads : 32); //im doing 32 because I have 32 threads, update this accordingly
+    omp_set_num_threads(myVar.isMultiThreadingEnabled ? maxThreads : 32); //im doing 32 because I have 32 threads
     std::cout << "Using " << maxThreads << " threads" << std::endl; 
 }
 
