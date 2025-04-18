@@ -8,7 +8,10 @@ Special thanks to [SergioCelso](https://github.com/SCelso) for making the learni
 
 ---
 ![Galaxies](https://github.com/user-attachments/assets/22eff1f3-288b-49a9-a4ea-0dd19b522ac0)
+
 ![Brush](https://github.com/user-attachments/assets/b68eb4cb-9ce4-4dfb-b366-0607598cebcc)
+
+![BigBangBanner](https://github.com/user-attachments/assets/a3e2bef5-d9b0-4175-91f6-7edd0d532a44)
 
 ## Features
 ---
@@ -22,6 +25,7 @@ https://github.com/user-attachments/assets/def3a318-fcf7-47c3-9366-42e9edcef53a
 
 
 https://github.com/user-attachments/assets/4c33d196-cec2-4538-a5ca-67de1621603e
+
 
 
 
