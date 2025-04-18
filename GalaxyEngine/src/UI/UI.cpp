@@ -36,38 +36,40 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 		settingsButtonsArray[0].pos = { static_cast<float>(myVar.screenWidth) - 195.0f, 80.0f };
 		for (size_t i = 1; i < settingsButtonsArray.size(); ++i) {
 			settingsButtonsArray[i].pos.x = settingsButtonsArray[i - 1].pos.x;
-			settingsButtonsArray[i].pos.y = settingsButtonsArray[i - 1].pos.y + settingsButtonsArray[i].size.y + 13;
+			settingsButtonsArray[i].pos.y = settingsButtonsArray[i - 1].pos.y + settingsButtonsArray[i].size.y + 10;
 			settingsButtonsArray[i].size = settingsButtonsArray[i - 1].size;
 
 		}
-		bool buttonPixelDrawingHovering = settingsButtonsArray[0].buttonLogic(myVar.isPixelDrawingEnabled, myVar);
 
-		bool buttonGlobalTrailsHovering = settingsButtonsArray[1].buttonLogic(myVar.isGlobalTrailsEnabled, myVar);
-		bool buttonSelectedTrailsHovering = settingsButtonsArray[2].buttonLogic(myVar.isSelectedTrailsEnabled, myVar);
-		bool buttonLocalTrailsHovering = settingsButtonsArray[3].buttonLogic(myVar.isLocalTrailsEnabled, myVar);
-		bool buttonWhiteTrailsHovering = settingsButtonsArray[4].buttonLogic(myParam.trails.whiteTrails, myVar);
+		bool buttonGlobalTrailsHovering = settingsButtonsArray[0].buttonLogic(myVar.isGlobalTrailsEnabled, myVar);
+		bool buttonSelectedTrailsHovering = settingsButtonsArray[1].buttonLogic(myVar.isSelectedTrailsEnabled, myVar);
+		bool buttonLocalTrailsHovering = settingsButtonsArray[2].buttonLogic(myVar.isLocalTrailsEnabled, myVar);
+		bool buttonWhiteTrailsHovering = settingsButtonsArray[3].buttonLogic(myParam.trails.whiteTrails, myVar);
 
-		bool buttonSolidColorHovering = settingsButtonsArray[5].buttonLogic(myParam.colorVisuals.solidColor, myVar);
-		bool buttonDensityColorHovering = settingsButtonsArray[6].buttonLogic(myParam.colorVisuals.densityColor, myVar);
-		bool buttonForceColorHovering = settingsButtonsArray[7].buttonLogic(myParam.colorVisuals.forceColor, myVar);
-		bool buttonVelocityColorHovering = settingsButtonsArray[8].buttonLogic(myParam.colorVisuals.velocityColor, myVar);
-		bool buttonSelectedColorHovering = settingsButtonsArray[9].buttonLogic(myParam.colorVisuals.selectedColor, myVar);
+		bool buttonSolidColorHovering = settingsButtonsArray[4].buttonLogic(myParam.colorVisuals.solidColor, myVar);
+		bool buttonDensityColorHovering = settingsButtonsArray[5].buttonLogic(myParam.colorVisuals.densityColor, myVar);
+		bool buttonForceColorHovering = settingsButtonsArray[6].buttonLogic(myParam.colorVisuals.forceColor, myVar);
+		bool buttonVelocityColorHovering = settingsButtonsArray[7].buttonLogic(myParam.colorVisuals.velocityColor, myVar);
+		bool buttonSelectedColorHovering = settingsButtonsArray[8].buttonLogic(myParam.colorVisuals.selectedColor, myVar);
 
-		bool buttonDarkMatterHovering = settingsButtonsArray[10].buttonLogic(myVar.isDarkMatterEnabled, myVar);
+		bool buttonDarkMatterHovering = settingsButtonsArray[9].buttonLogic(myVar.isDarkMatterEnabled, myVar);
+		bool buttonShowDarkMatterHovering = settingsButtonsArray[10].buttonLogic(myParam.colorVisuals.showDarkMatterEnabled, myVar);
+
 		bool buttonPeriodicBoundaryHovering = settingsButtonsArray[11].buttonLogic(myVar.isPeriodicBoundaryEnabled, myVar);
 		bool buttonBarnesHutHovering = settingsButtonsArray[12].buttonLogic(myVar.isBarnesHutEnabled, myVar);
 		bool buttonMultiThreadingHovering = settingsButtonsArray[13].buttonLogic(myVar.isMultiThreadingEnabled, myVar);
 		bool buttonCollisionsHovering = settingsButtonsArray[14].buttonLogic(myVar.isCollisionsEnabled, myVar);
 
 		bool buttonDensitySizeHovering = settingsButtonsArray[15].buttonLogic(myVar.isDensitySizeEnabled, myVar);
+		bool buttonForceSizeHovering = settingsButtonsArray[16].buttonLogic(myVar.isForceSizeEnabled, myVar);
 
-		bool buttonGlowHovering = settingsButtonsArray[16].buttonLogic(myVar.isGlowEnabled, myVar);
+		bool buttonGlowHovering = settingsButtonsArray[17].buttonLogic(myVar.isGlowEnabled, myVar);
 
-		bool buttonPredictPathsHovering = settingsButtonsArray[17].buttonLogic(myParam.particlesSpawning.enablePathPrediction, myVar);
+		bool buttonPredictPathsHovering = settingsButtonsArray[18].buttonLogic(myParam.particlesSpawning.enablePathPrediction, myVar);
 
-		bool buttonControlsHovering = settingsButtonsArray[18].buttonLogic(myParam.controls.isShowControlsEnabled, myVar);
+		bool buttonControlsHovering = settingsButtonsArray[19].buttonLogic(myParam.controls.isShowControlsEnabled, myVar);
 
-		bool buttonInformationHovering = settingsButtonsArray[19].buttonLogic(myVar.isInformationEnabled, myVar);
+		bool buttonInformationHovering = settingsButtonsArray[20].buttonLogic(myVar.isInformationEnabled, myVar);
 
 		slidersArray[0].sliderPos = { 20.0f, 210.0f };
 		for (size_t i = 1; i < slidersArray.size(); ++i) {
@@ -90,7 +92,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 		bool sliderMaxNeighborsHovering = slidersArray[9].sliderLogic(0, myParam.colorVisuals.maxNeighbors, 300, myVar);
 
 		bool sliderMaxColorForceHovering = slidersArray[10].sliderLogic(1.0f, myParam.colorVisuals.maxColorAcc, 400.0f, myVar);
-		bool sliderMaxSizeForceHovering = slidersArray[11].sliderLogic(1.0f, myParam.densitySize.maxSizeAcc, 400.0f, myVar);
+		bool sliderMaxSizeForceHovering = slidersArray[11].sliderLogic(1.0f, myParam.densitySize.sizeAcc, 400.0f, myVar);
 
 		bool sliderSofteningHovering = slidersArray[12].sliderLogic(0.1f, myVar.softening, 30.0f, myVar);
 		bool sliderThetaHovering = slidersArray[13].sliderLogic(0.1f, myVar.theta, 5.0f, myVar);
@@ -105,8 +107,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 		bool sliderHeavyParticleMassHovering = slidersArray[19].sliderLogic(0.05f, myParam.particlesSpawning.heavyParticleWeightMultiplier, 15.0f, myVar);
 		bool sliderPathPredictionLengthHovering = slidersArray[20].sliderLogic(500, myParam.particlesSpawning.predictPathLength, 2000, myVar);
 
-		if (buttonPixelDrawingHovering ||
-			buttonDarkMatterHovering ||
+		if (buttonDarkMatterHovering ||
 			buttonPeriodicBoundaryHovering ||
 			buttonGlobalTrailsHovering ||
 			buttonBarnesHutHovering ||
@@ -146,7 +147,9 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 			sliderPathPredictionLengthHovering ||
 			buttonPredictPathsHovering ||
 			buttonShowSettingsHovering ||
-			buttonInformationHovering
+			buttonInformationHovering ||
+			buttonForceSizeHovering ||
+			buttonShowDarkMatterHovering
 			) {
 			myVar.isMouseNotHoveringUI = false;
 			myVar.isDragging = false;
@@ -154,7 +157,6 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 		else {
 			myVar.isMouseNotHoveringUI = true;
 		}
-
 
 		if (buttonSolidColorHovering && IsMouseButtonPressed(0)) {
 			myParam.colorVisuals.velocityColor = false;
@@ -184,6 +186,13 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 		if (buttonSelectedTrailsHovering && IsMouseButtonPressed(0)) {
 			myVar.isGlobalTrailsEnabled = false;
 			myParam.trails.trailDots.clear();
+		}
+
+		if (buttonDensitySizeHovering && IsMouseButtonPressed(0)) {
+			myVar.isForceSizeEnabled = false;
+		}
+		if (buttonForceSizeHovering && IsMouseButtonPressed(0)) {
+			myVar.isDensitySizeEnabled = false;
 		}
 
 		myParam.controls.showControls(myVar);

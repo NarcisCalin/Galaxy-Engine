@@ -14,11 +14,9 @@ public:
 
 private:
 
-	std::array<Button, 20>settingsButtonsArray = {
+	std::array<Button, 21> settingsButtonsArray = {
 
-Button({195.0f, 80.0f}, {175.0f, 32.0f}, "Pixel Drawing", true),
-
-Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Global Trails", true),
+Button({195.0f, 80.0f}, {175.0f, 24.0f}, "Global Trails", true),
 
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Selected Trails", true),
 
@@ -38,6 +36,8 @@ Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Selected Color", true),
 
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Dark Matter", true),
 
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Show Dark M.", true),
+
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Looping Space", true),
 
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Barnes-Hut", true),
@@ -47,6 +47,8 @@ Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Multi-Threading", true),
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Collisions (!!!)", true),
 
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Density Size", true),
+
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Force Size", true),
 
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Glow", true),
 
@@ -67,7 +69,7 @@ Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Information", true)
 	)
 	};
 
-	std::array<Slider, 21>slidersArray = {
+	std::array<Slider, 21> slidersArray = {
 		Slider
 	({20, 530.0f}, {230.0f, 7.0f}, {190, 100, 100, 255}, "Primary Red"),
 
@@ -111,6 +113,32 @@ Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Information", true)
 
 	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Path Prediction Length")
 
+	};
+
+	std::array<Slider, 12> initialConditionsArray = {
+		Slider({20, 530.0f}, {230.0f, 7.0f}, {190, 100, 100, 255}, "Center Density"),
+
+		Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Inner Radius"),
+
+		Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Outer Radius"),
+
+		Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Top Speed"),
+
+		Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Inverse Speed"),
+
+		Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Speed Multiplier"),
+
+		Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "DM Center Density"),
+
+		Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "DM Inner Radius"),
+
+		Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "DM Outer Radius"),
+
+		Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "DM Top Speed"),
+
+		Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "DM Inverse Speed"),
+
+		Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "DM Speed Multiplier")
 	};
 
 	bool showSettings = true;

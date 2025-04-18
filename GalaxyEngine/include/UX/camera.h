@@ -30,4 +30,5 @@ private:
 	Color previousColor;
 	Vector2 panFollowingOffset;
 	float selectionThresholdSq = 100.0f;
+	float defaultCamZoom = 0.5f;
 };

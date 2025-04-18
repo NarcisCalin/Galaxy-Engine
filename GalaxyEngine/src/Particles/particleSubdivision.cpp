@@ -8,7 +8,7 @@ void ParticleSubdivision::subdivideParticles(UpdateVariables& myVar, UpdateParam
 		if (subdivideSelected) {
 			subdivideAll = false;
 		}
-		if (myParam.pParticles.size() > particlesThreshold) {
+		if (myParam.pParticles.size() >= particlesThreshold) {
 			Button confirm({ GetScreenWidth() / 2.0f - 5.0f - buttonSize.x, GetScreenHeight() / 2.0f }, { buttonSize }, "Subdivide", true);
 			Button quit({ GetScreenWidth() / 2.0f + 5.0f, GetScreenHeight() / 2.0f }, { buttonSize }, "Quit", true);
 
@@ -38,7 +38,7 @@ void ParticleSubdivision::subdivideParticles(UpdateVariables& myVar, UpdateParam
 			for (int i = originalSize - 1; i >= 0; i--) {
 				if ((subdivideAll || myParam.rParticles[i].isSelected) && myParam.rParticles[i].canBeSubdivided) {
 
-					float halfOffset = myParam.rParticles[i].previousSize / 2.0f * myVar.particleTextureSize / 8.0f;
+					float halfOffset = myParam.rParticles[i].previousSize / 2.0f * myVar.particleTextureHalfSize * 0.25f;
 					float halfOffsetVisual = myParam.rParticles[i].previousSize / 2.0f;
 
 					int multipliers[4][2] = { {-1, -1}, { 1, -1}, {-1, 1}, { 1, 1} };
@@ -54,9 +54,10 @@ void ParticleSubdivision::subdivideParticles(UpdateVariables& myVar, UpdateParam
 
 						myParam.pParticles.emplace_back(newPos, myParam.pParticles[i].velocity, myParam.pParticles[i].mass / 4.0f);
 
-						myParam.rParticles.emplace_back(myParam.rParticles[i].color, halfOffsetVisual, myParam.rParticles[i].uniqueColor,
-							myParam.rParticles[i].drawPixel, myParam.rParticles[i].isSelected,
-							myParam.rParticles[i].isSolid, myParam.rParticles[i].canBeSubdivided, myParam.rParticles[i].canBeResized);
+						myParam.rParticles.emplace_back(myParam.rParticles[i].color, halfOffsetVisual, myParam.rParticles[i].uniqueColor, 
+							myParam.rParticles[i].isSelected,
+							myParam.rParticles[i].isSolid, myParam.rParticles[i].canBeSubdivided, myParam.rParticles[i].canBeResized, 
+							myParam.rParticles[i].isDarkMatter);
 					}
 
 					myParam.pParticles[i] = std::move(myParam.pParticles.back());

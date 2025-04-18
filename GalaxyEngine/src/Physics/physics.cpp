@@ -11,13 +11,13 @@ Vector2 Physics::calculateForceFromGrid(const Quadtree& grid, std::vector<Partic
 	float dy = grid.centerOfMass.y - pParticle.pos.y;
 
 	if (myVar.isPeriodicBoundaryEnabled) {
-		dx -= myVar.screenWidth * ((dx > myVar.halfScreenWidth) - (dx < -myVar.halfScreenWidth));
-		dy -= myVar.screenHeight * ((dy > myVar.halfScreenHeight) - (dy < -myVar.halfScreenHeight));
+		dx -= myVar.domainWidth * ((dx > myVar.halfDomainWidth) - (dx < -myVar.halfDomainWidth));
+		dy -= myVar.domainHeight * ((dy > myVar.halfDomainHeight) - (dy < -myVar.halfDomainHeight));
 	}
 
 	float distanceSq = dx * dx + dy * dy + myVar.softening * myVar.softening;
 
-	if ((grid.size * grid.size < myVar.theta * myVar.theta * distanceSq) || grid.subGrids.empty()) {
+	if ((grid.size * grid.size < (myVar.theta * myVar.theta) * distanceSq) || grid.subGrids.empty()) {
 		if ((grid.endIndex - grid.startIndex) == 1 &&
 			fabs(pParticles[grid.startIndex].pos.x - pParticle.pos.x) < 0.001f &&
 			fabs(pParticles[grid.startIndex].pos.y - pParticle.pos.y) < 0.001f) {
@@ -37,32 +37,6 @@ Vector2 Physics::calculateForceFromGrid(const Quadtree& grid, std::vector<Partic
 		}
 	}
 	return totalForce;
-}
-
-Vector2 Physics::darkMatterForce(const ParticlePhysics& pParticle, UpdateVariables& myVar) {
-	float centerX = myVar.screenWidth / 2.0f;
-	float centerY = myVar.screenHeight / 2.0f;
-
-	float dx = pParticle.pos.x - centerX;
-	float dy = pParticle.pos.y - centerY;
-	float radius = sqrt(dx * dx + dy * dy);
-	if (radius < 1.0f) radius = 1.0f;
-
-	const double haloMass = 7e17;
-	const float haloRadius = 650.0;
-
-	float concentration = 10;
-	float r_ratio = radius / haloRadius;
-	float M_enclosed = static_cast<float>(haloMass * (log(1 + r_ratio) - r_ratio / (1 + r_ratio)))
-		/ (log(1 + concentration) - concentration / (1 + concentration));
-
-	float acceleration = static_cast<float>(myVar.G * M_enclosed) / (radius * radius);
-
-	Vector2 force;
-	force.x = static_cast<float>(-(dx / radius) * acceleration * pParticle.mass);
-	force.y = static_cast<float>(-(dy / radius) * acceleration * pParticle.mass);
-
-	return force;
 }
 
 void Physics::pairWiseGravity(std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar) {
@@ -89,15 +63,15 @@ void Physics::pairWiseGravity(std::vector<ParticlePhysics>& pParticles, UpdateVa
 
 			if (myVar.isPeriodicBoundaryEnabled) {
 				if (myVar.isPeriodicBoundaryEnabled) {
-					if (dx > myVar.screenWidth / 2)
-						dx -= myVar.screenWidth;
-					else if (dx < -myVar.screenWidth / 2)
-						dx += myVar.screenWidth;
+					if (dx > myVar.domainWidth / 2)
+						dx -= myVar.domainWidth;
+					else if (dx < -myVar.domainWidth / 2)
+						dx += myVar.domainWidth;
 
-					if (dy > myVar.screenHeight / 2)
-						dy -= myVar.screenHeight;
-					else if (dy < -myVar.screenHeight / 2)
-						dy += myVar.screenHeight;
+					if (dy > myVar.domainHeight / 2)
+						dy -= myVar.domainHeight;
+					else if (dy < -myVar.domainHeight / 2)
+						dy += myVar.domainHeight;
 				}
 			}
 
@@ -130,21 +104,31 @@ void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vecto
 	if (myVar.isPeriodicBoundaryEnabled) {
 		for (size_t i = 0; i < pParticles.size(); i++) {
 			ParticlePhysics& pParticle = pParticles[i];
+
+			pParticle.velocity.x += (myVar.timeFactor * (1.5f * pParticle.acc.x));
+			pParticle.velocity.y += (myVar.timeFactor * (1.5f * pParticle.acc.y));
+
 			pParticle.pos.x += pParticle.velocity.x * myVar.timeFactor;
 			pParticle.pos.y += pParticle.velocity.y * myVar.timeFactor;
-			if (pParticle.pos.x < 0) pParticle.pos.x += myVar.screenWidth;
-			else if (pParticle.pos.x >= myVar.screenWidth) pParticle.pos.x -= myVar.screenWidth;
 
-			if (pParticle.pos.y < 0) pParticle.pos.y += myVar.screenHeight;
-			else if (pParticle.pos.y >= myVar.screenHeight) pParticle.pos.y -= myVar.screenHeight;
+			if (pParticle.pos.x < 0) pParticle.pos.x += myVar.domainWidth;
+			else if (pParticle.pos.x >= myVar.domainWidth) pParticle.pos.x -= myVar.domainWidth;
+
+			if (pParticle.pos.y < 0) pParticle.pos.y += myVar.domainHeight;
+			else if (pParticle.pos.y >= myVar.domainHeight) pParticle.pos.y -= myVar.domainHeight;
 		}
 	}
 	else {
 		for (size_t i = 0; i < pParticles.size(); i++) {
 			ParticlePhysics& pParticle = pParticles[i];
+
+			pParticle.velocity.x += (myVar.timeFactor * (1.5f * pParticle.acc.x));
+			pParticle.velocity.y += (myVar.timeFactor * (1.5f * pParticle.acc.y));
+
 			pParticle.pos.x += pParticle.velocity.x * myVar.timeFactor;
 			pParticle.pos.y += pParticle.velocity.y * myVar.timeFactor;
-			if (pParticles[i].pos.x < 0 || pParticles[i].pos.x >= myVar.screenWidth || pParticles[i].pos.y < 0 || pParticles[i].pos.y >= myVar.screenHeight) {
+
+			if (pParticles[i].pos.x < 0 || pParticles[i].pos.x >= myVar.domainWidth || pParticles[i].pos.y < 0 || pParticles[i].pos.y >= myVar.domainHeight) {
 				pParticles.erase(pParticles.begin() + i);
 				rParticles.erase(rParticles.begin() + i);
 
@@ -153,44 +137,65 @@ void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vecto
 	}
 }
 
-void Physics::collisions(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, float& softening) {
-	size_t n = pParticles.size();
-#pragma omp parallel for schedule(dynamic)
-	for (size_t i = 0; i < n; i++) {
-		ParticlePhysics& a = pParticles[i];
-		for (size_t j = i + 1; j < n; j++) {
-			ParticlePhysics& b = pParticles[j];
-			float dx = a.pos.x - b.pos.x;
-			float dy = a.pos.y - b.pos.y;
-			float distSq = dx * dx + dy * dy + softening * softening;
-			// TODO: MAYBE PRECOMPUTE radiiSum
-			float radiiSum = rParticles[i].size * 16.0f + rParticles[j].size * 16.0f;
-			float rsq = radiiSum * radiiSum;
-			if (distSq > rsq) continue;
+void Physics::collisions(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, float& softening, float& particleTextureHalfSize) {
 
-			float distance = std::sqrt(distSq);
-			if (distance == 0.0f) distance = 0.001f;
-			float normalX = dx / distance;
-			float normalY = dy / distance;
-			float relVel = (a.velocity.x - b.velocity.x) * normalX +
-				(a.velocity.y - b.velocity.y) * normalY;
-			if (relVel > 0) continue;
-			float e = 0.65f;
-			float impulse = -(1 + e) * relVel / (1 / a.mass + 1 / b.mass);
-			float ix = impulse * normalX;
-			float iy = impulse * normalY;
-			a.velocity.x += ix / a.mass;
-			a.velocity.y += iy / a.mass;
-			b.velocity.x -= ix / b.mass;
-			b.velocity.y -= iy / b.mass;
-			float penetration = radiiSum - distance;
-			if (penetration > 0) {
-				float percent = 0.2f, slop = 0.01f;
-				float correction = std::max(penetration - slop, 0.0f) / (1 / a.mass + 1 / b.mass) * percent;
-				a.pos.x += (correction * normalX) / a.mass;
-				a.pos.y += (correction * normalY) / a.mass;
-				b.pos.x -= (correction * normalX) / b.mass;
-				b.pos.y -= (correction * normalY) / b.mass;
+#pragma omp parallel for schedule(dynamic)
+	for (size_t i = 0; i < pParticles.size(); i++) {
+
+		ParticlePhysics& pParticleA = pParticles[i];
+
+		for (size_t j = i + 1; j < pParticles.size(); j++) {
+			ParticlePhysics& pParticleB = pParticles[j];
+
+			float dx = pParticleA.pos.x - pParticleB.pos.x;
+			float dy = pParticleA.pos.y - pParticleB.pos.y;
+			float distanceSq = dx * dx + dy * dy + softening * softening;
+
+			float radiiSum = rParticles[i].size * particleTextureHalfSize + rParticles[j].size * particleTextureHalfSize;
+
+			Vector2 relativeVel = pParticleA.velocity - pParticleB.velocity;
+
+			Vector2 collisionNormal = Vector2Normalize(pParticleA.pos - pParticleB.pos);
+			float velocityNormal = Vector2DotProduct(relativeVel, collisionNormal);
+
+
+			if (velocityNormal <= 0) {
+
+				if (distanceSq < radiiSum * radiiSum) {
+
+					float e = 0.6f;
+
+					float invMassA = 1.0f / pParticleA.mass;
+					float invMassB = 1.0f / pParticleB.mass;
+
+					float force = -(1.0f + e) * velocityNormal;
+					force /= (invMassA + invMassB);
+
+					Vector2 impulse = Vector2Scale(collisionNormal, force);
+
+					Vector2 finalForceA = { impulse.x * invMassA, impulse.y * invMassA };
+					Vector2 finalForceB = { impulse.x * invMassB, impulse.y * invMassB };
+
+					pParticleA.velocity.x += finalForceA.x;
+					pParticleA.velocity.y += finalForceA.y;
+
+					pParticleB.velocity.x -= finalForceB.x;
+					pParticleB.velocity.y -= finalForceB.y;
+
+					float penetration = radiiSum - sqrt(distanceSq);
+					const float percent = 0.8f;
+					const float slop = 0.01f;
+
+					if (penetration > slop) {
+						float correctionMagnitude = (penetration / (invMassA + invMassB)) * percent;
+						Vector2 correction = Vector2Scale(collisionNormal, correctionMagnitude);
+
+						pParticleA.pos.x += correction.x * invMassA;
+						pParticleA.pos.y += correction.y * invMassA;
+						pParticleB.pos.x -= correction.x * invMassB;
+						pParticleB.pos.y -= correction.y * invMassB;
+					}
+				}
 			}
 		}
 	}

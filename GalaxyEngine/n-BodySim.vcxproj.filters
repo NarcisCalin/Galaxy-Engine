@@ -15,123 +15,120 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="slingshot.cpp">
+    <ClCompile Include="src\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="quadtree.cpp">
+    <ClCompile Include="src\Particles\particleSelection.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="particleTrails.cpp">
+    <ClCompile Include="src\Particles\particlesSpawning.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="UI.cpp">
+    <ClCompile Include="src\Particles\particleSubdivision.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="button.cpp">
+    <ClCompile Include="src\Particles\particleTrails.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="screenCapture.cpp">
+    <ClCompile Include="src\Physics\morton.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="morton.cpp">
+    <ClCompile Include="src\Physics\physics.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="slider.cpp">
+    <ClCompile Include="src\Physics\quadtree.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="camera.cpp">
+    <ClCompile Include="src\Physics\slingshot.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="brush.cpp">
+    <ClCompile Include="src\UI\brush.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="src\UI\button.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="particleSelection.cpp">
+    <ClCompile Include="src\UI\controls.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="particlesSpawning.cpp">
+    <ClCompile Include="src\UI\rightClickSettings.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="physics.cpp">
+    <ClCompile Include="src\UI\slider.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="particleSubdivision.cpp">
+    <ClCompile Include="src\UI\UI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="rightClickSettings.cpp">
+    <ClCompile Include="src\UX\camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="controls.cpp">
+    <ClCompile Include="src\UX\screenCapture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="slingshot.h">
+    <ClInclude Include="include\parameters.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="updateScene.h">
+    <ClInclude Include="include\Particles\densitySize.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="quadtree.h">
+    <ClInclude Include="include\Particles\particle.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="particle.h">
+    <ClInclude Include="include\Particles\particleColorVisuals.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="particleTrails.h">
+    <ClInclude Include="include\Particles\particleDeletion.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="UI.h">
+    <ClInclude Include="include\Particles\particleSelection.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="button.h">
+    <ClInclude Include="include\Particles\particlesSpawning.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="screenCapture.h">
+    <ClInclude Include="include\Particles\particleSubdivision.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="morton.h">
+    <ClInclude Include="include\Particles\particleTrails.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="slider.h">
+    <ClInclude Include="include\Physics\morton.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="camera.h">
+    <ClInclude Include="include\Physics\physics.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="brush.h">
+    <ClInclude Include="include\Physics\quadtree.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="particleSelection.h">
+    <ClInclude Include="include\Physics\slingshot.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="particleSubdivision.h">
+    <ClInclude Include="include\UI\brush.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="densitySize.h">
+    <ClInclude Include="include\UI\button.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="particleColorVisuals.h">
+    <ClInclude Include="include\UI\controls.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="rightClickSettings.h">
+    <ClInclude Include="include\UI\rightClickSettings.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="controls.h">
+    <ClInclude Include="include\UI\slider.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="particleDeletion.h">
+    <ClInclude Include="include\UI\UI.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="particlesSpawning.h">
+    <ClInclude Include="include\UX\camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="parameters.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="physics.h">
+    <ClInclude Include="include\UX\screenCapture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -62,11 +62,17 @@ struct UpdateVariables{
 	float screenRatioX = 0.0f;
 	float screenRatioY = 0.0f;
 
+	float domainWidth = 3840.0f;
+	float domainHeight = 2048.0f;
+
+	float halfDomainWidth = domainWidth * 0.5f;
+	float halfDomainHeight = domainHeight * 0.5f;
+
 	int targetFPS = 144;
 
 	double G = 6.674e-11;
 	float gravityMultiplier = 1.0f;
-	float softening = 1.8f;
+	float softening = 2.5f;
 	float theta = 0.8f;
 	float timeStepMultiplierSlider = 1.0f;
 	float timeStepMultiplier = 1.0f;
@@ -80,17 +86,17 @@ struct UpdateVariables{
 	bool isGlobalTrailsEnabled = false;
 	bool isSelectedTrailsEnabled = false;
 	bool isLocalTrailsEnabled = false;
-	bool isPixelDrawingEnabled = false;
 	bool isPeriodicBoundaryEnabled = true;
 	bool isMultiThreadingEnabled = true;
 	bool isBarnesHutEnabled = true;
-	bool isDarkMatterEnabled = false;
+	bool isDarkMatterEnabled = true;
 	bool isCollisionsEnabled = false;
 	bool isDensitySizeEnabled = false;
+	bool isForceSizeEnabled = false;
 
 	bool isSpawningAllowed = true;
 
-	float particleTextureSize = 32.0f;
+	float particleTextureHalfSize = 16.0f;
 
 	int trailMaxLength = 14;
 

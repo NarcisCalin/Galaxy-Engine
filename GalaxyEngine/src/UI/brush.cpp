@@ -8,6 +8,9 @@ Brush::Brush(SceneCamera myCamera, float brushRadius) {
 }
 
 void Brush::brushLogic(UpdateParameters& myParam) {
+
+	// VISIBLE MATTER
+
 	for (int i = 0; i < 140; i++) {
 		float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 		float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
@@ -19,8 +22,8 @@ void Brush::brushLogic(UpdateParameters& myParam) {
 
 		Vector2 particlePos = Vector2Add(myParam.myCamera.mouseWorldPos, randomOffset);
 
-		myParam.pParticles.emplace_back(particlePos, Vector2{ 0, 0 }, 30000000000.0f);
-		myParam.rParticles.emplace_back(Color{ 128, 128, 128, 100 }, 0.125f, false, true, false, false, true, true);
+		myParam.pParticles.emplace_back(particlePos, Vector2{ 0, 0 }, 8500000000.0f);
+		myParam.rParticles.emplace_back(Color{ 128, 128, 128, 100 }, 0.125f, false, false, false, true, true, false);
 	}
 }
 

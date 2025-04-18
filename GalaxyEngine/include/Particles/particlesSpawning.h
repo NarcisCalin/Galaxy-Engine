@@ -21,10 +21,10 @@ public:
 
 	bool enablePathPrediction = false;
 
-	void particlesInitialConditions(Quadtree& quadtree, Physics& physics, UpdateVariables& myVar, UpdateParameters& myParam);
+	void particlesInitialConditions(Quadtree* quadtree, Physics& physics, UpdateVariables& myVar, UpdateParameters& myParam);
 
 	void predictTrajectory(const std::vector<ParticlePhysics>& actualParticles, SceneCamera& myCamera, Physics physics,
-		Quadtree& quadtree, UpdateVariables& myVar, Slingshot& slingshot);
+		Quadtree* quadtree, UpdateVariables& myVar, Slingshot& slingshot);
 
 private:
 	bool isSpawningAllowed = true;

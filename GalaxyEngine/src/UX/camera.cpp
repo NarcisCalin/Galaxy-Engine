@@ -9,7 +9,7 @@ SceneCamera::SceneCamera() {
 	camera.offset = { 0.0f, 0.0f };
 	camera.target = { 0.0f, 0.0f };
 	camera.rotation = 0.0f;
-	camera.zoom = 1.0f;
+	camera.zoom = 0.5f;
 	mouseWorldPos = { 0.0f, 0.0f };
 	panFollowingOffset = { 0.0f, 0.0f };
 	isFollowing = false;
@@ -48,12 +48,12 @@ Camera2D SceneCamera::cameraLogic() {
 		}
 
 		float scale = 0.2f * wheel;
-		camera.zoom = Clamp(expf(logf(camera.zoom) + scale), 0.95f, 64.0f);
+		camera.zoom = Clamp(expf(logf(camera.zoom) + scale), 0.475f, 64.0f);
 	}
 
 	// RESET CAMERA
 	if (IsKeyPressed(KEY_F)) {
-		camera.zoom = 1.0f;
+		camera.zoom = defaultCamZoom;
 		camera.target = { 0.0f };
 		camera.offset = { 0.0f };
 		panFollowingOffset = { 0.0f };
@@ -175,7 +175,7 @@ void SceneCamera::cameraFollowObject(UpdateVariables& myVar, UpdateParameters& m
 
 		if (IsKeyPressed(KEY_F) || count == 0 || myParam.pParticles.size() == 0) {
 			isFollowing = false;
-			camera.zoom = 1.0f;
+			camera.zoom = defaultCamZoom;
 			camera.target = { 0.0f };
 			camera.offset = { 0.0f };
 			panFollowingOffset = { 0 };

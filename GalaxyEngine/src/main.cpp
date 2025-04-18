@@ -1,6 +1,5 @@
 #include <iostream>
 #include <vector>
-#include "../include/raylib/raylib.h"
 #include <cmath>
 #include <array>
 #include <omp.h>
@@ -17,6 +16,7 @@
 #include "../include/Physics/morton.h"
 #include "../include/UI/slider.h"
 #include "../include/UX/camera.h"
+#include "../include/raylib/raylib.h"
 #include "../include/raylib/rlgl.h"
 #include "../include/raylib/raymath.h"
 #include "../include/UI/brush.h"
@@ -42,7 +42,6 @@ Physics physics;
 static Quadtree* gridFunction(std::vector<ParticlePhysics>& pParticles,
 	std::vector<ParticleRendering>& rParticles) {
 	Quadtree* grid = Quadtree::boundingBox(pParticles, rParticles);
-	//grid->calculateMasses(pParticles);
 	return grid;
 }
 
@@ -105,9 +104,10 @@ static void updateScene() {
 
 	myParam.brush.brushSize(myParam.myCamera.mouseWorldPos);
 
-	myParam.particlesSpawning.particlesInitialConditions(*grid, physics, myVar, myParam);
+	myParam.particlesSpawning.particlesInitialConditions(grid, physics, myVar, myParam);
 
-	if (myVar.timeFactor > 0.0f) {
+
+	if (myVar.timeFactor > 0.0f && grid != nullptr) {
 		if (myVar.isBarnesHutEnabled) {
 #pragma omp parallel for schedule(dynamic)
 			for (size_t i = 0; i < myParam.pParticles.size(); i++) {
@@ -115,29 +115,20 @@ static void updateScene() {
 
 				Vector2 netForce = physics.calculateForceFromGrid(*grid, myParam.pParticles, myVar, pParticle);
 
-				if (myVar.isDarkMatterEnabled) {
-					Vector2 dmForce = physics.darkMatterForce(pParticle, myVar);
-					netForce.x += dmForce.x;
-					netForce.y += dmForce.y;
-				}
-
 				pParticle.acc.x = netForce.x / pParticle.mass;
 				pParticle.acc.y = netForce.y / pParticle.mass;
-
-				pParticle.velocity.x += (myVar.timeFactor * ((3.0f / 2.0f) * pParticle.acc.x - (1.0f / 2.0f) * pParticle.prevAcc.x));
-				pParticle.velocity.y += (myVar.timeFactor * ((3.0f / 2.0f) * pParticle.acc.y - (1.0f / 2.0f) * pParticle.prevAcc.y));
 			}
 		}
 		else {
 			physics.pairWiseGravity(myParam.pParticles, myVar);
 		}
 
+
 		if (myVar.isCollisionsEnabled) {
-			physics.collisions(myParam.pParticles, myParam.rParticles, myVar.softening);
+			physics.collisions(myParam.pParticles, myParam.rParticles, myVar.softening, myVar.particleTextureHalfSize);
 		}
 
 		physics.physicsUpdate(myParam.pParticles, myParam.rParticles, myVar);
-
 	}
 
 
@@ -160,7 +151,8 @@ static void updateScene() {
 
 	myParam.particleSelection.selectedParticlesStoring(myParam);
 
-	myParam.densitySize.sizeByDensity(myParam.pParticles, myParam.rParticles, myVar.isDensitySizeEnabled, myVar.particleSizeMultiplier);
+	myParam.densitySize.sizeByDensity(myParam.pParticles, myParam.rParticles, myVar.isDensitySizeEnabled, myVar.isForceSizeEnabled,
+		myVar.particleSizeMultiplier);
 
 	myParam.particleDeletion.deleteSelected(myParam.pParticles, myParam.rParticles);
 
@@ -173,7 +165,6 @@ static void updateScene() {
 	myParam.brush.particlesGrabber(myVar, myParam);
 
 	myParam.brush.eraseBrush(myVar, myParam);
-
 
 	if (grid != nullptr) {
 		delete grid;
@@ -188,14 +179,11 @@ static void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture) 
 		ParticlePhysics& pParticle = myParam.pParticles[i];
 		ParticleRendering& rParticle = myParam.rParticles[i];
 
-		if (myVar.isPixelDrawingEnabled && rParticle.drawPixel) {
-			DrawPixelV({ pParticle.pos.x, pParticle.pos.y }, rParticle.color);
-		}
-		else {
-			// Texture size is set to 32 because that is the particle texture size in pixels
-			DrawTextureEx(particleBlurTex, { static_cast<float>(pParticle.pos.x - rParticle.size * myVar.particleTextureSize / 2),
-				static_cast<float>(pParticle.pos.y - rParticle.size * myVar.particleTextureSize / 2) }, 0, rParticle.size, rParticle.color);
-		}
+
+		// Texture size is set to 16 because that is the particle texture half size in pixels
+		DrawTextureEx(particleBlurTex, { static_cast<float>(pParticle.pos.x - rParticle.size * myVar.particleTextureHalfSize),
+			static_cast<float>(pParticle.pos.y - rParticle.size * myVar.particleTextureHalfSize) }, 0, rParticle.size, rParticle.color);
+
 
 		if (!myVar.isDensitySizeEnabled) {
 
@@ -205,7 +193,6 @@ static void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture) 
 			else {
 				rParticle.size = rParticle.previousSize;
 			}
-
 		}
 	}
 
@@ -233,7 +220,7 @@ static void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture) 
 
 	myVar.mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), myParam.myCamera.camera);
 	myParam.brush.drawBrush(myVar.mouseWorldPos);
-	DrawRectangleLinesEx({ 0,0, static_cast<float>(myVar.screenWidth), static_cast<float>(myVar.screenHeight) }, 3, GRAY);
+	DrawRectangleLinesEx({ 0,0, static_cast<float>(myVar.domainWidth), static_cast<float>(myVar.domainHeight) }, 3, GRAY);
 
 	// Z-Curves debug toggle
 	if (myParam.pParticles.size() > 1 && myVar.drawZCurves) {
@@ -254,11 +241,7 @@ static void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture) 
 
 	myParam.subdivision.subdivideParticles(myVar, myParam);
 
-
 	EndTextureMode();
-	if (IsKeyPressed(KEY_P)) {
-		myVar.isPixelDrawingEnabled = !myVar.isPixelDrawingEnabled;
-	}
 }
 
 

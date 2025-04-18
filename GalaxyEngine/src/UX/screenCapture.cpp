@@ -82,14 +82,14 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 
 	if (myFrames.size() > 0 && !isFunctionRecording && !isDiskModeEnabled) {
 		Button exportFramesButton({ static_cast<float>(GetScreenWidth()) - 600.0f, 70.0f },
-			{ 150.0f, 35.0f }, "Export Frames", true);
+			{ 170.0f, 35.0f }, "Export Frames", true);
 		Button deleteFramesButton({ static_cast<float>(GetScreenWidth()) - 600.0f, 110.0f },
-			{ 150.0f, 35.0f }, "Delete Frames", true);
+			{ 170.0f, 35.0f }, "Discard Frames", true);
 
 		bool isExportFramesButtonHovering = exportFramesButton.buttonLogic(exportFrames, myVar);
 		bool isDeleteFramesButtonHovering = deleteFramesButton.buttonLogic(deleteFrames, myVar);
 
-		DrawText("Might take a while", GetScreenWidth() - 440, 70, 20, RED);
+		DrawText("Might take a while", GetScreenWidth() - 420, 70, 20, RED);
 
 		if (isExportFramesButtonHovering || isDeleteFramesButtonHovering) {
 			myVar.isMouseNotHoveringUI = false;

@@ -108,6 +108,9 @@ Video_*
 Frame_*
 *.exe
 
+# - Ignore Temp Files
+TempFiles_*
+
 # Chutzpah Test files
 _Chutzpah*
 

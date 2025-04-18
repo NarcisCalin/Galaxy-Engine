@@ -17,7 +17,7 @@ struct ParticlePhysics {
 		this->pos = pos;
 		this->velocity = velocity;
 		this->acc = { 0.0f, 0.0f };
-		this->prevAcc = acc;
+		this->prevAcc = { 0.0f, 0.0f };
 		this->mass = mass;
 		mortonKey = 0;
 	}
@@ -28,22 +28,24 @@ struct ParticleRendering {
 	Color color;
 	float size;
 	bool uniqueColor;
-	bool drawPixel;
 	bool isSelected;
 	bool isSolid;
 	bool canBeSubdivided;
 	bool canBeResized;
+	bool isDarkMatter;
 	float previousSize;
-	ParticleRendering(Color color, float size, bool uniqueColor, bool drawPixel, bool isSelected, bool isSolid, bool canBeSubdivided, bool canBeResized) {
+	ParticleRendering(Color color, float size, bool uniqueColor, bool isSelected, 
+		bool isSolid, bool canBeSubdivided, bool canBeResized, bool isDarkMatter) {
 		this->color = color;
 		this->size = size;
 		this->uniqueColor = uniqueColor;
-		this->drawPixel = drawPixel;
 		this->isSelected = isSelected;
 		this->isSolid = isSolid;
 		this->canBeSubdivided = canBeSubdivided;
 		this->canBeResized = canBeResized;
+		this->isDarkMatter = isDarkMatter;
 		this->previousSize = size;
+	
 	}
 
 };

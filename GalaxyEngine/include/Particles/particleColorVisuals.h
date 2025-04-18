@@ -12,6 +12,9 @@ struct ColorVisuals {
 	bool velocityColor = false;
 	bool forceColor = false;
 
+	bool showDarkMatterEnabled = false;
+	bool previousDarkMatterState = false;
+
 	bool selectedColor = true;
 
 	int blendMode = 1;
@@ -56,8 +59,18 @@ struct ColorVisuals {
 			std::vector<int> neighborCounts(pParticles.size(), 0);
 #pragma omp parallel for schedule(dynamic)
 			for (size_t i = 0; i < pParticles.size(); i++) {
+
+				if (rParticles[i].isDarkMatter || rParticles[i].uniqueColor) {
+					continue;
+				}
+
 				const auto& pParticle = pParticles[i];
 				for (size_t j = i + 1; j < pParticles.size(); j++) {
+
+					if (rParticles[j].isDarkMatter) {
+						continue;
+					}
+
 					if (std::abs(pParticles[j].pos.x - pParticle.pos.x) > densityRadius) break;
 					float dx = pParticle.pos.x - pParticles[j].pos.x;
 					float dy = pParticle.pos.y - pParticles[j].pos.y;
@@ -70,21 +83,20 @@ struct ColorVisuals {
 				float normalDensity = std::min(float(neighborCounts[i]) / maxNeighbors, 1.0f);
 				float invertedDensity = 1.0f - normalDensity;
 
-				if (!rParticles[i].uniqueColor) {
-					Color lowDensityColor = {
-						static_cast<unsigned char>(primaryR),
-						static_cast<unsigned char>(primaryG),
-						static_cast<unsigned char>(primaryB),
-						static_cast<unsigned char>(primaryA) };
+				Color lowDensityColor = {
+					static_cast<unsigned char>(primaryR),
+					static_cast<unsigned char>(primaryG),
+					static_cast<unsigned char>(primaryB),
+					static_cast<unsigned char>(primaryA) };
 
-					Color highDensityColor = {
-						static_cast<unsigned char>(secondaryR),
-						static_cast<unsigned char>(secondaryG),
-						static_cast<unsigned char>(secondaryB),
-						static_cast<unsigned char>(secondaryA) };
+				Color highDensityColor = {
+					static_cast<unsigned char>(secondaryR),
+					static_cast<unsigned char>(secondaryG),
+					static_cast<unsigned char>(secondaryB),
+					static_cast<unsigned char>(secondaryA) };
 
-					rParticles[i].color = ColorLerp(lowDensityColor, highDensityColor, normalDensity);
-				}
+				rParticles[i].color = ColorLerp(lowDensityColor, highDensityColor, normalDensity);
+
 			}
 			blendMode = 1;
 		}
@@ -115,34 +127,59 @@ struct ColorVisuals {
 		else if (forceColor) {
 			for (size_t i = 0; i < pParticles.size(); i++) {
 
+				if (rParticles[i].uniqueColor) {
+					continue;
+				}
+
 				float particleAccSq = pParticles[i].acc.x * pParticles[i].acc.x +
 					pParticles[i].acc.y * pParticles[i].acc.y;
 
 				float clampedAcc = std::clamp(sqrt(particleAccSq), minColorAcc, maxColorAcc);
 				float normalizedAcc = clampedAcc / maxColorAcc;
 
-				if (!rParticles[i].uniqueColor) {
-					Color lowDensityColor = {
-						static_cast<unsigned char>(primaryR),
-						static_cast<unsigned char>(primaryG),
-						static_cast<unsigned char>(primaryB),
-						static_cast<unsigned char>(primaryA) };
+				Color lowDensityColor = {
+					static_cast<unsigned char>(primaryR),
+					static_cast<unsigned char>(primaryG),
+					static_cast<unsigned char>(primaryB),
+					static_cast<unsigned char>(primaryA) };
 
-					Color highDensityColor = {
-						static_cast<unsigned char>(secondaryR),
-						static_cast<unsigned char>(secondaryG),
-						static_cast<unsigned char>(secondaryB),
-						static_cast<unsigned char>(secondaryA) };
+				Color highDensityColor = {
+					static_cast<unsigned char>(secondaryR),
+					static_cast<unsigned char>(secondaryG),
+					static_cast<unsigned char>(secondaryB),
+					static_cast<unsigned char>(secondaryA) };
 
-					rParticles[i].color = ColorLerp(lowDensityColor, highDensityColor, normalizedAcc);
-				}
+				rParticles[i].color = ColorLerp(lowDensityColor, highDensityColor, normalizedAcc);
+
 			}
 			blendMode = 1;
 		}
+
 		if (selectedColor) {
 			for (size_t i = 0; i < rParticles.size(); i++) {
 				if (rParticles[i].isSelected && !rParticles[i].uniqueColor) {
 					rParticles[i].color = { 230, 128,128, 30 };
+				}
+			}
+		}
+
+		if (showDarkMatterEnabled) {
+			for (size_t i = 0; i < rParticles.size(); i++) {
+				if (rParticles[i].isDarkMatter) {
+					rParticles[i].color = { 128, 128, 128, 170 };
+				}
+			}
+		}
+
+		if (showDarkMatterEnabled != previousDarkMatterState) {
+			previousDarkMatterState = showDarkMatterEnabled;
+
+			for (size_t i = 0; i < rParticles.size(); i++) {
+				if (rParticles[i].isDarkMatter) {
+					if (!showDarkMatterEnabled) {
+
+						rParticles[i].color = { 0, 0, 0, 0 };
+					}
 				}
 			}
 		}
