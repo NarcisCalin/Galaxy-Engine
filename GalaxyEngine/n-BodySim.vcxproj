@@ -519,6 +519,7 @@
       <LinkCompiled>true</LinkCompiled>
       <AdditionalIncludeDirectories>;C:\Users\jeff3\vcpkg\installed\x64-windows\include</AdditionalIncludeDirectories>
     </ClCompile>
+    <ClCompile Include="src\Physics\collisionGrid.cpp" />
     <ClCompile Include="src\Physics\morton.cpp">
       <RuntimeLibrary>MultiThreadedDebugDll</RuntimeLibrary>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -1442,6 +1443,7 @@
     <ClInclude Include="include\Particles\particlesSpawning.h" />
     <ClInclude Include="include\Particles\particleSubdivision.h" />
     <ClInclude Include="include\Particles\particleTrails.h" />
+    <ClInclude Include="include\Physics\collisionGrid.h" />
     <ClInclude Include="include\Physics\morton.h" />
     <ClInclude Include="include\Physics\physics.h" />
     <ClInclude Include="include\Physics\quadtree.h" />

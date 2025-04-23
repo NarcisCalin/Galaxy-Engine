@@ -35,7 +35,7 @@ struct Controls {
 	"3. LCTRL + RMB on cluster to follow it",
 	"4. LALT + RMB on particle to follow it",
 	"5. LCTRL + LMB on cluster to select it",
-	"6. LATL + LMB on particle to select it",
+	"6. LALT + LMB on particle to select it",
 	"7. LCTRL + hold and drag MMB to box select",
 	"8. LALT + hold and drag MMB to box deselect",
 	"9. Select on empty space to deselect all",

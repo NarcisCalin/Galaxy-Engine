@@ -50,62 +50,30 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 		bool buttonDensityColorHovering = settingsButtonsArray[5].buttonLogic(myParam.colorVisuals.densityColor, myVar);
 		bool buttonForceColorHovering = settingsButtonsArray[6].buttonLogic(myParam.colorVisuals.forceColor, myVar);
 		bool buttonVelocityColorHovering = settingsButtonsArray[7].buttonLogic(myParam.colorVisuals.velocityColor, myVar);
-		bool buttonSelectedColorHovering = settingsButtonsArray[8].buttonLogic(myParam.colorVisuals.selectedColor, myVar);
+		bool buttonDeltaVColorHovering = settingsButtonsArray[8].buttonLogic(myParam.colorVisuals.deltaVColor, myVar);
+		bool buttonSelectedColorHovering = settingsButtonsArray[9].buttonLogic(myParam.colorVisuals.selectedColor, myVar);
 
-		bool buttonDarkMatterHovering = settingsButtonsArray[9].buttonLogic(myVar.isDarkMatterEnabled, myVar);
-		bool buttonShowDarkMatterHovering = settingsButtonsArray[10].buttonLogic(myParam.colorVisuals.showDarkMatterEnabled, myVar);
+		bool buttonDarkMatterHovering = settingsButtonsArray[10].buttonLogic(myVar.isDarkMatterEnabled, myVar);
+		bool buttonShowDarkMatterHovering = settingsButtonsArray[11].buttonLogic(myParam.colorVisuals.showDarkMatterEnabled, myVar);
 
-		bool buttonPeriodicBoundaryHovering = settingsButtonsArray[11].buttonLogic(myVar.isPeriodicBoundaryEnabled, myVar);
-		bool buttonBarnesHutHovering = settingsButtonsArray[12].buttonLogic(myVar.isBarnesHutEnabled, myVar);
-		bool buttonMultiThreadingHovering = settingsButtonsArray[13].buttonLogic(myVar.isMultiThreadingEnabled, myVar);
-		bool buttonCollisionsHovering = settingsButtonsArray[14].buttonLogic(myVar.isCollisionsEnabled, myVar);
+		bool buttonPeriodicBoundaryHovering = settingsButtonsArray[12].buttonLogic(myVar.isPeriodicBoundaryEnabled, myVar);
+		bool buttonBarnesHutHovering = settingsButtonsArray[13].buttonLogic(myVar.isBarnesHutEnabled, myVar);
+		bool buttonMultiThreadingHovering = settingsButtonsArray[14].buttonLogic(myVar.isMultiThreadingEnabled, myVar);
+		bool buttonCollisionsHovering = settingsButtonsArray[15].buttonLogic(myVar.isCollisionsEnabled, myVar);
 
-		bool buttonDensitySizeHovering = settingsButtonsArray[15].buttonLogic(myVar.isDensitySizeEnabled, myVar);
-		bool buttonForceSizeHovering = settingsButtonsArray[16].buttonLogic(myVar.isForceSizeEnabled, myVar);
+		bool buttonDensitySizeHovering = settingsButtonsArray[16].buttonLogic(myVar.isDensitySizeEnabled, myVar);
+		bool buttonForceSizeHovering = settingsButtonsArray[17].buttonLogic(myVar.isForceSizeEnabled, myVar);
 
-		bool buttonGlowHovering = settingsButtonsArray[17].buttonLogic(myVar.isGlowEnabled, myVar);
+		bool buttonGlowHovering = settingsButtonsArray[18].buttonLogic(myVar.isGlowEnabled, myVar);
 
-		bool buttonPredictPathsHovering = settingsButtonsArray[18].buttonLogic(myParam.particlesSpawning.enablePathPrediction, myVar);
+		bool buttonPredictPathsHovering = settingsButtonsArray[19].buttonLogic(myParam.particlesSpawning.enablePathPrediction, myVar);
 
-		bool buttonControlsHovering = settingsButtonsArray[19].buttonLogic(myParam.controls.isShowControlsEnabled, myVar);
+		bool buttonControlsHovering = settingsButtonsArray[20].buttonLogic(myParam.controls.isShowControlsEnabled, myVar);
 
-		bool buttonInformationHovering = settingsButtonsArray[20].buttonLogic(myVar.isInformationEnabled, myVar);
+		bool buttonInformationHovering = settingsButtonsArray[21].buttonLogic(myVar.isInformationEnabled, myVar);
 
-		slidersArray[0].sliderPos = { 20.0f, 210.0f };
-		for (size_t i = 1; i < slidersArray.size(); ++i) {
-			slidersArray[i].sliderPos.x = slidersArray[i - 1].sliderPos.x;
-			slidersArray[i].sliderPos.y = slidersArray[i - 1].sliderPos.y + slidersArray[i].sliderSize.y + 32;
-			slidersArray[i].sliderSize = slidersArray[i - 1].sliderSize;
-		}
-
-		bool sliderRed1Hovering = slidersArray[0].sliderLogic(0, myParam.colorVisuals.primaryR, 255, myVar);
-		bool sliderGreen1Hovering = slidersArray[1].sliderLogic(0, myParam.colorVisuals.primaryG, 255, myVar);
-		bool sliderBlue1Hovering = slidersArray[2].sliderLogic(0, myParam.colorVisuals.primaryB, 255, myVar);
-		bool sliderAlpha1Hovering = slidersArray[3].sliderLogic(0, myParam.colorVisuals.primaryA, 255, myVar);
-
-		bool sliderRed2Hovering = slidersArray[4].sliderLogic(0, myParam.colorVisuals.secondaryR, 255, myVar);
-		bool sliderGreen2Hovering = slidersArray[5].sliderLogic(0, myParam.colorVisuals.secondaryG, 255, myVar);
-		bool sliderBlue2Hovering = slidersArray[6].sliderLogic(0, myParam.colorVisuals.secondaryB, 255, myVar);
-		bool sliderAlpha2Hovering = slidersArray[7].sliderLogic(0, myParam.colorVisuals.secondaryA, 255, myVar);
-
-		bool sliderDensityHovering = slidersArray[8].sliderLogic(0.0f, myParam.colorVisuals.densityRadius, 30.0f, myVar);
-		bool sliderMaxNeighborsHovering = slidersArray[9].sliderLogic(0, myParam.colorVisuals.maxNeighbors, 300, myVar);
-
-		bool sliderMaxColorForceHovering = slidersArray[10].sliderLogic(1.0f, myParam.colorVisuals.maxColorAcc, 400.0f, myVar);
-		bool sliderMaxSizeForceHovering = slidersArray[11].sliderLogic(1.0f, myParam.densitySize.sizeAcc, 400.0f, myVar);
-
-		bool sliderSofteningHovering = slidersArray[12].sliderLogic(0.1f, myVar.softening, 30.0f, myVar);
-		bool sliderThetaHovering = slidersArray[13].sliderLogic(0.1f, myVar.theta, 5.0f, myVar);
-		bool sliderTimeScaleHovering = slidersArray[14].sliderLogic(0.0f, myVar.timeStepMultiplierSlider, 5.0f, myVar);
-		bool sliderGravityStrengthHovering = slidersArray[15].sliderLogic(0.0f, myVar.gravityMultiplier, 3.0f, myVar);
-
-		bool sliderTrailsLengthHovering = slidersArray[16].sliderLogic(0, myVar.trailMaxLength, 400, myVar);
-		bool sliderTrailsThicknessHovering = slidersArray[17].sliderLogic(0.007f, myParam.trails.trailThickness, 0.5f, myVar);
-
-		bool sliderParticlesSizeHovering = slidersArray[18].sliderLogic(0.1f, myVar.particleSizeMultiplier, 5.0f, myVar);
-
-		bool sliderHeavyParticleMassHovering = slidersArray[19].sliderLogic(0.05f, myParam.particlesSpawning.heavyParticleWeightMultiplier, 15.0f, myVar);
-		bool sliderPathPredictionLengthHovering = slidersArray[20].sliderLogic(500, myParam.particlesSpawning.predictPathLength, 2000, myVar);
+		bool buttonVisualsSlidersHovering = settingsButtonsArray[22].buttonLogic(bVisualsSliders, myVar);
+		bool buttonPhysicsSlidersHovering = settingsButtonsArray[23].buttonLogic(bPhysicsSliders, myVar);
 
 		if (buttonDarkMatterHovering ||
 			buttonPeriodicBoundaryHovering ||
@@ -115,41 +83,23 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 			buttonSolidColorHovering ||
 			buttonDensityColorHovering ||
 			buttonVelocityColorHovering ||
-			sliderRed1Hovering ||
-			sliderGreen1Hovering ||
-			sliderBlue1Hovering ||
-			sliderAlpha1Hovering ||
-			sliderDensityHovering ||
-			sliderMaxNeighborsHovering ||
-			sliderSofteningHovering ||
-			sliderThetaHovering ||
-			sliderTimeScaleHovering ||
 			buttonCollisionsHovering ||
-			sliderGravityStrengthHovering ||
 			buttonControlsHovering ||
 			buttonSelectedTrailsHovering ||
-			sliderTrailsLengthHovering ||
 			buttonLocalTrailsHovering ||
 			buttonDensitySizeHovering ||
-			sliderParticlesSizeHovering ||
 			buttonSelectedColorHovering ||
-			sliderTrailsThicknessHovering ||
 			buttonWhiteTrailsHovering ||
-			sliderRed2Hovering ||
-			sliderGreen2Hovering ||
-			sliderBlue2Hovering ||
-			sliderAlpha2Hovering ||
 			buttonForceColorHovering ||
 			buttonGlowHovering ||
-			sliderMaxColorForceHovering ||
-			sliderMaxSizeForceHovering ||
-			sliderHeavyParticleMassHovering ||
-			sliderPathPredictionLengthHovering ||
 			buttonPredictPathsHovering ||
 			buttonShowSettingsHovering ||
 			buttonInformationHovering ||
 			buttonForceSizeHovering ||
-			buttonShowDarkMatterHovering
+			buttonShowDarkMatterHovering ||
+			buttonVisualsSlidersHovering ||
+			buttonPhysicsSlidersHovering ||
+			buttonDeltaVColorHovering
 			) {
 			myVar.isMouseNotHoveringUI = false;
 			myVar.isDragging = false;
@@ -158,25 +108,130 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 			myVar.isMouseNotHoveringUI = true;
 		}
 
+
+		if (bVisualsSliders) {
+
+			visualsSliders[0].sliderPos = { 20.0f, 210.0f };
+			for (size_t i = 1; i < visualsSliders.size(); ++i) {
+				visualsSliders[i].sliderPos.x = visualsSliders[i - 1].sliderPos.x;
+				visualsSliders[i].sliderPos.y = visualsSliders[i - 1].sliderPos.y + visualsSliders[i].sliderSize.y + 32;
+				visualsSliders[i].sliderSize = visualsSliders[i - 1].sliderSize;
+			}
+			bool sliderRed1Hovering = visualsSliders[0].sliderLogic(0, myParam.colorVisuals.primaryR, 255, myVar);
+			bool sliderGreen1Hovering = visualsSliders[1].sliderLogic(0, myParam.colorVisuals.primaryG, 255, myVar);
+			bool sliderBlue1Hovering = visualsSliders[2].sliderLogic(0, myParam.colorVisuals.primaryB, 255, myVar);
+			bool sliderAlpha1Hovering = visualsSliders[3].sliderLogic(0, myParam.colorVisuals.primaryA, 255, myVar);
+
+			bool sliderRed2Hovering = visualsSliders[4].sliderLogic(0, myParam.colorVisuals.secondaryR, 255, myVar);
+			bool sliderGreen2Hovering = visualsSliders[5].sliderLogic(0, myParam.colorVisuals.secondaryG, 255, myVar);
+			bool sliderBlue2Hovering = visualsSliders[6].sliderLogic(0, myParam.colorVisuals.secondaryB, 255, myVar);
+			bool sliderAlpha2Hovering = visualsSliders[7].sliderLogic(0, myParam.colorVisuals.secondaryA, 255, myVar);
+
+			bool sliderDensityHovering = visualsSliders[8].sliderLogic(0.0f, myParam.colorVisuals.densityRadius, 30.0f, myVar);
+			bool sliderMaxNeighborsHovering = visualsSliders[9].sliderLogic(0, myParam.colorVisuals.maxNeighbors, 300, myVar);
+
+			bool sliderMaxColorForceHovering = visualsSliders[10].sliderLogic(1.0f, myParam.colorVisuals.maxColorAcc, 400.0f, myVar);
+			bool sliderMaxSizeForceHovering = visualsSliders[11].sliderLogic(1.0f, myParam.densitySize.sizeAcc, 400.0f, myVar);
+
+			bool sliderTrailsLengthHovering = visualsSliders[12].sliderLogic(0, myVar.trailMaxLength, 1500, myVar);
+			bool sliderTrailsThicknessHovering = visualsSliders[13].sliderLogic(0.007f, myParam.trails.trailThickness, 0.5f, myVar);
+
+			bool sliderParticlesSizeHovering = visualsSliders[14].sliderLogic(0.1f, myVar.particleSizeMultiplier, 5.0f, myVar);
+
+			bool sliderPathPredictionLengthHovering = visualsSliders[15].sliderLogic(0, myParam.particlesSpawning.predictPathLength, 2000, myVar);
+
+			bool sliderParticleAmountMultHovering = visualsSliders[16].sliderLogic(0.1f, myParam.particlesSpawning.particleAmountMultiplier, 100.0f, myVar);
+			bool sliderDMAmountMultHovering = visualsSliders[17].sliderLogic(0.1f, myParam.particlesSpawning.DMAmountMultiplier, 100.0f, myVar);
+
+			if (
+				sliderRed1Hovering ||
+				sliderGreen1Hovering ||
+				sliderBlue1Hovering ||
+				sliderAlpha1Hovering ||
+				sliderDensityHovering ||
+				sliderMaxNeighborsHovering ||
+				sliderTrailsLengthHovering ||
+				sliderParticlesSizeHovering ||
+				sliderTrailsThicknessHovering ||
+				sliderRed2Hovering ||
+				sliderGreen2Hovering ||
+				sliderBlue2Hovering ||
+				sliderAlpha2Hovering ||
+				sliderMaxColorForceHovering ||
+				sliderMaxSizeForceHovering ||
+				sliderPathPredictionLengthHovering ||
+				sliderParticleAmountMultHovering ||
+				sliderDMAmountMultHovering
+				) {
+				myVar.isMouseNotHoveringUI = false;
+				myVar.isDragging = false;
+			}
+			else {
+				myVar.isMouseNotHoveringUI = true;
+			}
+		}
+		else if (bPhysicsSliders) {
+
+			physicsSliders[0].sliderPos = { 20.0f, 210.0f };
+			for (size_t i = 1; i < physicsSliders.size(); ++i) {
+				physicsSliders[i].sliderPos.x = physicsSliders[i - 1].sliderPos.x;
+				physicsSliders[i].sliderPos.y = physicsSliders[i - 1].sliderPos.y + physicsSliders[i].sliderSize.y + 32;
+				physicsSliders[i].sliderSize = physicsSliders[i - 1].sliderSize;
+			}
+
+			bool sliderSofteningHovering = physicsSliders[0].sliderLogic(1.0f, myVar.softening, 30.0f, myVar);
+			bool sliderThetaHovering = physicsSliders[1].sliderLogic(0.1f, myVar.theta, 5.0f, myVar);
+			bool sliderTimeScaleHovering = physicsSliders[2].sliderLogic(0.0f, myVar.timeStepMultiplierSlider, 15.0f, myVar);
+			bool sliderSubstepsHovering = physicsSliders[3].sliderLogic(1, myVar.substeps, 64, myVar);
+			bool sliderGravityStrengthHovering = physicsSliders[4].sliderLogic(0.0f, myVar.gravityMultiplier, 100.0f, myVar);
+
+			bool sliderHeavyParticleMassHovering = physicsSliders[5].sliderLogic(0.005f, myParam.particlesSpawning.heavyParticleWeightMultiplier, 15.0f, myVar);
+
+			if (
+				sliderSofteningHovering ||
+				sliderThetaHovering ||
+				sliderTimeScaleHovering ||
+				sliderGravityStrengthHovering ||
+				sliderHeavyParticleMassHovering ||
+				sliderSubstepsHovering
+				) {
+				myVar.isMouseNotHoveringUI = false;
+				myVar.isDragging = false;
+			}
+			else {
+				myVar.isMouseNotHoveringUI = true;
+			}
+		}
+
 		if (buttonSolidColorHovering && IsMouseButtonPressed(0)) {
 			myParam.colorVisuals.velocityColor = false;
 			myParam.colorVisuals.densityColor = false;
 			myParam.colorVisuals.forceColor = false;
+			myParam.colorVisuals.deltaVColor = false;
 		}
 		if (buttonDensityColorHovering && IsMouseButtonPressed(0)) {
 			myParam.colorVisuals.velocityColor = false;
 			myParam.colorVisuals.solidColor = false;
 			myParam.colorVisuals.forceColor = false;
+			myParam.colorVisuals.deltaVColor = false;
 		}
 		if (buttonVelocityColorHovering && IsMouseButtonPressed(0)) {
 			myParam.colorVisuals.densityColor = false;
 			myParam.colorVisuals.solidColor = false;
 			myParam.colorVisuals.forceColor = false;
+			myParam.colorVisuals.deltaVColor = false;
 		}
 		if (buttonForceColorHovering && IsMouseButtonPressed(0)) {
 			myParam.colorVisuals.densityColor = false;
 			myParam.colorVisuals.solidColor = false;
 			myParam.colorVisuals.velocityColor = false;
+			myParam.colorVisuals.deltaVColor = false;
+		}
+		if (buttonDeltaVColorHovering && IsMouseButtonPressed(0)) {
+			myParam.colorVisuals.densityColor = false;
+			myParam.colorVisuals.solidColor = false;
+			myParam.colorVisuals.velocityColor = false;
+			myParam.colorVisuals.forceColor = false;
 		}
 
 		if (buttonGlobalTrailsHovering && IsMouseButtonPressed(0)) {
@@ -193,6 +248,13 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 		}
 		if (buttonForceSizeHovering && IsMouseButtonPressed(0)) {
 			myVar.isDensitySizeEnabled = false;
+		}
+
+		if (buttonVisualsSlidersHovering && IsMouseButtonPressed(0)) {
+			bPhysicsSliders = false;
+		}
+		if (buttonPhysicsSlidersHovering && IsMouseButtonPressed(0)) {
+			bVisualsSliders = false;
 		}
 
 		myParam.controls.showControls(myVar);

@@ -6,6 +6,16 @@ How to use: first you must use the first command to point to the files to be com
 $temp = Get-ChildItem -Path . -Recurse -File -Filter *.cpp | ForEach-Object { Resolve-Path -Relative $_.Fullname }
 
 // Put the "temporary" variable, of relative files in Src, into the clang executable flags for compilation
-clang++ $temp -o GalaxyEngine.exe -Wl",/machine:x64,/subsystem:console" -std=c++20 -L"C:\raylib\build\raylib\Release" -lraylib -lopengl32 -lgdi32 -lwinmm -luser32 -lshell32 -lkernel32 -O3 -march=native -flto -fuse-ld=lld -fopenmp -static
+
+
+// USE THIS COMMAND FOR YOUR OWN MACHINE
+
+clang++ -m64 $temp -o GalaxyEngine.exe -std=c++20 -L"C:\raylib\build\raylib\Release" -lraylib -lopengl32 -lgdi32 -lwinmm -luser32 -lshell32 -lkernel32 -O3 -march=native -flto -fuse-ld=lld -fopenmp -static
 
 // BE SURE TO CHANGE THE "-L"C:\..." PATH TO WHERE YOUR "raylib.lib" FILE IS LOCATED
+
+
+
+// USE THIS COMMAND BELOW TO COMPILE A MORE PORTABLE VERSION
+
+clang++ -m64 $temp -o GalaxyEngine.exe -std=c++20 \ -L"C:\raylib\build\raylib\Release" -lraylib \ -lopengl32 -lgdi32 -lwinmm -luser32 -lshell32 -lkernel32 \ -O3 -march=x86-64 -mtune=generic -flto -fuse-ld=lld -fopenmp -static \ -Wall -Wextra

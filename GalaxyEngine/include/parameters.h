@@ -62,11 +62,10 @@ struct UpdateVariables{
 	float screenRatioX = 0.0f;
 	float screenRatioY = 0.0f;
 
-	float domainWidth = 3840.0f;
-	float domainHeight = 2048.0f;
+	Vector2 domainSize = { 3840.0f, 2048.0f };
 
-	float halfDomainWidth = domainWidth * 0.5f;
-	float halfDomainHeight = domainHeight * 0.5f;
+	float halfDomainWidth = domainSize.x * 0.5f;
+	float halfDomainHeight = domainSize.y * 0.5f;
 
 	int targetFPS = 144;
 
@@ -76,6 +75,8 @@ struct UpdateVariables{
 	float theta = 0.8f;
 	float timeStepMultiplierSlider = 1.0f;
 	float timeStepMultiplier = 1.0f;
+
+	int substeps = 1;
 
 	const float fixedDeltaTime = 0.03f;
 
@@ -98,7 +99,7 @@ struct UpdateVariables{
 
 	float particleTextureHalfSize = 16.0f;
 
-	int trailMaxLength = 14;
+	int trailMaxLength = 48;
 
 	bool isRecording = false;
 

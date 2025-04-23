@@ -25,7 +25,6 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 				Color{ 255, 255, 255, 255 },
 				0.3f,
 				true,
-				false,
 				true,
 				false,
 				false,
@@ -41,7 +40,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 
 			// VISIBLE MATTER
 
-			for (int i = 0; i < 40000; i++) {
+			for (int i = 0; i < static_cast<int>(40000 * particleAmountMultiplier); i++) {
 				float galaxyCenterX = static_cast<float>(myParam.myCamera.mouseWorldPos.x);
 				float galaxyCenterY = static_cast<float>(myParam.myCamera.mouseWorldPos.y);
 
@@ -61,7 +60,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 
 				float finalRadius = -scaleLength * log(1.0f - normalizedRand);
 
-				finalRadius = std::min(finalRadius, outerRadius + 500.0f);
+				finalRadius = std::min(finalRadius, outerRadius + 600.0f);
 
 				finalRadius = std::max(finalRadius, 0.01f);
 
@@ -87,12 +86,11 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 					Vector2{ posX, posY },
 					Vector2{ velocityX + (slingshot.normalizedX * slingshot.length * 0.3f),
 						velocityY + (slingshot.normalizedY * slingshot.length * 0.3f) },
-					8500000000.0f
+					8500000000.0f / particleAmountMultiplier
 				);
 				myParam.rParticles.emplace_back(
 					Color{ 128, 128, 128, 100 },
 					0.125f,
-					false,
 					false,
 					false,
 					true,
@@ -104,7 +102,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 			// DARK MATTER
 
 			if (myVar.isDarkMatterEnabled) {
-				for (int i = 0; i < 12000; i++) {
+				for (int i = 0; i < static_cast<int>(12000 * DMAmountMultiplier); i++) {
 					float galaxyCenterX = static_cast<float>(myParam.myCamera.mouseWorldPos.x);
 					float galaxyCenterY = static_cast<float>(myParam.myCamera.mouseWorldPos.y);
 
@@ -129,13 +127,12 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 							velocityX + (slingshot.normalizedX * slingshot.length * 0.3f),
 							velocityY + (slingshot.normalizedY * slingshot.length * 0.3f)
 						},
-						141600000000.0f
+						141600000000.0f / DMAmountMultiplier
 					);
 					myParam.rParticles.emplace_back(
 						Color{ 128, 128, 128, 0 },
 						0.125f,
 						true,
-						false,
 						false,
 						false,
 						true,
@@ -151,7 +148,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 
 			// VISIBLE MATTER
 
-			for (int i = 0; i < 12000; i++) {
+			for (int i = 0; i < static_cast<int>(12000 * particleAmountMultiplier); i++) {
 				float galaxyCenterX = static_cast<float>(myParam.myCamera.mouseWorldPos.x);
 				float galaxyCenterY = static_cast<float>(myParam.myCamera.mouseWorldPos.y);
 
@@ -171,7 +168,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 
 				float finalRadius = -scaleLength * log(1.0f - normalizedRand);
 
-				finalRadius = std::min(finalRadius, outerRadius + 250.0f);
+				finalRadius = std::min(finalRadius, outerRadius + 300.0f);
 
 				finalRadius = std::max(finalRadius, 0.01f);
 
@@ -199,12 +196,11 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 						velocityX + (slingshot.normalizedX * slingshot.length * 0.3f),
 						velocityY + (slingshot.normalizedY * slingshot.length * 0.3f)
 					},
-					8500000000.0f
+					8500000000.0f / particleAmountMultiplier
 				);
 				myParam.rParticles.emplace_back(
 					Color{ 128, 128, 128, 100 },
 					0.125f,
-					false,
 					false,
 					false,
 					true,
@@ -215,7 +211,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 
 			// DARK MATTER
 			if (myVar.isDarkMatterEnabled) {
-				for (int i = 0; i < 3600; i++) {
+				for (int i = 0; i < static_cast<int>(3600 * DMAmountMultiplier); i++) {
 					float galaxyCenterX = static_cast<float>(myParam.myCamera.mouseWorldPos.x);
 					float galaxyCenterY = static_cast<float>(myParam.myCamera.mouseWorldPos.y);
 
@@ -240,13 +236,12 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 							velocityX + (slingshot.normalizedX * slingshot.length * 0.3f),
 							velocityY + (slingshot.normalizedY * slingshot.length * 0.3f)
 						},
-						141600000000.0f
+						141600000000.0f / DMAmountMultiplier
 					);
 					myParam.rParticles.emplace_back(
 						Color{ 128, 128, 128, 0 },
 						0.125f,
 						true,
-						false,
 						false,
 						false,
 						true,
@@ -259,7 +254,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 
 		if (IsKeyReleased(KEY_THREE)) {
 
-			for (int i = 0; i < 10000; i++) {
+			for (int i = 0; i < static_cast<int>(10000 * particleAmountMultiplier); i++) {
 
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = (sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * 5.0f) + 0.1f;
@@ -277,12 +272,11 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 				myParam.pParticles.emplace_back(
 					Vector2{ particlePos.x, particlePos.y },
 					Vector2{ (slingshot.normalizedX * slingshot.length * 0.3f),  +(slingshot.normalizedY * slingshot.length * 0.3f) },
-					8500000000.0f
+					8500000000.0f / particleAmountMultiplier
 				);
 				myParam.rParticles.emplace_back(
 					Color{ 128, 128, 128, 100 },
 					0.125f,
-					false,
 					false,
 					false,
 					true,
@@ -298,7 +292,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 
 			// VISIBLE MATTER
 
-			for (int i = 0; i < 40000; i++) {
+			for (int i = 0; i < static_cast<int>(40000 * particleAmountMultiplier); i++) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = (sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * 20.0f) + 1.0f;
 
@@ -319,17 +313,16 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 
 				float adjustedSpeed = speed * (distance / 35.0f);
 
-				Vector2 velocity = { adjustedSpeed * normalX, adjustedSpeed * normalY };
+				Vector2 vel = { adjustedSpeed * normalX, adjustedSpeed * normalY };
 
 				myParam.pParticles.emplace_back(
 					Vector2{ particlePos.x, particlePos.y },
-					Vector2{ velocity.x, velocity.y },
-					8500000000.0f
+					Vector2{ vel.x, vel.y },
+					8500000000.0f / particleAmountMultiplier
 				);
 				myParam.rParticles.emplace_back(
 					Color{ 128, 128, 128, 100 },
 					0.125f,
-					false,
 					false,
 					false,
 					true,
@@ -341,7 +334,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 			// DARK MATTER
 
 			if (myVar.isDarkMatterEnabled) {
-				for (int i = 0; i < 12000; i++) {
+				for (int i = 0; i < static_cast<int>(12000 * DMAmountMultiplier); i++) {
 
 					float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 					float distance = (sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * 20.0f) + 1.0f;
@@ -363,18 +356,17 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 
 					float adjustedSpeed = speed * (distance / 35.0f);
 
-					Vector2 velocity = { adjustedSpeed * normalX, adjustedSpeed * normalY };
+					Vector2 vel = { adjustedSpeed * normalX, adjustedSpeed * normalY };
 
 					myParam.pParticles.emplace_back(
 						Vector2{ particlePos.x, particlePos.y },
-						Vector2{ velocity.x, velocity.y },
-						141600000000.0f
+						Vector2{ vel.x, vel.y },
+						141600000000.0f / DMAmountMultiplier
 					);
 					myParam.rParticles.emplace_back(
 						Color{ 128, 128, 128, 0 },
 						0.125f,
 						true,
-						false,
 						false,
 						false,
 						true,
@@ -412,8 +404,6 @@ void ParticlesSpawning::predictTrajectory(const std::vector<ParticlePhysics>& pP
 		heavyParticleInitMass * heavyParticleWeightMultiplier
 	);
 
-	predictedParticle.prevAcc = Vector2{ 0.0f, 0.0f };
-
 	currentParticles.push_back(predictedParticle);
 
 	int predictedIndex = static_cast<int>(currentParticles.size()) - 1;
@@ -429,11 +419,11 @@ void ParticlesSpawning::predictTrajectory(const std::vector<ParticlePhysics>& pP
 		acc.x = netForce.x / p.mass;
 		acc.y = netForce.y / p.mass;
 
-		p.velocity.x += myVar.timeFactor * ((3.0f / 2.0f) * acc.x);
-		p.velocity.y += myVar.timeFactor * ((3.0f / 2.0f) * acc.y);
+		p.vel.x += myVar.timeFactor * ((3.0f / 2.0f) * acc.x);
+		p.vel.y += myVar.timeFactor * ((3.0f / 2.0f) * acc.y);
 
-		p.pos.x += p.velocity.x * myVar.timeFactor;
-		p.pos.y += p.velocity.y * myVar.timeFactor;
+		p.pos.x += p.vel.x * myVar.timeFactor;
+		p.pos.y += p.vel.y * myVar.timeFactor;
 
 		predictedPath.push_back(p.pos);
 	}

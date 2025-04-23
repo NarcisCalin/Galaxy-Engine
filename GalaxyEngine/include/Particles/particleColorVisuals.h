@@ -10,6 +10,7 @@ struct ColorVisuals {
 	bool solidColor = false;
 	bool densityColor = true;
 	bool velocityColor = false;
+	bool deltaVColor = false;
 	bool forceColor = false;
 
 	bool showDarkMatterEnabled = false;
@@ -38,6 +39,8 @@ struct ColorVisuals {
 
 	float maxColorAcc = 40.0f;
 	float minColorAcc = 0.0f;
+
+	Vector2 prevVel = { 0.0f, 0.0f };
 
 	void particlesColorVisuals(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles) {
 
@@ -107,8 +110,8 @@ struct ColorVisuals {
 				float minVel = 0.0f;
 
 
-				float particleVelSq = pParticles[i].velocity.x * pParticles[i].velocity.x +
-					pParticles[i].velocity.y * pParticles[i].velocity.y;
+				float particleVelSq = pParticles[i].vel.x * pParticles[i].vel.x +
+					pParticles[i].vel.y * pParticles[i].vel.y;
 
 				float clampedVel = std::clamp(particleVelSq, minVel, maxVel);
 				float normalizedVel = clampedVel / maxVel;
@@ -154,6 +157,32 @@ struct ColorVisuals {
 			}
 			blendMode = 1;
 		}
+		else if (deltaVColor) {
+			for (size_t i = 0; i < pParticles.size(); i++) {
+				float maxAccel = 5.0f;
+				float minAccel = 0.0f;
+
+				Vector2 delta = pParticles[i].vel - pParticles[i].prevVel;
+
+				float deltaMag = std::sqrt(delta.x * delta.x + delta.y * delta.y);
+
+				float clampedDelta = std::clamp(deltaMag, minAccel, maxAccel);
+				float normalizedVel = clampedDelta / maxAccel;
+
+				hue = (1.0f - normalizedVel) * 240.0f;
+				saturation = 1.0f;
+				value = 1.0f;
+
+				if (!rParticles[i].uniqueColor) {
+					rParticles[i].color = ColorFromHSV(hue, saturation, value);
+				}
+
+				pParticles[i].prevVel = pParticles[i].vel;
+
+				blendMode = 0;
+			}
+		}
+
 
 		if (selectedColor) {
 			for (size_t i = 0; i < rParticles.size(); i++) {

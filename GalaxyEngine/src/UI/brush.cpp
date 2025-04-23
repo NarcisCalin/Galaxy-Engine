@@ -11,7 +11,7 @@ void Brush::brushLogic(UpdateParameters& myParam) {
 
 	// VISIBLE MATTER
 
-	for (int i = 0; i < 140; i++) {
+	for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
 		float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 		float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
@@ -22,8 +22,8 @@ void Brush::brushLogic(UpdateParameters& myParam) {
 
 		Vector2 particlePos = Vector2Add(myParam.myCamera.mouseWorldPos, randomOffset);
 
-		myParam.pParticles.emplace_back(particlePos, Vector2{ 0, 0 }, 8500000000.0f);
-		myParam.rParticles.emplace_back(Color{ 128, 128, 128, 100 }, 0.125f, false, false, false, true, true, false);
+		myParam.pParticles.emplace_back(particlePos, Vector2{ 0, 0 }, 8500000000.0f / myParam.particlesSpawning.particleAmountMultiplier);
+		myParam.rParticles.emplace_back(Color{ 128, 128, 128, 100 }, 0.125f, false, false, true, true, false);
 	}
 }
 
@@ -85,8 +85,8 @@ void Brush::particlesAttractor(UpdateVariables& myVar, UpdateParameters& myParam
 				attractorForce = { -attractorForce.x, -attractorForce.y };
 			}
 
-			myParam.pParticles[i].velocity.x += attractorForce.x * myVar.timeFactor;
-			myParam.pParticles[i].velocity.y += attractorForce.y * myVar.timeFactor;
+			myParam.pParticles[i].vel.x += attractorForce.x * myVar.timeFactor;
+			myParam.pParticles[i].vel.y += attractorForce.y * myVar.timeFactor;
 		}
 	}
 }
@@ -113,8 +113,8 @@ void Brush::particlesSpinner(UpdateVariables& myVar, UpdateParameters& myParam) 
 					spinDirection = { -spinDirection.x, -spinDirection.y };
 				}
 
-				pParticle.velocity.x += spinDirection.x * spinForce * falloff * myVar.timeFactor;
-				pParticle.velocity.y += spinDirection.y * spinForce * falloff * myVar.timeFactor;
+				pParticle.vel.x += spinDirection.x * spinForce * falloff * myVar.timeFactor;
+				pParticle.vel.y += spinDirection.y * spinForce * falloff * myVar.timeFactor;
 			}
 		}
 	}
@@ -124,44 +124,52 @@ void Brush::particlesSpinner(UpdateVariables& myVar, UpdateParameters& myParam) 
 void Brush::particlesGrabber(UpdateVariables& myVar, UpdateParameters& myParam) {
 
 	Vector2 mouseDelta = GetMouseDelta();
-	mouseDelta = Vector2Scale(mouseDelta, -1.0f / myParam.myCamera.camera.zoom);
+	Vector2 scaledDelta = Vector2Scale(mouseDelta, 1.0f / myParam.myCamera.camera.zoom);
 
-	if (IsKeyDown(KEY_M)) {
+	lastMouseVelocity = scaledDelta;
+
+	if (IsKeyPressed(KEY_M)) {
 		dragging = true;
-		lastMouseVelocity = mouseDelta;
 
 		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 			Vector2 distanceFromBrush = {
 				myParam.pParticles[i].pos.x - myParam.myCamera.mouseWorldPos.x,
 				myParam.pParticles[i].pos.y - myParam.myCamera.mouseWorldPos.y
 			};
-
 			float distance = sqrt(distanceFromBrush.x * distanceFromBrush.x +
 				distanceFromBrush.y * distanceFromBrush.y);
-
 			if (distance < brushRadius) {
-				myParam.pParticles[i].pos.x -= mouseDelta.x;
-				myParam.pParticles[i].pos.y -= mouseDelta.y;
+				myParam.rParticles[i].isGrabbed = true;
 			}
 		}
 	}
-	else if (dragging) {
-		float impulseFactor = 5.0f;
 
+	if (dragging) {
 		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-			Vector2 distanceFromBrush = {
-				myParam.pParticles[i].pos.x - myParam.myCamera.mouseWorldPos.x,
-				myParam.pParticles[i].pos.y - myParam.myCamera.mouseWorldPos.y
-			};
+			if (myParam.rParticles[i].isGrabbed) {
 
-			float distance = sqrt(distanceFromBrush.x * distanceFromBrush.x +
-				distanceFromBrush.y * distanceFromBrush.y);
+				myParam.pParticles[i].pos.x += scaledDelta.x;
+				myParam.pParticles[i].pos.y += scaledDelta.y;
 
-			if (distance < brushRadius) {
-				myParam.pParticles[i].velocity.x -= lastMouseVelocity.x * impulseFactor;
-				myParam.pParticles[i].velocity.y -= lastMouseVelocity.y * impulseFactor;
+				myParam.pParticles[i].acc = { 0.0f, 0.0f };
+				myParam.pParticles[i].vel = { 0.0f, 0.0f };
+			}
+		}
+	}
+
+	if (IsKeyReleased(KEY_M)) {
+
+		float impulseFactor = 5.0f;
+		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+			if (myParam.rParticles[i].isGrabbed) {
+
+				myParam.pParticles[i].vel.x = lastMouseVelocity.x * impulseFactor;
+				myParam.pParticles[i].vel.y = lastMouseVelocity.y * impulseFactor;
+
+				myParam.rParticles[i].isGrabbed = false;
 			}
 		}
 		dragging = false;
 	}
 }
+

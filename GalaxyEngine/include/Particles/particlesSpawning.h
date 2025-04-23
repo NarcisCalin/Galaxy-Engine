@@ -19,6 +19,9 @@ public:
 	float heavyParticleWeightMultiplier = 1.0f;
 	int predictPathLength = 1000;
 
+	float particleAmountMultiplier = 1.0;
+	float DMAmountMultiplier = 1.0f;
+
 	bool enablePathPrediction = false;
 
 	void particlesInitialConditions(Quadtree* quadtree, Physics& physics, UpdateVariables& myVar, UpdateParameters& myParam);

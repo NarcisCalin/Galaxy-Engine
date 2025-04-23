@@ -118,9 +118,9 @@ Quadtree* Quadtree::boundingBox(const std::vector<ParticlePhysics>& pParticles,
 void Quadtree::drawQuadtree() {
 	DrawRectangleLines(static_cast<int>(pos.x), static_cast<int>(pos.y), static_cast<int>(size), static_cast<int>(size), WHITE);
 
-	/*if (gridMass > 0) {
+	if (gridMass > 0) {
 		DrawCircleV({ centerOfMass.x, centerOfMass.y }, 2.0f, YELLOW);
-	}*/
+	}
 
 	for (auto& child : subGrids) {
 		child->drawQuadtree();

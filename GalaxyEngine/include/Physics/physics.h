@@ -8,8 +8,12 @@
 #include "omp.h"
 
 struct Physics {
+
+	float bounciness = 0.6f;
+
 	Vector2 calculateForceFromGrid(const Quadtree& grid, std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar, ParticlePhysics& pParticle);
 	void pairWiseGravity(std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar);
-	void physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar);
-	void collisions(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, float& softening, float& particleTextureHalfSize);
+	void physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar, float& dt);
+	void collisions(ParticlePhysics& pParticleA, ParticlePhysics& pParticleB,
+		ParticleRendering& rParticleA, ParticleRendering& rParticleB, float& softening, float& particleTextureHalfSize, float& dt);
 };

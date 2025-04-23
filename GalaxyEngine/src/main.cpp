@@ -30,6 +30,7 @@
 #include "../include/Particles/particlesSpawning.h"
 #include "../include/UI/UI.h"
 #include "../include/Physics/physics.h"
+#include "../include/Physics/collisionGrid.h"
 #include "../include/parameters.h"
 
 
@@ -37,6 +38,8 @@ UpdateParameters myParam;
 UpdateVariables myVar;
 UI myUI;
 Physics physics;
+
+CollisionGrid collisionGrid;
 
 
 static Quadtree* gridFunction(std::vector<ParticlePhysics>& pParticles,
@@ -108,9 +111,12 @@ static void updateScene() {
 
 
 	if (myVar.timeFactor > 0.0f && grid != nullptr) {
+
+
 		if (myVar.isBarnesHutEnabled) {
 #pragma omp parallel for schedule(dynamic)
 			for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+
 				ParticlePhysics& pParticle = myParam.pParticles[i];
 
 				Vector2 netForce = physics.calculateForceFromGrid(*grid, myParam.pParticles, myVar, pParticle);
@@ -123,13 +129,21 @@ static void updateScene() {
 			physics.pairWiseGravity(myParam.pParticles, myVar);
 		}
 
+		float dt = myVar.timeFactor / myVar.substeps;
 
-		if (myVar.isCollisionsEnabled) {
-			physics.collisions(myParam.pParticles, myParam.rParticles, myVar.softening, myVar.particleTextureHalfSize);
+		for (int i = 0; i < myVar.substeps; ++i) {
+
+			if (myVar.isCollisionsEnabled) {
+				collisionGrid.buildGrid(myParam.pParticles, myParam.rParticles, physics, myVar, myVar.domainSize, dt);
+			}
+
+		physics.physicsUpdate(myParam.pParticles, myParam.rParticles, myVar, dt);
 		}
-
-		physics.physicsUpdate(myParam.pParticles, myParam.rParticles, myVar);
 	}
+
+	/*for (auto& p : myParam.pParticles) {
+		std::cout << "VelX:" << p.velocity.x << " VelY:" << p.velocity.y << std::endl;
+	}*/
 
 
 
@@ -220,7 +234,7 @@ static void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture) 
 
 	myVar.mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), myParam.myCamera.camera);
 	myParam.brush.drawBrush(myVar.mouseWorldPos);
-	DrawRectangleLinesEx({ 0,0, static_cast<float>(myVar.domainWidth), static_cast<float>(myVar.domainHeight) }, 3, GRAY);
+	DrawRectangleLinesEx({ 0,0, static_cast<float>(myVar.domainSize.x), static_cast<float>(myVar.domainSize.y) }, 3, GRAY);
 
 	// Z-Curves debug toggle
 	if (myParam.pParticles.size() > 1 && myVar.drawZCurves) {

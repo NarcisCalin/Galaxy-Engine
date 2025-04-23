@@ -21,7 +21,7 @@ struct DensitySize {
 #pragma omp parallel for schedule(dynamic)
 
 			for (size_t i = 0; i < pParticles.size(); i++) {
-				if (rParticles[i].isSolid) {
+				if (rParticles[i].isSolid || rParticles[i].isDarkMatter) {
 					continue;
 				}
 

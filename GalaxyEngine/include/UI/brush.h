@@ -38,4 +38,6 @@ private:
 
 	bool dragging = false;
 	Vector2 lastMouseVelocity = { 0.0f, 0.0f };
+
+	std::vector<ParticlePhysics*> grabbedParticles;
 };
