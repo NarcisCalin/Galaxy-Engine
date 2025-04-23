@@ -7,8 +7,12 @@ Special thanks to [Crisosphinx](https://github.com/crisosphinx) for helping me i
 Special thanks to [SergioCelso](https://github.com/SCelso) for making the learning process a little easier and also for helping me implement the initial version of the Barnes-Hut quadtree.
 
 ---
-![Galaxies](https://github.com/user-attachments/assets/22eff1f3-288b-49a9-a4ea-0dd19b522ac0)
+![ManyGalaxiesGif](https://github.com/user-attachments/assets/70b784ac-22ab-4261-9cf6-5e651492cf6f)
+
+
 ![Brush](https://github.com/user-attachments/assets/b68eb4cb-9ce4-4dfb-b366-0607598cebcc)
+
+![BigBangBanner](https://github.com/user-attachments/assets/a3e2bef5-d9b0-4175-91f6-7edd0d532a44)
 
 ## Features
 ---
@@ -25,13 +29,18 @@ https://github.com/user-attachments/assets/4c33d196-cec2-4538-a5ca-67de1621603e
 
 
 
+
 ### CUSTOMIZATION
 There are multiple parameters to allow you to achieve the look you want
 
 
 
 
-https://github.com/user-attachments/assets/f828fd1e-a713-4680-82fb-5ccd52eb6fc5
+
+
+https://github.com/user-attachments/assets/f30c097a-3455-424c-832e-dae0d1360cb3
+
+
 
 
 
