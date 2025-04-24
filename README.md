@@ -105,7 +105,7 @@ https://github.com/user-attachments/assets/9b51780c-7dff-4e53-965d-e5f29677669d
 - Run the .exe file inside the folder.
 - (Currently Galaxy Engine is only available on Windows)
 
-## HOW TO COMPILE
+## HOW TO BUILD
 ---
 
 ### Step-by-Step
@@ -113,7 +113,14 @@ https://github.com/user-attachments/assets/9b51780c-7dff-4e53-965d-e5f29677669d
 - Download clang from here: https://clang.llvm.org/get_started.html
   - Or get it from Visual Studio Installer
   - ![image](https://github.com/user-attachments/assets/b46a0e7d-188e-43a3-bf7e-fb3edced233a)
-- Install [Raylib](https://github.com/raysan5/raylib) through vcpkg
+- Download [CMake](https://cmake.org/download/)
+- Download [Ninja](https://github.com/ninja-build/ninja)
 - Open the powershell terminal in the project folder (where the src folder is located)
-- Manually compile the project with the commands inside the "compilerCommand.txt" file
+- Enter the following commands (might be slightly different on Linux)
+  - mkdir build
+  - cd build
+  - cmake .. -G Ninja -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release
+  - cmake --build .
+- After doing this you should have the .exe file inside the build folder
+- The last step is running the .exe file at the same level as the "Textures" folder (otherwise the particles won't be visible)
 
