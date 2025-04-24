@@ -25,7 +25,7 @@ public:
 
 	std::vector<TrailDot> trailDots;
 
-	Vector2 selectedParticlesAveragePos = { 0.0f };
+	Vector2 selectedParticlesAveragePos = { 0.0f, 0.0f };
 
 	ParticleTrails();
 	~ParticleTrails();

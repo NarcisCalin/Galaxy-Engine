@@ -14,7 +14,7 @@ public:
 
 	Button(Vector2 pos, Vector2 size, std::string text, bool hasText);
 
-	bool buttonLogic(bool& isEnabled, UpdateVariables& myVar);
+	bool buttonLogic(bool& isEnabled);
 
 private:
 	bool isOnTop = false;

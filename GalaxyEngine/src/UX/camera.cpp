@@ -54,9 +54,9 @@ Camera2D SceneCamera::cameraLogic() {
 	// RESET CAMERA
 	if (IsKeyPressed(KEY_F)) {
 		camera.zoom = defaultCamZoom;
-		camera.target = { 0.0f };
-		camera.offset = { 0.0f };
-		panFollowingOffset = { 0.0f };
+		camera.target = { 0.0f, 0.0f };
+		camera.offset = { 0.0f, 0.0f };
+		panFollowingOffset = { 0.0f, 0.0f };
 	}
 	return camera;
 }
@@ -66,7 +66,7 @@ void SceneCamera::cameraFollowObject(UpdateVariables& myVar, UpdateParameters& m
 	mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), camera);
 
 	static bool isDragging = false;
-	static Vector2 dragStartPos = { 0 };
+	static Vector2 dragStartPos = { 0.0f, 0.0f };
 
 	if ((IsMouseButtonPressed(1) && IsKeyDown(KEY_LEFT_CONTROL) && myVar.isMouseNotHoveringUI) || 
 		(IsMouseButtonPressed(1) && IsKeyDown(KEY_LEFT_ALT) && myVar.isMouseNotHoveringUI)) {
@@ -103,7 +103,7 @@ void SceneCamera::cameraFollowObject(UpdateVariables& myVar, UpdateParameters& m
 		}
 
 		isFollowing = true;
-		panFollowingOffset = { 0 };
+		panFollowingOffset = { 0.0f, 0.0f };
 
 		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 			myParam.rParticles[i].isSelected = false;
@@ -141,14 +141,14 @@ void SceneCamera::cameraFollowObject(UpdateVariables& myVar, UpdateParameters& m
 		}
 
 		isFollowing = true;
-		panFollowingOffset = { 0 };
+		panFollowingOffset = { 0.0f, 0.0f };
 		if (myVar.isSelectedTrailsEnabled) {
 			myParam.trails.trailDots.clear();
 		}
 	}
 
 	if (IsKeyPressed(KEY_Z) || centerCamera) {
-		panFollowingOffset = { 0 };
+		panFollowingOffset = { 0.0f, 0.0f };
 		isFollowing = true;
 		centerCamera = false;
 	}
@@ -176,9 +176,9 @@ void SceneCamera::cameraFollowObject(UpdateVariables& myVar, UpdateParameters& m
 		if (IsKeyPressed(KEY_F) || count == 0 || myParam.pParticles.size() == 0) {
 			isFollowing = false;
 			camera.zoom = defaultCamZoom;
-			camera.target = { 0.0f };
-			camera.offset = { 0.0f };
-			panFollowingOffset = { 0 };
+			camera.target = { 0.0f, 0.0f };
+			camera.offset = { 0.0f, 0.0f };
+			panFollowingOffset = { 0.0f, 0.0f };
 		}
 	}
 

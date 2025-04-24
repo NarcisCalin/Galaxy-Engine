@@ -25,6 +25,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 				Color{ 255, 255, 255, 255 },
 				0.3f,
 				true,
+				false,
 				true,
 				false,
 				false,
@@ -45,15 +46,12 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 				float galaxyCenterY = static_cast<float>(myParam.myCamera.mouseWorldPos.y);
 
 				float outerRadius = 200.0f;
-				float innerRadius = -1.0f;
 
 				float scaleLength = 90.0f;
 
 				float normalizedRand = static_cast<float>(rand()) / RAND_MAX;
 
 				float angle = static_cast<float>(rand()) / RAND_MAX * 2 * PI;
-
-				float randRadius = outerRadius * normalizedRand;
 
 				//float curveSteepness = -0.023f;
 				//float finalRadius = innerRadius + (outerRadius - innerRadius) / (1.0f + exp(-curveSteepness * (randRadius)));
@@ -91,6 +89,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 				myParam.rParticles.emplace_back(
 					Color{ 128, 128, 128, 100 },
 					0.125f,
+					false,
 					false,
 					false,
 					true,
@@ -135,6 +134,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 						true,
 						false,
 						false,
+						false,
 						true,
 						true
 					);
@@ -153,15 +153,12 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 				float galaxyCenterY = static_cast<float>(myParam.myCamera.mouseWorldPos.y);
 
 				float outerRadius = 100.0f;
-				float innerRadius = -1.0f;
 
 				float scaleLength = 45.0f;
 
 				float normalizedRand = static_cast<float>(rand()) / RAND_MAX;
 
 				float angle = static_cast<float>(rand()) / RAND_MAX * 2 * PI;
-
-				float randRadius = outerRadius * normalizedRand;
 
 				//float curveSteepness = -0.023f;
 				//float finalRadius = innerRadius + (outerRadius - innerRadius) / (1.0f + exp(-curveSteepness * (randRadius)));
@@ -201,6 +198,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 				myParam.rParticles.emplace_back(
 					Color{ 128, 128, 128, 100 },
 					0.125f,
+					false,
 					false,
 					false,
 					true,
@@ -244,6 +242,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 						true,
 						false,
 						false,
+						false,
 						true,
 						true
 					);
@@ -266,9 +265,6 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 
 				Vector2 particlePos = Vector2Add(myParam.myCamera.mouseWorldPos, randomOffset);
 
-				float dx = particlePos.x - myParam.myCamera.mouseWorldPos.x;
-				float dy = particlePos.y - myParam.myCamera.mouseWorldPos.y;
-
 				myParam.pParticles.emplace_back(
 					Vector2{ particlePos.x, particlePos.y },
 					Vector2{ (slingshot.normalizedX * slingshot.length * 0.3f),  +(slingshot.normalizedY * slingshot.length * 0.3f) },
@@ -277,6 +273,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 				myParam.rParticles.emplace_back(
 					Color{ 128, 128, 128, 100 },
 					0.125f,
+					false,
 					false,
 					false,
 					true,
@@ -325,6 +322,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 					0.125f,
 					false,
 					false,
+					false,
 					true,
 					true,
 					false
@@ -367,6 +365,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 						Color{ 128, 128, 128, 0 },
 						0.125f,
 						true,
+						false,
 						false,
 						false,
 						true,

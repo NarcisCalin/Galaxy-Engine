@@ -10,7 +10,7 @@ Button::Button(Vector2 pos, Vector2 size, std::string text, bool hasText) {
     this->hasText = hasText;
 }
 
-bool Button::buttonLogic(bool& isEnabled, UpdateVariables& myVar) {
+bool Button::buttonLogic(bool& isEnabled) {
     if (isEnabled) {
         color = { 70, 140, 70, 255 };
     }

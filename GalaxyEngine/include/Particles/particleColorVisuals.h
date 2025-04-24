@@ -84,7 +84,6 @@ struct ColorVisuals {
 				}
 
 				float normalDensity = std::min(float(neighborCounts[i]) / maxNeighbors, 1.0f);
-				float invertedDensity = 1.0f - normalDensity;
 
 				Color lowDensityColor = {
 					static_cast<unsigned char>(primaryR),

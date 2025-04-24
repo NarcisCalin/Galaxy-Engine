@@ -19,7 +19,7 @@ public:
 	Slider(Vector2 sliderPos, Vector2 sliderSize, Color sliderColor, std::string name);
 
 	template <typename T>
-	inline bool sliderLogic(T minValue, T& value, T maxValue, UpdateVariables& myVar) {
+	inline bool sliderLogic(T minValue, T& value, T maxValue) {
 
 		this->handleColor = {
 			static_cast<unsigned char>(sliderColor.r * 1.2f),
@@ -42,7 +42,7 @@ public:
 				255
 			};
 		}
-		
+
 		if (isHoveringHandle && IsMouseButtonPressed(0)) {
 			initialMouseX = GetMouseX() - handlePos.x;
 			isClicked = true;
@@ -89,7 +89,8 @@ public:
 		}
 
 		if constexpr (std::is_same_v<T, int>) {
-			value = static_cast<T>(std::round(maxValue * normalizedSlider));
+			value = std::clamp<T>(
+				static_cast<T>(std::round(maxValue * normalizedSlider)), minValue, maxValue);
 		}
 		else {
 			value = std::clamp(static_cast<T>(maxValue * normalizedSlider), minValue, maxValue);
@@ -103,12 +104,9 @@ public:
 		DrawText(TextFormat("%s: %s", name.c_str(), TextFormat(formatString, value)), static_cast<int>(sliderPos.x), static_cast<int>(sliderPos.y - textSize - 8), static_cast<int>(textSize), WHITE);
 		if (isHoveringHandle || isHoveringSlider) {
 			isOnTop = true;
-			myVar.isMouseNotHoveringUI = false;
-			myVar.isDragging = false;
 		}
 		else {
 			isOnTop = false;
-			myVar.isMouseNotHoveringUI = true;
 		}
 
 		return isOnTop;
@@ -128,8 +126,6 @@ private:
 	float initialHandlePosX;
 
 	char operatorType;
-
-	bool isFirstUpdate = true;
 
 	Vector2 handlePos;
 	Vector2 handleSize;

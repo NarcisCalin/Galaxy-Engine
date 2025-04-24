@@ -4,7 +4,7 @@
 void RightClickSettings::rightClickMenuSpawnLogic(bool& isMouseNotHoveringUI) {
 
 	static bool isMouseMoving = false;
-	static Vector2 dragStartPos = { 0 };
+	static Vector2 dragStartPos = { 0.0f, 0.0f };
 
 	if (IsMouseButtonPressed(1) && isMouseNotHoveringUI) {
 		dragStartPos = GetMousePosition();
@@ -63,25 +63,25 @@ void RightClickSettings::rightClickMenu(UpdateVariables& myVar, UpdateParameters
 
 		DrawRectangleV(menuPos, menuSize, menuColor);
 
-		bool buttonSubdivideAllHovering = menuSettings[0].buttonLogic(myParam.subdivision.subdivideAll, myVar);
-		bool buttonSubdivideSelectedHovering = menuSettings[1].buttonLogic(myParam.subdivision.subdivideSelected, myVar);
+		bool buttonSubdivideAllHovering = menuSettings[0].buttonLogic(myParam.subdivision.subdivideAll);
+		bool buttonSubdivideSelectedHovering = menuSettings[1].buttonLogic(myParam.subdivision.subdivideSelected);
 
-		bool buttonInvertSelectionHovering = menuSettings[2].buttonLogic(myParam.particleSelection.invertParticleSelection, myVar);
-		bool buttonDeselectAllHovering = menuSettings[3].buttonLogic(myParam.particleSelection.deselectParticles, myVar);
+		bool buttonInvertSelectionHovering = menuSettings[2].buttonLogic(myParam.particleSelection.invertParticleSelection);
+		bool buttonDeselectAllHovering = menuSettings[3].buttonLogic(myParam.particleSelection.deselectParticles);
 
-		bool buttonFollowSelectionHovering = menuSettings[4].buttonLogic(myParam.myCamera.centerCamera, myVar);
+		bool buttonFollowSelectionHovering = menuSettings[4].buttonLogic(myParam.myCamera.centerCamera);
 
-		bool buttonClustersSelectionHovering = menuSettings[5].buttonLogic(myParam.particleSelection.selectManyClusters, myVar);
+		bool buttonClustersSelectionHovering = menuSettings[5].buttonLogic(myParam.particleSelection.selectManyClusters);
 
-		bool buttonDeleteSelectionHovering = menuSettings[6].buttonLogic(myParam.particleDeletion.deleteSelection, myVar);
-		bool buttonDeleteNonImportantParticlesHovering = menuSettings[7].buttonLogic(myParam.particleDeletion.deleteNonImportant, myVar);
+		bool buttonDeleteSelectionHovering = menuSettings[6].buttonLogic(myParam.particleDeletion.deleteSelection);
+		bool buttonDeleteNonImportantParticlesHovering = menuSettings[7].buttonLogic(myParam.particleDeletion.deleteNonImportant);
 
-		bool buttonDrawZCurvesHovering = menuSettings[8].buttonLogic(myVar.drawZCurves, myVar);
-		bool buttonDrawQuadtreeHovering = menuSettings[9].buttonLogic(myVar.drawQuadtree, myVar);
+		bool buttonDrawZCurvesHovering = menuSettings[8].buttonLogic(myVar.drawZCurves);
+		bool buttonDrawQuadtreeHovering = menuSettings[9].buttonLogic(myVar.drawQuadtree);
 
 		bool buttonRecordDiskModeHovering = false;
 		if (!myParam.screenCapture.isFunctionRecording) { // If it is recording, lock the setting
-			buttonRecordDiskModeHovering = menuSettings[10].buttonLogic(myParam.screenCapture.isDiskModeEnabled, myVar);
+			buttonRecordDiskModeHovering = menuSettings[10].buttonLogic(myParam.screenCapture.isDiskModeEnabled);
 		}
 
 

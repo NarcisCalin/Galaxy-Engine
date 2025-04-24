@@ -118,5 +118,9 @@ struct UpdateVariables{
 
 	bool isInformationEnabled = false;
 
-	Vector2 mouseWorldPos = { 0.0f };
+	Vector2 mouseWorldPos = { 0.0f, 0.0f };
+
+	float particleBounciness = 0.15f;
+
+	int threadsAmount = 16;
 };

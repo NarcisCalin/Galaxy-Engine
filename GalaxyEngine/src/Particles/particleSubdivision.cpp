@@ -17,8 +17,8 @@ void ParticleSubdivision::subdivideParticles(UpdateVariables& myVar, UpdateParam
 			DrawTextEx(GetFontDefault(), warningText.c_str(), { static_cast<float>(GetScreenWidth() / 2 - (textCompensation.x / 2)),
 				static_cast<float>(GetScreenHeight() / 2 - (textCompensation.y / 2) - 25.0f) }, textSize, textSpacing, WHITE);
 
-			bool confirmHovering = confirm.buttonLogic(confirmState, myVar);
-			bool quitHovering = quit.buttonLogic(quitState, myVar);
+			bool confirmHovering = confirm.buttonLogic(confirmState);
+			bool quitHovering = quit.buttonLogic(quitState);
 
 			if (confirmHovering || quitHovering) {
 				myVar.isMouseNotHoveringUI = false;
@@ -55,8 +55,8 @@ void ParticleSubdivision::subdivideParticles(UpdateVariables& myVar, UpdateParam
 						myParam.pParticles.emplace_back(newPos, myParam.pParticles[i].vel, myParam.pParticles[i].mass / 4.0f);
 
 						myParam.rParticles.emplace_back(myParam.rParticles[i].color, halfOffsetVisual, myParam.rParticles[i].uniqueColor,
-							myParam.rParticles[i].isSolid, myParam.rParticles[i].canBeSubdivided, myParam.rParticles[i].canBeResized, 
-							myParam.rParticles[i].isDarkMatter);
+							myParam.rParticles[i].isSelected, myParam.rParticles[i].isSolid, myParam.rParticles[i].canBeSubdivided, 
+							myParam.rParticles[i].canBeResized, myParam.rParticles[i].isDarkMatter);
 					}
 
 					myParam.pParticles[i] = std::move(myParam.pParticles.back());

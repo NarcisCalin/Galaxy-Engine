@@ -100,16 +100,16 @@ void Physics::pairWiseGravity(std::vector<ParticlePhysics>& pParticles, UpdateVa
 	}
 }
 
-void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar, float& dt) {
+void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar) {
 	if (myVar.isPeriodicBoundaryEnabled) {
 		for (size_t i = 0; i < pParticles.size(); i++) {
 			ParticlePhysics& pParticle = pParticles[i];
 
-			pParticle.vel.x += dt * (1.5f * pParticle.acc.x);
-			pParticle.vel.y += dt * (1.5f * pParticle.acc.y);
+			pParticle.vel.x += myVar.timeFactor * (1.5f * pParticle.acc.x);
+			pParticle.vel.y += myVar.timeFactor * (1.5f * pParticle.acc.y);
 
-			pParticle.pos.x += pParticle.vel.x * dt;
-			pParticle.pos.y += pParticle.vel.y * dt;
+			pParticle.pos.x += pParticle.vel.x * myVar.timeFactor;
+			pParticle.pos.y += pParticle.vel.y * myVar.timeFactor;
 
 			if (pParticle.pos.x < 0) pParticle.pos.x += myVar.domainSize.x;
 			else if (pParticle.pos.x >= myVar.domainSize.x) pParticle.pos.x -= myVar.domainSize.x;
@@ -122,11 +122,11 @@ void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vecto
 		for (size_t i = 0; i < pParticles.size(); i++) {
 			ParticlePhysics& pParticle = pParticles[i];
 
-			pParticle.vel.x += dt * (1.5f * pParticle.acc.x);
-			pParticle.vel.y += dt * (1.5f * pParticle.acc.y);
+			pParticle.vel.x += myVar.timeFactor * (1.5f * pParticle.acc.x);
+			pParticle.vel.y += myVar.timeFactor * (1.5f * pParticle.acc.y);
 
-			pParticle.pos.x += pParticle.vel.x * dt;
-			pParticle.pos.y += pParticle.vel.y * dt;
+			pParticle.pos.x += pParticle.vel.x * myVar.timeFactor;
+			pParticle.pos.y += pParticle.vel.y * myVar.timeFactor;
 
 			if (pParticles[i].pos.x < 0 || pParticles[i].pos.x >= myVar.domainSize.x || pParticles[i].pos.y < 0 || pParticles[i].pos.y >= myVar.domainSize.y) {
 				pParticles.erase(pParticles.begin() + i);
@@ -138,7 +138,11 @@ void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vecto
 }
 
 void Physics::collisions(ParticlePhysics& pParticleA, ParticlePhysics& pParticleB,
-	ParticleRendering& rParticleA, ParticleRendering& rParticleB, float& softening, float& particleTextureHalfSize, float& dt) {
+	ParticleRendering& rParticleA, ParticleRendering& rParticleB, UpdateVariables& myVar, float& dt) {
+
+	if (rParticleA.isDarkMatter || rParticleB.isDarkMatter) {
+		return;
+	}
 
 	ParticlePhysics& pA = pParticleA;
 	ParticlePhysics& pB = pParticleB;
@@ -149,7 +153,7 @@ void Physics::collisions(ParticlePhysics& pParticleA, ParticlePhysics& pParticle
 	Vector2 d = posB - posA;
 	float distanceSq = d.x * d.x + d.y * d.y;
 
-	float radiiSum = rParticleA.size * particleTextureHalfSize + rParticleB.size * particleTextureHalfSize;
+	float radiiSum = rParticleA.size * myVar.particleTextureHalfSize + rParticleB.size * myVar.particleTextureHalfSize;
 	float radiiSumSq = radiiSum * radiiSum;
 
 
@@ -210,7 +214,7 @@ void Physics::collisions(ParticlePhysics& pParticleA, ParticlePhysics& pParticle
 	distanceSq = d.x * d.x + d.y * d.y;
 	normal = d / sqrt(distanceSq);
 
-	float impulseNumerator = -(1.0f + bounciness) * Vector2DotProduct(relativeVel, normal);
+	float impulseNumerator = -(1.0f + myVar.particleBounciness) * Vector2DotProduct(relativeVel, normal);
 	float impulseDenominator = (1.0f / pA.mass + 1.0f / pB.mass);
 	float j = impulseNumerator / impulseDenominator;
 

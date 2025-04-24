@@ -13,8 +13,6 @@ ParticleTrails::~ParticleTrails()
 
 void ParticleTrails::trailLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 
-	const size_t NUM_PLANETS = myParam.pParticles.size();
-
 	if (IsKeyPressed(KEY_T) && !IsKeyDown(KEY_LEFT_CONTROL)) {
 		myVar.isGlobalTrailsEnabled = !myVar.isGlobalTrailsEnabled;
 		myVar.isSelectedTrailsEnabled = false;

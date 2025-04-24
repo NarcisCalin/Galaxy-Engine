@@ -16,17 +16,17 @@ public:
 
 	void brushLogic(UpdateParameters& myParam);
 
-	void brushSize(Vector2 mouseWorldPos);
+	void brushSize();
 
 	void drawBrush(Vector2 mouseWorldPos);
 
-	void eraseBrush(UpdateVariables& myVar, UpdateParameters& myParam);
+	void eraseBrush(UpdateParameters& myParam);
 
 	void particlesAttractor(UpdateVariables& myVar, UpdateParameters& myParam);
 
 	void particlesSpinner(UpdateVariables& myVar, UpdateParameters& myParam);
 
-	void particlesGrabber(UpdateVariables& myVar, UpdateParameters& myParam);
+	void particlesGrabber(UpdateParameters& myParam);
 
 private:
 	float brushRadius;
@@ -34,7 +34,7 @@ private:
 
 	float spinForce = 140.0f;
 
-	Vector2 attractorForce = { 0.0f };
+	Vector2 attractorForce = { 0.0f, 0.0f };
 
 	bool dragging = false;
 	Vector2 lastMouseVelocity = { 0.0f, 0.0f };

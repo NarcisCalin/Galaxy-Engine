@@ -16,8 +16,8 @@ struct UpdateParameters;
 
 class RightClickSettings {
 public:
-	Vector2 menuPos = {0.0f};
-	Vector2 menuSize = { 0.0f };
+	Vector2 menuPos = { 0.0f, 0.0f };
+	Vector2 menuSize = { 0.0f, 0.0f };
 
 	void rightClickMenuSpawnLogic(bool& isMouseNotHoveringUI);
 
@@ -35,26 +35,26 @@ private:
 
 	std::array<Button, 11> menuSettings = {
 
-Button({0.0f}, {0.0f}, "Subdivide All", true),
+Button({0.0f, 0.0f}, {0.0f, 0.0f}, "Subdivide All", true),
 
-Button({0.0f}, {0.0f}, "Subdivide Selec.", true),
+Button({0.0f, 0.0f}, {0.0f, 0.0f}, "Subdivide Selec.", true),
 
-Button({0.0f}, {0.0f}, "Invert Selection", true),
+Button({0.0f, 0.0f}, {0.0f, 0.0f}, "Invert Selection", true),
 
-Button({0.0f}, {0.0f}, "Deselect All", true),
+Button({0.0f, 0.0f}, {0.0f, 0.0f}, "Deselect All", true),
 
-Button({0.0f}, {0.0f}, "Follow Selection", true),
+Button({0.0f, 0.0f}, {0.0f, 0.0f}, "Follow Selection", true),
 
-Button({0.0f}, {0.0f}, "Select Clusters", true),
+Button({0.0f, 0.0f}, {0.0f, 0.0f}, "Select Clusters", true),
 
-Button({0.0f}, {0.0f}, "Delete Selection", true),
+Button({0.0f, 0.0f}, {0.0f, 0.0f}, "Delete Selection", true),
 
-Button({0.0f}, {0.0f}, "Delete Strays", true),
+Button({0.0f, 0.0f}, {0.0f, 0.0f}, "Delete Strays", true),
 
-Button({0.0f}, {0.0f}, "Debug Z Curves", true),
+Button({0.0f, 0.0f}, {0.0f, 0.0f}, "Debug Z Curves", true),
 
-Button({0.0f}, {0.0f}, "Debug Quadtree", true),
+Button({0.0f, 0.0f}, {0.0f, 0.0f}, "Debug Quadtree", true),
 
-Button({0.0f}, {0.0f}, "Record Disk Mode", true)
+Button({0.0f, 0.0f}, {0.0f, 0.0f}, "Record Disk Mode", true)
 	};
 };

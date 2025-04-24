@@ -51,8 +51,6 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 
 			diskModeFrameIdx = 0;
 
-			int numFrames = static_cast<int>(myFrames.size());
-
 			int maxNumberFound = 0;
 			std::regex folderRegex(R"(Video_(\d+))");
 
@@ -86,8 +84,8 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 		Button deleteFramesButton({ static_cast<float>(GetScreenWidth()) - 600.0f, 110.0f },
 			{ 170.0f, 35.0f }, "Discard Frames", true);
 
-		bool isExportFramesButtonHovering = exportFramesButton.buttonLogic(exportFrames, myVar);
-		bool isDeleteFramesButtonHovering = deleteFramesButton.buttonLogic(deleteFrames, myVar);
+		bool isExportFramesButtonHovering = exportFramesButton.buttonLogic(exportFrames);
+		bool isDeleteFramesButtonHovering = deleteFramesButton.buttonLogic(deleteFrames);
 
 		DrawText("Might take a while", GetScreenWidth() - 420, 70, 20, RED);
 

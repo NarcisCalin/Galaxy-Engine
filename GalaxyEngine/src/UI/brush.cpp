@@ -4,7 +4,7 @@
 Brush::Brush(SceneCamera myCamera, float brushRadius) {
 	this->myCamera = myCamera;
 	this->brushRadius = brushRadius;
-	mouseWorldPos = { 0 };
+	mouseWorldPos = { 0.0f, 0.0f };
 }
 
 void Brush::brushLogic(UpdateParameters& myParam) {
@@ -23,11 +23,11 @@ void Brush::brushLogic(UpdateParameters& myParam) {
 		Vector2 particlePos = Vector2Add(myParam.myCamera.mouseWorldPos, randomOffset);
 
 		myParam.pParticles.emplace_back(particlePos, Vector2{ 0, 0 }, 8500000000.0f / myParam.particlesSpawning.particleAmountMultiplier);
-		myParam.rParticles.emplace_back(Color{ 128, 128, 128, 100 }, 0.125f, false, false, true, true, false);
+		myParam.rParticles.emplace_back(Color{ 128, 128, 128, 100 }, 0.125f, false, false, false, true, true, false);
 	}
 }
 
-void Brush::brushSize(Vector2 mouseWorldPos) {
+void Brush::brushSize() {
 	float wheel = GetMouseWheelMove();
 	if (IsKeyDown(KEY_LEFT_CONTROL) && wheel != 0) {
 		float scale = 0.2f * wheel;
@@ -39,7 +39,7 @@ void Brush::drawBrush(Vector2 mouseWorldPos) {
 	DrawCircleLinesV({ mouseWorldPos.x, mouseWorldPos.y }, brushRadius, WHITE);
 }
 
-void Brush::eraseBrush(UpdateVariables& myVar, UpdateParameters& myParam) {
+void Brush::eraseBrush(UpdateParameters& myParam) {
 
 	if (IsKeyDown(KEY_X) && IsMouseButtonDown(2)) {
 		for (size_t i = 0; i < myParam.pParticles.size();) {
@@ -121,7 +121,7 @@ void Brush::particlesSpinner(UpdateVariables& myVar, UpdateParameters& myParam) 
 
 }
 
-void Brush::particlesGrabber(UpdateVariables& myVar, UpdateParameters& myParam) {
+void Brush::particlesGrabber(UpdateParameters& myParam) {
 
 	Vector2 mouseDelta = GetMouseDelta();
 	Vector2 scaledDelta = Vector2Scale(mouseDelta, 1.0f / myParam.myCamera.camera.zoom);

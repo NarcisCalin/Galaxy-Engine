@@ -6,7 +6,7 @@ ParticleSelection::ParticleSelection() {
 
 void ParticleSelection::clusterSelection(UpdateVariables& myVar, UpdateParameters& myParam) {
 	static bool isMouseMoving = false;
-	static Vector2 dragStartPos = { 0 };
+	static Vector2 dragStartPos = { 0.0f, 0.0f };
 
 	if (IsMouseButtonPressed(0) && IsKeyDown(KEY_LEFT_CONTROL) && myVar.isMouseNotHoveringUI) {
 		dragStartPos = GetMousePosition();
@@ -77,7 +77,7 @@ void ParticleSelection::clusterSelection(UpdateVariables& myVar, UpdateParameter
 
 void ParticleSelection::particleSelection(UpdateVariables& myVar, UpdateParameters& myParam) {
 	static bool isMouseMoving = false;
-	static Vector2 dragStartPos = { 0 };
+	static Vector2 dragStartPos = { 0.0f, 0.0f };
 
 	if (IsMouseButtonPressed(0) && IsKeyDown(KEY_LEFT_ALT) && myVar.isMouseNotHoveringUI) {
 		dragStartPos = GetMousePosition();
@@ -179,7 +179,7 @@ void ParticleSelection::manyClustersSelection(UpdateVariables& myVar, UpdatePara
 
 void ParticleSelection::boxSelection(UpdateParameters& myParam) {
 
-	if (IsKeyDown(KEY_LEFT_CONTROL) && IsMouseButtonDown(2) || IsKeyDown(KEY_LEFT_ALT) && IsMouseButtonDown(2)) {
+	if ((IsKeyDown(KEY_LEFT_CONTROL) && IsMouseButtonDown(2)) || (IsKeyDown(KEY_LEFT_ALT) && IsMouseButtonDown(2))) {
 		if (IsKeyPressed(KEY_LEFT_CONTROL) || IsMouseButtonPressed(2)) {
 			boxInitialPos = { myParam.myCamera.mouseWorldPos.x, myParam.myCamera.mouseWorldPos.y };
 			isBoxSelecting = true;

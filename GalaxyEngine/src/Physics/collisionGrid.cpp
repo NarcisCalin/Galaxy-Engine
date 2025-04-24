@@ -58,16 +58,14 @@ void CollisionGrid::buildGrid(std::vector<ParticlePhysics>& pParticles, std::vec
                // std::scoped_lock lock(particleLocks[a], particleLocks[b]);
                 physics.collisions(pParticles[a], pParticles[b],
                     rParticles[a], rParticles[b],
-                    myVar.softening,
-                    myVar.particleTextureHalfSize,
+                    myVar,
                     dt);
             }
             else {
                 //std::scoped_lock lock(particleLocks[b], particleLocks[a]);
                 physics.collisions(pParticles[a], pParticles[b],
                     rParticles[a], rParticles[b],
-                    myVar.softening,
-                    myVar.particleTextureHalfSize,
+                    myVar,
                     dt);
             }
         }

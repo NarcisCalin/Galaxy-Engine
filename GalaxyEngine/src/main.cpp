@@ -105,7 +105,7 @@ static void updateScene() {
 		grid->drawQuadtree();
 	}
 
-	myParam.brush.brushSize(myParam.myCamera.mouseWorldPos);
+	myParam.brush.brushSize();
 
 	myParam.particlesSpawning.particlesInitialConditions(grid, physics, myVar, myParam);
 
@@ -131,20 +131,14 @@ static void updateScene() {
 
 		float dt = myVar.timeFactor / myVar.substeps;
 
-		for (int i = 0; i < myVar.substeps; ++i) {
-
-			if (myVar.isCollisionsEnabled) {
+		if (myVar.isCollisionsEnabled) {
+			for (int i = 0; i < myVar.substeps; ++i) {
 				collisionGrid.buildGrid(myParam.pParticles, myParam.rParticles, physics, myVar, myVar.domainSize, dt);
 			}
-
-		physics.physicsUpdate(myParam.pParticles, myParam.rParticles, myVar, dt);
 		}
+
+		physics.physicsUpdate(myParam.pParticles, myParam.rParticles, myVar);
 	}
-
-	/*for (auto& p : myParam.pParticles) {
-		std::cout << "VelX:" << p.velocity.x << " VelY:" << p.velocity.y << std::endl;
-	}*/
-
 
 
 	myParam.trails.trailLogic(myVar, myParam);
@@ -170,15 +164,15 @@ static void updateScene() {
 
 	myParam.particleDeletion.deleteSelected(myParam.pParticles, myParam.rParticles);
 
-	myParam.particleDeletion.deleteNonImportanParticles(myParam.pParticles, myParam.rParticles);
+	myParam.particleDeletion.deleteStrays(myParam.pParticles, myParam.rParticles, myVar.isCollisionsEnabled);
 
 	myParam.brush.particlesAttractor(myVar, myParam);
 
 	myParam.brush.particlesSpinner(myVar, myParam);
 
-	myParam.brush.particlesGrabber(myVar, myParam);
+	myParam.brush.particlesGrabber(myParam);
 
-	myParam.brush.eraseBrush(myVar, myParam);
+	myParam.brush.eraseBrush(myParam);
 
 	if (grid != nullptr) {
 		delete grid;
@@ -219,7 +213,7 @@ static void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture) 
 
 
 	//END OF PARTICLES RENDER PASS
-	//-------------------------------------------------\\
+	//-------------------------------------------------//
 	//BEGINNNG OF UI RENDER PASS
 
 
@@ -227,8 +221,6 @@ static void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture) 
 	BeginTextureMode(myUITexture);
 
 	ClearBackground({ 0,0,0,0 });
-
-	Vector2 mouseScreenPos = GetMousePosition();
 
 	BeginMode2D(myParam.myCamera.camera);
 
@@ -261,7 +253,7 @@ static void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture) 
 
 static void enableMultiThreading() {
 	if (myVar.isMultiThreadingEnabled) {
-		omp_set_num_threads(16);
+		omp_set_num_threads(myVar.threadsAmount);
 	}
 	else {
 		omp_set_num_threads(1);
@@ -300,8 +292,8 @@ int main() {
 
 		EndBlendMode();
 
-		//------------------------ RENDER TEXTURES BELOW ------------------------\\
-		
+		//------------------------ RENDER TEXTURES BELOW ------------------------//
+
 		if (myVar.isGlowEnabled) {
 			BeginShaderMode(myBloom);
 		}

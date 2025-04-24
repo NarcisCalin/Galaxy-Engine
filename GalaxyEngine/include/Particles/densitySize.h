@@ -65,7 +65,6 @@ struct DensitySize {
 				}
 
 				float normalDensity = std::min(float(neighborCounts[i]) / 25, 1.0f);
-				float invertedDensity = 1.0f - normalDensity;
 
 				rParticles[i].size = Lerp(maxSize * sizeMultiplier, minSize * sizeMultiplier, static_cast<float>(pow(normalDensity, 2)));
 			}

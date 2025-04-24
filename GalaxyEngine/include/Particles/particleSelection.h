@@ -37,7 +37,7 @@ public:
 private:
 	float selectionThresholdSq = 100.0f;
 
-	Vector2 boxInitialPos = { 0.0f };
+	Vector2 boxInitialPos = { 0.0f, 0.0f };
 
 	bool isBoxSelecting = false;
 	bool isBoxDeselecting = false;

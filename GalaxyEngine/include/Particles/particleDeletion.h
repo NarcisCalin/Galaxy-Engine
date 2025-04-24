@@ -26,20 +26,26 @@ struct ParticleDeletion {
 		}
 	}
 
-	void deleteNonImportanParticles(std::vector<ParticlePhysics>& pParticles,
-		std::vector<ParticleRendering>& rParticles) {
+	void deleteStrays(std::vector<ParticlePhysics>& pParticles,
+		std::vector<ParticleRendering>& rParticles, bool& isCollisionsEnabled) {
 		if (deleteNonImportant) {
+			if (isCollisionsEnabled) {
+				collisionRMultiplier = 6.0f;
+			}
+			else {
+				collisionRMultiplier = 1.0f;
+			}
 			std::vector<int> neighborCounts(pParticles.size(), 0);
 
 			for (size_t i = 0; i < pParticles.size(); i++) {
 				const Vector2& pos1 = pParticles[i].pos;
 				for (size_t j = i + 1; j < pParticles.size(); j++) {
 					const Vector2& pos2 = pParticles[j].pos;
-					if (std::abs(pos2.x - pos1.x) > xBreakThreshold)
+					if (std::abs(pos2.x - pos1.x) > xBreakThreshold * collisionRMultiplier)
 						break;
 					float dx = pos1.x - pos2.x;
 					float dy = pos1.y - pos2.y;
-					if (dx * dx + dy * dy < squaredDistanceThreshold) {
+					if (dx * dx + dy * dy < squaredDistanceThreshold * collisionRMultiplier) {
 						neighborCounts[i]++;
 						neighborCounts[j]++;
 					}
@@ -67,4 +73,5 @@ private:
 	const float distanceThreshold = 10.0f;
 	const float squaredDistanceThreshold = distanceThreshold * distanceThreshold;
 	const float xBreakThreshold = 2.4f;
+	float collisionRMultiplier = 1.0f;
 };

@@ -39,7 +39,7 @@ struct ParticleRendering {
 	bool isGrabbed;
 	float previousSize;
 
-	ParticleRendering(Color color, float size, bool uniqueColor, 
+	ParticleRendering(Color color, float size, bool uniqueColor, bool isSelected,
 		bool isSolid, bool canBeSubdivided, bool canBeResized, bool isDarkMatter) {
 		// Initial
 		this->color = color;
@@ -51,7 +51,7 @@ struct ParticleRendering {
 		this->isDarkMatter = isDarkMatter;
 
 		// Temp
-		this->isSelected = false;
+		this->isSelected = isSelected;
 		this->isGrabbed = false;
 		this->previousSize = size;
 	

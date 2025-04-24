@@ -118,7 +118,7 @@ Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Physics Sliders", true)
 
 	};
 
-	std::array<Slider, 7> physicsSliders = {
+	std::array<Slider, 8> physicsSliders = {
 
 	Slider({20, 530.0f}, {230.0f, 7.0f}, {120, 128, 128, 255}, "Softening"),
 
@@ -126,13 +126,15 @@ Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Physics Sliders", true)
 
 	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Time Scale"),
 
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Substeps"),
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Collision Substeps"),
 
 	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Gravity Strength"),
 
 	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Heavy Particle Init Mass"),
 
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Particles Bounciness")
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Particles Bounciness"),
+
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Threads Amount")
 
 	};
 

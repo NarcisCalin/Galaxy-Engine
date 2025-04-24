@@ -107,9 +107,10 @@ Screenshot_*
 Video_*
 Frame_*
 *.exe
+compilerCommand.txt
 
-# - Ignore Temp Files
-TempFiles_*
+# Ignore folders
+build/
 
 # Chutzpah Test files
 _Chutzpah*

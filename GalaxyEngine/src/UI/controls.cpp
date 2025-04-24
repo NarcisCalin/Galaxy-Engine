@@ -9,7 +9,7 @@ void Controls::showControls(UpdateVariables& myVar) {
 		for (size_t i = 0; i < controlsArray.size(); i++) {
 			DrawText(TextFormat("%s", controlsArray[i].c_str()), 25, 20 + 20 * static_cast<int>(i), 15, WHITE);
 		}
-		bool buttonExtendedControlsHovering = extendedControlsButton.buttonLogic(isShowExtendedControlsEnabled, myVar);
+		bool buttonExtendedControlsHovering = extendedControlsButton.buttonLogic(isShowExtendedControlsEnabled);
 
 		if (buttonExtendedControlsHovering) {
 			myVar.isMouseNotHoveringUI = false;
@@ -23,7 +23,7 @@ void Controls::showControls(UpdateVariables& myVar) {
 			Button changePageButton(pageButtonPos,
 				{ 14.0f, 14.0f }, "", false);
 
-			bool buttonNextPageHovering = changePageButton.buttonLogic(nextPage, myVar);
+			bool buttonNextPageHovering = changePageButton.buttonLogic(nextPage);
 
 			if (buttonNextPageHovering) {
 				myVar.isMouseNotHoveringUI = false;
