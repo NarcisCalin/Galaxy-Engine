@@ -114,7 +114,6 @@ https://github.com/user-attachments/assets/9b51780c-7dff-4e53-965d-e5f29677669d
   - Or get it from Visual Studio Installer
   - ![image](https://github.com/user-attachments/assets/b46a0e7d-188e-43a3-bf7e-fb3edced233a)
 - Download [CMake](https://cmake.org/download/)
-- Open the powershell terminal in the project folder (where the src folder is located)
 - Build with cmake
 - After doing this you should have the .exe file inside the build folder
 - The last step is running the .exe file at the same level as the "Textures" folder (otherwise the particles won't be visible)
