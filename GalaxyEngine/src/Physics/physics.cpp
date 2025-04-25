@@ -223,7 +223,6 @@ void Physics::collisions(ParticlePhysics& pParticleA, ParticlePhysics& pParticle
 	pA.vel = velA - impulse / pA.mass;
 	pB.vel = velB + impulse / pB.mass;
 
-
 	pA.pos += pA.vel * t;
 	pB.pos += pB.vel * t;
 }

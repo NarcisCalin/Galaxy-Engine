@@ -136,6 +136,7 @@ void Brush::particlesGrabber(UpdateParameters& myParam) {
 				myParam.pParticles[i].pos.x - myParam.myCamera.mouseWorldPos.x,
 				myParam.pParticles[i].pos.y - myParam.myCamera.mouseWorldPos.y
 			};
+			
 			float distance = sqrt(distanceFromBrush.x * distanceFromBrush.x +
 				distanceFromBrush.y * distanceFromBrush.y);
 			if (distance < brushRadius) {

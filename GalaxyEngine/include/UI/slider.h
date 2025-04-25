@@ -66,7 +66,7 @@ public:
 		}
 
 		char formatString[10];
-		sprintf_s(formatString, "%%%c", operatorType);
+		snprintf(formatString, sizeof(formatString), "%%%c", operatorType);
 
 
 		handlePos.x = std::clamp(handlePos.x, sliderPos.x, sliderPos.x + sliderSize.x - handleSize.x);

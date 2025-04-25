@@ -55,14 +55,14 @@ struct UpdateParameters {
 
 struct UpdateVariables{
 	int screenWidth = 1920;
-	int screenHeight = 1024;
+	int screenHeight = 1080;
 	float halfScreenWidth = screenWidth * 0.5f;
 	float halfScreenHeight = screenHeight * 0.5f;
 
 	float screenRatioX = 0.0f;
 	float screenRatioY = 0.0f;
 
-	Vector2 domainSize = { 3840.0f, 2048.0f };
+	Vector2 domainSize = { 3840.0f, 2160.0f };
 
 	float halfDomainWidth = domainSize.x * 0.5f;
 	float halfDomainHeight = domainSize.y * 0.5f;
@@ -78,7 +78,7 @@ struct UpdateVariables{
 
 	int substeps = 1;
 
-	const float fixedDeltaTime = 0.03f;
+	const float fixedDeltaTime = 0.045f;
 
 	bool isTimeStopped = false;
 

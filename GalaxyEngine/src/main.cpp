@@ -60,6 +60,7 @@ void flattenQuadtree(Quadtree* node, std::vector<Quadtree*>& flatList) {
 }
 
 static void updateScene() {
+
 	Quadtree* grid = nullptr;
 
 	myVar.G = 6.674e-11 * myVar.gravityMultiplier;
@@ -87,14 +88,14 @@ static void updateScene() {
 	}
 
 	/*std::vector<Quadtree*> flatNodes;
+	* 
+	flattenQuadtree(grid, flatNodes);
 
-	flattenQuadtree(grid, flatNodes);*/
-
-	//int index = 0;
-	/*for (Quadtree* node : flatNodes) {
+	int index = 0;
+	for (Quadtree* node : flatNodes) {
 		DrawRectangleLines(node->pos.x, node->pos.y, node->size, node->size, WHITE);
 
-		const char* textDisplay = TextFormat("%i", node->depth);
+		const char* textDisplay = TextFormat("%i", index);
 
 		DrawText(textDisplay, node->pos.x + node->size / 2, node->pos.y + node->size / 2, 10, {128,128,128,140});
 
@@ -129,9 +130,9 @@ static void updateScene() {
 			physics.pairWiseGravity(myParam.pParticles, myVar);
 		}
 
+		if (myVar.isCollisionsEnabled) {
 		float dt = myVar.timeFactor / myVar.substeps;
 
-		if (myVar.isCollisionsEnabled) {
 			for (int i = 0; i < myVar.substeps; ++i) {
 				collisionGrid.buildGrid(myParam.pParticles, myParam.rParticles, physics, myVar, myVar.domainSize, dt);
 			}
