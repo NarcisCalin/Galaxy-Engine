@@ -73,6 +73,8 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 		bool buttonVisualsSlidersHovering = settingsButtonsArray[22].buttonLogic(bVisualsSliders);
 		bool buttonPhysicsSlidersHovering = settingsButtonsArray[23].buttonLogic(bPhysicsSliders);
 
+		bool buttonShipGasHovering = settingsButtonsArray[24].buttonLogic(myVar.isShipGasEnabled);
+
 		if (buttonDarkMatterHovering ||
 			buttonPeriodicBoundaryHovering ||
 			buttonGlobalTrailsHovering ||
@@ -97,7 +99,8 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 			buttonShowDarkMatterHovering ||
 			buttonVisualsSlidersHovering ||
 			buttonPhysicsSlidersHovering ||
-			buttonDeltaVColorHovering
+			buttonDeltaVColorHovering ||
+			buttonShipGasHovering
 			) {
 			myVar.isMouseNotHoveringUI = false;
 			myVar.isDragging = false;
@@ -125,8 +128,8 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 			bool sliderBlue2Hovering = visualsSliders[6].sliderLogic(0, myParam.colorVisuals.secondaryB, 255);
 			bool sliderAlpha2Hovering = visualsSliders[7].sliderLogic(0, myParam.colorVisuals.secondaryA, 255);
 
-			bool sliderDensityHovering = visualsSliders[8].sliderLogic(0.0f, myParam.colorVisuals.densityRadius, 30.0f);
-			bool sliderMaxNeighborsHovering = visualsSliders[9].sliderLogic(1, myParam.colorVisuals.maxNeighbors, 300);
+			bool sliderDensityHovering = visualsSliders[8].sliderLogic(0.0f, myParam.neighborSearch.densityRadius, 30.0f);
+			bool sliderMaxNeighborsHovering = visualsSliders[9].sliderLogic(1, myParam.colorVisuals.maxNeighbors, 500);
 
 			bool sliderMaxColorForceHovering = visualsSliders[10].sliderLogic(1.0f, myParam.colorVisuals.maxColorAcc, 400.0f);
 			bool sliderMaxSizeForceHovering = visualsSliders[11].sliderLogic(1.0f, myParam.densitySize.sizeAcc, 400.0f);

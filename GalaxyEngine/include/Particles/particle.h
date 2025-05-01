@@ -38,6 +38,7 @@ struct ParticleRendering {
 	bool isSelected;
 	bool isGrabbed;
 	float previousSize;
+	int neighbors;
 
 	ParticleRendering(Color color, float size, bool uniqueColor, bool isSelected,
 		bool isSolid, bool canBeSubdivided, bool canBeResized, bool isDarkMatter) {
@@ -54,6 +55,7 @@ struct ParticleRendering {
 		this->isSelected = isSelected;
 		this->isGrabbed = false;
 		this->previousSize = size;
+		this->neighbors = 0;
 	
 	}
 

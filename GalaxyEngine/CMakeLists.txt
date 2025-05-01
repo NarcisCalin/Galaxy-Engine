@@ -7,6 +7,7 @@ cmake_policy(SET CMP0077 NEW)
 project(GalaxyEngine)
 
 # This code downloads raylib into a directory called _deps and adds it as a subdirectory, compiling it with the program when running the build command
+set(BUILD_EXAMPLES OFF)
 include(FetchContent)
     FetchContent_Declare(
         raylib
@@ -15,7 +16,6 @@ include(FetchContent)
     FetchContent_MakeAvailable(raylib)
 
 # We don't want raylib's examples built. This option is picked up by raylib's CMakeLists.txt
-set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 # Collect source files for the executable
 set(

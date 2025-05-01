@@ -137,5 +137,11 @@
     <ClInclude Include="include\Physics\collisionGrid.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\Particles\particleSpaceship.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Particles\neighborSearch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

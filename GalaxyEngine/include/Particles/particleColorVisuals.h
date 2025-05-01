@@ -22,7 +22,7 @@ struct ColorVisuals {
 
 	int primaryR = 0;
 	int primaryG = 40;
-	int primaryB = 120;
+	int primaryB = 68;
 	int primaryA = 100;
 
 	int secondaryR = 155;
@@ -34,7 +34,6 @@ struct ColorVisuals {
 	float saturation = 0.8f;
 	float value = 0.5f;
 
-	float densityRadius = 4.5f;
 	int maxNeighbors = 60;
 
 	float maxColorAcc = 40.0f;
@@ -42,7 +41,18 @@ struct ColorVisuals {
 
 	Vector2 prevVel = { 0.0f, 0.0f };
 
-	void particlesColorVisuals(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles) {
+
+	Color ColorLerp(const Color& a, const Color& b, float t) {
+		return {
+			static_cast<unsigned char>(a.r + (b.r - a.r) * t),
+			static_cast<unsigned char>(a.g + (b.g - a.g) * t),
+			static_cast<unsigned char>(a.b + (b.b - a.b) * t),
+			static_cast<unsigned char>(a.a + (b.a - a.a) * t)
+		};
+	}
+
+	void particlesColorVisuals(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, 
+		float& particleSizeMultiplier, float& particleTextureHalfSize) {
 
 		if (solidColor) {
 			for (size_t i = 0; i < pParticles.size(); i++) {
@@ -57,49 +67,32 @@ struct ColorVisuals {
 		}
 		else if (densityColor) {
 
-			float densityRadiusSq = densityRadius * densityRadius;
+			Color lowDensityColor = {
+				static_cast<unsigned char>(primaryR),
+				static_cast<unsigned char>(primaryG),
+				static_cast<unsigned char>(primaryB),
+				static_cast<unsigned char>(primaryA)
+			};
 
-			std::vector<int> neighborCounts(pParticles.size(), 0);
+			Color highDensityColor = {
+				static_cast<unsigned char>(secondaryR),
+				static_cast<unsigned char>(secondaryG),
+				static_cast<unsigned char>(secondaryB),
+				static_cast<unsigned char>(secondaryA)
+			};
+
+			const float invMaxNeighbors = 1.0f / maxNeighbors;
+
 #pragma omp parallel for schedule(dynamic)
 			for (size_t i = 0; i < pParticles.size(); i++) {
-
 				if (rParticles[i].isDarkMatter || rParticles[i].uniqueColor) {
 					continue;
 				}
-
-				const auto& pParticle = pParticles[i];
-				for (size_t j = i + 1; j < pParticles.size(); j++) {
-
-					if (rParticles[j].isDarkMatter) {
-						continue;
-					}
-
-					if (std::abs(pParticles[j].pos.x - pParticle.pos.x) > densityRadius) break;
-					float dx = pParticle.pos.x - pParticles[j].pos.x;
-					float dy = pParticle.pos.y - pParticles[j].pos.y;
-					if (dx * dx + dy * dy < densityRadiusSq) {
-						neighborCounts[i]++;
-						neighborCounts[j]++;
-					}
-				}
-
-				float normalDensity = std::min(float(neighborCounts[i]) / maxNeighbors, 1.0f);
-
-				Color lowDensityColor = {
-					static_cast<unsigned char>(primaryR),
-					static_cast<unsigned char>(primaryG),
-					static_cast<unsigned char>(primaryB),
-					static_cast<unsigned char>(primaryA) };
-
-				Color highDensityColor = {
-					static_cast<unsigned char>(secondaryR),
-					static_cast<unsigned char>(secondaryG),
-					static_cast<unsigned char>(secondaryB),
-					static_cast<unsigned char>(secondaryA) };
-
+				const ParticlePhysics pParticle = pParticles[i];
+				float normalDensity = std::min(static_cast<float>(rParticles[i].neighbors) * invMaxNeighbors, 1.0f);
 				rParticles[i].color = ColorLerp(lowDensityColor, highDensityColor, normalDensity);
-
 			}
+
 			blendMode = 1;
 		}
 		else if (velocityColor) {
@@ -186,7 +179,7 @@ struct ColorVisuals {
 		if (selectedColor) {
 			for (size_t i = 0; i < rParticles.size(); i++) {
 				if (rParticles[i].isSelected && !rParticles[i].uniqueColor) {
-					rParticles[i].color = { 230, 128,128, 30 };
+					rParticles[i].color = { 230, 128,128, 128 };
 				}
 			}
 		}

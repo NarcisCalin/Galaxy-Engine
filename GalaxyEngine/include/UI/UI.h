@@ -6,6 +6,7 @@
 #include "button.h"
 #include "../parameters.h"
 #include "slider.h"
+#include "../Physics/quadtree.h"
 
 class UI {
 public:
@@ -17,7 +18,7 @@ public:
 
 private:
 
-	std::array<Button, 24> settingsButtonsArray = {
+	std::array<Button, 25> settingsButtonsArray = {
 
 Button({195.0f, 80.0f}, {175.0f, 24.0f}, "Global Trails", true),
 
@@ -65,7 +66,9 @@ Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Information", true),
 
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Visual Sliders", true),
 
-Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Physics Sliders", true)
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Physics Sliders", true),
+
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Ship Gas", true),
 
 	};
 	std::array<Button, 1> toggleSettingsButtons = {

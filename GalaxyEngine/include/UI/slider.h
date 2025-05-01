@@ -65,10 +65,6 @@ public:
 
 		}
 
-		char formatString[10];
-		snprintf(formatString, sizeof(formatString), "%%%c", operatorType);
-
-
 		handlePos.x = std::clamp(handlePos.x, sliderPos.x, sliderPos.x + sliderSize.x - handleSize.x);
 
 		handleSize = { sliderSize.x / 8, sliderSize.y + 10 };
@@ -96,12 +92,20 @@ public:
 			value = std::clamp(static_cast<T>(maxValue * normalizedSlider), minValue, maxValue);
 		}
 
+		const char* fmt;
+		if constexpr (std::is_same_v<T, int>) fmt = "%s: %i";
+		else if constexpr (std::is_same_v<T, float>) fmt = "%s: %f";
 
 		DrawRectangle(static_cast<int>(sliderPos.x), static_cast<int>(sliderPos.y), static_cast<int>(sliderSize.x), static_cast<int>(sliderSize.y), sliderColor);
 
 		DrawRectangle(static_cast<int>(handlePos.x), static_cast<int>(handlePos.y), static_cast<int>(handleSize.x), static_cast<int>(handleSize.y), handleColor);
 
-		DrawText(TextFormat("%s: %s", name.c_str(), TextFormat(formatString, value)), static_cast<int>(sliderPos.x), static_cast<int>(sliderPos.y - textSize - 8), static_cast<int>(textSize), WHITE);
+		DrawText(TextFormat(fmt, name.c_str(), value),
+			static_cast<int>(sliderPos.x),
+			static_cast<int>(sliderPos.y - textSize - 8),
+			static_cast<int>(textSize),
+			WHITE);
+
 		if (isHoveringHandle || isHoveringSlider) {
 			isOnTop = true;
 		}

@@ -9,9 +9,9 @@
 
 
 Quadtree::Quadtree(float posX, float posY, float size,
-	int startIndex, int endIndex,
+	size_t startIndex, size_t endIndex,
 	const std::vector<ParticlePhysics>& pParticles, const std::vector<ParticleRendering>& rParticles,
-	Quadtree* parent = nullptr) {
+	Quadtree* parent = nullptr, size_t nodeIdx = 0) {
 
 	this->pos.x = posX;
 	this->pos.y = posY;
@@ -22,7 +22,7 @@ Quadtree::Quadtree(float posX, float posY, float size,
 	this->centerOfMass = { 0,0 };
 	this->parent = parent;
 
-	if ((endIndex - startIndex) <= particlesPerLeaf || size <= minLeafSize) {
+	if ((endIndex - startIndex) <= maxLeafParticles || size <= minLeafSize) {
 		computeLeafMass(pParticles);
 	}
 	else {
@@ -79,7 +79,7 @@ void Quadtree::subGridMaker(std::vector<ParticlePhysics>& pParticles, std::vecto
 			subGrids.push_back(std::make_unique<Quadtree>(
 				newPosX, newPosY, size / 2.0f,
 				boundaries[q], boundaries[q + 1],
-				pParticles, rParticles, this));
+				pParticles, rParticles, this, 0));
 		}
 	}
 }
@@ -88,7 +88,6 @@ Vector2 Quadtree::boundingBoxPos = { 0.0f, 0.0f };
 float Quadtree::boundingBoxSize = 0.0f;
 Quadtree* Quadtree::boundingBox(const std::vector<ParticlePhysics>& pParticles,
 	const std::vector<ParticleRendering>& rParticles) {
-
 
 	float min_x = std::numeric_limits<float>::max();
 	float min_y = std::numeric_limits<float>::max();
@@ -110,16 +109,15 @@ Quadtree* Quadtree::boundingBox(const std::vector<ParticlePhysics>& pParticles,
 	boundingBoxPos.x = centerX - boundingBoxSize / 2.0f;
 	boundingBoxPos.y = centerY - boundingBoxSize / 2.0f;
 
-	//DrawRectangleLines(boundingBoxPos.x, boundingBoxPos.y, boundingBoxSize, boundingBoxSize, WHITE);
-	return new Quadtree(boundingBoxPos.x, boundingBoxPos.y, boundingBoxSize, 0, static_cast<int>(pParticles.size()),
+	return new Quadtree(boundingBoxPos.x, boundingBoxPos.y, boundingBoxSize, 0, pParticles.size(),
 		pParticles, rParticles, nullptr);
 }
 
 void Quadtree::drawQuadtree() {
-	DrawRectangleLines(static_cast<int>(pos.x), static_cast<int>(pos.y), static_cast<int>(size), static_cast<int>(size), WHITE);
+	DrawRectangleLinesEx({ pos.x, pos.y, size, size }, 1.0f, WHITE);
 
 	if (gridMass > 0) {
-		DrawCircleV({ centerOfMass.x, centerOfMass.y }, 2.0f, YELLOW);
+		DrawCircleV({ centerOfMass.x, centerOfMass.y }, 2.0f, {180,50,50,128});
 	}
 
 	for (auto& child : subGrids) {

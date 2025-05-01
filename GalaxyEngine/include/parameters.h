@@ -13,6 +13,7 @@
 #include "UI/rightClickSettings.h"
 #include "UI/controls.h"
 #include "Particles/particlesSpawning.h"
+#include "Particles/neighborSearch.h"
 
 
 struct UpdateParameters {
@@ -51,6 +52,8 @@ struct UpdateParameters {
 	ParticleDeletion particleDeletion;
 
 	ParticlesSpawning particlesSpawning;
+
+	NeighborSearch neighborSearch;
 };
 
 struct UpdateVariables{
@@ -76,6 +79,9 @@ struct UpdateVariables{
 	float timeStepMultiplierSlider = 1.0f;
 	float timeStepMultiplier = 1.0f;
 
+	int maxLeafParticles = 1;
+	float minLeafSize = 1.0f;
+
 	int substeps = 1;
 
 	const float fixedDeltaTime = 0.045f;
@@ -94,6 +100,7 @@ struct UpdateVariables{
 	bool isCollisionsEnabled = false;
 	bool isDensitySizeEnabled = false;
 	bool isForceSizeEnabled = false;
+	bool isShipGasEnabled = false;
 
 	bool isSpawningAllowed = true;
 
@@ -120,7 +127,7 @@ struct UpdateVariables{
 
 	Vector2 mouseWorldPos = { 0.0f, 0.0f };
 
-	float particleBounciness = 0.15f;
+	float particleBounciness = 0.75f;
 
 	int threadsAmount = 16;
 };

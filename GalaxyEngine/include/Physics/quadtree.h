@@ -9,20 +9,22 @@
 struct Quadtree {
 	Vector2 pos;
 	float size;
-	int startIndex;
-	int endIndex;
+	size_t startIndex;
+	size_t endIndex;
 	float gridMass;
 	Vector2 centerOfMass;
 	Quadtree* parent;
 	std::vector<std::unique_ptr<Quadtree>> subGrids;
 
-    int particlesPerLeaf = 1;
+    size_t nodeIdx;
+
+    int maxLeafParticles = 1;
     float minLeafSize = 1.0f;
 
 	Quadtree(float posX, float posY, float size,
-		int startIndex, int endIndex,
+        size_t startIndex, size_t endIndex,
 		const std::vector<ParticlePhysics>& pParticles, const std::vector<ParticleRendering>& rParticles,
-		Quadtree* parent);
+		Quadtree* parent, size_t nodeIdx);
 
 	void subGridMaker(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles);
 
@@ -35,7 +37,6 @@ struct Quadtree {
 		const std::vector<ParticleRendering>& rParticles);
 
 	void drawQuadtree();
-
 
 private:
     inline void computeLeafMass(const std::vector<ParticlePhysics>& pParticles) {

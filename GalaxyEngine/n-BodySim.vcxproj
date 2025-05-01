@@ -1436,10 +1436,12 @@
   <ItemGroup>
     <ClInclude Include="include\parameters.h" />
     <ClInclude Include="include\Particles\densitySize.h" />
+    <ClInclude Include="include\Particles\neighborSearch.h" />
     <ClInclude Include="include\Particles\particle.h" />
     <ClInclude Include="include\Particles\particleColorVisuals.h" />
     <ClInclude Include="include\Particles\particleDeletion.h" />
     <ClInclude Include="include\Particles\particleSelection.h" />
+    <ClInclude Include="include\Particles\particleSpaceship.h" />
     <ClInclude Include="include\Particles\particlesSpawning.h" />
     <ClInclude Include="include\Particles\particleSubdivision.h" />
     <ClInclude Include="include\Particles\particleTrails.h" />

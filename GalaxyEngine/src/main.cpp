@@ -32,14 +32,15 @@
 #include "../include/Physics/physics.h"
 #include "../include/Physics/collisionGrid.h"
 #include "../include/parameters.h"
+#include "../include/Particles/particleSpaceship.h"
 
 
 UpdateParameters myParam;
 UpdateVariables myVar;
 UI myUI;
 Physics physics;
-
 CollisionGrid collisionGrid;
+ParticleSpaceship ship;
 
 
 static Quadtree* gridFunction(std::vector<ParticlePhysics>& pParticles,
@@ -58,6 +59,10 @@ void flattenQuadtree(Quadtree* node, std::vector<Quadtree*>& flatList) {
 		flattenQuadtree(child.get(), flatList);
 	}
 }
+
+struct ParticleBounds {
+	float minX, maxX, minY, maxY;
+};
 
 static void updateScene() {
 
@@ -84,32 +89,23 @@ static void updateScene() {
 	//}
 
 	if (myVar.timeFactor > 0) {
-		grid = gridFunction(myParam.pParticles, myParam.rParticles);
+	grid = gridFunction(myParam.pParticles, myParam.rParticles);
 	}
 
 	/*std::vector<Quadtree*> flatNodes;
-	* 
+
 	flattenQuadtree(grid, flatNodes);
 
-	int index = 0;
-	for (Quadtree* node : flatNodes) {
-		DrawRectangleLines(node->pos.x, node->pos.y, node->size, node->size, WHITE);
-
-		const char* textDisplay = TextFormat("%i", index);
-
-		DrawText(textDisplay, node->pos.x + node->size / 2, node->pos.y + node->size / 2, 10, {128,128,128,140});
-
-		index++;
-	}*/
+	size_t index = 0;*/
 
 	if (grid != nullptr && myVar.drawQuadtree) {
 		grid->drawQuadtree();
 	}
 
+
 	myParam.brush.brushSize();
 
 	myParam.particlesSpawning.particlesInitialConditions(grid, physics, myVar, myParam);
-
 
 	if (myVar.timeFactor > 0.0f && grid != nullptr) {
 
@@ -130,8 +126,10 @@ static void updateScene() {
 			physics.pairWiseGravity(myParam.pParticles, myVar);
 		}
 
+		ship.spaceshipLogic(myParam.pParticles, myParam.rParticles, myVar.isShipGasEnabled);
+
 		if (myVar.isCollisionsEnabled) {
-		float dt = myVar.timeFactor / myVar.substeps;
+			float dt = myVar.timeFactor / myVar.substeps;
 
 			for (int i = 0; i < myVar.substeps; ++i) {
 				collisionGrid.buildGrid(myParam.pParticles, myParam.rParticles, physics, myVar, myVar.domainSize, dt);
@@ -139,8 +137,15 @@ static void updateScene() {
 		}
 
 		physics.physicsUpdate(myParam.pParticles, myParam.rParticles, myVar);
+
+		/*for (size_t i = 0; i < myParam.pParticles.size(); ++i) {
+			std::cout << "VelX:" << myParam.pParticles[i].vel.x << " VelY:" << myParam.pParticles[i].vel.y << std::endl;
+		}*/
 	}
 
+	if (myVar.isDensitySizeEnabled || myParam.colorVisuals.densityColor) {
+		myParam.neighborSearch.neighborSearch(myParam.pParticles, myParam.rParticles, myVar.particleSizeMultiplier, myVar.particleTextureHalfSize);
+	}
 
 	myParam.trails.trailLogic(myVar, myParam);
 
@@ -205,7 +210,7 @@ static void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture) 
 		}
 	}
 
-	myParam.colorVisuals.particlesColorVisuals(myParam.pParticles, myParam.rParticles);
+	myParam.colorVisuals.particlesColorVisuals(myParam.pParticles, myParam.rParticles, myVar.particleSizeMultiplier, myVar.particleTextureHalfSize);
 
 	myParam.trails.drawTrail(myParam.rParticles, particleBlurTex);
 
@@ -264,7 +269,7 @@ int main() {
 
 	SetConfigFlags(FLAG_MSAA_4X_HINT);
 
-	InitWindow(myVar.screenWidth, myVar.screenHeight, "n-Body");
+	InitWindow(myVar.screenWidth, myVar.screenHeight, "Galaxy Engine");
 
 	Texture2D particleBlurTex = LoadTexture("Textures/ParticleBlur.png");
 
