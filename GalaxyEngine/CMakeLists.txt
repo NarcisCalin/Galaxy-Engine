@@ -1,4 +1,20 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.9)
+
+set(CMAKE_C_COMPILER "/opt/homebrew/opt/llvm/bin/clang")
+set(CMAKE_CXX_COMPILER "/opt/homebrew/opt/llvm/bin/clang++")
+set(CMAKE_PREFIX_PATH "/opt/homebrew/opt/llvm;/opt/homebrew/opt/libomp")
+if(APPLE)
+    # Add include and lib paths for OpenMP
+    include_directories(SYSTEM "/opt/homebrew/opt/libomp/include")
+    link_directories("/opt/homebrew/opt/libomp/lib")
+    
+    # Set OpenMP flags
+    set(OpenMP_C_FLAGS "-fopenmp=libomp")
+    set(OpenMP_CXX_FLAGS "-fopenmp=libomp")
+    set(OpenMP_C_LIB_NAMES "omp")
+    set(OpenMP_CXX_LIB_NAMES "omp")
+    set(OpenMP_omp_LIBRARY "/opt/homebrew/opt/libomp/lib/libomp.dylib")
+endif()
 
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 cmake_policy(SET CMP0077 NEW)
@@ -53,22 +69,36 @@ target_compile_features(GalaxyEngine PRIVATE cxx_std_17)      # Ask for C++17
 target_link_libraries(GalaxyEngine PUBLIC raylib)
 
 # Find OpenMP
-find_package(OpenMP)
+find_package(OpenMP REQUIRED)
+
 
 # If OpenMP is found natively, link it
 if(OpenMP_CXX_FOUND)
     message(STATUS "OpenMP found natively")
     target_link_libraries(GalaxyEngine PUBLIC OpenMP::OpenMP_CXX)
 else()
-    # Apply manual fix for Clang on Windows if OpenMP is not found
-    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        message(WARNING "OpenMP not found, applying manual workaround for Clang")
-
-        target_compile_options(GalaxyEngine PUBLIC -fopenmp)
-        target_link_options(GalaxyEngine PUBLIC -fopenmp)
-
-        # Link the manually provided OpenMP library
-        target_link_directories(GalaxyEngine PUBLIC "${CMAKE_SOURCE_DIR}/lib")
-        target_link_libraries(GalaxyEngine PUBLIC libomp.lib)
+    # Apply specific fixes based on platform
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        if(APPLE)
+            # macOS-specific fixes for Homebrew LLVM
+            message(STATUS "Applying macOS/Homebrew LLVM OpenMP configuration")
+            
+            # Add include directories for libomp
+            target_include_directories(GalaxyEngine PUBLIC "/opt/homebrew/opt/libomp/include")
+            
+            # Add library directories
+            target_link_directories(GalaxyEngine PUBLIC "/opt/homebrew/opt/libomp/lib")
+            
+            # Add compile and link flags
+            target_compile_options(GalaxyEngine PUBLIC -fopenmp)
+            target_link_libraries(GalaxyEngine PUBLIC omp)
+        else()
+            # Windows Clang fix (your existing code)
+            message(WARNING "OpenMP not found, applying manual workaround for Clang on Windows")
+            target_compile_options(GalaxyEngine PUBLIC -fopenmp)
+            target_link_options(GalaxyEngine PUBLIC -fopenmp)
+            target_link_directories(GalaxyEngine PUBLIC "${CMAKE_SOURCE_DIR}/lib")
+            target_link_libraries(GalaxyEngine PUBLIC libomp.lib)
+        endif()
     endif()
 endif()
