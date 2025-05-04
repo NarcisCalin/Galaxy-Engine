@@ -30,6 +30,7 @@ set(
     Physics/physics.cpp
     Physics/quadtree.cpp
     Physics/slingshot.cpp
+    Physics/SPH.cpp
     UI/brush.cpp
     UI/button.cpp
     UI/controls.cpp

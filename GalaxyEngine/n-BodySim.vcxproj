@@ -824,6 +824,7 @@
       <LinkCompiled>true</LinkCompiled>
       <AdditionalIncludeDirectories>;C:\Users\jeff3\vcpkg\installed\x64-windows\include</AdditionalIncludeDirectories>
     </ClCompile>
+    <ClCompile Include="src\Physics\SPH.cpp" />
     <ClCompile Include="src\UI\brush.cpp">
       <RuntimeLibrary>MultiThreadedDebugDll</RuntimeLibrary>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -1450,6 +1451,7 @@
     <ClInclude Include="include\Physics\physics.h" />
     <ClInclude Include="include\Physics\quadtree.h" />
     <ClInclude Include="include\Physics\slingshot.h" />
+    <ClInclude Include="include\Physics\SPH.h" />
     <ClInclude Include="include\UI\brush.h" />
     <ClInclude Include="include\UI\button.h" />
     <ClInclude Include="include\UI\controls.h" />

@@ -52,11 +52,28 @@ void ParticleSubdivision::subdivideParticles(UpdateVariables& myVar, UpdateParam
 							myParam.pParticles[i].pos.y + offsetY
 						};
 
-						myParam.pParticles.emplace_back(newPos, myParam.pParticles[i].vel, myParam.pParticles[i].mass / 4.0f);
+						myParam.pParticles.emplace_back(
+							newPos, 
+							myParam.pParticles[i].vel, 
+							myParam.pParticles[i].mass / 4.0f,
+							myParam.pParticles[i].restPress,
+							myParam.pParticles[i].stiff,
+							myParam.pParticles[i].visc,
+							myParam.pParticles[i].cohesion
+						);
 
-						myParam.rParticles.emplace_back(myParam.rParticles[i].color, halfOffsetVisual, myParam.rParticles[i].uniqueColor,
-							myParam.rParticles[i].isSelected, myParam.rParticles[i].isSolid, myParam.rParticles[i].canBeSubdivided, 
-							myParam.rParticles[i].canBeResized, myParam.rParticles[i].isDarkMatter);
+						myParam.rParticles.emplace_back(
+							myParam.rParticles[i].color, 
+							halfOffsetVisual,
+							myParam.rParticles[i].uniqueColor,
+							myParam.rParticles[i].isSelected, 
+							myParam.rParticles[i].isSolid, 
+							myParam.rParticles[i].canBeSubdivided, 
+							myParam.rParticles[i].canBeResized, 
+							myParam.rParticles[i].isDarkMatter, 
+							myParam.rParticles[i].isSPH,
+							myParam.rParticles[i].lifeSpan
+						);
 					}
 
 					myParam.pParticles[i] = std::move(myParam.pParticles.back());

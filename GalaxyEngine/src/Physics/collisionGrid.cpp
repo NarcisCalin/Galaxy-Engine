@@ -8,7 +8,7 @@ void CollisionGrid::buildGrid(std::vector<ParticlePhysics>& pParticles, std::vec
 
 	for (size_t i = 0; i < pParticles.size(); i++) {
         // I multiply by 4 for performance. 2 is the diameter of the particle
-		float thisSize = rParticles[i].size * myVar.particleSizeMultiplier * myVar.particleTextureHalfSize * 4.0f;
+		float thisSize = rParticles[i].totalRadius * 4.0f;
 
 		if (thisSize > cellSize) {
 			cellSize = thisSize;

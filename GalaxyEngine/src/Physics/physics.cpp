@@ -105,11 +105,17 @@ void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vecto
 		for (size_t i = 0; i < pParticles.size(); i++) {
 			ParticlePhysics& pParticle = pParticles[i];
 
-			pParticle.vel.x += myVar.timeFactor * (1.5f * pParticle.acc.x);
-			pParticle.vel.y += myVar.timeFactor * (1.5f * pParticle.acc.y);
+			if (!myVar.isSPHEnabled || !rParticles[i].isSPH) {
+			pParticle.vel.x += myVar.timeFactor * 1.5f * pParticle.acc.x;
+			pParticle.vel.y += myVar.timeFactor * 1.5f * pParticle.acc.y;
 
 			pParticle.pos.x += pParticle.vel.x * myVar.timeFactor;
 			pParticle.pos.y += pParticle.vel.y * myVar.timeFactor;
+			}
+			else {
+				pParticle.predPos.x = pParticle.pos.x + pParticle.vel.x * myVar.timeFactor;
+				pParticle.predPos.y = pParticle.pos.y + pParticle.vel.y * myVar.timeFactor;
+			}
 
 			if (pParticle.pos.x < 0) pParticle.pos.x += myVar.domainSize.x;
 			else if (pParticle.pos.x >= myVar.domainSize.x) pParticle.pos.x -= myVar.domainSize.x;
@@ -122,11 +128,17 @@ void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vecto
 		for (size_t i = 0; i < pParticles.size(); i++) {
 			ParticlePhysics& pParticle = pParticles[i];
 
-			pParticle.vel.x += myVar.timeFactor * (1.5f * pParticle.acc.x);
-			pParticle.vel.y += myVar.timeFactor * (1.5f * pParticle.acc.y);
+			if (!myVar.isSPHEnabled) {
+				pParticle.vel.x += myVar.timeFactor * (1.5f * pParticle.acc.x);
+				pParticle.vel.y += myVar.timeFactor * (1.5f * pParticle.acc.y);
 
-			pParticle.pos.x += pParticle.vel.x * myVar.timeFactor;
-			pParticle.pos.y += pParticle.vel.y * myVar.timeFactor;
+				pParticle.pos.x += pParticle.vel.x * myVar.timeFactor;
+				pParticle.pos.y += pParticle.vel.y * myVar.timeFactor;
+			}
+			else {
+				pParticle.predPos.x = pParticle.pos.x + pParticle.vel.x * myVar.timeFactor;
+				pParticle.predPos.y = pParticle.pos.y + pParticle.vel.y * myVar.timeFactor;
+			}
 
 			if (pParticles[i].pos.x < 0 || pParticles[i].pos.x >= myVar.domainSize.x || pParticles[i].pos.y < 0 || pParticles[i].pos.y >= myVar.domainSize.y) {
 				pParticles.erase(pParticles.begin() + i);

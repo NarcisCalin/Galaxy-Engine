@@ -1256,13 +1256,13 @@ RLAPI void DrawLineV(Vector2 startPos, Vector2 endPos, Color color);            
 RLAPI void DrawLineEx(Vector2 startPos, Vector2 endPos, float thick, Color color);                       // Draw a line (using triangles/quads)
 RLAPI void DrawLineStrip(const Vector2 *points, int pointCount, Color color);                            // Draw lines sequence (using gl lines)
 RLAPI void DrawLineBezier(Vector2 startPos, Vector2 endPos, float thick, Color color);                   // Draw line segment cubic-bezier in-out interpolation
-RLAPI void DrawCircle(int centerX, int centerY, float radius, Color color);                              // Draw a color-filled circle
-RLAPI void DrawCircleSector(Vector2 center, float radius, float startAngle, float endAngle, int segments, Color color);      // Draw a piece of a circle
-RLAPI void DrawCircleSectorLines(Vector2 center, float radius, float startAngle, float endAngle, int segments, Color color); // Draw circle sector outline
-RLAPI void DrawCircleGradient(int centerX, int centerY, float radius, Color inner, Color outer);         // Draw a gradient-filled circle
-RLAPI void DrawCircleV(Vector2 center, float radius, Color color);                                       // Draw a color-filled circle (Vector version)
-RLAPI void DrawCircleLines(int centerX, int centerY, float radius, Color color);                         // Draw circle outline
-RLAPI void DrawCircleLinesV(Vector2 center, float radius, Color color);                                  // Draw circle outline (Vector version)
+RLAPI void DrawCircle(int centerX, int centerY, float radiusMultiplier, Color color);                              // Draw a color-filled circle
+RLAPI void DrawCircleSector(Vector2 center, float radiusMultiplier, float startAngle, float endAngle, int segments, Color color);      // Draw a piece of a circle
+RLAPI void DrawCircleSectorLines(Vector2 center, float radiusMultiplier, float startAngle, float endAngle, int segments, Color color); // Draw circle sector outline
+RLAPI void DrawCircleGradient(int centerX, int centerY, float radiusMultiplier, Color inner, Color outer);         // Draw a gradient-filled circle
+RLAPI void DrawCircleV(Vector2 center, float radiusMultiplier, Color color);                                       // Draw a color-filled circle (Vector version)
+RLAPI void DrawCircleLines(int centerX, int centerY, float radiusMultiplier, Color color);                         // Draw circle outline
+RLAPI void DrawCircleLinesV(Vector2 center, float radiusMultiplier, Color color);                                  // Draw circle outline (Vector version)
 RLAPI void DrawEllipse(int centerX, int centerY, float radiusH, float radiusV, Color color);             // Draw ellipse
 RLAPI void DrawEllipseLines(int centerX, int centerY, float radiusH, float radiusV, Color color);        // Draw ellipse outline
 RLAPI void DrawRing(Vector2 center, float innerRadius, float outerRadius, float startAngle, float endAngle, int segments, Color color); // Draw ring
@@ -1283,9 +1283,9 @@ RLAPI void DrawTriangle(Vector2 v1, Vector2 v2, Vector2 v3, Color color);       
 RLAPI void DrawTriangleLines(Vector2 v1, Vector2 v2, Vector2 v3, Color color);                           // Draw triangle outline (vertex in counter-clockwise order!)
 RLAPI void DrawTriangleFan(const Vector2 *points, int pointCount, Color color);                          // Draw a triangle fan defined by points (first vertex is the center)
 RLAPI void DrawTriangleStrip(const Vector2 *points, int pointCount, Color color);                        // Draw a triangle strip defined by points
-RLAPI void DrawPoly(Vector2 center, int sides, float radius, float rotation, Color color);               // Draw a regular polygon (Vector version)
-RLAPI void DrawPolyLines(Vector2 center, int sides, float radius, float rotation, Color color);          // Draw a polygon outline of n sides
-RLAPI void DrawPolyLinesEx(Vector2 center, int sides, float radius, float rotation, float lineThick, Color color); // Draw a polygon outline of n sides with extended parameters
+RLAPI void DrawPoly(Vector2 center, int sides, float radiusMultiplier, float rotation, Color color);               // Draw a regular polygon (Vector version)
+RLAPI void DrawPolyLines(Vector2 center, int sides, float radiusMultiplier, float rotation, Color color);          // Draw a polygon outline of n sides
+RLAPI void DrawPolyLinesEx(Vector2 center, int sides, float radiusMultiplier, float rotation, float lineThick, Color color); // Draw a polygon outline of n sides with extended parameters
 
 // Splines drawing functions
 RLAPI void DrawSplineLinear(const Vector2 *points, int pointCount, float thick, Color color);            // Draw spline: Linear, minimum 2 points
@@ -1309,10 +1309,10 @@ RLAPI Vector2 GetSplinePointBezierCubic(Vector2 p1, Vector2 c2, Vector2 c3, Vect
 // Basic shapes collision detection functions
 RLAPI bool CheckCollisionRecs(Rectangle rec1, Rectangle rec2);                                           // Check collision between two rectangles
 RLAPI bool CheckCollisionCircles(Vector2 center1, float radius1, Vector2 center2, float radius2);        // Check collision between two circles
-RLAPI bool CheckCollisionCircleRec(Vector2 center, float radius, Rectangle rec);                         // Check collision between circle and rectangle
-RLAPI bool CheckCollisionCircleLine(Vector2 center, float radius, Vector2 p1, Vector2 p2);               // Check if circle collides with a line created betweeen two points [p1] and [p2]
+RLAPI bool CheckCollisionCircleRec(Vector2 center, float radiusMultiplier, Rectangle rec);                         // Check collision between circle and rectangle
+RLAPI bool CheckCollisionCircleLine(Vector2 center, float radiusMultiplier, Vector2 p1, Vector2 p2);               // Check if circle collides with a line created betweeen two points [p1] and [p2]
 RLAPI bool CheckCollisionPointRec(Vector2 point, Rectangle rec);                                         // Check if point is inside rectangle
-RLAPI bool CheckCollisionPointCircle(Vector2 point, Vector2 center, float radius);                       // Check if point is inside circle
+RLAPI bool CheckCollisionPointCircle(Vector2 point, Vector2 center, float radiusMultiplier);                       // Check if point is inside circle
 RLAPI bool CheckCollisionPointTriangle(Vector2 point, Vector2 p1, Vector2 p2, Vector2 p3);               // Check if point is inside a triangle
 RLAPI bool CheckCollisionPointLine(Vector2 point, Vector2 p1, Vector2 p2, int threshold);                // Check if point belongs to line created between two points [p1] and [p2] with defined margin in pixels [threshold]
 RLAPI bool CheckCollisionPointPoly(Vector2 point, const Vector2 *points, int pointCount);                // Check if point is within a polygon described by array of vertices
@@ -1395,10 +1395,10 @@ RLAPI void ImageDrawPixelV(Image *dst, Vector2 position, Color color);          
 RLAPI void ImageDrawLine(Image *dst, int startPosX, int startPosY, int endPosX, int endPosY, Color color); // Draw line within an image
 RLAPI void ImageDrawLineV(Image *dst, Vector2 start, Vector2 end, Color color);                          // Draw line within an image (Vector version)
 RLAPI void ImageDrawLineEx(Image *dst, Vector2 start, Vector2 end, int thick, Color color);              // Draw a line defining thickness within an image
-RLAPI void ImageDrawCircle(Image *dst, int centerX, int centerY, int radius, Color color);               // Draw a filled circle within an image
-RLAPI void ImageDrawCircleV(Image *dst, Vector2 center, int radius, Color color);                        // Draw a filled circle within an image (Vector version)
-RLAPI void ImageDrawCircleLines(Image *dst, int centerX, int centerY, int radius, Color color);          // Draw circle outline within an image
-RLAPI void ImageDrawCircleLinesV(Image *dst, Vector2 center, int radius, Color color);                   // Draw circle outline within an image (Vector version)
+RLAPI void ImageDrawCircle(Image *dst, int centerX, int centerY, int radiusMultiplier, Color color);               // Draw a filled circle within an image
+RLAPI void ImageDrawCircleV(Image *dst, Vector2 center, int radiusMultiplier, Color color);                        // Draw a filled circle within an image (Vector version)
+RLAPI void ImageDrawCircleLines(Image *dst, int centerX, int centerY, int radiusMultiplier, Color color);          // Draw circle outline within an image
+RLAPI void ImageDrawCircleLinesV(Image *dst, Vector2 center, int radiusMultiplier, Color color);                   // Draw circle outline within an image (Vector version)
 RLAPI void ImageDrawRectangle(Image *dst, int posX, int posY, int width, int height, Color color);       // Draw rectangle within an image
 RLAPI void ImageDrawRectangleV(Image *dst, Vector2 position, Vector2 size, Color color);                 // Draw rectangle within an image (Vector version)
 RLAPI void ImageDrawRectangleRec(Image *dst, Rectangle rec, Color color);                                // Draw rectangle within an image
@@ -1531,22 +1531,22 @@ RLAPI float TextToFloat(const char *text);                                      
 // Basic geometric 3D shapes drawing functions
 RLAPI void DrawLine3D(Vector3 startPos, Vector3 endPos, Color color);                                    // Draw a line in 3D world space
 RLAPI void DrawPoint3D(Vector3 position, Color color);                                                   // Draw a point in 3D space, actually a small line
-RLAPI void DrawCircle3D(Vector3 center, float radius, Vector3 rotationAxis, float rotationAngle, Color color); // Draw a circle in 3D world space
+RLAPI void DrawCircle3D(Vector3 center, float radiusMultiplier, Vector3 rotationAxis, float rotationAngle, Color color); // Draw a circle in 3D world space
 RLAPI void DrawTriangle3D(Vector3 v1, Vector3 v2, Vector3 v3, Color color);                              // Draw a color-filled triangle (vertex in counter-clockwise order!)
 RLAPI void DrawTriangleStrip3D(const Vector3 *points, int pointCount, Color color);                      // Draw a triangle strip defined by points
 RLAPI void DrawCube(Vector3 position, float width, float height, float length, Color color);             // Draw cube
 RLAPI void DrawCubeV(Vector3 position, Vector3 size, Color color);                                       // Draw cube (Vector version)
 RLAPI void DrawCubeWires(Vector3 position, float width, float height, float length, Color color);        // Draw cube wires
 RLAPI void DrawCubeWiresV(Vector3 position, Vector3 size, Color color);                                  // Draw cube wires (Vector version)
-RLAPI void DrawSphere(Vector3 centerPos, float radius, Color color);                                     // Draw sphere
-RLAPI void DrawSphereEx(Vector3 centerPos, float radius, int rings, int slices, Color color);            // Draw sphere with extended parameters
-RLAPI void DrawSphereWires(Vector3 centerPos, float radius, int rings, int slices, Color color);         // Draw sphere wires
+RLAPI void DrawSphere(Vector3 centerPos, float radiusMultiplier, Color color);                                     // Draw sphere
+RLAPI void DrawSphereEx(Vector3 centerPos, float radiusMultiplier, int rings, int slices, Color color);            // Draw sphere with extended parameters
+RLAPI void DrawSphereWires(Vector3 centerPos, float radiusMultiplier, int rings, int slices, Color color);         // Draw sphere wires
 RLAPI void DrawCylinder(Vector3 position, float radiusTop, float radiusBottom, float height, int slices, Color color); // Draw a cylinder/cone
 RLAPI void DrawCylinderEx(Vector3 startPos, Vector3 endPos, float startRadius, float endRadius, int sides, Color color); // Draw a cylinder with base at startPos and top at endPos
 RLAPI void DrawCylinderWires(Vector3 position, float radiusTop, float radiusBottom, float height, int slices, Color color); // Draw a cylinder/cone wires
 RLAPI void DrawCylinderWiresEx(Vector3 startPos, Vector3 endPos, float startRadius, float endRadius, int sides, Color color); // Draw a cylinder wires with base at startPos and top at endPos
-RLAPI void DrawCapsule(Vector3 startPos, Vector3 endPos, float radius, int slices, int rings, Color color); // Draw a capsule with the center of its sphere caps at startPos and endPos
-RLAPI void DrawCapsuleWires(Vector3 startPos, Vector3 endPos, float radius, int slices, int rings, Color color); // Draw capsule wireframe with the center of its sphere caps at startPos and endPos
+RLAPI void DrawCapsule(Vector3 startPos, Vector3 endPos, float radiusMultiplier, int slices, int rings, Color color); // Draw a capsule with the center of its sphere caps at startPos and endPos
+RLAPI void DrawCapsuleWires(Vector3 startPos, Vector3 endPos, float radiusMultiplier, int slices, int rings, Color color); // Draw capsule wireframe with the center of its sphere caps at startPos and endPos
 RLAPI void DrawPlane(Vector3 centerPos, Vector2 size, Color color);                                      // Draw a plane XZ
 RLAPI void DrawRay(Ray ray, Color color);                                                                // Draw a ray line
 RLAPI void DrawGrid(int slices, float spacing);                                                          // Draw a grid (centered at (0, 0, 0))
@@ -1586,15 +1586,15 @@ RLAPI bool ExportMesh(Mesh mesh, const char *fileName);                         
 RLAPI bool ExportMeshAsCode(Mesh mesh, const char *fileName);                               // Export mesh as code file (.h) defining multiple arrays of vertex attributes
 
 // Mesh generation functions
-RLAPI Mesh GenMeshPoly(int sides, float radius);                                            // Generate polygonal mesh
+RLAPI Mesh GenMeshPoly(int sides, float radiusMultiplier);                                            // Generate polygonal mesh
 RLAPI Mesh GenMeshPlane(float width, float length, int resX, int resZ);                     // Generate plane mesh (with subdivisions)
 RLAPI Mesh GenMeshCube(float width, float height, float length);                            // Generate cuboid mesh
-RLAPI Mesh GenMeshSphere(float radius, int rings, int slices);                              // Generate sphere mesh (standard sphere)
-RLAPI Mesh GenMeshHemiSphere(float radius, int rings, int slices);                          // Generate half-sphere mesh (no bottom cap)
-RLAPI Mesh GenMeshCylinder(float radius, float height, int slices);                         // Generate cylinder mesh
-RLAPI Mesh GenMeshCone(float radius, float height, int slices);                             // Generate cone/pyramid mesh
-RLAPI Mesh GenMeshTorus(float radius, float size, int radSeg, int sides);                   // Generate torus mesh
-RLAPI Mesh GenMeshKnot(float radius, float size, int radSeg, int sides);                    // Generate trefoil knot mesh
+RLAPI Mesh GenMeshSphere(float radiusMultiplier, int rings, int slices);                              // Generate sphere mesh (standard sphere)
+RLAPI Mesh GenMeshHemiSphere(float radiusMultiplier, int rings, int slices);                          // Generate half-sphere mesh (no bottom cap)
+RLAPI Mesh GenMeshCylinder(float radiusMultiplier, float height, int slices);                         // Generate cylinder mesh
+RLAPI Mesh GenMeshCone(float radiusMultiplier, float height, int slices);                             // Generate cone/pyramid mesh
+RLAPI Mesh GenMeshTorus(float radiusMultiplier, float size, int radSeg, int sides);                   // Generate torus mesh
+RLAPI Mesh GenMeshKnot(float radiusMultiplier, float size, int radSeg, int sides);                    // Generate trefoil knot mesh
 RLAPI Mesh GenMeshHeightmap(Image heightmap, Vector3 size);                                 // Generate heightmap mesh from image data
 RLAPI Mesh GenMeshCubicmap(Image cubicmap, Vector3 cubeSize);                               // Generate cubes-based map mesh from image data
 
@@ -1617,8 +1617,8 @@ RLAPI bool IsModelAnimationValid(Model model, ModelAnimation anim);             
 // Collision detection functions
 RLAPI bool CheckCollisionSpheres(Vector3 center1, float radius1, Vector3 center2, float radius2); // Check collision between two spheres
 RLAPI bool CheckCollisionBoxes(BoundingBox box1, BoundingBox box2);                         // Check collision between two bounding boxes
-RLAPI bool CheckCollisionBoxSphere(BoundingBox box, Vector3 center, float radius);          // Check collision between box and sphere
-RLAPI RayCollision GetRayCollisionSphere(Ray ray, Vector3 center, float radius);            // Get collision info between ray and sphere
+RLAPI bool CheckCollisionBoxSphere(BoundingBox box, Vector3 center, float radiusMultiplier);          // Check collision between box and sphere
+RLAPI RayCollision GetRayCollisionSphere(Ray ray, Vector3 center, float radiusMultiplier);            // Get collision info between ray and sphere
 RLAPI RayCollision GetRayCollisionBox(Ray ray, BoundingBox box);                            // Get collision info between ray and box
 RLAPI RayCollision GetRayCollisionMesh(Ray ray, Mesh mesh, Matrix transform);               // Get collision info between ray and mesh
 RLAPI RayCollision GetRayCollisionTriangle(Ray ray, Vector3 p1, Vector3 p2, Vector3 p3);    // Get collision info between ray and triangle

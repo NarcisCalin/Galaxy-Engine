@@ -79,6 +79,8 @@ struct UpdateVariables{
 	float timeStepMultiplierSlider = 1.0f;
 	float timeStepMultiplier = 1.0f;
 
+	const float particleBaseMass = 8500000000.0f;
+
 	int maxLeafParticles = 1;
 	float minLeafSize = 1.0f;
 
@@ -100,7 +102,8 @@ struct UpdateVariables{
 	bool isCollisionsEnabled = false;
 	bool isDensitySizeEnabled = false;
 	bool isForceSizeEnabled = false;
-	bool isShipGasEnabled = false;
+	bool isShipGasEnabled = true;
+	bool isSPHEnabled = false;
 
 	bool isSpawningAllowed = true;
 

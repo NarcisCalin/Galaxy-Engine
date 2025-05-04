@@ -5,123 +5,180 @@
 
 class ParticleSpaceship {
 public:
-	
+
+	int gasMultiplier = 2;
+
 	void spaceshipLogic(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, bool& isShipGasEnabled) {
 
-        if (pParticles.empty()) {
-            isShipEnabled = false;
-            return;
-        }
+		float lifeDt = GetFrameTime();
 
-        isShipEnabled =  (IsKeyDown(KEY_UP)
-            || IsKeyDown(KEY_RIGHT)
-            || IsKeyDown(KEY_DOWN)
-            || IsKeyDown(KEY_LEFT));
+		for (size_t i = 0; i < pParticles.size(); ++i) {
+			if (rParticles[i].lifeSpan > 0.0f) {
+				rParticles[i].lifeSpan -= lifeDt;
+			}
+		}
 
-        if (!isShipEnabled) return;
+		for (size_t i = 0; i < pParticles.size();) {
+			if (rParticles[i].lifeSpan <= 0.0f && rParticles[i].lifeSpan != -1.0f) {
+				pParticles.erase(pParticles.begin() + i);
+				rParticles.erase(rParticles.begin() + i);
+			}
+			else {
+				++i;
+			}
+		}
 
-        for (size_t i = 0; i < pParticles.size(); i++) {
-            if (!rParticles[i].isSelected) { 
-                continue;
-            }
+		if (pParticles.empty()) {
+			isShipEnabled = false;
+			return;
+		}
 
-            if (IsKeyDown(KEY_UP)) {
-                pParticles[i].acc.y -= acceleration;
+		isShipEnabled = (IsKeyDown(KEY_UP)
+			|| IsKeyDown(KEY_RIGHT)
+			|| IsKeyDown(KEY_DOWN)
+			|| IsKeyDown(KEY_LEFT));
 
-                if (isShipGasEnabled) {
-                float normalRand = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+		if (!isShipEnabled) return;
 
-                    pParticles.emplace_back(ParticlePhysics(
-                        Vector2{ pParticles[i].pos.x, pParticles[i].pos.y + (2.0f * normalRand) },
-                        Vector2{ pParticles[i].vel.x, pParticles[i].vel.y + 10.0f },
-                        10.0f
-                    ));
+		for (size_t i = 0; i < pParticles.size(); i++) {
+			if (!rParticles[i].isSelected) {
+				continue;
+			}
 
-                    rParticles.emplace_back(ParticleRendering(
-                        Color{ 128,128,128,100 },
-                        rParticles[i].size / 2.0f,
-                        true,
-                        false,
-                        false,
-                        true,
-                        true,
-                        false
-                    ));
-                }
-            }
-            if (IsKeyDown(KEY_RIGHT)) {
-                pParticles[i].acc.x += acceleration;
+			if (IsKeyDown(KEY_UP)) {
+				pParticles[i].acc.y -= acceleration;
 
-                if (isShipGasEnabled) {
-                    float normalRand = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+				if (isShipGasEnabled) {
+					for (int g = 0; g < gasMultiplier; g++) {
+						float normalRand = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 
-                    pParticles.emplace_back(ParticlePhysics(
-                        Vector2{ pParticles[i].pos.x - (2.0f * normalRand), pParticles[i].pos.y },
-                        Vector2{ pParticles[i].vel.x - 10.0f, pParticles[i].vel.y },
-                        10.0f
-                    ));
+						pParticles.emplace_back(ParticlePhysics(
+							Vector2{ pParticles[i].pos.x + (4.0f * normalRand - 2.0f), pParticles[i].pos.y + 3.3f },
+							Vector2{ pParticles[i].vel.x + (4.0f * normalRand - 2.0f), pParticles[i].vel.y + 10.0f },
+							90000000.0f,
 
-                    rParticles.emplace_back(ParticleRendering(
-                        Color{ 128,128,128,100 },
-                        rParticles[i].size / 2.0f,
-                        true,
-                        false,
-                        false,
-                        true,
-                        true,
-                        false
-                    ));
-                }
-            }
-            if (IsKeyDown(KEY_DOWN)) {
-                pParticles[i].acc.y += acceleration;
+							0.24f,
+							0.1f,
+							1.0f,
+							0.02f
+						));
 
-                if (isShipGasEnabled) {
-                    float normalRand = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+						rParticles.emplace_back(ParticleRendering(
+							Color{ 128,128,128,100 },
+							rParticles[i].size / 2.0f,
+							true,
+							false,
+							false,
+							true,
+							true,
+							false,
+							true,
+							3.0f
+						));
+					}
+				}
+			}
+			if (IsKeyDown(KEY_RIGHT)) {
+				pParticles[i].acc.x += acceleration;
 
-                    pParticles.emplace_back(ParticlePhysics(
-                        Vector2{ pParticles[i].pos.x, pParticles[i].pos.y - (2.0f * normalRand) },
-                        Vector2{ pParticles[i].vel.x, pParticles[i].vel.y - 10.0f },
-                        10.0f
-                    ));
+				if (isShipGasEnabled) {
+					for (int g = 0; g < gasMultiplier; g++) {
+						float normalRand = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 
-                    rParticles.emplace_back(ParticleRendering(
-                        Color{ 128,128,128,100 },
-                        rParticles[i].size / 2.0f,
-                        true,
-                        false,
-                        false,
-                        true,
-                        true,
-                        false
-                    ));
-                }
-            }
-            if (IsKeyDown(KEY_LEFT)) {
-                pParticles[i].acc.x -= acceleration;
+						pParticles.emplace_back(ParticlePhysics(
+							Vector2{ pParticles[i].pos.x - 3.3f, pParticles[i].pos.y + (4.0f * normalRand - 2.0f) },
+							Vector2{ pParticles[i].vel.x - 10.0f, pParticles[i].vel.y + (4.0f * normalRand - 2.0f) },
+							90000000.0f,
 
-                if (isShipGasEnabled) {
-                    float normalRand = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+							0.24f,
+							0.1f,
+							1.0f,
+							0.02f
+						));
 
-                    pParticles.emplace_back(ParticlePhysics(
-                        Vector2{ pParticles[i].pos.x + (2.0f * normalRand), pParticles[i].pos.y },
-                        Vector2{ pParticles[i].vel.x + 10.0f, pParticles[i].vel.y },
-                        10.0f
-                    ));
+						rParticles.emplace_back(ParticleRendering(
+							Color{ 128,128,128,100 },
+							rParticles[i].size / 2.0f,
+							true,
+							false,
+							false,
+							true,
+							true,
+							false,
+							true,
+							3.0f
+						));
+					}
+				}
+			}
+			if (IsKeyDown(KEY_DOWN)) {
+				pParticles[i].acc.y += acceleration;
 
-                    rParticles.emplace_back(ParticleRendering(
-                        Color{ 128,128,128,100 },
-                        rParticles[i].size / 2.0f,
-                        true,
-                        false,
-                        false,
-                        true,
-                        true,
-                        false
-                    ));
-                }
-            }
-        }
+				if (isShipGasEnabled) {
+					for (int g = 0; g < gasMultiplier; g++) {
+						float normalRand = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+
+						pParticles.emplace_back(ParticlePhysics(
+							Vector2{ pParticles[i].pos.x + (4.0f * normalRand - 2.0f), pParticles[i].pos.y - 3.3f },
+							Vector2{ pParticles[i].vel.x + (4.0f * normalRand - 2.0f), pParticles[i].vel.y - 10.0f },
+							90000000.0f,
+
+							0.24f,
+							0.1f,
+							1.0f,
+							0.02f
+						));
+
+						rParticles.emplace_back(ParticleRendering(
+							Color{ 128,128,128,100 },
+							rParticles[i].size / 2.0f,
+							true,
+							false,
+							false,
+							true,
+							true,
+							false,
+							true,
+							3.0f
+						));
+					}
+				}
+			}
+			if (IsKeyDown(KEY_LEFT)) {
+				pParticles[i].acc.x -= acceleration;
+
+				if (isShipGasEnabled) {
+					for (int g = 0; g < gasMultiplier; g++) {
+						float normalRand = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+
+						pParticles.emplace_back(ParticlePhysics(
+							Vector2{ pParticles[i].pos.x + 3.3f, pParticles[i].pos.y + (4.0f * normalRand - 2.0f) },
+							Vector2{ pParticles[i].vel.x + 10.0f, pParticles[i].vel.y + (4.0f * normalRand - 2.0f) },
+							90000000.0f,
+
+							0.24f,
+							0.1f,
+							1.0f,
+							0.02f
+						));
+
+						rParticles.emplace_back(ParticleRendering(
+							Color{ 128,128,128,100 },
+							rParticles[i].size / 2.0f,
+							true,
+							false,
+							false,
+							true,
+							true,
+							false,
+							true,
+							3.0f
+
+						));
+					}
+				}
+			}
+		}
 	}
 
 private:

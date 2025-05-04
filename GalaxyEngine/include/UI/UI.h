@@ -7,6 +7,7 @@
 #include "../parameters.h"
 #include "slider.h"
 #include "../Physics/quadtree.h"
+#include "../Physics/SPH.h"
 
 class UI {
 public:
@@ -14,11 +15,11 @@ public:
 	bool bVisualsSliders = true;
 	bool bPhysicsSliders = false;
 
-	void uiLogic(UpdateParameters& myParam, UpdateVariables& myVar);
+	void uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph);
 
 private:
 
-	std::array<Button, 25> settingsButtonsArray = {
+	std::array<Button, 26> settingsButtonsArray = {
 
 Button({195.0f, 80.0f}, {175.0f, 24.0f}, "Global Trails", true),
 
@@ -50,6 +51,8 @@ Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Barnes-Hut", true),
 
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Multi-Threading", true),
 
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "SPH", true),
+
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Collisions (!!!)", true),
 
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Density Size", true),
@@ -68,7 +71,7 @@ Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Visual Sliders", true),
 
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Physics Sliders", true),
 
-Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Ship Gas", true),
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Ship Gas", true)
 
 	};
 	std::array<Button, 1> toggleSettingsButtons = {
@@ -121,7 +124,7 @@ Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Ship Gas", true),
 
 	};
 
-	std::array<Slider, 8> physicsSliders = {
+	std::array<Slider, 14> physicsSliders = {
 
 	Slider({20, 530.0f}, {230.0f, 7.0f}, {120, 128, 128, 255}, "Softening"),
 
@@ -137,7 +140,19 @@ Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Ship Gas", true),
 
 	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Particles Bounciness"),
 
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Threads Amount")
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Threads Amount"),
+
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "SPH Rest Pressure"),
+
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "SPH Stiffness"),
+
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "SPH Radius"),
+
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "SPH Mass Multiplier"),
+
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "SPH Viscosity"),
+
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "SPH Cohesion")
 
 	};
 

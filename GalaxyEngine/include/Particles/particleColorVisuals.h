@@ -179,7 +179,7 @@ struct ColorVisuals {
 		if (selectedColor) {
 			for (size_t i = 0; i < rParticles.size(); i++) {
 				if (rParticles[i].isSelected && !rParticles[i].uniqueColor) {
-					rParticles[i].color = { 230, 128,128, 128 };
+					rParticles[i].color = { 255, 20,20, 255 };
 				}
 			}
 		}

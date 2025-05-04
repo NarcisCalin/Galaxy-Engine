@@ -22,8 +22,17 @@ void Brush::brushLogic(UpdateParameters& myParam) {
 
 		Vector2 particlePos = Vector2Add(myParam.myCamera.mouseWorldPos, randomOffset);
 
-		myParam.pParticles.emplace_back(particlePos, Vector2{ 0, 0 }, 8500000000.0f / myParam.particlesSpawning.particleAmountMultiplier);
-		myParam.rParticles.emplace_back(Color{ 128, 128, 128, 100 }, 0.125f, false, false, false, true, true, false);
+		myParam.pParticles.emplace_back(particlePos, 
+			Vector2{ 0, 0 }, 
+			8500000000.0f / myParam.particlesSpawning.particleAmountMultiplier, 
+
+			1.0f,
+			1.0f,
+			1.0f,
+			1.0f);
+
+		myParam.rParticles.emplace_back(Color{ 128, 128, 128, 100 }, 0.125f, false, false, false, true, true, false, true, -1.0f);
+
 	}
 }
 
@@ -72,14 +81,14 @@ void Brush::particlesAttractor(UpdateVariables& myVar, UpdateParameters& myParam
 		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 			float dx = myParam.pParticles[i].pos.x - myParam.myCamera.mouseWorldPos.x;
 			float dy = myParam.pParticles[i].pos.y - myParam.myCamera.mouseWorldPos.y;
-			float radius = sqrt(dx * dx + dy * dy);
-			if (radius < 1.0f) radius = 1.0f;
+			float radiusMultiplier = sqrt(dx * dx + dy * dy);
+			if (radiusMultiplier < 1.0f) radiusMultiplier = 1.0f;
 
 
-			float acceleration = static_cast<float>(myVar.G * 10000.0f * brushRadius) / (radius * radius);
+			float acceleration = static_cast<float>(myVar.G * 10000.0f * brushRadius) / (radiusMultiplier * radiusMultiplier);
 
-			attractorForce.x = static_cast<float>(-(dx / radius) * acceleration * myParam.pParticles[i].mass);
-			attractorForce.y = static_cast<float>(-(dy / radius) * acceleration * myParam.pParticles[i].mass);
+			attractorForce.x = static_cast<float>(-(dx / radiusMultiplier) * acceleration * myParam.pParticles[i].mass);
+			attractorForce.y = static_cast<float>(-(dy / radiusMultiplier) * acceleration * myParam.pParticles[i].mass);
 
 			if (IsKeyDown(KEY_LEFT_CONTROL)) {
 				attractorForce = { -attractorForce.x, -attractorForce.y };
@@ -136,7 +145,7 @@ void Brush::particlesGrabber(UpdateParameters& myParam) {
 				myParam.pParticles[i].pos.x - myParam.myCamera.mouseWorldPos.x,
 				myParam.pParticles[i].pos.y - myParam.myCamera.mouseWorldPos.y
 			};
-			
+
 			float distance = sqrt(distanceFromBrush.x * distanceFromBrush.x +
 				distanceFromBrush.y * distanceFromBrush.y);
 			if (distance < brushRadius) {

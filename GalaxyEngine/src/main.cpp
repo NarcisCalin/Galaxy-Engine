@@ -33,6 +33,7 @@
 #include "../include/Physics/collisionGrid.h"
 #include "../include/parameters.h"
 #include "../include/Particles/particleSpaceship.h"
+#include "../include/Physics/SPH.h"
 
 
 UpdateParameters myParam;
@@ -41,6 +42,7 @@ UI myUI;
 Physics physics;
 CollisionGrid collisionGrid;
 ParticleSpaceship ship;
+SPH sph;
 
 
 static Quadtree* gridFunction(std::vector<ParticlePhysics>& pParticles,
@@ -103,20 +105,24 @@ static void updateScene() {
 	}
 
 
+	for (ParticleRendering& rParticle : myParam.rParticles) {
+		rParticle.totalRadius = rParticle.size * myVar.particleTextureHalfSize * myVar.particleSizeMultiplier;
+	}
+
 	myParam.brush.brushSize();
 
 	myParam.particlesSpawning.particlesInitialConditions(grid, physics, myVar, myParam);
 
 	if (myVar.timeFactor > 0.0f && grid != nullptr) {
 
-
+		Vector2 netForce = { 0.0f, 0.0f };
 		if (myVar.isBarnesHutEnabled) {
 #pragma omp parallel for schedule(dynamic)
 			for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 
 				ParticlePhysics& pParticle = myParam.pParticles[i];
 
-				Vector2 netForce = physics.calculateForceFromGrid(*grid, myParam.pParticles, myVar, pParticle);
+				netForce = physics.calculateForceFromGrid(*grid, myParam.pParticles, myVar, pParticle);
 
 				pParticle.acc.x = netForce.x / pParticle.mass;
 				pParticle.acc.y = netForce.y / pParticle.mass;
@@ -137,6 +143,10 @@ static void updateScene() {
 		}
 
 		physics.physicsUpdate(myParam.pParticles, myParam.rParticles, myVar);
+
+		if (myVar.isSPHEnabled) {
+			sph.Solver(myParam.pParticles, myParam.rParticles, myVar.timeFactor, myVar.particleBaseMass, myVar.domainSize);
+		}
 
 		/*for (size_t i = 0; i < myParam.pParticles.size(); ++i) {
 			std::cout << "VelX:" << myParam.pParticles[i].vel.x << " VelY:" << myParam.pParticles[i].vel.y << std::endl;
@@ -210,6 +220,7 @@ static void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture) 
 		}
 	}
 
+
 	myParam.colorVisuals.particlesColorVisuals(myParam.pParticles, myParam.rParticles, myVar.particleSizeMultiplier, myVar.particleTextureHalfSize);
 
 	myParam.trails.drawTrail(myParam.rParticles, particleBlurTex);
@@ -249,7 +260,7 @@ static void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture) 
 
 	// EVERYTHING STATIC RELATIVE TO CAMERA BELOW
 
-	myUI.uiLogic(myParam, myVar);
+	myUI.uiLogic(myParam, myVar, sph);
 
 	myParam.subdivision.subdivideParticles(myVar, myParam);
 
@@ -265,6 +276,7 @@ static void enableMultiThreading() {
 		omp_set_num_threads(1);
 	}
 }
+
 int main() {
 
 	SetConfigFlags(FLAG_MSAA_4X_HINT);
@@ -292,6 +304,7 @@ int main() {
 		BeginMode2D(myParam.myCamera.cameraLogic());
 
 		updateScene();
+
 		drawScene(particleBlurTex, myUITexture);
 
 		EndMode2D();
