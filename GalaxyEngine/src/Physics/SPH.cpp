@@ -10,12 +10,12 @@ void SPH::computeDensityPressure(std::vector<ParticlePhysics>& pParticles, std::
 		ParticlePhysics& pi = pParticles[i];
 		pi.dens = 0.0f;
 
-		int cellIndex = getGridIndex(pi.pos);
-		std::vector<int> neighborCells = getNeighborCells(cellIndex);
+		size_t cellIndex = getGridIndex(pi.pos);
+		std::vector<size_t> neighborCells = getNeighborCells(cellIndex);
 
-		for (int neighborCell : neighborCells) {
+		for (size_t neighborCell : neighborCells) {
 			if (grid.find(neighborCell) == grid.end()) { continue; }
-			for (int j : grid[neighborCell].particleIndices) {
+			for (size_t j : grid[neighborCell].particleIndices) {
 				if (!rParticles[j].isSPH) { continue; }
 				ParticlePhysics& pj = pParticles[j];
 
@@ -47,12 +47,12 @@ void SPH::computeForces(std::vector<ParticlePhysics>& pParticles, std::vector<Pa
 		if (!rParticles[i].isSPH) { continue; }
 		ParticlePhysics& pi = pParticles[i];
 
-		int cellIndex = getGridIndex(pi.pos);
-		std::vector<int> neighborCells = getNeighborCells(cellIndex);
+		size_t cellIndex = getGridIndex(pi.pos);
+		std::vector<size_t> neighborCells = getNeighborCells(cellIndex);
 
-		for (int neighborCell : neighborCells) {
+		for (size_t neighborCell : neighborCells) {
 			if (grid.find(neighborCell) == grid.end()) { continue; }
-			for (int j : grid[neighborCell].particleIndices) {
+			for (size_t j : grid[neighborCell].particleIndices) {
 				if (!rParticles[j].isSPH) { continue; }
 
 				ParticlePhysics& pj = pParticles[j];

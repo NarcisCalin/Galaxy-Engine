@@ -58,7 +58,7 @@ struct ColorVisuals {
 					rParticles[i].color.r = static_cast<unsigned char>(primaryR * rParticles[i].PRGBA.r);
 					rParticles[i].color.g = static_cast<unsigned char>(primaryG * rParticles[i].PRGBA.g);
 					rParticles[i].color.b = static_cast<unsigned char>(primaryB * rParticles[i].PRGBA.b);
-					rParticles[i].color.a = primaryA * rParticles[i].PRGBA.a;
+					rParticles[i].color.a = static_cast<unsigned char>(primaryA * rParticles[i].PRGBA.a);
 				}
 			}
 			blendMode = 1;

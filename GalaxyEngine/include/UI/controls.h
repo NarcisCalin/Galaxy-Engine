@@ -86,8 +86,8 @@ struct Controls {
 
 	bool isInformationEnabled = false;
 
-	int controlsBoxSizeX = 435;
-	int controlsBoxSizeY = 810;
+	float controlsBoxSizeX = 435.0f;
+	float controlsBoxSizeY = 810.0f;
 
 	float fontSize = 18.0f;
 	float fontSeparation = 1.0f;

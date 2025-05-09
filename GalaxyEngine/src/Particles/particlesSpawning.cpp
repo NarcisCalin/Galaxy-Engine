@@ -465,7 +465,7 @@ void ParticlesSpawning::copyPaste(std::vector<ParticlePhysics>& pParticles, std:
 			avgPos += pCopy.pos;
 		}
 
-		avgPos /= pParticlesCopied.size();
+		avgPos /= static_cast<float>(pParticlesCopied.size());
 	}
 
 	Slingshot slingshot = slingshot.particleSlingshot(isDragging, myCamera);

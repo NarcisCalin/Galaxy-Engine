@@ -43,7 +43,7 @@ private:
         gridMass = 0.0f;
         centerOfMass = { 0.0f, 0.0f };
 
-        for (int i = startIndex; i < endIndex; ++i) {
+        for (size_t i = startIndex; i < endIndex; ++i) {
             gridMass += pParticles[i].mass;
             centerOfMass.x += pParticles[i].pos.x * pParticles[i].mass;
             centerOfMass.y += pParticles[i].pos.y * pParticles[i].mass;
@@ -59,7 +59,7 @@ private:
         gridMass = 0.0f;
         centerOfMass = { 0.0f, 0.0f };
 
-        for (auto& child : subGrids) {
+        for (std::unique_ptr<Quadtree>& child : subGrids) {
             gridMass += child->gridMass;
             centerOfMass.x += child->centerOfMass.x * child->gridMass;
             centerOfMass.y += child->centerOfMass.y * child->gridMass;

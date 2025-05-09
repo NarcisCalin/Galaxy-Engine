@@ -32,9 +32,9 @@ Quadtree::Quadtree(float posX, float posY, float size,
 }
 
 template<typename T, typename U, typename Predicate>
-int dualPartition(std::vector<T>& pParticlesVector, std::vector<U>& rParticlesVector, int begin, int end, Predicate predicate) {
-	int i = begin;
-	for (int j = begin; j < end; ++j) {
+size_t dualPartition(std::vector<T>& pParticlesVector, std::vector<U>& rParticlesVector, size_t begin, size_t end, Predicate predicate) {
+	size_t i = begin;
+	for (size_t j = begin; j < end; ++j) {
 		if (predicate(pParticlesVector[j])) {
 			if (i != j) {
 				std::swap(pParticlesVector[i], pParticlesVector[j]);
@@ -50,9 +50,9 @@ void Quadtree::subGridMaker(std::vector<ParticlePhysics>& pParticles, std::vecto
 	float midX = pos.x + size / 2.0f;
 	float midY = pos.y + size / 2.0f;
 
-	int originalStart = startIndex;
-	int originalEnd = endIndex;
-	int boundaries[5];
+	size_t originalStart = startIndex;
+	size_t originalEnd = endIndex;
+	size_t boundaries[5];
 	boundaries[0] = originalStart;
 
 	auto isQuad0 = [midX, midY](const ParticlePhysics& pParticle) {

@@ -11,12 +11,12 @@
 struct UpdateVariables;
 
 struct GridCell {
-	std::vector<int> particleIndices;
+	std::vector<size_t> particleIndices;
 };
 
 class SPH {
 public:
-	float restDensity = 1.24;
+	float restDensity = 1.24f;
 	float stiffness = 100.0f;
 	float radiusMultiplier = 3.0f;
 	float radiusSq = radiusMultiplier * radiusMultiplier;
@@ -26,28 +26,28 @@ public:
 	const float boundDamping = -0.5f;
 
 	float cellSize;
-	std::unordered_map<int, GridCell> grid;
+	std::unordered_map<size_t, GridCell> grid;
 
 	SPH() : cellSize(radiusMultiplier) {}
 
 	float smoothingKernel(float dst, float radiusMultiplier) {
 		if (dst >= radiusMultiplier) return 0.0f;
 
-		float volume = (PI * pow(radiusMultiplier, 4)) / 6;
+		float volume = (PI * pow(radiusMultiplier, 4.0f)) / 6.0f;
 		return (radiusMultiplier - dst) * (radiusMultiplier - dst) / volume;
 	}
 
 	float spikyKernelDerivative(float dst, float radiusMultiplier) {
 		if (dst >= radiusMultiplier) return 0.0f;
 
-		float scale = -45.0f / (PI * pow(radiusMultiplier, 6));
-		return scale * pow(radiusMultiplier - dst, 2);
+		float scale = -45.0f / (PI * pow(radiusMultiplier, 6.0f));
+		return scale * pow(radiusMultiplier - dst, 2.0f);
 	}
 
 	float smoothingKernelLaplacian(float dst, float radiusMultiplier) {
 		if (dst >= radiusMultiplier) return 0.0f;
 
-		float scale = 45.0f / (PI * pow(radiusMultiplier, 6));
+		float scale = 45.0f / (PI * pow(radiusMultiplier, 6.0f));
 		return scale;
 	}
 
@@ -58,16 +58,16 @@ public:
 		return (1.0f - q) * (0.5f - q) * (0.5f - q) * 30.0f / (PI * h * h);
 	}
 
-	int getGridIndex(const Vector2& pos) const {
-		int cellX = static_cast<int>(floor(pos.x / cellSize));
-		int cellY = static_cast<int>(floor(pos.y / cellSize));
+	size_t getGridIndex(const Vector2& pos) const {
+		size_t cellX = static_cast<size_t>(floor(pos.x / cellSize));
+		size_t cellY = static_cast<size_t>(floor(pos.y / cellSize));
 		return cellX * 10000 + cellY;
 	}
 
-	std::vector<int> getNeighborCells(int cellIndex) const {
-		std::vector<int> neighbors;
-		int cellX = cellIndex / 10000;
-		int cellY = cellIndex % 10000;
+	std::vector<size_t> getNeighborCells(size_t cellIndex) const {
+		std::vector<size_t> neighbors;
+		size_t cellX = cellIndex / 10000;
+		size_t cellY = cellIndex % 10000;
 
 		for (int i = -1; i <= 1; i++) {
 			for (int j = -1; j <= 1; j++) {
@@ -85,7 +85,7 @@ public:
 
 			if (rParticles[i].isDarkMatter) { continue; }
 
-			int cellIndex = getGridIndex(pParticles[i].pos);
+			size_t cellIndex = getGridIndex(pParticles[i].pos);
 			grid[cellIndex].particleIndices.push_back(i);
 		}
 	}

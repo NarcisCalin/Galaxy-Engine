@@ -135,9 +135,9 @@ void Controls::showMoreInfo() {
 
     float boxX = screenW * 0.5f - infoBoxW * 0.5f;
     float boxY = screenH * 0.5f - infoBoxH * 0.5f;
-    DrawRectangle(
-        boxX, boxY,
-        infoBoxW, infoBoxH,
+    DrawRectangleV(
+        { boxX, boxY },
+        { infoBoxW, infoBoxH },
         { 170, 170, 170, 170 }
     );
 
