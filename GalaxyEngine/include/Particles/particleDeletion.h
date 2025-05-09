@@ -69,6 +69,7 @@ struct ParticleDeletion {
 			deleteNonImportant = false;
 		}
 	}
+
 private:
 	const float distanceThreshold = 10.0f;
 	const float squaredDistanceThreshold = distanceThreshold * distanceThreshold;

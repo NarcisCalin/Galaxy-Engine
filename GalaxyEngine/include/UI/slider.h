@@ -4,9 +4,6 @@
 #include <type_traits>
 #include <cmath>
 #include "../raylib/raylib.h"
-#include "../parameters.h"
-
-struct UpdateVariables;
 
 class Slider {
 public:
@@ -21,19 +18,42 @@ public:
 	template <typename T>
 	inline bool sliderLogic(T minValue, T& value, T maxValue) {
 
-		this->handleColor = {
+		if (GetScreenWidth() >= 1920 && GetScreenHeight() >= 1080) {
+			textSize = 17.0f;
+			textSliderSeparation = 8;
+		}
+		else if (GetScreenWidth() < 1920 && GetScreenHeight() < 1080) {
+			textSize = 16.4f;
+			textSliderSeparation = 6;
+		}
+
+		handleSize = { sliderSize.x / 8, sliderSize.y + 10 };
+
+		float range = static_cast<float>(maxValue) - static_cast<float>(minValue);
+		float pct = (static_cast<float>(value) - static_cast<float>(minValue)) / range;
+		float idealX = sliderPos.x + pct * (sliderSize.x - handleSize.x);
+
+		if (setInitialPos) {
+			initialHandlePosX = idealX;
+			initialValue = static_cast<double>(value);
+			setInitialPos = false;
+		}
+
+		if (!isClicked) {
+			handlePos.x = idealX;
+		}
+
+		isHoveringSlider = (GetMouseX() > sliderPos.x && GetMouseX() < sliderPos.x + sliderSize.x
+			&& GetMouseY() > sliderPos.y && GetMouseY() < sliderPos.y + sliderSize.y);
+		isHoveringHandle = (GetMouseX() > handlePos.x && GetMouseX() < handlePos.x + handleSize.x
+			&& GetMouseY() > handlePos.y && GetMouseY() < handlePos.y + handleSize.y);
+
+		handleColor = {
 			static_cast<unsigned char>(sliderColor.r * 1.2f),
 			static_cast<unsigned char>(sliderColor.g * 1.2f),
 			static_cast<unsigned char>(sliderColor.b * 1.2f),
 			255
 		};
-
-		isHoveringSlider = (GetMouseX() > sliderPos.x && GetMouseX() < sliderPos.x + sliderSize.x
-			&& GetMouseY() > sliderPos.y && GetMouseY() < sliderPos.y + sliderSize.y);
-
-		isHoveringHandle = (GetMouseX() > handlePos.x && GetMouseX() < handlePos.x + handleSize.x
-			&& GetMouseY() > handlePos.y && GetMouseY() < handlePos.y + handleSize.y);
-
 		if (isHoveringHandle) {
 			handleColor = {
 				static_cast<unsigned char>(handleColor.r * 0.8f),
@@ -47,67 +67,47 @@ public:
 			initialMouseX = GetMouseX() - handlePos.x;
 			isClicked = true;
 		}
-
 		if (IsMouseButtonReleased(0)) {
 			isClicked = false;
 		}
-
 		if (isClicked) {
 			handlePos.x = GetMouseX() - initialMouseX;
 		}
 
-		if constexpr (std::is_same_v<T, int>) {
-			operatorType = 'i';
-
-		}
-		else if constexpr (std::is_same_v<T, float>) {
-			operatorType = 'f';
-
-		}
-
 		handlePos.x = std::clamp(handlePos.x, sliderPos.x, sliderPos.x + sliderSize.x - handleSize.x);
+		handlePos.y = sliderPos.y - ((handleSize.y - sliderSize.y) / 2);
 
-		handleSize = { sliderSize.x / 8, sliderSize.y + 10 };
-		handlePos = { handlePos.x, sliderPos.y - ((handleSize.y - sliderSize.y) / 2) };
-
-		float sliderValue = handlePos.x - sliderPos.x;
-
-		float normalizedSlider = sliderValue / (sliderSize.x - handleSize.x);
-
-		if (setInitialPos) {
-			handlePos.x += (sliderSize.x - handleSize.x) * (float)value / maxValue;
-			initialHandlePosX = handlePos.x;
-			setInitialPos = false;
-		}
-
-		if (isOnTop && IsMouseButtonPressed(1)) {
-			handlePos.x = initialHandlePosX;
-		}
-
+		float normalized = (handlePos.x - sliderPos.x) / (sliderSize.x - handleSize.x);
 		if constexpr (std::is_same_v<T, int>) {
 			value = std::clamp<T>(
-				static_cast<T>(std::round(maxValue * normalizedSlider)), minValue, maxValue);
+				static_cast<T>(std::round(minValue + range * normalized)),
+				minValue, maxValue
+			);
+			operatorType = 'i';
 		}
 		else {
-			value = std::clamp(static_cast<T>(maxValue * normalizedSlider), minValue, maxValue);
+			value = std::clamp(
+				static_cast<T>(minValue + range * normalized),
+				minValue, maxValue
+			);
+			operatorType = 'f';
 		}
 
-		const char* fmt;
-		if constexpr (std::is_same_v<T, int>) fmt = "%s: %i";
-		else if constexpr (std::is_same_v<T, float>) fmt = "%s: %f";
-
-		DrawRectangle(static_cast<int>(sliderPos.x), static_cast<int>(sliderPos.y), static_cast<int>(sliderSize.x), static_cast<int>(sliderSize.y), sliderColor);
-
-		DrawRectangle(static_cast<int>(handlePos.x), static_cast<int>(handlePos.y), static_cast<int>(handleSize.x), static_cast<int>(handleSize.y), handleColor);
-
+		DrawRectangle((int)sliderPos.x, (int)sliderPos.y, (int)sliderSize.x, (int)sliderSize.y, sliderColor);
+		DrawRectangle((int)handlePos.x, (int)handlePos.y, (int)handleSize.x, (int)handleSize.y, handleColor);
+		const char* fmt = (operatorType == 'i') ? "%s: %i" : "%s: %.4f";
 		DrawText(TextFormat(fmt, name.c_str(), value),
-			static_cast<int>(sliderPos.x),
-			static_cast<int>(sliderPos.y - textSize - 8),
-			static_cast<int>(textSize),
+			(int)sliderPos.x,
+			(int)(sliderPos.y - textSize - textSliderSeparation),
+			(int)textSize,
 			WHITE);
 
 		if (isHoveringHandle || isHoveringSlider) {
 			isOnTop = true;
+			if (IsMouseButtonPressed(1)) {
+				handlePos.x = initialHandlePosX;
+				value = static_cast<T>(initialValue);
+			}
 		}
 		else {
 			isOnTop = false;
@@ -120,8 +120,9 @@ private:
 	bool isHoveringSlider;
 	bool isHoveringHandle;
 	bool isOnTop;
-
-	float textSize = 17;
+	double initialValue;
+	float textSize = 17.0f;
+	int textSliderSeparation = 8;
 
 	float initialMouseX;
 	bool isClicked;
@@ -134,7 +135,4 @@ private:
 	Vector2 handlePos;
 	Vector2 handleSize;
 	Color handleColor;
-
-	Vector2 minHandlePos;
-	Vector2 maxHandlePos;
 };

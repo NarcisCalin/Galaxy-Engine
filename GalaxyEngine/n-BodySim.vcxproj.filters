@@ -149,5 +149,8 @@
     <ClInclude Include="include\Physics\SPH.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\Physics\materialsSPH.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

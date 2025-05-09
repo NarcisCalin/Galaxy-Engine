@@ -27,9 +27,6 @@ public:
 
 	Vector2 selectedParticlesAveragePos = { 0.0f, 0.0f };
 
-	ParticleTrails();
-	~ParticleTrails();
-
 	void trailLogic(UpdateVariables& myVar, UpdateParameters& myParam);
 
 	void drawTrail(std::vector<ParticleRendering>& rParticles, Texture2D& particleBlur);

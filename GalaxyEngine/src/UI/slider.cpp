@@ -21,7 +21,5 @@ Slider::Slider(Vector2 sliderPos, Vector2 sliderSize, Color sliderColor, std::st
 	this->isHoveringHandle = false;
 	this->isHoveringSlider = false;
 	this->isOnTop = false;
-	this->maxHandlePos = { 0, 0 };
-	this->minHandlePos = { 0, 0 };
 	this->operatorType = '\0';
 }

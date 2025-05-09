@@ -12,7 +12,7 @@ Slingshot::Slingshot(float normalizedX, float normalizedY, float length) {
 
 
 
-Slingshot Slingshot::planetSlingshot(bool &isDragging, SceneCamera myCamera) {
+Slingshot Slingshot::particleSlingshot(bool &isDragging, SceneCamera myCamera) {
 
 	if (IsMouseButtonPressed(1)) {
 		isDragging = false;
@@ -24,7 +24,9 @@ Slingshot Slingshot::planetSlingshot(bool &isDragging, SceneCamera myCamera) {
 		!IsKeyDown(KEY_LEFT_ALT) || 
 		IsKeyPressed(KEY_ONE) ||
 		IsKeyPressed(KEY_TWO) || 
-		IsKeyPressed(KEY_THREE))
+		IsKeyPressed(KEY_THREE) ||
+		IsKeyPressed(KEY_J)
+		)
 	{   
 		isDragging = true;
 		slingshotPos = mouseWorldPos;

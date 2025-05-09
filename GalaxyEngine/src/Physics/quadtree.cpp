@@ -72,14 +72,17 @@ void Quadtree::subGridMaker(std::vector<ParticlePhysics>& pParticles, std::vecto
 
 	boundaries[4] = originalEnd;
 
+	subGrids.reserve(4);
+
 	for (int q = 0; q < 4; ++q) {
 		if (boundaries[q + 1] > boundaries[q]) {
 			float newPosX = pos.x + ((q & 1) ? size / 2.0f : 0.0f);
 			float newPosY = pos.y + ((q & 2) ? size / 2.0f : 0.0f);
-			subGrids.push_back(std::make_unique<Quadtree>(
+			subGrids.emplace_back(std::make_unique<Quadtree>(
 				newPosX, newPosY, size / 2.0f,
 				boundaries[q], boundaries[q + 1],
-				pParticles, rParticles, this, 0));
+				pParticles, rParticles, this, 0
+			));
 		}
 	}
 }

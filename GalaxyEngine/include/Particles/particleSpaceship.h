@@ -38,12 +38,24 @@ public:
 			|| IsKeyDown(KEY_DOWN)
 			|| IsKeyDown(KEY_LEFT));
 
-		if (!isShipEnabled) return;
+		if (!isShipEnabled) {
+			return;
+		};
 
 		for (size_t i = 0; i < pParticles.size(); i++) {
 			if (!rParticles[i].isSelected) {
 				continue;
 			}
+			else {
+
+				// I set it to the mass of the stone
+
+				float sphMass = 4.0f;
+
+				pParticles[i].mass = 8500000000.0f * 4.0f;
+				pParticles[i].sphMass = 4.0f;
+			}
+
 
 			if (IsKeyDown(KEY_UP)) {
 				pParticles[i].acc.y -= acceleration;
@@ -55,17 +67,17 @@ public:
 						pParticles.emplace_back(ParticlePhysics(
 							Vector2{ pParticles[i].pos.x + (4.0f * normalRand - 2.0f), pParticles[i].pos.y + 3.3f },
 							Vector2{ pParticles[i].vel.x + (4.0f * normalRand - 2.0f), pParticles[i].vel.y + 10.0f },
-							90000000.0f,
+							8500000000.0f * 0.6f,
 
-							0.24f,
-							0.1f,
-							1.0f,
-							0.02f
+							0.25f,
+							0.015f,
+							0.09f,
+							1.0f
 						));
 
 						rParticles.emplace_back(ParticleRendering(
 							Color{ 128,128,128,100 },
-							rParticles[i].size / 2.0f,
+							rParticles[i].size * 0.7f,
 							true,
 							false,
 							false,
@@ -88,17 +100,17 @@ public:
 						pParticles.emplace_back(ParticlePhysics(
 							Vector2{ pParticles[i].pos.x - 3.3f, pParticles[i].pos.y + (4.0f * normalRand - 2.0f) },
 							Vector2{ pParticles[i].vel.x - 10.0f, pParticles[i].vel.y + (4.0f * normalRand - 2.0f) },
-							90000000.0f,
+							8500000000.0f * 0.6f,
 
-							0.24f,
-							0.1f,
-							1.0f,
-							0.02f
+							0.25f,
+							0.015f,
+							0.09f,
+							1.0f
 						));
 
 						rParticles.emplace_back(ParticleRendering(
 							Color{ 128,128,128,100 },
-							rParticles[i].size / 2.0f,
+							rParticles[i].size * 0.7f,
 							true,
 							false,
 							false,
@@ -121,17 +133,17 @@ public:
 						pParticles.emplace_back(ParticlePhysics(
 							Vector2{ pParticles[i].pos.x + (4.0f * normalRand - 2.0f), pParticles[i].pos.y - 3.3f },
 							Vector2{ pParticles[i].vel.x + (4.0f * normalRand - 2.0f), pParticles[i].vel.y - 10.0f },
-							90000000.0f,
+							8500000000.0f * 0.6f,
 
-							0.24f,
-							0.1f,
-							1.0f,
-							0.02f
+							0.25f,
+							0.015f,
+							0.09f,
+							1.0f
 						));
 
 						rParticles.emplace_back(ParticleRendering(
 							Color{ 128,128,128,100 },
-							rParticles[i].size / 2.0f,
+							rParticles[i].size * 0.7f,
 							true,
 							false,
 							false,
@@ -154,17 +166,17 @@ public:
 						pParticles.emplace_back(ParticlePhysics(
 							Vector2{ pParticles[i].pos.x + 3.3f, pParticles[i].pos.y + (4.0f * normalRand - 2.0f) },
 							Vector2{ pParticles[i].vel.x + 10.0f, pParticles[i].vel.y + (4.0f * normalRand - 2.0f) },
-							90000000.0f,
+							8500000000.0f * 0.6f,
 
-							0.24f,
-							0.1f,
-							1.0f,
-							0.02f
+							0.25f,
+							0.015f,
+							0.09f,
+							1.0f
 						));
 
 						rParticles.emplace_back(ParticleRendering(
 							Color{ 128,128,128,100 },
-							rParticles[i].size / 2.0f,
+							rParticles[i].size * 0.7f,
 							true,
 							false,
 							false,

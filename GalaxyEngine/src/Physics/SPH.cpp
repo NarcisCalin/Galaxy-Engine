@@ -1,135 +1,122 @@
 #include "../../include/Physics/SPH.h"
 
-void SPH::computeDensityPressure(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, const float& pBaseMass) {
-
-	updateGrid(pParticles);
+void SPH::computeDensityPressure(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles) {
+	updateGrid(pParticles, rParticles);
 
 #pragma omp parallel for schedule(dynamic)
 	for (size_t i = 0; i < pParticles.size(); i++) {
+		if (!rParticles[i].isSPH) { continue; }
 
-		if (!rParticles[i].isSPH) {
-			continue;
-		}
-
-		auto& pi = pParticles[i];
+		ParticlePhysics& pi = pParticles[i];
 		pi.dens = 0.0f;
 
-		int cellIndex = getGridIndex(pi.predPos);
-
+		int cellIndex = getGridIndex(pi.pos);
 		std::vector<int> neighborCells = getNeighborCells(cellIndex);
 
 		for (int neighborCell : neighborCells) {
-			if (grid.find(neighborCell) == grid.end()) continue;
-
+			if (grid.find(neighborCell) == grid.end()) { continue; }
 			for (int j : grid[neighborCell].particleIndices) {
+				if (!rParticles[j].isSPH) { continue; }
+				ParticlePhysics& pj = pParticles[j];
 
-				if (!rParticles[j].isSPH) {
-					continue;
-				}
+				Vector2 d = { pj.pos.x - pi.pos.x, pj.pos.y - pi.pos.y };
+				float rSq = d.x * d.x + d.y * d.y;
+				if (rSq >= radiusSq) { continue; }
 
-				auto& pj = pParticles[j];
+				float r = sqrt(rSq);
 
-				Vector2 d = { pj.predPos.x - pi.predPos.x, pj.predPos.y - pi.predPos.y };
-				float r2 = d.x * d.x + d.y * d.y;
+				float sphMass = pj.sphMass * mass;
 
-				if (r2 >= radiusSq) continue;
-
-				float r = sqrt(r2);
-
-				float sphMass = (pj.mass / pBaseMass) * mass;
 				pi.dens += sphMass * smoothingKernel(r, radiusMultiplier);
 			}
 		}
 
-		pi.dens = fmax(pi.dens, 0.1f * restDensity * pi.restPress);
+		float minDensity = 0.1f * restDensity * pi.restPress;
+		pi.dens = std::max(pi.dens, minDensity);
 
-		pi.pressF = stiffness * (pow(pi.dens / restDensity * pi.restPress, 2) - 1.0f);
+		float effectiveRestPress = pi.restPress;
+		pi.pressF = stiffness * pi.stiff * (pow(pi.dens / (restDensity * pi.restPress * effectiveRestPress), 2) - 1.0f);
 	}
 }
 
-void SPH::computeForces(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, const float& pBaseMass) {
+void SPH::computeForces(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles) {
+
+	int N = pParticles.size();
 #pragma omp parallel for schedule(dynamic)
-	for (size_t i = 0; i < pParticles.size(); i++) {
+	for (int i = 0; i < N; i++) {
+		if (!rParticles[i].isSPH) { continue; }
+		ParticlePhysics& pi = pParticles[i];
 
-		if (!rParticles[i].isSPH) {
-			continue;
-		}
-
-		auto& pi = pParticles[i];
-		Vector2 fpress = { 0.0f, 0.0f };
-		Vector2 fvisc = { 0.0f, 0.0f };
-		Vector2 fcoh = { 0.0f, 0.0f };
-
-		int cellIndex = getGridIndex(pi.predPos);
+		int cellIndex = getGridIndex(pi.pos);
 		std::vector<int> neighborCells = getNeighborCells(cellIndex);
 
 		for (int neighborCell : neighborCells) {
-
-			if (grid.find(neighborCell) == grid.end()) continue;
-
+			if (grid.find(neighborCell) == grid.end()) { continue; }
 			for (int j : grid[neighborCell].particleIndices) {
+				if (!rParticles[j].isSPH) { continue; }
 
-				if (!rParticles[j].isSPH) {
-					continue;
-				}
+				ParticlePhysics& pj = pParticles[j];
 
-				auto& pj = pParticles[j];
+				Vector2 d = { pj.pos.x - pi.pos.x, pj.pos.y - pi.pos.y };
+				float rSq = d.x * d.x + d.y * d.y;
+				if (rSq >= radiusSq) { continue; }
 
-				if (i == j) continue;
+				float r = sqrt(std::max(rSq, 1e-6f));
+				Vector2 nr = { d.x / r, d.y / r };
 
-				Vector2 d = { pj.predPos.x - pi.predPos.x, pj.predPos.y - pi.predPos.y };
-				float r2 = d.x * d.x + d.y * d.y;
+				float mI = pi.sphMass * mass;
+				float mJ = pj.sphMass * mass;
 
-				if (r2 >= radiusSq) continue;
-
-				float r = sqrt(r2);
-
-				if (r < 0.001f) {
-					r = 0.001f;
-					r2 = r * r;
-				}
-
-				Vector2 nr = Vector2Normalize(d);
-
-				float repulsionStrength = 0.0f;
-
-				float minDist = 0.9f * radiusMultiplier;
-
+				float minDist = 0.3f * radiusMultiplier;
+				Vector2 repF = { 0.0f, 0.0f };
 				if (r < minDist) {
-					repulsionStrength = 1.0f * stiffness * (1.0f - r / minDist) * (1.0f - r / minDist);
-					fpress.x += repulsionStrength * nr.x;
-					fpress.y += repulsionStrength * nr.y;
+					float safeRestI = restDensity * pi.restPress;
+					float safeRestJ = restDensity * pj.restPress;
+					float dfI = pi.dens / safeRestI;
+					float dfJ = pj.dens / safeRestJ;
+					float densityScaling = 0.5f * (pow(dfI, 2.0f) + pow(dfJ, 2.0f));
+					float repStr = 80.0f * stiffness * (1.0f - r / minDist) * densityScaling;
+					repF.x = repStr * nr.x * 0.5f * (mI + mJ);
+					repF.y = repStr * nr.y * 0.5f * (mI + mJ);
 				}
 
-				float dW = smoothingKernelDerivative(r, radiusMultiplier);
-
-				float sphMass = (pj.mass / pBaseMass) * mass;
-
-				float commonP = -sphMass * (pi.pressF / (pi.dens * pi.dens) + pj.pressF / (pj.dens * pj.dens)) * dW;
-				fpress.x += commonP * nr.x;
-				fpress.y += commonP * nr.y;
+				float dW = spikyKernelDerivative(r, radiusMultiplier);
+				float pressI = pi.pressF, Pj = pj.pressF;
+				float densSqI = std::max(pi.dens * pi.dens, 1e-6f);
+				float densSqJ = std::max(pj.dens * pj.dens, 1e-6f);
+				Vector2 pressF;
+				pressF.x = -mJ * (pressI / densSqI + Pj / densSqJ) * dW * nr.x;
+				pressF.y = -mJ * (pressI / densSqI + Pj / densSqJ) * dW * nr.y;
 
 				float lapW = smoothingKernelLaplacian(r, radiusMultiplier);
-				float commonV = viscosity * sphMass / pj.dens * lapW;
-				fvisc.x += commonV * (pj.vel.x - pi.vel.x);
-				fvisc.y += commonV * (pj.vel.y - pi.vel.y);
+				Vector2 viscF;
+				viscF.x = viscosity * pj.visc * mJ / std::max(pj.dens, 0.001f) * lapW * (pj.vel.x - pi.vel.x);
+				viscF.y = viscosity * pj.visc * mJ / std::max(pj.dens, 0.001f) * lapW * (pj.vel.y - pi.vel.y);
 
-				float cohesionStrength = -cohesionCoefficient * sphMass;
-				float cohesionFactor = smoothingKernelCohesion(r, radiusMultiplier);
+				float cohCoef = cohesionCoefficient * pi.cohesion;
+				float cohFactor = smoothingKernelCohesion(r, radiusMultiplier);
+				Vector2 cohF;
+				cohF.x = cohCoef * mJ * cohFactor * nr.x;
+				cohF.y = cohCoef * mJ * cohFactor * nr.y;
 
-				fcoh.x -= cohesionStrength * cohesionFactor * nr.x;
-				fcoh.y -= cohesionStrength * cohesionFactor * nr.y;
+				Vector2 Fij;
+				Fij.x = repF.x + pressF.x + viscF.x + cohF.x;
+				Fij.y = repF.y + pressF.y + viscF.y + cohF.y;
 
+#pragma omp atomic
+				pi.acc.x += Fij.x / pi.sphMass;
+#pragma omp atomic
+				pi.acc.y += Fij.y / pi.sphMass;
+#pragma omp atomic
+				pj.acc.x -= Fij.x / pj.sphMass;
+#pragma omp atomic
+				pj.acc.y -= Fij.y / pj.sphMass;
 			}
 		}
-
-		Vector2 totalForce = (fpress * pi.stiff) + (fvisc * pi.visc) + (fcoh * pi.cohesion);
-
-		float invMass = pBaseMass / pi.mass;
-		pi.acc += totalForce * invMass;
 	}
 }
 
+// This is unused, I keep it here because it has basic boundary collisions logic for SPH
 void SPH::Integrate(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, float& dt, Vector2& domainSize) {
 	for (size_t i = 0; i < pParticles.size(); i++) {
 
@@ -140,28 +127,28 @@ void SPH::Integrate(std::vector<ParticlePhysics>& pParticles, std::vector<Partic
 		pParticles[i].vel += pParticles[i].acc * dt;
 		pParticles[i].pos += pParticles[i].vel * dt;
 
-		//if (pParticles[i].pos.x - EPS < 0.0f)
-		//{
-		//	pParticles[i].vel.x *= BOUND_DAMPING;
-		//	pParticles[i].pos.x = EPS;
-		//}
-		//// right wall
-		//if (pParticles[i].pos.x + EPS > domainSize.x - 3000.0f)
-		//{
-		//	pParticles[i].vel.x *= BOUND_DAMPING;
-		//	pParticles[i].pos.x = (domainSize.x - 3000.0f) - EPS;
-		//}
-		//// bottom wall
-		//if (pParticles[i].pos.y - EPS < 0.0f)
-		//{
-		//	pParticles[i].vel.y *= BOUND_DAMPING;
-		//	pParticles[i].pos.y = EPS;
-		//}
-		//// top wall
-		//if (pParticles[i].pos.y + EPS > domainSize.y)
-		//{
-		//	pParticles[i].vel.y *= BOUND_DAMPING;
-		//	pParticles[i].pos.y = domainSize.y - EPS;
-		//}
+		if (pParticles[i].pos.x - radiusMultiplier < 0.0f)
+		{
+			pParticles[i].vel.x *= boundDamping;
+			pParticles[i].pos.x = radiusMultiplier;
+		}
+		// right wall
+		if (pParticles[i].pos.x + radiusMultiplier > domainSize.x - 3000.0f)
+		{
+			pParticles[i].vel.x *= boundDamping;
+			pParticles[i].pos.x = (domainSize.x - 3000.0f) - radiusMultiplier;
+		}
+		// bottom wall
+		if (pParticles[i].pos.y - radiusMultiplier < 0.0f)
+		{
+			pParticles[i].vel.y *= boundDamping;
+			pParticles[i].pos.y = radiusMultiplier;
+		}
+		// top wall
+		if (pParticles[i].pos.y + radiusMultiplier > domainSize.y)
+		{
+			pParticles[i].vel.y *= boundDamping;
+			pParticles[i].pos.y = domainSize.y - radiusMultiplier;
+		}
 	}
 }

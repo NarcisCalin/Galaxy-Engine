@@ -214,10 +214,6 @@ void ParticleSelection::boxSelection(UpdateParameters& myParam) {
 
 		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 
-			if (myParam.rParticles[i].isDarkMatter) {
-				continue;
-			}
-
 			if (myParam.pParticles[i].pos.x >= boxX1 && myParam.pParticles[i].pos.x <= boxX2 &&
 				myParam.pParticles[i].pos.y >= boxY1 && myParam.pParticles[i].pos.y <= boxY2) {
 				if (!isBoxDeselecting) {
@@ -243,10 +239,6 @@ void ParticleSelection::invertSelection(std::vector<ParticleRendering>& rParticl
 
 	if (invertParticleSelection) {
 		for (auto& rParticle : rParticles) {
-
-			if (rParticle.isDarkMatter) {
-				continue;
-			}
 
 			rParticle.isSelected = !rParticle.isSelected;
 		}

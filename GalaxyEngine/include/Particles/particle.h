@@ -18,12 +18,14 @@ struct ParticlePhysics {
 	// SPH Parameters
 	float pressF;
 	float dens;
+	float sphMass;
 
 	// SPH Input parameters
 	float restPress;
 	float stiff;
 	float visc;
 	float cohesion;
+
 
 	uint32_t mortonKey;
 
@@ -38,6 +40,7 @@ struct ParticlePhysics {
 		// SPH Parameters
 		this->pressF = 0.0f;
 		this->dens = 0.0f;
+		this->sphMass = mass / 8500000000.0f; // I divide by the base standard mass
 
 		// SPH Input parameters
 		this->restPress = restPress;
@@ -50,10 +53,18 @@ struct ParticlePhysics {
 	}
 };
 
+struct RGBAMultiplier {
+	float r;
+	float g;
+	float b;
+	float a;
+};
+
 struct ParticleRendering {
 
 	// Initial states (these values will likely not change over time)
 	Color color;
+	Color originalColor;
 	float size;
 	bool uniqueColor;
 	bool isSolid;
@@ -70,10 +81,15 @@ struct ParticleRendering {
 	float totalRadius;
 	float lifeSpan;
 
+	RGBAMultiplier PRGBA;
+	RGBAMultiplier SRGBA;
+
+
 	ParticleRendering(Color color, float size, bool uniqueColor, bool isSelected,
 		bool isSolid, bool canBeSubdivided, bool canBeResized, bool isDarkMatter, bool isSPH, float lifeSpan) {
 		// Initial
 		this->color = color;
+		this->originalColor = color;
 		this->size = size;
 		this->uniqueColor = uniqueColor;
 		this->isSolid = isSolid;
@@ -89,7 +105,10 @@ struct ParticleRendering {
 		this->neighbors = 0;
 		this->totalRadius = 0.0f;
 		this->lifeSpan = lifeSpan;
-	
+
+		this->PRGBA = { 1.0f, 1.0f, 1.0f, 1.0f };
+		this->SRGBA = { 1.0f, 1.0f, 1.0f, 1.0f };
+
 	}
 
 };

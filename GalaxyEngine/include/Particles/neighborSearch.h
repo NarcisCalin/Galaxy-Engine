@@ -78,10 +78,6 @@ struct NeighborSearch {
 
 		std::vector<std::vector<size_t>> grid(gridWidth * gridHeight);
 
-		/*const int avgParticlesPerCell = std::max(1, static_cast<int>(particlesToProcess.size() / (gridWidth * gridHeight)));
-		for (auto& cell : grid) {
-			cell.reserve(avgParticlesPerCell * 2);
-		}*/
 		for (const size_t i : particlesToProcess) {
 			const auto& pos = pParticles[i].pos;
 
@@ -126,7 +122,7 @@ struct NeighborSearch {
 						const float distSq = dx * dx + dy * dy;
 
 						if (distSq < densityRadiusSq) {
-							//#pragma omp atomic
+							#pragma omp atomic
 							rParticles[i].neighbors++;
 						}
 					}

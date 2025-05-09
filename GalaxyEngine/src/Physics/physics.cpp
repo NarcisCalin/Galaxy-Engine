@@ -39,84 +39,17 @@ Vector2 Physics::calculateForceFromGrid(const Quadtree& grid, std::vector<Partic
 	return totalForce;
 }
 
-void Physics::pairWiseGravity(std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar) {
-#pragma omp parallel for schedule(dynamic)
-	for (size_t i = 0; i < pParticles.size(); ++i) {
-		for (size_t j = i + 1; j < pParticles.size(); ++j) {
-			ParticlePhysics& pParticleA = pParticles[i];
-			ParticlePhysics& pParticleB = pParticles[j];
-
-			float accelPlanetAX = 0;
-			float accelPlanetAY = 0;
-
-			float prevAccAX = accelPlanetAX;
-			float prevAccAY = accelPlanetAY;
-
-			float accelPlanetBX = 0;
-			float accelPlanetBY = 0;
-
-			float prevAccBX = accelPlanetBX;
-			float prevAccBY = accelPlanetBY;
-
-			float dx = pParticleB.pos.x - pParticleA.pos.x;
-			float dy = pParticleB.pos.y - pParticleA.pos.y;
-
-			if (myVar.isPeriodicBoundaryEnabled) {
-				if (myVar.isPeriodicBoundaryEnabled) {
-					if (dx > myVar.domainSize.x / 2)
-						dx -= myVar.domainSize.x;
-					else if (dx < -myVar.domainSize.x / 2)
-						dx += myVar.domainSize.x;
-
-					if (dy > myVar.domainSize.y / 2)
-						dy -= myVar.domainSize.y;
-					else if (dy < -myVar.domainSize.y / 2)
-						dy += myVar.domainSize.y;
-				}
-			}
-
-			float distanceSq = dx * dx + dy * dy + myVar.softening * myVar.softening;
-
-			float distance = sqrt(distanceSq);
-			float force = static_cast<float>(myVar.G * pParticleA.mass * pParticleB.mass / distanceSq);
-
-			float fx = (dx / distance) * force;
-			float fy = (dy / distance) * force;
-
-			accelPlanetAX = fx / pParticleA.mass;
-			accelPlanetAY = fy / pParticleA.mass;
-
-
-			accelPlanetBX = fx / pParticleB.mass;
-			accelPlanetBY = fy / pParticleB.mass;
-
-			pParticleA.vel.x += (myVar.fixedDeltaTime * ((3.0f / 2.0f)) * accelPlanetAX - ((1.0f / 2.0f)) * prevAccAX) * myVar.timeStepMultiplier;
-			pParticleA.vel.y += (myVar.fixedDeltaTime * ((3.0f / 2.0f)) * accelPlanetAY - ((1.0f / 2.0f)) * prevAccAY) * myVar.timeStepMultiplier;
-
-			pParticleB.vel.x -= (myVar.fixedDeltaTime * ((3.0f / 2.0f)) * accelPlanetBX - ((1.0f / 2.0f)) * prevAccBX) * myVar.timeStepMultiplier;
-			pParticleB.vel.y -= (myVar.fixedDeltaTime * ((3.0f / 2.0f)) * accelPlanetBY - ((1.0f / 2.0f)) * prevAccBY) * myVar.timeStepMultiplier;
-
-		}
-	}
-}
-
 void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar) {
 	if (myVar.isPeriodicBoundaryEnabled) {
 		for (size_t i = 0; i < pParticles.size(); i++) {
 			ParticlePhysics& pParticle = pParticles[i];
 
-			if (!myVar.isSPHEnabled || !rParticles[i].isSPH) {
 			pParticle.vel.x += myVar.timeFactor * 1.5f * pParticle.acc.x;
 			pParticle.vel.y += myVar.timeFactor * 1.5f * pParticle.acc.y;
 
 			pParticle.pos.x += pParticle.vel.x * myVar.timeFactor;
 			pParticle.pos.y += pParticle.vel.y * myVar.timeFactor;
-			}
-			else {
-				pParticle.predPos.x = pParticle.pos.x + pParticle.vel.x * myVar.timeFactor;
-				pParticle.predPos.y = pParticle.pos.y + pParticle.vel.y * myVar.timeFactor;
-			}
-
+		
 			if (pParticle.pos.x < 0) pParticle.pos.x += myVar.domainSize.x;
 			else if (pParticle.pos.x >= myVar.domainSize.x) pParticle.pos.x -= myVar.domainSize.x;
 
@@ -128,22 +61,15 @@ void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vecto
 		for (size_t i = 0; i < pParticles.size(); i++) {
 			ParticlePhysics& pParticle = pParticles[i];
 
-			if (!myVar.isSPHEnabled) {
-				pParticle.vel.x += myVar.timeFactor * (1.5f * pParticle.acc.x);
-				pParticle.vel.y += myVar.timeFactor * (1.5f * pParticle.acc.y);
+			pParticle.vel.x += myVar.timeFactor * 1.5f * pParticle.acc.x;
+			pParticle.vel.y += myVar.timeFactor * 1.5f * pParticle.acc.y;
 
-				pParticle.pos.x += pParticle.vel.x * myVar.timeFactor;
-				pParticle.pos.y += pParticle.vel.y * myVar.timeFactor;
-			}
-			else {
-				pParticle.predPos.x = pParticle.pos.x + pParticle.vel.x * myVar.timeFactor;
-				pParticle.predPos.y = pParticle.pos.y + pParticle.vel.y * myVar.timeFactor;
-			}
+			pParticle.pos.x += pParticle.vel.x * myVar.timeFactor;
+			pParticle.pos.y += pParticle.vel.y * myVar.timeFactor;
 
 			if (pParticles[i].pos.x < 0 || pParticles[i].pos.x >= myVar.domainSize.x || pParticles[i].pos.y < 0 || pParticles[i].pos.y >= myVar.domainSize.y) {
 				pParticles.erase(pParticles.begin() + i);
 				rParticles.erase(rParticles.begin() + i);
-
 			}
 		}
 	}

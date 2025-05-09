@@ -70,13 +70,14 @@ struct UpdateVariables{
 	float halfDomainWidth = domainSize.x * 0.5f;
 	float halfDomainHeight = domainSize.y * 0.5f;
 
+	bool fullscreenState = false;
+
 	int targetFPS = 144;
 
 	double G = 6.674e-11;
 	float gravityMultiplier = 1.0f;
 	float softening = 2.5f;
 	float theta = 0.8f;
-	float timeStepMultiplierSlider = 1.0f;
 	float timeStepMultiplier = 1.0f;
 
 	const float particleBaseMass = 8500000000.0f;
@@ -88,7 +89,7 @@ struct UpdateVariables{
 
 	const float fixedDeltaTime = 0.045f;
 
-	bool isTimeStopped = false;
+	bool isTimePlaying = true;
 
 	float timeFactor = 1.0f;
 
@@ -126,11 +127,11 @@ struct UpdateVariables{
 
 	bool isGlowEnabled = false;
 
-	bool isInformationEnabled = false;
-
 	Vector2 mouseWorldPos = { 0.0f, 0.0f };
 
 	float particleBounciness = 0.75f;
 
 	int threadsAmount = 16;
+
+	bool longExposure = false;
 };

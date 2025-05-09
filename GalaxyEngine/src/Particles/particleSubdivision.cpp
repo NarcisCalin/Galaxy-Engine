@@ -43,6 +43,8 @@ void ParticleSubdivision::subdivideParticles(UpdateVariables& myVar, UpdateParam
 
 					int multipliers[4][2] = { {-1, -1}, { 1, -1}, {-1, 1}, { 1, 1} };
 
+					size_t firstNewParticleIndex = myParam.pParticles.size();
+
 					for (int j = 0; j < 4; j++) {
 						float offsetX = multipliers[j][0] * halfOffset + (rand() % 3 - 1);
 						float offsetY = multipliers[j][1] * halfOffset + (rand() % 3 - 1);
@@ -74,6 +76,12 @@ void ParticleSubdivision::subdivideParticles(UpdateVariables& myVar, UpdateParam
 							myParam.rParticles[i].isSPH,
 							myParam.rParticles[i].lifeSpan
 						);
+					}
+
+					for (int j = 0; j < 4; ++j) {
+
+						myParam.rParticles[firstNewParticleIndex + j].PRGBA = myParam.rParticles[i].PRGBA;
+						myParam.rParticles[firstNewParticleIndex + j].SRGBA = myParam.rParticles[i].SRGBA;
 					}
 
 					myParam.pParticles[i] = std::move(myParam.pParticles.back());

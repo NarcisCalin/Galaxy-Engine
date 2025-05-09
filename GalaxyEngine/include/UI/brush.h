@@ -4,6 +4,7 @@
 #include "../raylib/raylib.h"
 #include "../Particles/particle.h"
 #include "../UX/camera.h"
+#include "../../include/Physics/materialsSPH.h"
 
 struct UpdateVariables;
 struct UpdateParameters;
@@ -12,9 +13,14 @@ class Brush {
 public:
 	Vector2 mouseWorldPos;
 
+	bool SPHWater = false;
+	bool SPHRock = false;
+	bool SPHSand = false;
+	bool SPHMud = false;
+
 	Brush(SceneCamera myCamera, float brushRadius);
 
-	void brushLogic(UpdateParameters& myParam);
+	void brushLogic(UpdateParameters& myParam, bool& isSPHEnabled);
 
 	void brushSize();
 

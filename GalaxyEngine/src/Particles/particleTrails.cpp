@@ -1,16 +1,6 @@
 #include "../../include/Particles/particleTrails.h"
 #include "../../include/parameters.h"
 
-ParticleTrails::ParticleTrails()
-{
-	// This is a constructor
-}
-
-ParticleTrails::~ParticleTrails()
-{
-	// This is a destructor
-}
-
 void ParticleTrails::trailLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 
 	if (IsKeyPressed(KEY_T) && !IsKeyDown(KEY_LEFT_CONTROL)) {

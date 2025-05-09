@@ -73,17 +73,10 @@ static void updateScene() {
 	myVar.G = 6.674e-11 * myVar.gravityMultiplier;
 
 	if (IsKeyPressed(KEY_SPACE)) {
-		myVar.isTimeStopped = !myVar.isTimeStopped;
+		myVar.isTimePlaying = !myVar.isTimePlaying;
 	}
 
-	if (myVar.isTimeStopped) {
-		myVar.timeStepMultiplier = 0.0f;
-	}
-	else {
-		myVar.timeStepMultiplier = myVar.timeStepMultiplierSlider;
-	}
-
-	myVar.timeFactor = myVar.fixedDeltaTime * myVar.timeStepMultiplier;
+	myVar.timeFactor = myVar.fixedDeltaTime * myVar.timeStepMultiplier * static_cast<float>(myVar.isTimePlaying);
 
 	//if (myVar.timeFactor == 0) {
 	//	myParam.morton.computeMortonKeys(myParam.pParticles, grid->boundingBoxPos, grid->boundingBoxSize);
@@ -91,7 +84,7 @@ static void updateScene() {
 	//}
 
 	if (myVar.timeFactor > 0) {
-	grid = gridFunction(myParam.pParticles, myParam.rParticles);
+		grid = gridFunction(myParam.pParticles, myParam.rParticles);
 	}
 
 	/*std::vector<Quadtree*> flatNodes;
@@ -113,23 +106,27 @@ static void updateScene() {
 
 	myParam.particlesSpawning.particlesInitialConditions(grid, physics, myVar, myParam);
 
+	myParam.particlesSpawning.copyPaste(myParam.pParticles, myParam.rParticles, myVar.isDragging, myParam.myCamera, myParam.pParticlesSelected);
+
 	if (myVar.timeFactor > 0.0f && grid != nullptr) {
 
-		Vector2 netForce = { 0.0f, 0.0f };
-		if (myVar.isBarnesHutEnabled) {
-#pragma omp parallel for schedule(dynamic)
-			for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-
-				ParticlePhysics& pParticle = myParam.pParticles[i];
-
-				netForce = physics.calculateForceFromGrid(*grid, myParam.pParticles, myVar, pParticle);
-
-				pParticle.acc.x = netForce.x / pParticle.mass;
-				pParticle.acc.y = netForce.y / pParticle.mass;
-			}
+		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+			myParam.pParticles[i].acc = { 0.0f, 0.0f };
 		}
-		else {
-			physics.pairWiseGravity(myParam.pParticles, myVar);
+
+		if (myVar.isSPHEnabled) {
+			sph.Solver(myParam.pParticles, myParam.rParticles, myVar.timeFactor, myVar.domainSize);
+		}
+
+#pragma omp parallel for schedule(dynamic)
+		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+
+			ParticlePhysics& pParticle = myParam.pParticles[i];
+
+			Vector2 netForce = physics.calculateForceFromGrid(*grid, myParam.pParticles, myVar, pParticle);
+
+			pParticle.acc.x += netForce.x / pParticle.mass;
+			pParticle.acc.y += netForce.y / pParticle.mass;
 		}
 
 		ship.spaceshipLogic(myParam.pParticles, myParam.rParticles, myVar.isShipGasEnabled);
@@ -143,14 +140,6 @@ static void updateScene() {
 		}
 
 		physics.physicsUpdate(myParam.pParticles, myParam.rParticles, myVar);
-
-		if (myVar.isSPHEnabled) {
-			sph.Solver(myParam.pParticles, myParam.rParticles, myVar.timeFactor, myVar.particleBaseMass, myVar.domainSize);
-		}
-
-		/*for (size_t i = 0; i < myParam.pParticles.size(); ++i) {
-			std::cout << "VelX:" << myParam.pParticles[i].vel.x << " VelY:" << myParam.pParticles[i].vel.y << std::endl;
-		}*/
 	}
 
 	if (myVar.isDensitySizeEnabled || myParam.colorVisuals.densityColor) {
@@ -281,23 +270,72 @@ int main() {
 
 	SetConfigFlags(FLAG_MSAA_4X_HINT);
 
+	SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+
 	InitWindow(myVar.screenWidth, myVar.screenHeight, "Galaxy Engine");
 
 	Texture2D particleBlurTex = LoadTexture("Textures/ParticleBlur.png");
 
 	Shader myBloom = LoadShader(nullptr, "Shaders/bloom.fs");
 
-	RenderTexture2D myParticlesTexture = LoadRenderTexture(myVar.screenWidth, myVar.screenHeight);
-	RenderTexture2D myUITexture = LoadRenderTexture(myVar.screenWidth, myVar.screenHeight);
+	RenderTexture2D myParticlesTexture = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
+	RenderTexture2D myUITexture = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
 
 	SetTargetFPS(myVar.targetFPS);
 
+	int lastScreenWidth = GetScreenWidth();
+	int lastScreenHeight = GetScreenHeight();
+	bool wasFullscreen = IsWindowFullscreen();
+
+	bool lastScreenState = myVar.fullscreenState;
+
 	while (!WindowShouldClose()) {
+
+		if (IsKeyPressed(KEY_TAB)) {
+			myVar.fullscreenState = !myVar.fullscreenState;
+		}
+
+		if (myVar.fullscreenState != lastScreenState)
+		{
+			int monitor = GetCurrentMonitor();
+
+			if (!IsWindowFullscreen())
+				SetWindowSize(GetMonitorWidth(monitor), GetMonitorHeight(monitor));
+			else
+				SetWindowSize(myVar.screenWidth, myVar.screenHeight);
+
+			ToggleFullscreen();
+			wasFullscreen = IsWindowFullscreen();
+
+			UnloadRenderTexture(myParticlesTexture);
+			UnloadRenderTexture(myUITexture);
+
+			lastScreenWidth = GetScreenWidth();
+			lastScreenHeight = GetScreenHeight();
+			lastScreenState = myVar.fullscreenState;
+
+			myParticlesTexture = LoadRenderTexture(lastScreenWidth, lastScreenHeight);
+			myUITexture = LoadRenderTexture(lastScreenWidth, lastScreenHeight);
+		}
+
+		int currentScreenWidth = GetScreenWidth();
+		int currentScreenHeight = GetScreenHeight();
+		if (currentScreenWidth != lastScreenWidth || currentScreenHeight != lastScreenHeight)
+		{
+			UnloadRenderTexture(myParticlesTexture);
+			UnloadRenderTexture(myUITexture);
+
+			myParticlesTexture = LoadRenderTexture(currentScreenWidth, currentScreenHeight);
+			myUITexture = LoadRenderTexture(currentScreenWidth, currentScreenHeight);
+
+			lastScreenWidth = currentScreenWidth;
+			lastScreenHeight = currentScreenHeight;
+		}
 
 
 		BeginTextureMode(myParticlesTexture);
 
-		ClearBackground(BLACK);
+		ClearBackground({0,0,0,0});
 
 		BeginBlendMode(myParam.colorVisuals.blendMode);
 
@@ -317,9 +355,13 @@ int main() {
 			BeginShaderMode(myBloom);
 		}
 
+		ClearBackground({0,0,0,0});
+
+		BeginBlendMode(BLEND_ALPHA_PREMULTIPLY);
+
 		DrawTextureRec(
 			myParticlesTexture.texture,
-			Rectangle{ 0, 0, static_cast<float>(myParticlesTexture.texture.width), -static_cast<float>(myParticlesTexture.texture.height) },
+			Rectangle{ 0, 0, static_cast<float>(GetScreenWidth()), -static_cast<float>(GetScreenHeight()) },
 			Vector2{ 0, 0 },
 			WHITE
 		);
@@ -330,10 +372,12 @@ int main() {
 
 		DrawTextureRec(
 			myUITexture.texture,
-			Rectangle{ 0, 0, static_cast<float>(myUITexture.texture.width), -static_cast<float>(myUITexture.texture.height) },
+			Rectangle{ 0, 0, static_cast<float>(GetScreenWidth()), -static_cast<float>(GetScreenHeight()) },
 			Vector2{ 0, 0 },
 			WHITE
 		);
+
+		EndBlendMode();
 
 		myVar.isRecording = myParam.screenCapture.screenGrab(myParticlesTexture, myVar);
 

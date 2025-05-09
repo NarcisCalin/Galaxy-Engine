@@ -1447,6 +1447,7 @@
     <ClInclude Include="include\Particles\particleSubdivision.h" />
     <ClInclude Include="include\Particles\particleTrails.h" />
     <ClInclude Include="include\Physics\collisionGrid.h" />
+    <ClInclude Include="include\Physics\materialsSPH.h" />
     <ClInclude Include="include\Physics\morton.h" />
     <ClInclude Include="include\Physics\physics.h" />
     <ClInclude Include="include\Physics\quadtree.h" />

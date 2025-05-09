@@ -1,5 +1,12 @@
 #include "../../include/UI/brush.h"
 #include "../../include/parameters.h"
+#include <cmath>
+
+struct SPHWater water;
+struct SPHRock rock;
+struct SPHSand sand;
+struct SPHMud mud;
+struct SPHAir air;
 
 Brush::Brush(SceneCamera myCamera, float brushRadius) {
 	this->myCamera = myCamera;
@@ -7,32 +14,209 @@ Brush::Brush(SceneCamera myCamera, float brushRadius) {
 	mouseWorldPos = { 0.0f, 0.0f };
 }
 
-void Brush::brushLogic(UpdateParameters& myParam) {
+void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 
-	// VISIBLE MATTER
+	if (!SPHWater && !SPHRock && !SPHSand && !SPHMud) {
+		for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
+			float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
+			float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
-	for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
-		float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
-		float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
+			Vector2 randomOffset = {
+				cos(angle) * distance,
+				sin(angle) * distance
+			};
 
-		Vector2 randomOffset = {
-			cos(angle) * distance,
-			sin(angle) * distance
-		};
+			Vector2 particlePos = Vector2Add(myParam.myCamera.mouseWorldPos, randomOffset);
 
-		Vector2 particlePos = Vector2Add(myParam.myCamera.mouseWorldPos, randomOffset);
+			myParam.pParticles.emplace_back(particlePos,
+				Vector2{ 0, 0 },
+				8500000000.0f / myParam.particlesSpawning.particleAmountMultiplier,
 
-		myParam.pParticles.emplace_back(particlePos, 
-			Vector2{ 0, 0 }, 
-			8500000000.0f / myParam.particlesSpawning.particleAmountMultiplier, 
+				1.0f,
+				1.0f,
+				1.0f,
+				1.0f);
 
-			1.0f,
-			1.0f,
-			1.0f,
-			1.0f);
+			myParam.rParticles.emplace_back(Color{ 128, 128, 128, 100 }, 0.125f, false, false, false, true, true, false, true, -1.0f);
+		}
+	}
 
-		myParam.rParticles.emplace_back(Color{ 128, 128, 128, 100 }, 0.125f, false, false, false, true, true, false, true, -1.0f);
+	if (isSPHEnabled) {
+		if (SPHWater) {
+			for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
+				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
+				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
+				Vector2 randomOffset = {
+					cos(angle) * distance,
+					sin(angle) * distance
+				};
+
+				Vector2 particlePos = Vector2Add(myParam.myCamera.mouseWorldPos, randomOffset);
+
+				myParam.pParticles.emplace_back(particlePos,
+					Vector2{ 0, 0 },
+					(8500000000.0f * water.massMult) / myParam.particlesSpawning.particleAmountMultiplier,
+
+					water.restPress,
+					water.stiff,
+					water.visc,
+					water.cohesion);
+
+				myParam.rParticles.emplace_back(water.color, 0.125f, false, false, false, true, true, false, true, -1.0f);
+
+			}
+		}
+
+		if (SPHRock) {
+			for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
+				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
+				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
+
+				Vector2 randomOffset = {
+					cos(angle) * distance,
+					sin(angle) * distance
+				};
+
+				Vector2 particlePos = Vector2Add(myParam.myCamera.mouseWorldPos, randomOffset);
+
+				myParam.pParticles.emplace_back(particlePos,
+					Vector2{ 0, 0 },
+					(8500000000.0f * rock.massMult) / myParam.particlesSpawning.particleAmountMultiplier,
+
+					rock.restPress,
+					rock.stiff,
+					rock.visc,
+					rock.cohesion);
+
+				float normalRand = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+				auto addRandom = [&](unsigned char c) -> unsigned char {
+					float value = static_cast<float>(c) + (50.0f * normalRand) - 25.0f;
+					value = std::clamp(value, 0.0f, 255.0f);
+					return static_cast<unsigned char>(value);
+					};
+
+				myParam.rParticles.emplace_back(
+					Color{
+						addRandom(rock.color.r),
+						addRandom(rock.color.g),
+						addRandom(rock.color.b),
+						addRandom(rock.color.a)
+					},
+
+					0.125f,
+					false, 
+					false,
+					false,
+					true, 
+					true, 
+					false,
+					true, 
+					-1.0f
+				);
+
+			}
+		}
+
+		if (SPHSand) {
+			for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
+				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
+				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
+
+				Vector2 randomOffset = {
+					cos(angle) * distance,
+					sin(angle) * distance
+				};
+
+				Vector2 particlePos = Vector2Add(myParam.myCamera.mouseWorldPos, randomOffset);
+
+				myParam.pParticles.emplace_back(particlePos,
+					Vector2{ 0, 0 },
+					(8500000000.0f * sand.massMult) / myParam.particlesSpawning.particleAmountMultiplier,
+
+					sand.restPress,
+					sand.stiff,
+					sand.visc,
+					sand.cohesion);
+
+				float normalRand = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+				auto addRandom = [&](unsigned char c) -> unsigned char {
+					float value = static_cast<float>(c) + (50.0f * normalRand) - 25.0f;
+					value = std::clamp(value, 0.0f, 255.0f);
+					return static_cast<unsigned char>(value);
+					};
+
+				myParam.rParticles.emplace_back(
+					Color{
+						addRandom(sand.color.r),
+						addRandom(sand.color.g),
+						addRandom(sand.color.b),
+						addRandom(sand.color.a)
+					},
+					
+					0.125f,
+					false,
+					false,
+					false,
+					true, 
+					true,
+					false, 
+					true,
+					-1.0f
+				);
+
+			}
+		}
+
+		if (SPHMud) {
+			for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
+				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
+				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
+
+				Vector2 randomOffset = {
+					cos(angle) * distance,
+					sin(angle) * distance
+				};
+
+				Vector2 particlePos = Vector2Add(myParam.myCamera.mouseWorldPos, randomOffset);
+
+				myParam.pParticles.emplace_back(particlePos,
+					Vector2{ 0, 0 },
+					(8500000000.0f * mud.massMult) / myParam.particlesSpawning.particleAmountMultiplier,
+
+					mud.restPress,
+					mud.stiff,
+					mud.visc,
+					mud.cohesion);
+
+				float normalRand = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+				auto addRandom = [&](unsigned char c) -> unsigned char {
+					float value = static_cast<float>(c) + (50.0f * normalRand) - 25.0f;
+					value = std::clamp(value, 0.0f, 255.0f);
+					return static_cast<unsigned char>(value);
+					};
+
+				myParam.rParticles.emplace_back(
+					Color{
+						addRandom(mud.color.r),
+						addRandom(mud.color.g),
+						addRandom(mud.color.b),
+						addRandom(mud.color.a)
+					},
+					
+					0.125f, 
+					false,
+					false,
+					false,
+					true, 
+					true,
+					false, 
+					true, 
+					-1.0f
+				);
+
+			}
+		}
 	}
 }
 
@@ -81,11 +265,31 @@ void Brush::particlesAttractor(UpdateVariables& myVar, UpdateParameters& myParam
 		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 			float dx = myParam.pParticles[i].pos.x - myParam.myCamera.mouseWorldPos.x;
 			float dy = myParam.pParticles[i].pos.y - myParam.myCamera.mouseWorldPos.y;
-			float radiusMultiplier = sqrt(dx * dx + dy * dy);
-			if (radiusMultiplier < 1.0f) radiusMultiplier = 1.0f;
+			float distance = sqrt(dx * dx + dy * dy);
+
+			float innerRadius = 0.0f;
+			float outerRadius = brushRadius;
+
+			float falloffFactor = 0.0f;
+			if (distance > innerRadius) {
+				falloffFactor = std::min(0.7f, (distance - innerRadius) / (outerRadius - innerRadius));
+
+				falloffFactor = falloffFactor * falloffFactor;
+			}
+
+			float radiusMultiplier = 0.0f;
+
+			if (distance < 1.0f) {
+				radiusMultiplier = 1.0f;
+			}
+			else {
+				radiusMultiplier = distance;
+			}
 
 
-			float acceleration = static_cast<float>(myVar.G * 10000.0f * brushRadius) / (radiusMultiplier * radiusMultiplier);
+			float acceleration = static_cast<float>(myVar.G * 600.0f * brushRadius * brushRadius) / (radiusMultiplier * radiusMultiplier);
+
+			acceleration *= falloffFactor;
 
 			attractorForce.x = static_cast<float>(-(dx / radiusMultiplier) * acceleration * myParam.pParticles[i].mass);
 			attractorForce.y = static_cast<float>(-(dy / radiusMultiplier) * acceleration * myParam.pParticles[i].mass);
@@ -104,18 +308,15 @@ void Brush::particlesSpinner(UpdateVariables& myVar, UpdateParameters& myParam) 
 
 	if (IsKeyDown(KEY_N)) {
 		for (auto& pParticle : myParam.pParticles) {
-
 			Vector2 distanceFromBrush = { pParticle.pos.x - myParam.myCamera.mouseWorldPos.x, pParticle.pos.y - myParam.myCamera.mouseWorldPos.y };
-
 			float distance = sqrt(distanceFromBrush.x * distanceFromBrush.x + distanceFromBrush.y * distanceFromBrush.y);
-
 			if (distance < brushRadius) {
 
 				float falloff = distance / brushRadius;
+				falloff = powf(falloff, 2.0f);
 
 				float inverseDistance = 1.0f / (distance + myVar.softening);
 				Vector2 radialDirection = { distanceFromBrush.x * inverseDistance, distanceFromBrush.y * inverseDistance };
-
 				Vector2 spinDirection = { -radialDirection.y, radialDirection.x };
 
 				if (IsKeyDown(KEY_LEFT_CONTROL)) {

@@ -9,7 +9,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 
 	if (myVar.isMouseNotHoveringUI && isSpawningAllowed) {
 
-		Slingshot slingshot = slingshot.planetSlingshot(myVar.isDragging, myParam.myCamera);
+		Slingshot slingshot = slingshot.particleSlingshot(myVar.isDragging, myParam.myCamera);
 
 		if (myVar.isDragging && enablePathPrediction && quadtree != nullptr) {
 			predictTrajectory(myParam.pParticles, myParam.myCamera, physics, quadtree, myVar, slingshot);
@@ -41,7 +41,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 			myVar.isDragging = false;
 		}
 		if (IsMouseButtonDown(2) && !IsKeyDown(KEY_LEFT_CONTROL) && !IsKeyDown(KEY_LEFT_ALT) && !IsKeyDown(KEY_X)) {
-			myParam.brush.brushLogic(myParam);
+			myParam.brush.brushLogic(myParam, myVar.isSPHEnabled);
 		}
 
 		if (IsKeyReleased(KEY_ONE) && myVar.isDragging) {
@@ -443,6 +443,59 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 	}
 }
 
+void ParticlesSpawning::copyPaste(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles,
+	bool& isDragging, SceneCamera& myCamera, std::vector<ParticlePhysics>& pParticlesSelected) {
+
+	if (IsKeyPressed(KEY_H) && pParticlesSelected.size() > 0) {
+
+		pParticlesCopied.clear();
+		rParticlesCopied.clear();
+
+		for (size_t i = 0; i < pParticles.size(); i++) {
+			if (rParticles[i].isSelected) {
+				pParticlesCopied.push_back(ParticlePhysics(pParticles[i]));
+				rParticlesCopied.push_back(ParticleRendering(rParticles[i]));
+			}
+		}
+
+		avgPos = { 0.0f, 0.0f };
+
+		for (ParticlePhysics& pCopy : pParticlesCopied) {
+
+			avgPos += pCopy.pos;
+		}
+
+		avgPos /= pParticlesCopied.size();
+	}
+
+	Slingshot slingshot = slingshot.particleSlingshot(isDragging, myCamera);
+
+	if (IsKeyReleased(KEY_J)) {
+
+
+		for (ParticlePhysics pCopy : pParticlesCopied) {
+
+			Vector2 copyRelPos = pCopy.pos - avgPos;
+
+			pCopy.pos = myCamera.mouseWorldPos + copyRelPos;
+
+			pCopy.vel.x += slingshot.length * slingshot.normalizedX * 0.3f;
+			pCopy.vel.y += slingshot.length * slingshot.normalizedY * 0.3f;
+
+			pParticles.push_back(ParticlePhysics(pCopy));
+		}
+
+		for (ParticleRendering rCopy : rParticlesCopied) {
+
+			rCopy.isSelected = false;
+
+			rParticles.push_back(ParticleRendering(rCopy));
+		}
+
+		isDragging = false;
+	}
+}
+
 void ParticlesSpawning::predictTrajectory(const std::vector<ParticlePhysics>& pParticles,
 	SceneCamera& myCamera, Physics physics, Quadtree* quadtree,
 	UpdateVariables& myVar, Slingshot& slingshot) {
@@ -479,8 +532,8 @@ void ParticlesSpawning::predictTrajectory(const std::vector<ParticlePhysics>& pP
 		acc.x = netForce.x / p.mass;
 		acc.y = netForce.y / p.mass;
 
-		p.vel.x += myVar.timeFactor * ((3.0f / 2.0f) * acc.x);
-		p.vel.y += myVar.timeFactor * ((3.0f / 2.0f) * acc.y);
+		p.vel.x += myVar.timeFactor * (1.5f * acc.x);
+		p.vel.y += myVar.timeFactor * (1.5f * acc.y);
 
 		p.pos.x += p.vel.x * myVar.timeFactor;
 		p.pos.y += p.vel.y * myVar.timeFactor;

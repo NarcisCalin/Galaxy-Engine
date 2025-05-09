@@ -1,84 +1,150 @@
 #include "../../include/UI/controls.h"
 #include "../../include/parameters.h"
 
-void Controls::showControls(UpdateVariables& myVar) {
+void Controls::showControls(bool& isMouseNotHoveringUI, bool& isDragging) {
+    if (!isShowControlsEnabled) return;
 
-	Button extendedControlsButton = { Vector2{ 20.0f, 140.0f }, Vector2{ 200.0f, 30.0f }, "Extended Controls", true };
+    float screenW = static_cast<float>(GetScreenWidth());
+    float screenH = static_cast<float>(GetScreenHeight());
 
-	if (isShowControlsEnabled) {
-		for (size_t i = 0; i < controlsArray.size(); i++) {
-			DrawText(TextFormat("%s", controlsArray[i].c_str()), 25, 20 + 20 * static_cast<int>(i), 15, WHITE);
-		}
-		bool buttonExtendedControlsHovering = extendedControlsButton.buttonLogic(isShowExtendedControlsEnabled);
+    constexpr float referenceWidth = 1920.0f;
+    constexpr float referenceHeight = 1080.0f;
 
-		if (buttonExtendedControlsHovering) {
-			myVar.isMouseNotHoveringUI = false;
-			myVar.isDragging = false;
-		}
+    float scaleX = screenW / referenceWidth;
+    float scaleY = screenH / referenceHeight;
+    float uiScale = std::clamp(std::min(scaleX, scaleY), 0.5f, 2.0f);
 
-		if (isShowExtendedControlsEnabled) {
-			Vector2 pageButtonPos = {
-				static_cast<float>(myVar.screenWidth) / 2.0f,
-				static_cast<float>(myVar.screenHeight) / 2.0f - controlsBoxSizeY / 2.0f - 14.0f };
-			Button changePageButton(pageButtonPos,
-				{ 14.0f, 14.0f }, "", false);
+    controlsBoxSizeX = 435.0f * uiScale;
+    controlsBoxSizeY = 810.0f * uiScale;
 
-			bool buttonNextPageHovering = changePageButton.buttonLogic(nextPage);
+    fontSize = 18.0f * uiScale;
+    fontSeparation = 1.0f * uiScale;
+    fontYBias = 0.0f * uiScale;
+    fontYSpacing = 30.0f * uiScale;
 
-			if (buttonNextPageHovering) {
-				myVar.isMouseNotHoveringUI = false;
-				myVar.isDragging = false;
-			}
+    Vector2 pageButtonPos = {
+        screenW * 0.5f,
+        screenH * 0.5f - controlsBoxSizeY * 0.5f - 14.0f * uiScale
+    };
+    Button changePageButton(pageButtonPos,
+        { 14.0f * uiScale, 14.0f * uiScale },
+        "", false);
 
-			DrawTriangle(
-				{ pageButtonPos.x + 3.0f, pageButtonPos.y + 5.0f },
-				{ pageButtonPos.x + 7.0f, pageButtonPos.y + 11.0f },
-				{ pageButtonPos.x + 11.0f ,pageButtonPos.y + 5.0f }, WHITE);
+    bool buttonNextPageHovering = changePageButton.buttonLogic(nextPage);
+    if (buttonNextPageHovering) {
+        isMouseNotHoveringUI = false;
+        isDragging = false;
+    }
 
-			DrawRectangle(myVar.screenWidth / 2 - controlsBoxSizeX / 2,
-				myVar.screenHeight / 2 - controlsBoxSizeY / 2,
-				controlsBoxSizeX, controlsBoxSizeY,
-				{ 170,170,170,170 });
+    DrawTriangle(
+        { pageButtonPos.x + 3.0f * uiScale, pageButtonPos.y + 5.0f * uiScale },
+        { pageButtonPos.x + 7.0f * uiScale, pageButtonPos.y + 11.0f * uiScale },
+        { pageButtonPos.x + 11.0f * uiScale, pageButtonPos.y + 5.0f * uiScale },
+        WHITE
+    );
 
-			if (!nextPage) {
-				DrawText("PAGE 1.", myVar.screenWidth / 2 - controlsBoxSizeX / 2 + 20, myVar.screenHeight / 2 - controlsBoxSizeY / 2 + 20, 30, WHITE);
-				for (size_t i = 0; i < extendedControlsArrayParticles.size(); i++) {
-					DrawText(TextFormat("%s", extendedControlsArrayParticles[i].c_str()),
-						(myVar.screenWidth / 2 - controlsBoxSizeX / 2) + 20,
-						((myVar.screenHeight / 2 - controlsBoxSizeY / 2) + 70) + 30 * static_cast<int>(i), 18, WHITE);
-				}
+    DrawRectangle(screenW * 0.5f - controlsBoxSizeX * 0.5f,
+        screenH * 0.5f - controlsBoxSizeY * 0.5f,
+        controlsBoxSizeX, controlsBoxSizeY,
+        { 170,170,170,170 });
 
-				for (size_t i = 0; i < extendedControlsArrayCamAndSelec.size(); i++) {
-					DrawText(TextFormat("%s", extendedControlsArrayCamAndSelec[i].c_str()),
-						(myVar.screenWidth / 2 - controlsBoxSizeX / 2) + 20,
-						((myVar.screenHeight / 2 - controlsBoxSizeY / 2) + 340) + 30 * static_cast<int>(i), 18, WHITE);
-				}
-			}
-			else {
-				DrawText("PAGE 2.", myVar.screenWidth / 2 - controlsBoxSizeX / 2 + 20, myVar.screenHeight / 2 - controlsBoxSizeY / 2 + 20, 30, WHITE);
-				for (size_t i = 0; i < extendedControlsArrayUtility.size(); i++) {
-					DrawText(TextFormat("%s", extendedControlsArrayUtility[i].c_str()),
-						(myVar.screenWidth / 2 - controlsBoxSizeX / 2) + 20,
-						((myVar.screenHeight / 2 - controlsBoxSizeY / 2) + 70) + 30 * static_cast<int>(i), 18, WHITE);
-				}
-			}
+    float leftMargin = 20.0f * uiScale;
+    float initialY = screenH * 0.5f - controlsBoxSizeY * 0.5f + 70.0f * uiScale;
 
-		}
-	}
+    if (!nextPage) {
+        DrawText("PAGE 1.",
+            screenW * 0.5f - controlsBoxSizeX * 0.5f + leftMargin,
+            screenH * 0.5f - controlsBoxSizeY * 0.5f + 20.0f * uiScale,
+            30.0f * uiScale,
+            WHITE);
+
+        float leftMargin = 20.0f * uiScale;
+        float yCursor = screenH * 0.5f - controlsBoxSizeY * 0.5f + 70.0f * uiScale;
+
+        for (size_t i = 0; i < controlsArrayParticles.size(); i++) {
+            DrawTextEx(
+                GetFontDefault(),
+                TextFormat("%s", controlsArrayParticles[i].c_str()),
+                { screenW * 0.5f - controlsBoxSizeX * 0.5f + leftMargin,
+                  yCursor },
+                fontSize, fontSeparation, WHITE);
+            yCursor += fontYSpacing;
+        }
+
+        float secondListY = initialY + controlsArrayParticles.size() * (fontYSpacing + fontSize);
+        for (size_t i = 0; i < controlsArrayCamAndSelec.size(); i++) {
+            DrawTextEx(
+                GetFontDefault(),
+                TextFormat("%s", controlsArrayCamAndSelec[i].c_str()),
+                { screenW * 0.5f - controlsBoxSizeX * 0.5f + leftMargin,
+                  yCursor },
+                fontSize, fontSeparation, WHITE);
+            yCursor += fontYSpacing;
+        }
+    }
+    else {
+        DrawText("PAGE 2.",
+            screenW * 0.5f - controlsBoxSizeX * 0.5f + leftMargin,
+            screenH * 0.5f - controlsBoxSizeY * 0.5f + 20.0f * uiScale,
+            30.0f * uiScale,
+            WHITE);
+
+        for (size_t i = 0; i < controlsArrayUtility.size(); i++) {
+            DrawTextEx(GetFontDefault(),
+                TextFormat("%s", controlsArrayUtility[i].c_str()),
+                { screenW * 0.5f - controlsBoxSizeX * 0.5f + leftMargin,
+                  initialY + fontYSpacing * i + fontYBias },
+                fontSize,
+                fontSeparation,
+                WHITE);
+        }
+    }
 }
 
-void Controls::showMoreInfo(UpdateVariables& myVar){
+void Controls::showMoreInfo() {
+    if (!isInformationEnabled) return;
 
-	if (myVar.isInformationEnabled) {
-		DrawRectangle(myVar.screenWidth / 2 - controlsBoxSizeX / 2,
-			myVar.screenHeight / 2 - controlsBoxSizeY / 2,
-			controlsBoxSizeX + 180, controlsBoxSizeY + 15,
-			{ 170,170,170,170 });
+    float screenW = static_cast<float>(GetScreenWidth());
+    float screenH = static_cast<float>(GetScreenHeight());
 
-		for (size_t i = 0; i < informationArray.size(); i++) {
-			DrawText(TextFormat("%s", informationArray[i].c_str()),
-				(myVar.screenWidth / 2 - controlsBoxSizeX / 2) + 20,
-				((myVar.screenHeight / 2 - controlsBoxSizeY / 2) + 10) + 30 * static_cast<int>(i), 18, WHITE);
-		}
-	}
+    constexpr float referenceWidth = 1920.0f;
+    constexpr float referenceHeight = 1080.0f;
+    float scaleX = screenW / referenceWidth;
+    float scaleY = screenH / referenceHeight;
+    float uiScale = std::clamp(std::min(scaleX, scaleY), 0.5f, 2.0f);
+
+    float leftMargin = 20.0f * uiScale;
+    float topMargin = 10.0f * uiScale;
+    float lineSpacing = 30.0f * uiScale;
+    float infoFontSize = 18.0f * uiScale;
+    float fontSpacing = 1.0f * uiScale;
+
+    Font font = GetFontDefault();
+    float maxLineWidth = 0;
+    for (auto& line : informationArray) {
+        Vector2 sz = MeasureTextEx(font, line.c_str(), infoFontSize, fontSpacing);
+        maxLineWidth = std::max(maxLineWidth, sz.x);
+    }
+    float textBlockHeight = informationArray.size() * lineSpacing;
+
+    float infoBoxW = leftMargin * 2 + maxLineWidth;
+    float infoBoxH = topMargin * 2 + textBlockHeight;
+
+    infoBoxW = std::min(infoBoxW, screenW * 0.9f);
+    infoBoxH = std::min(infoBoxH, screenH * 0.9f);
+
+    float boxX = screenW * 0.5f - infoBoxW * 0.5f;
+    float boxY = screenH * 0.5f - infoBoxH * 0.5f;
+    DrawRectangle(
+        boxX, boxY,
+        infoBoxW, infoBoxH,
+        { 170, 170, 170, 170 }
+    );
+
+    float xPos = boxX + leftMargin;
+    float yCursor = boxY + topMargin;
+    for (auto& line : informationArray) {
+        DrawTextEx(font, line.c_str(), { xPos, yCursor }, infoFontSize, fontSpacing, WHITE);
+        yCursor += lineSpacing;
+    }
 }

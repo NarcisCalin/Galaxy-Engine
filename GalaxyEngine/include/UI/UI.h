@@ -19,7 +19,9 @@ public:
 
 private:
 
-	std::array<Button, 26> settingsButtonsArray = {
+	std::array<Button, 27> settingsButtonsArray = {
+
+Button({195.0f, 80.0f}, {175.0f, 20.0f}, "Fullscreen", true),
 
 Button({195.0f, 80.0f}, {175.0f, 24.0f}, "Global Trails", true),
 
@@ -39,6 +41,8 @@ Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Velocity Color", true),
 
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Delta V Color", true),
 
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "SPH Color", true),
+
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Selected Color", true),
 
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Dark Matter", true),
@@ -46,8 +50,6 @@ Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Dark Matter", true),
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Show Dark M.", true),
 
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Looping Space", true),
-
-Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Barnes-Hut", true),
 
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Multi-Threading", true),
 
@@ -67,13 +69,27 @@ Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Controls", true),
 
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Information", true),
 
-Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Visual Sliders", true),
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Visual Settings", true),
 
-Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Physics Sliders", true),
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Physics Settings", true),
 
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Ship Gas", true)
 
 	};
+
+
+	std::array<Button, 4> SPHMaterialButtonsArray = {
+
+Button({195.0f, 80.0f}, {175.0f, 20.0f}, "SPH Water", true),
+
+Button({195.0f, 80.0f}, {175.0f, 20.0f}, "SPH Rock", true),
+
+Button({195.0f, 80.0f}, {175.0f, 20.0f}, "SPH Sand", true),
+
+Button({195.0f, 80.0f}, {175.0f, 20.0f}, "SPH Mud", true)
+	};
+
+
 	std::array<Button, 1> toggleSettingsButtons = {
 	Button
 	(
@@ -84,7 +100,7 @@ Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Ship Gas", true)
 	)
 	};
 
-	std::array<Slider, 18> visualsSliders = {
+	std::array<Slider, 19> visualsSliders = {
 
 	Slider({20, 530.0f}, {230.0f, 7.0f}, {190, 100, 100, 255}, "Primary Red"),
 
@@ -109,6 +125,8 @@ Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Ship Gas", true)
 	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Max Color Force"),
 
 	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Max Size Force"),
+
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Max DeltaV Accel"),
 
 	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Trails Length"),
 
@@ -138,7 +156,7 @@ Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Ship Gas", true)
 
 	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Heavy Particle Init Mass"),
 
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Particles Bounciness"),
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Collision Bounciness"),
 
 	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Threads Amount"),
 

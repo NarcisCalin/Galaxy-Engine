@@ -12,6 +12,8 @@ struct ColorVisuals {
 	bool velocityColor = false;
 	bool deltaVColor = false;
 	bool forceColor = false;
+	bool pressureColor = false;
+	bool SPHColor = false;
 
 	bool showDarkMatterEnabled = false;
 	bool previousDarkMatterState = false;
@@ -39,17 +41,13 @@ struct ColorVisuals {
 	float maxColorAcc = 40.0f;
 	float minColorAcc = 0.0f;
 
+	float deltaVMaxAccel = 5.0f;
+	float deltaVMinAccel = 0.0f;
+
+	float maxVel = 11000.0f;
+	float minVel = 0.0f;
+
 	Vector2 prevVel = { 0.0f, 0.0f };
-
-
-	Color ColorLerp(const Color& a, const Color& b, float t) {
-		return {
-			static_cast<unsigned char>(a.r + (b.r - a.r) * t),
-			static_cast<unsigned char>(a.g + (b.g - a.g) * t),
-			static_cast<unsigned char>(a.b + (b.b - a.b) * t),
-			static_cast<unsigned char>(a.a + (b.a - a.a) * t)
-		};
-	}
 
 	void particlesColorVisuals(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, 
 		float& particleSizeMultiplier, float& particleTextureHalfSize) {
@@ -57,29 +55,16 @@ struct ColorVisuals {
 		if (solidColor) {
 			for (size_t i = 0; i < pParticles.size(); i++) {
 				if (!rParticles[i].uniqueColor) {
-					rParticles[i].color.r = static_cast<unsigned char>(primaryR);
-					rParticles[i].color.g = static_cast<unsigned char>(primaryG);
-					rParticles[i].color.b = static_cast<unsigned char>(primaryB);
-					rParticles[i].color.a = primaryA;
+					rParticles[i].color.r = static_cast<unsigned char>(primaryR * rParticles[i].PRGBA.r);
+					rParticles[i].color.g = static_cast<unsigned char>(primaryG * rParticles[i].PRGBA.g);
+					rParticles[i].color.b = static_cast<unsigned char>(primaryB * rParticles[i].PRGBA.b);
+					rParticles[i].color.a = primaryA * rParticles[i].PRGBA.a;
 				}
 			}
 			blendMode = 1;
 		}
-		else if (densityColor) {
-
-			Color lowDensityColor = {
-				static_cast<unsigned char>(primaryR),
-				static_cast<unsigned char>(primaryG),
-				static_cast<unsigned char>(primaryB),
-				static_cast<unsigned char>(primaryA)
-			};
-
-			Color highDensityColor = {
-				static_cast<unsigned char>(secondaryR),
-				static_cast<unsigned char>(secondaryG),
-				static_cast<unsigned char>(secondaryB),
-				static_cast<unsigned char>(secondaryA)
-			};
+		
+		if (densityColor) {
 
 			const float invMaxNeighbors = 1.0f / maxNeighbors;
 
@@ -88,6 +73,21 @@ struct ColorVisuals {
 				if (rParticles[i].isDarkMatter || rParticles[i].uniqueColor) {
 					continue;
 				}
+
+				Color lowDensityColor = {
+				static_cast<unsigned char>(primaryR * rParticles[i].PRGBA.r),
+				static_cast<unsigned char>(primaryG * rParticles[i].PRGBA.g),
+				static_cast<unsigned char>(primaryB * rParticles[i].PRGBA.b),
+				static_cast<unsigned char>(primaryA * rParticles[i].PRGBA.a)
+				};
+
+				Color highDensityColor = {
+					static_cast<unsigned char>(secondaryR * rParticles[i].SRGBA.r),
+					static_cast<unsigned char>(secondaryG * rParticles[i].SRGBA.g),
+					static_cast<unsigned char>(secondaryB * rParticles[i].SRGBA.b),
+					static_cast<unsigned char>(secondaryA * rParticles[i].SRGBA.a)
+				};
+
 				const ParticlePhysics pParticle = pParticles[i];
 				float normalDensity = std::min(static_cast<float>(rParticles[i].neighbors) * invMaxNeighbors, 1.0f);
 				rParticles[i].color = ColorLerp(lowDensityColor, highDensityColor, normalDensity);
@@ -95,12 +95,10 @@ struct ColorVisuals {
 
 			blendMode = 1;
 		}
-		else if (velocityColor) {
+		
+		if (velocityColor) {
 #pragma omp parallel for schedule(dynamic)
 			for (size_t i = 0; i < pParticles.size(); i++) {
-				float maxVel = 11000.0f;
-				float minVel = 0.0f;
-
 
 				float particleVelSq = pParticles[i].vel.x * pParticles[i].vel.x +
 					pParticles[i].vel.y * pParticles[i].vel.y;
@@ -119,7 +117,8 @@ struct ColorVisuals {
 
 			blendMode = 0;
 		}
-		else if (forceColor) {
+		
+		if (forceColor) {
 			for (size_t i = 0; i < pParticles.size(); i++) {
 
 				if (rParticles[i].uniqueColor) {
@@ -133,33 +132,34 @@ struct ColorVisuals {
 				float normalizedAcc = clampedAcc / maxColorAcc;
 
 				Color lowDensityColor = {
-					static_cast<unsigned char>(primaryR),
-					static_cast<unsigned char>(primaryG),
-					static_cast<unsigned char>(primaryB),
-					static_cast<unsigned char>(primaryA) };
+				static_cast<unsigned char>(primaryR * rParticles[i].PRGBA.r),
+				static_cast<unsigned char>(primaryG * rParticles[i].PRGBA.g),
+				static_cast<unsigned char>(primaryB * rParticles[i].PRGBA.b),
+				static_cast<unsigned char>(primaryA * rParticles[i].PRGBA.a)
+				};
 
 				Color highDensityColor = {
-					static_cast<unsigned char>(secondaryR),
-					static_cast<unsigned char>(secondaryG),
-					static_cast<unsigned char>(secondaryB),
-					static_cast<unsigned char>(secondaryA) };
+					static_cast<unsigned char>(secondaryR * rParticles[i].SRGBA.r),
+					static_cast<unsigned char>(secondaryG * rParticles[i].SRGBA.g),
+					static_cast<unsigned char>(secondaryB * rParticles[i].SRGBA.b),
+					static_cast<unsigned char>(secondaryA * rParticles[i].SRGBA.a)
+				};
 
 				rParticles[i].color = ColorLerp(lowDensityColor, highDensityColor, normalizedAcc);
 
 			}
 			blendMode = 1;
 		}
-		else if (deltaVColor) {
+		
+		if (deltaVColor) {
 			for (size_t i = 0; i < pParticles.size(); i++) {
-				float maxAccel = 5.0f;
-				float minAccel = 0.0f;
-
+				
 				Vector2 delta = pParticles[i].vel - pParticles[i].prevVel;
 
 				float deltaMag = std::sqrt(delta.x * delta.x + delta.y * delta.y);
 
-				float clampedDelta = std::clamp(deltaMag, minAccel, maxAccel);
-				float normalizedVel = clampedDelta / maxAccel;
+				float clampedDelta = std::clamp(deltaMag, deltaVMinAccel, deltaVMaxAccel);
+				float normalizedVel = clampedDelta / deltaVMaxAccel;
 
 				hue = (1.0f - normalizedVel) * 240.0f;
 				saturation = 1.0f;
@@ -171,9 +171,19 @@ struct ColorVisuals {
 
 				pParticles[i].prevVel = pParticles[i].vel;
 
-				blendMode = 0;
 			}
+				blendMode = 0;
 		}
+
+		if (SPHColor) {
+			for (size_t i = 0; i < rParticles.size(); i++) {
+				rParticles[i].color = rParticles[i].originalColor;
+			}
+
+			blendMode = 0;
+		}
+		
+		
 
 
 		if (selectedColor) {
