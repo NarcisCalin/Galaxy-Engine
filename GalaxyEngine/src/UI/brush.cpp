@@ -16,6 +16,13 @@ Brush::Brush(SceneCamera myCamera, float brushRadius) {
 
 void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 
+	if (!isSPHEnabled) {
+		SPHWater = false;
+		SPHRock = false;
+		SPHSand = false;
+		SPHMud = false;
+	}
+
 	if (!SPHWater && !SPHRock && !SPHSand && !SPHMud) {
 		for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
 			float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;

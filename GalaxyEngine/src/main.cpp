@@ -335,7 +335,7 @@ int main() {
 
 		BeginTextureMode(myParticlesTexture);
 
-		ClearBackground({0,0,0,0});
+		ClearBackground(BLACK);
 
 		BeginBlendMode(myParam.colorVisuals.blendMode);
 
@@ -355,9 +355,9 @@ int main() {
 			BeginShaderMode(myBloom);
 		}
 
-		ClearBackground({0,0,0,0});
+		//ClearBackground(BLACK);
 
-		BeginBlendMode(BLEND_ALPHA_PREMULTIPLY);
+		//BeginBlendMode(BLEND_ALPHA_PREMULTIPLY);
 
 		DrawTextureRec(
 			myParticlesTexture.texture,
