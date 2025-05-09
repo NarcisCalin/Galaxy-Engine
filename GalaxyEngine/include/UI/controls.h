@@ -38,7 +38,7 @@ struct Controls {
 	"14. D: Deselect all particles"
 	};
 
-	std::array<std::string, 17> controlsArrayUtility = {
+	std::array<std::string, 18> controlsArrayUtility = {
 	"UTILITY",
 	"1. TAB: Toggle fullscreen",
 	"2. T: Toggle global trails",
@@ -55,7 +55,8 @@ struct Controls {
 	"13. S: Take screenshot",
 	"14. X + MMB: Eraser",
 	"15. H: Copy selected",
-	"16. Hold J and drag: Throw copied"
+	"16. Hold J and drag: Throw copied",
+	"17. Arrows: Control selected particles"
 	};
 
 	std::array<std::string, 20> informationArray = {

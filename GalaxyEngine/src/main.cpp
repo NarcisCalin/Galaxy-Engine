@@ -169,7 +169,7 @@ static void updateScene() {
 
 	myParam.particleDeletion.deleteSelected(myParam.pParticles, myParam.rParticles);
 
-	myParam.particleDeletion.deleteStrays(myParam.pParticles, myParam.rParticles, myVar.isCollisionsEnabled);
+	myParam.particleDeletion.deleteStrays(myParam.pParticles, myParam.rParticles, myVar.isCollisionsEnabled, myVar.isSPHEnabled);
 
 	myParam.brush.particlesAttractor(myVar, myParam);
 
