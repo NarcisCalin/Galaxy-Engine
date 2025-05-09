@@ -287,7 +287,7 @@ int main() {
 	int lastScreenHeight = GetScreenHeight();
 	bool wasFullscreen = IsWindowFullscreen();
 
-	bool lastScreenState = myVar.fullscreenState;
+	bool lastScreenState = false;
 
 	while (!WindowShouldClose()) {
 
@@ -320,6 +320,7 @@ int main() {
 
 		int currentScreenWidth = GetScreenWidth();
 		int currentScreenHeight = GetScreenHeight();
+
 		if (currentScreenWidth != lastScreenWidth || currentScreenHeight != lastScreenHeight)
 		{
 			UnloadRenderTexture(myParticlesTexture);
@@ -331,7 +332,6 @@ int main() {
 			lastScreenWidth = currentScreenWidth;
 			lastScreenHeight = currentScreenHeight;
 		}
-
 
 		BeginTextureMode(myParticlesTexture);
 

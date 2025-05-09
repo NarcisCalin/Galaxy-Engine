@@ -124,6 +124,10 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph) {
 			myVar.isDragging = false;
 		}
 
+		if (buttonFullscreenHovering && IsMouseButtonPressed(0)) {
+			myParam.particlesSpawning.isSpawningAllowed = true;
+		}
+
 
 		if (bVisualsSliders) {
 

@@ -23,6 +23,7 @@ public:
 	float DMAmountMultiplier = 1.0f;
 
 	bool enablePathPrediction = false;
+	bool isSpawningAllowed = true;
 
 	void particlesInitialConditions(Quadtree* quadtree, Physics& physics, UpdateVariables& myVar, UpdateParameters& myParam);
 
@@ -37,6 +38,5 @@ private:
 	std::vector<ParticlePhysics> pParticlesCopied;
 	std::vector<ParticleRendering> rParticlesCopied;
 
-	bool isSpawningAllowed = true;
 	float heavyParticleInitMass = 300000000000000.0f;
 };
