@@ -1,10 +1,18 @@
 # Galaxy Engine
 
+## About
+
+Join Galaxy Engine's [Discord community!](https://discord.gg/Xd5JUqNFPM)
+
 Galaxy Engine is a project made for learning purposes by [NarcisCalin](https://github.com/NarcisCalin). It is made with C++ and it uses the [Raylib](https://github.com/raysan5/raylib) library.
+
+Galaxy Engine is available for free and its code is open source.
 
 Special thanks to [Crisosphinx](https://github.com/crisosphinx) for helping me improve my code.
 
 Special thanks to [SergioCelso](https://github.com/SCelso) for making the learning process a little easier and also for helping me implement the initial version of the Barnes-Hut quadtree.
+
+
 
 ---
 ![ManyGalaxiesGif](https://github.com/user-attachments/assets/70b784ac-22ab-4261-9cf6-5e651492cf6f)
