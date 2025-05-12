@@ -12,6 +12,8 @@ Special thanks to [Crisosphinx](https://github.com/crisosphinx) for helping me i
 
 Special thanks to [SergioCelso](https://github.com/SCelso) for making the learning process a little easier and also for helping me implement the initial version of the Barnes-Hut quadtree.
 
+Special thanks to [Emily](https://github.com/Th3T3chn0G1t) for helping me on multiple occasions, including setting up the CMake configuration and assisting with various parts of the project.
+
 
 
 ---
