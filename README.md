@@ -115,7 +115,7 @@ https://github.com/user-attachments/assets/9b51780c-7dff-4e53-965d-e5f29677669d
 ---
 - Download the latest release version from the releases tab and unzip the zip file.
 - Run the .exe file inside the folder.
-- (Currently Galaxy Engine is only available on Windows)
+- (Currently Galaxy Engine binaries are only available on Windows)
 
 ### IMPORTANT INFORMATION
 - Galaxy Engine releases might get flagged as a virus by your browser or by Windows Defender. This is normal. It happens mainly because the program is not signed by Microsoft (Which costs money). If you don't trust the binaries, you can always compile Galaxy Engine yourself
