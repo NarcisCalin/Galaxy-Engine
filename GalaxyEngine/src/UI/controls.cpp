@@ -22,13 +22,17 @@ void Controls::showControls(bool& isMouseNotHoveringUI, bool& isDragging) {
     fontYBias = 0.0f * uiScale;
     fontYSpacing = 30.0f * uiScale;
 
+    Vector2 pageButtonSize = { 170.0f * uiScale, 24.0f * uiScale };
+
     Vector2 pageButtonPos = {
-        screenW * 0.5f,
-        screenH * 0.5f - controlsBoxSizeY * 0.5f - 14.0f * uiScale
+        screenW * 0.5f - pageButtonSize.x * 0.5f,
+        screenH * 0.5f - controlsBoxSizeY * 0.5f - pageButtonSize.y
     };
-    Button changePageButton(pageButtonPos,
-        { 14.0f * uiScale, 14.0f * uiScale },
-        "", false);
+    Button changePageButton(
+        pageButtonPos,
+        pageButtonSize,
+        "Next Page", 
+        true);
 
     bool buttonNextPageHovering = changePageButton.buttonLogic(nextPage);
     if (buttonNextPageHovering) {

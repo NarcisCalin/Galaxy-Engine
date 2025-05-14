@@ -23,6 +23,10 @@ private:
 
 Button({195.0f, 80.0f}, {175.0f, 20.0f}, "Fullscreen", true),
 
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Controls", true),
+
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Information", true),
+
 Button({195.0f, 80.0f}, {175.0f, 24.0f}, "Global Trails", true),
 
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Selected Trails", true),
@@ -64,10 +68,6 @@ Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Force Size", true),
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Glow", true),
 
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Predict Path", true),
-
-Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Controls", true),
-
-Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Information", true),
 
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Visual Settings", true),
 

@@ -53,38 +53,39 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph) {
 		}
 
 		bool buttonFullscreenHovering = settingsButtonsArray[0].buttonLogic(myVar.fullscreenState);
-		bool buttonGlobalTrailsHovering = settingsButtonsArray[1].buttonLogic(myVar.isGlobalTrailsEnabled);
-		bool buttonSelectedTrailsHovering = settingsButtonsArray[2].buttonLogic(myVar.isSelectedTrailsEnabled);
-		bool buttonLocalTrailsHovering = settingsButtonsArray[3].buttonLogic(myVar.isLocalTrailsEnabled);
-		bool buttonWhiteTrailsHovering = settingsButtonsArray[4].buttonLogic(myParam.trails.whiteTrails);
 
-		bool buttonSolidColorHovering = settingsButtonsArray[5].buttonLogic(myParam.colorVisuals.solidColor);
-		bool buttonDensityColorHovering = settingsButtonsArray[6].buttonLogic(myParam.colorVisuals.densityColor);
-		bool buttonForceColorHovering = settingsButtonsArray[7].buttonLogic(myParam.colorVisuals.forceColor);
-		bool buttonVelocityColorHovering = settingsButtonsArray[8].buttonLogic(myParam.colorVisuals.velocityColor);
-		bool buttonDeltaVColorHovering = settingsButtonsArray[9].buttonLogic(myParam.colorVisuals.deltaVColor);
-		bool buttonSPHColorHovering = settingsButtonsArray[10].buttonLogic(myParam.colorVisuals.SPHColor);
-		bool buttonSelectedColorHovering = settingsButtonsArray[11].buttonLogic(myParam.colorVisuals.selectedColor);
+		bool buttonControlsHovering = settingsButtonsArray[1].buttonLogic(myParam.controls.isShowControlsEnabled);
+		bool buttonInformationHovering = settingsButtonsArray[2].buttonLogic(myParam.controls.isInformationEnabled);
 
-		bool buttonDarkMatterHovering = settingsButtonsArray[12].buttonLogic(myVar.isDarkMatterEnabled);
-		bool buttonShowDarkMatterHovering = settingsButtonsArray[13].buttonLogic(myParam.colorVisuals.showDarkMatterEnabled);
+		bool buttonGlobalTrailsHovering = settingsButtonsArray[3].buttonLogic(myVar.isGlobalTrailsEnabled);
+		bool buttonSelectedTrailsHovering = settingsButtonsArray[4].buttonLogic(myVar.isSelectedTrailsEnabled);
+		bool buttonLocalTrailsHovering = settingsButtonsArray[5].buttonLogic(myVar.isLocalTrailsEnabled);
+		bool buttonWhiteTrailsHovering = settingsButtonsArray[6].buttonLogic(myParam.trails.whiteTrails);
 
-		bool buttonPeriodicBoundaryHovering = settingsButtonsArray[14].buttonLogic(myVar.isPeriodicBoundaryEnabled);
+		bool buttonSolidColorHovering = settingsButtonsArray[7].buttonLogic(myParam.colorVisuals.solidColor);
+		bool buttonDensityColorHovering = settingsButtonsArray[8].buttonLogic(myParam.colorVisuals.densityColor);
+		bool buttonForceColorHovering = settingsButtonsArray[9].buttonLogic(myParam.colorVisuals.forceColor);
+		bool buttonVelocityColorHovering = settingsButtonsArray[10].buttonLogic(myParam.colorVisuals.velocityColor);
+		bool buttonDeltaVColorHovering = settingsButtonsArray[11].buttonLogic(myParam.colorVisuals.deltaVColor);
+		bool buttonSPHColorHovering = settingsButtonsArray[12].buttonLogic(myParam.colorVisuals.SPHColor);
+		bool buttonSelectedColorHovering = settingsButtonsArray[13].buttonLogic(myParam.colorVisuals.selectedColor);
 
-		bool buttonMultiThreadingHovering = settingsButtonsArray[15].buttonLogic(myVar.isMultiThreadingEnabled);
+		bool buttonDarkMatterHovering = settingsButtonsArray[14].buttonLogic(myVar.isDarkMatterEnabled);
+		bool buttonShowDarkMatterHovering = settingsButtonsArray[15].buttonLogic(myParam.colorVisuals.showDarkMatterEnabled);
 
-		bool buttonSPHHovering = settingsButtonsArray[16].buttonLogic(myVar.isSPHEnabled);
-		bool buttonCollisionsHovering = settingsButtonsArray[17].buttonLogic(myVar.isCollisionsEnabled);
+		bool buttonPeriodicBoundaryHovering = settingsButtonsArray[16].buttonLogic(myVar.isPeriodicBoundaryEnabled);
 
-		bool buttonDensitySizeHovering = settingsButtonsArray[18].buttonLogic(myVar.isDensitySizeEnabled);
-		bool buttonForceSizeHovering = settingsButtonsArray[19].buttonLogic(myVar.isForceSizeEnabled);
+		bool buttonMultiThreadingHovering = settingsButtonsArray[17].buttonLogic(myVar.isMultiThreadingEnabled);
 
-		bool buttonGlowHovering = settingsButtonsArray[20].buttonLogic(myVar.isGlowEnabled);
+		bool buttonSPHHovering = settingsButtonsArray[18].buttonLogic(myVar.isSPHEnabled);
+		bool buttonCollisionsHovering = settingsButtonsArray[19].buttonLogic(myVar.isCollisionsEnabled);
 
-		bool buttonPredictPathsHovering = settingsButtonsArray[21].buttonLogic(myParam.particlesSpawning.enablePathPrediction);
+		bool buttonDensitySizeHovering = settingsButtonsArray[20].buttonLogic(myVar.isDensitySizeEnabled);
+		bool buttonForceSizeHovering = settingsButtonsArray[21].buttonLogic(myVar.isForceSizeEnabled);
 
-		bool buttonControlsHovering = settingsButtonsArray[22].buttonLogic(myParam.controls.isShowControlsEnabled);
-		bool buttonInformationHovering = settingsButtonsArray[23].buttonLogic(myParam.controls.isInformationEnabled);
+		bool buttonGlowHovering = settingsButtonsArray[22].buttonLogic(myVar.isGlowEnabled);
+
+		bool buttonPredictPathsHovering = settingsButtonsArray[23].buttonLogic(myParam.particlesSpawning.enablePathPrediction);
 
 		bool buttonVisualsSlidersHovering = settingsButtonsArray[24].buttonLogic(bVisualsSliders);
 		bool buttonPhysicsSlidersHovering = settingsButtonsArray[25].buttonLogic(bPhysicsSliders);
