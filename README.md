@@ -6,6 +6,8 @@ Join Galaxy Engine's [Discord community!](https://discord.gg/Xd5JUqNFPM)
 
 Galaxy Engine is a project made for learning purposes by [NarcisCalin](https://github.com/NarcisCalin). It is made with C++ and it uses the [Raylib](https://github.com/raysan5/raylib) library.
 
+Galaxy Engine uses libraries from the [FFmpeg](https://github.com/FFmpeg/FFmpeg) project under the LGPLv2.1
+
 Galaxy Engine is available for free and its code is open source.
 
 Special thanks to [Crisosphinx](https://github.com/crisosphinx) for helping me improve my code.
@@ -127,7 +129,8 @@ https://github.com/user-attachments/assets/9b51780c-7dff-4e53-965d-e5f29677669d
   - Or get it from Visual Studio Installer
   - ![image](https://github.com/user-attachments/assets/b46a0e7d-188e-43a3-bf7e-fb3edced233a)
 - Download [CMake](https://cmake.org/download/)
+- Build FFmpeg (If you intend to have your code under LGPL, you should build the LGPL version of FFmpeg)
 - Build the project with CMake
 - After doing this you should have the .exe file inside the build folder
-- The last step is running the .exe file at the same level as the "Textures" folder (otherwise the particles won't be visible)
+- The last step is running the .exe file at the same level as the "Textures" folder (otherwise the particles won't be visible). This applies to the "Shaders" folder as well
 
