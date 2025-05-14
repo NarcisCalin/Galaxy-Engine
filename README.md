@@ -114,7 +114,7 @@ https://github.com/user-attachments/assets/9b51780c-7dff-4e53-965d-e5f29677669d
 ## HOW TO INSTALL
 ---
 - Download the latest release version from the releases tab and unzip the zip file.
-- Run the .exe file inside the folder.
+- Run the executable file inside the folder.
 - (Currently Galaxy Engine binaries are only available on Windows)
 
 ### IMPORTANT INFORMATION
@@ -131,6 +131,6 @@ https://github.com/user-attachments/assets/9b51780c-7dff-4e53-965d-e5f29677669d
 - Download [CMake](https://cmake.org/download/)
 - Build FFmpeg (If you are on Linux. The project comes with the necessary files for Windows. If you intend to have your code under LGPL, you should build the LGPL version of FFmpeg)
 - Build the project with CMake
-- After doing this you should have the .exe file inside the build folder
+- After doing this you should have the executable file inside the build folder
 - The last step is running the executable file at the same level as the "Textures" folder (otherwise the particles won't be visible). This applies to the "Shaders" folder as well
 
