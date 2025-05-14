@@ -59,7 +59,7 @@ struct Controls {
 	"17. Arrows: Control selected particles"
 	};
 
-	std::array<std::string, 20> informationArray = {
+	std::array<std::string, 21> informationArray = {
 		"INFORMATION",
 		"This is a personal project done for learning purposes",
 		"by Narcis Calin. The project was entirely made with Raylib",
@@ -77,9 +77,10 @@ struct Controls {
 		"6. SPH: This enables fluids for planetary simulation. Each SPH",
 		"material has different parameters like stiffness, viscosity,",
 		"cohesion, and more.",
-		"7. Recording Disk Mode: This is the safe mode of recording. It is",
-		"enabled by default. It stores your frames directly to disk.",
-		"It runs slower but doesn't fill up memory"
+		"7. Frames Export Safe Mode: It is enabled by default when export",
+		"frames is enabled. It stores your frames directly to disk, avoiding",
+		"filling up your memory. Disabling it will make the render process",
+		"much faster, but the program might crash once you run out of memory"
 	};
 
 	bool isShowControlsEnabled = false;
