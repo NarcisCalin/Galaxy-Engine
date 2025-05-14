@@ -266,6 +266,52 @@ static void enableMultiThreading() {
 	}
 }
 
+void fullscreenToggle(int& lastScreenWidth, int& lastScreenHeight, 
+	bool& wasFullscreen, bool& lastScreenState, 
+	RenderTexture2D& myParticlesTexture, RenderTexture2D& myUITexture) {
+	if (IsKeyPressed(KEY_TAB)) {
+		myVar.fullscreenState = !myVar.fullscreenState;
+	}
+
+	if (myVar.fullscreenState != lastScreenState)
+	{
+		int monitor = GetCurrentMonitor();
+
+		if (!IsWindowFullscreen())
+			SetWindowSize(GetMonitorWidth(monitor), GetMonitorHeight(monitor));
+		else
+			SetWindowSize(myVar.screenWidth, myVar.screenHeight);
+
+		ToggleFullscreen();
+		wasFullscreen = IsWindowFullscreen();
+
+		UnloadRenderTexture(myParticlesTexture);
+		UnloadRenderTexture(myUITexture);
+
+		lastScreenWidth = GetScreenWidth();
+		lastScreenHeight = GetScreenHeight();
+		lastScreenState = myVar.fullscreenState;
+
+		myParticlesTexture = LoadRenderTexture(lastScreenWidth, lastScreenHeight);
+		myUITexture = LoadRenderTexture(lastScreenWidth, lastScreenHeight);
+	}
+
+	int currentScreenWidth = GetScreenWidth();
+	int currentScreenHeight = GetScreenHeight();
+
+	if (currentScreenWidth != lastScreenWidth || currentScreenHeight != lastScreenHeight)
+	{
+		UnloadRenderTexture(myParticlesTexture);
+		UnloadRenderTexture(myUITexture);
+
+		myParticlesTexture = LoadRenderTexture(currentScreenWidth, currentScreenHeight);
+		myUITexture = LoadRenderTexture(currentScreenWidth, currentScreenHeight);
+
+		lastScreenWidth = currentScreenWidth;
+		lastScreenHeight = currentScreenHeight;
+	}
+}
+
 int main() {
 
 	SetConfigFlags(FLAG_MSAA_4X_HINT);
@@ -291,47 +337,9 @@ int main() {
 
 	while (!WindowShouldClose()) {
 
-		if (IsKeyPressed(KEY_TAB)) {
-			myVar.fullscreenState = !myVar.fullscreenState;
-		}
+		fullscreenToggle(lastScreenWidth, lastScreenHeight, wasFullscreen, lastScreenState, myParticlesTexture, myUITexture);
 
-		if (myVar.fullscreenState != lastScreenState)
-		{
-			int monitor = GetCurrentMonitor();
-
-			if (!IsWindowFullscreen())
-				SetWindowSize(GetMonitorWidth(monitor), GetMonitorHeight(monitor));
-			else
-				SetWindowSize(myVar.screenWidth, myVar.screenHeight);
-
-			ToggleFullscreen();
-			wasFullscreen = IsWindowFullscreen();
-
-			UnloadRenderTexture(myParticlesTexture);
-			UnloadRenderTexture(myUITexture);
-
-			lastScreenWidth = GetScreenWidth();
-			lastScreenHeight = GetScreenHeight();
-			lastScreenState = myVar.fullscreenState;
-
-			myParticlesTexture = LoadRenderTexture(lastScreenWidth, lastScreenHeight);
-			myUITexture = LoadRenderTexture(lastScreenWidth, lastScreenHeight);
-		}
-
-		int currentScreenWidth = GetScreenWidth();
-		int currentScreenHeight = GetScreenHeight();
-
-		if (currentScreenWidth != lastScreenWidth || currentScreenHeight != lastScreenHeight)
-		{
-			UnloadRenderTexture(myParticlesTexture);
-			UnloadRenderTexture(myUITexture);
-
-			myParticlesTexture = LoadRenderTexture(currentScreenWidth, currentScreenHeight);
-			myUITexture = LoadRenderTexture(currentScreenWidth, currentScreenHeight);
-
-			lastScreenWidth = currentScreenWidth;
-			lastScreenHeight = currentScreenHeight;
-		}
+		
 
 		BeginTextureMode(myParticlesTexture);
 
@@ -382,7 +390,7 @@ int main() {
 		myVar.isRecording = myParam.screenCapture.screenGrab(myParticlesTexture, myVar);
 
 		if (myVar.isRecording) {
-			DrawRectangleLinesEx({ 0,0, static_cast<float>(myVar.screenWidth), static_cast<float>(myVar.screenHeight) }, 3, RED);
+			DrawRectangleLinesEx({ 0,0, static_cast<float>(GetScreenWidth()), static_cast<float>(GetScreenHeight()) }, 3, RED);
 		}
 
 		EndDrawing();

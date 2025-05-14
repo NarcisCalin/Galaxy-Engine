@@ -8,11 +8,13 @@ struct UpdateVariables;
 
 class ScreenCapture {
 public:
-	bool exportFrames = false;
+	bool exportMemoryFrames = false;
 	bool deleteFrames = false;
 	bool isFunctionRecording = false;
+	bool isVideoExportEnabled = true;
 
-	bool isDiskModeEnabled = true;
+	bool isSafeFramesEnabled = true;
+	bool isExportFramesEnabled = false;
 
 	bool screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariables& myVar);
 

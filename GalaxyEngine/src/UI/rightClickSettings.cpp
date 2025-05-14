@@ -43,13 +43,13 @@ void RightClickSettings::rightClickMenuSpawnLogic(bool& isMouseNotHoveringUI) {
 		isMenuActive = true;
 
 		menuSize.x = buttonSizeX + 5.0f;
-		menuSize.y = (menuBottons.size() + 1) * (buttonSizeY + menuButtonGap) +
+		menuSize.y = (menuButtons.size() + 1) * (buttonSizeY + menuButtonGap) +
 			(menuSliders.size() + 1) * (sliderSizeY + menuSliderGap - (menuSliderGap / static_cast<float>(menuSliders.size())));
 
 		menuPos.x = std::clamp(static_cast<float>(GetMouseX()), 0.0f, static_cast<float>(GetScreenWidth()) - menuSize.x);
 		menuPos.y = std::clamp(static_cast<float>(GetMouseY()), 0.0f, static_cast<float>(GetScreenHeight()) - menuSize.y);
 
-		menuBottons[0].pos = menuPos;
+		menuButtons[0].pos = menuPos;
 	}
 }
 
@@ -61,44 +61,48 @@ void RightClickSettings::rightClickMenu(UpdateVariables& myVar, UpdateParameters
 
 	if (isMenuActive) {
 
-		menuBottons[0].pos.x = menuPos.x + menuButtonGap;
+		menuButtons[0].pos.x = menuPos.x + menuButtonGap;
 
-		menuBottons[0].pos.y = menuPos.y + menuButtonGap;
+		menuButtons[0].pos.y = menuPos.y + menuButtonGap;
 
-		menuBottons[0].size = { buttonSizeX, buttonSizeY };
+		menuButtons[0].size = { buttonSizeX, buttonSizeY };
 
 
-		for (size_t i = 1; i < menuBottons.size(); i++) {
+		for (size_t i = 1; i < menuButtons.size(); i++) {
 
-			menuBottons[i].pos.x = menuBottons[i - 1].pos.x;
-			menuBottons[i].pos.y = menuBottons[i - 1].pos.y + menuBottons[i].size.y + 5.0f;
-			menuBottons[i].size = menuBottons[i - 1].size;
+			menuButtons[i].pos.x = menuButtons[i - 1].pos.x;
+			menuButtons[i].pos.y = menuButtons[i - 1].pos.y + menuButtons[i].size.y + 5.0f;
+			menuButtons[i].size = menuButtons[i - 1].size;
 		}
 
 
 		DrawRectangleV(menuPos, menuSize, menuColor);
 
-		bool buttonSubdivideAllHovering = menuBottons[0].buttonLogic(myParam.subdivision.subdivideAll);
-		bool buttonSubdivideSelectedHovering = menuBottons[1].buttonLogic(myParam.subdivision.subdivideSelected);
+		bool buttonSubdivideAllHovering = menuButtons[0].buttonLogic(myParam.subdivision.subdivideAll);
+		bool buttonSubdivideSelectedHovering = menuButtons[1].buttonLogic(myParam.subdivision.subdivideSelected);
 
-		bool buttonInvertSelectionHovering = menuBottons[2].buttonLogic(myParam.particleSelection.invertParticleSelection);
-		bool buttonDeselectAllHovering = menuBottons[3].buttonLogic(myParam.particleSelection.deselectParticles);
+		bool buttonInvertSelectionHovering = menuButtons[2].buttonLogic(myParam.particleSelection.invertParticleSelection);
+		bool buttonDeselectAllHovering = menuButtons[3].buttonLogic(myParam.particleSelection.deselectParticles);
 
-		bool buttonFollowSelectionHovering = menuBottons[4].buttonLogic(myParam.myCamera.centerCamera);
+		bool buttonFollowSelectionHovering = menuButtons[4].buttonLogic(myParam.myCamera.centerCamera);
 
-		bool buttonClustersSelectionHovering = menuBottons[5].buttonLogic(myParam.particleSelection.selectManyClusters);
+		bool buttonClustersSelectionHovering = menuButtons[5].buttonLogic(myParam.particleSelection.selectManyClusters);
 
-		bool buttonDeleteSelectionHovering = menuBottons[6].buttonLogic(myParam.particleDeletion.deleteSelection);
-		bool buttonDeleteStraysHovering = menuBottons[7].buttonLogic(myParam.particleDeletion.deleteNonImportant);
+		bool buttonDeleteSelectionHovering = menuButtons[6].buttonLogic(myParam.particleDeletion.deleteSelection);
+		bool buttonDeleteStraysHovering = menuButtons[7].buttonLogic(myParam.particleDeletion.deleteNonImportant);
 
-		bool buttonResetColorsHovering = menuBottons[8].buttonLogic(resetParticleColors);
+		bool buttonResetColorsHovering = menuButtons[8].buttonLogic(resetParticleColors);
 
-		bool buttonDrawZCurvesHovering = menuBottons[9].buttonLogic(myVar.drawZCurves);
-		bool buttonDrawQuadtreeHovering = menuBottons[10].buttonLogic(myVar.drawQuadtree);
+		bool buttonDrawZCurvesHovering = menuButtons[9].buttonLogic(myVar.drawZCurves);
+		bool buttonDrawQuadtreeHovering = menuButtons[10].buttonLogic(myVar.drawQuadtree);
 
 		bool buttonRecordDiskModeHovering = false;
-		if (!myParam.screenCapture.isFunctionRecording) { // If it is recording, lock the setting
-			buttonRecordDiskModeHovering = menuBottons[11].buttonLogic(myParam.screenCapture.isDiskModeEnabled);
+		bool buttonExportFramesEnabledHovering = false;
+		if (!myParam.screenCapture.isFunctionRecording) { // If it is recording, lock these settings
+			buttonDrawQuadtreeHovering = menuButtons[11].buttonLogic(myParam.screenCapture.isExportFramesEnabled);
+			if (myParam.screenCapture.isExportFramesEnabled) {
+				buttonRecordDiskModeHovering = menuButtons[12].buttonLogic(myParam.screenCapture.isSafeFramesEnabled);
+			}
 		}
 
 
@@ -113,6 +117,7 @@ void RightClickSettings::rightClickMenu(UpdateVariables& myVar, UpdateParameters
 			buttonDrawZCurvesHovering ||
 			buttonDrawQuadtreeHovering ||
 			buttonDeselectAllHovering ||
+			buttonDrawQuadtreeHovering ||
 			buttonRecordDiskModeHovering
 			) {
 			myVar.isMouseNotHoveringUI = false;
@@ -121,7 +126,7 @@ void RightClickSettings::rightClickMenu(UpdateVariables& myVar, UpdateParameters
 
 		menuSliders[0].sliderPos.x = menuPos.x + menuButtonGap;
 
-		menuSliders[0].sliderPos.y = menuPos.y + (menuBottons.size() + 1) * (buttonSizeY + menuButtonGap) + menuSliderGap + 15.0f;
+		menuSliders[0].sliderPos.y = menuPos.y + (menuButtons.size() + 1) * (buttonSizeY + menuButtonGap) + menuSliderGap + 15.0f;
 
 		menuSliders[0].sliderSize = { buttonSizeX, sliderSizeY };
 

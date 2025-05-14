@@ -55,7 +55,7 @@ private:
 
 	bool resetParticleColors = false;
 
-	std::array<Button, 12> menuBottons = {
+	std::array<Button, 13> menuButtons = {
 
 Button({0.0f, 0.0f}, {0.0f, 0.0f}, "Subdivide All", true),
 
@@ -79,7 +79,10 @@ Button({0.0f, 0.0f}, {0.0f, 0.0f}, "Debug Z Curves", true),
 
 Button({0.0f, 0.0f}, {0.0f, 0.0f}, "Debug Quadtree", true),
 
-Button({0.0f, 0.0f}, {0.0f, 0.0f}, "Record Disk Mode", true)
+Button({0.0f, 0.0f}, {0.0f, 0.0f}, "Frames Export", true),
+
+Button({0.0f, 0.0f}, {0.0f, 0.0f}, "Frames Safe Mode", true)
+
 	};
 
 	std::array<Slider, 8> menuSliders = {

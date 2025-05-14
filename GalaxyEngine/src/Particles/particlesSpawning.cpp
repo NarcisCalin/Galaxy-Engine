@@ -7,6 +7,10 @@
 
 void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& physics, UpdateVariables& myVar, UpdateParameters& myParam) {
 
+	if (myVar.isSPHEnabled) {
+		particleAmountMultiplier = 1.0f;
+	}
+
 	if (myVar.isMouseNotHoveringUI && isSpawningAllowed) {
 
 		Slingshot slingshot = slingshot.particleSlingshot(myVar.isDragging, myParam.myCamera);
