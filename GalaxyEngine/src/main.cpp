@@ -34,6 +34,7 @@
 #include "../include/parameters.h"
 #include "../include/Particles/particleSpaceship.h"
 #include "../include/Physics/SPH.h"
+#include "../include/UX/saveSystem.h"
 
 
 UpdateParameters myParam;
@@ -43,6 +44,7 @@ Physics physics;
 CollisionGrid collisionGrid;
 ParticleSpaceship ship;
 SPH sph;
+SaveSystem save;
 
 
 static Quadtree* gridFunction(std::vector<ParticlePhysics>& pParticles,
@@ -249,7 +251,9 @@ static void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture) 
 
 	// EVERYTHING STATIC RELATIVE TO CAMERA BELOW
 
-	myUI.uiLogic(myParam, myVar, sph);
+	myUI.uiLogic(myParam, myVar, sph, save);
+
+	save.saveLoadLogic(myVar, myParam, sph);
 
 	myParam.subdivision.subdivideParticles(myVar, myParam);
 
@@ -335,6 +339,13 @@ int main() {
 
 	bool lastScreenState = false;
 
+
+	// If "Saves" directory doesn't exist, then create one. This is done here to store the default parameters
+	if (!std::filesystem::exists("Saves")) {
+		std::filesystem::create_directory("Saves");
+	}
+	save.saveSimulation("Saves/DefaultSettings.galaxsim", myVar, myParam, sph);
+
 	while (!WindowShouldClose()) {
 
 		fullscreenToggle(lastScreenWidth, lastScreenHeight, wasFullscreen, lastScreenState, myParticlesTexture, myUITexture);
@@ -347,7 +358,7 @@ int main() {
 
 		BeginBlendMode(myParam.colorVisuals.blendMode);
 
-		BeginMode2D(myParam.myCamera.cameraLogic());
+		BeginMode2D(myParam.myCamera.cameraLogic(save.loadFlag));
 
 		updateScene();
 
@@ -356,6 +367,7 @@ int main() {
 		EndMode2D();
 
 		EndBlendMode();
+
 
 		//------------------------ RENDER TEXTURES BELOW ------------------------//
 

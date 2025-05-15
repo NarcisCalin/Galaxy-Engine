@@ -51,7 +51,7 @@ struct Controls {
 	"9. N: Brush spin particles",
 	"10. M: Brush grab particles",
 	"11. Hold CTRL to invert brush effects",
-	"12. R: Record frames",
+	"12. R: Record",
 	"13. S: Take screenshot",
 	"14. X + MMB: Eraser",
 	"15. H: Copy selected",

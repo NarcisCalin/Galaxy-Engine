@@ -50,7 +50,7 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 		}
 
 		int nextAvailableIndex = 0;
-		for (const auto& entry : std::filesystem::directory_iterator("Screenshots")) {
+		for (const std::filesystem::directory_entry& entry : std::filesystem::directory_iterator("Screenshots")) {
 
 			std::string filename = entry.path().filename().string();
 			if (filename.rfind("Screenshot_", 0) == 0 && filename.find(".png") != std::string::npos) {

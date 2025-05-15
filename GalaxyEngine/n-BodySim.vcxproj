@@ -1460,6 +1460,7 @@
     <ClInclude Include="include\UI\slider.h" />
     <ClInclude Include="include\UI\UI.h" />
     <ClInclude Include="include\UX\camera.h" />
+    <ClInclude Include="include\UX\saveSystem.h" />
     <ClInclude Include="include\UX\screenCapture.h" />
   </ItemGroup>
   <ItemGroup>

@@ -152,5 +152,8 @@
     <ClInclude Include="include\Physics\materialsSPH.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\UX\saveSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

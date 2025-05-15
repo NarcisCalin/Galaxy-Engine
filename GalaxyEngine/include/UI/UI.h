@@ -8,6 +8,7 @@
 #include "slider.h"
 #include "../Physics/quadtree.h"
 #include "../Physics/SPH.h"
+#include "../UX/saveSystem.h"
 
 class UI {
 public:
@@ -15,11 +16,10 @@ public:
 	bool bVisualsSliders = true;
 	bool bPhysicsSliders = false;
 
-	void uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph);
+	void uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, SaveSystem& save);
 
-private:
 
-	std::array<Button, 27> settingsButtonsArray = {
+	std::array<Button, 29> settingsButtonsArray = {
 
 Button({195.0f, 80.0f}, {175.0f, 20.0f}, "Fullscreen", true),
 
@@ -73,7 +73,11 @@ Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Visual Settings", true),
 
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Physics Settings", true),
 
-Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Ship Gas", true)
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Ship Gas", true),
+
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Save Scene", true),
+
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Load Scene", true)
 
 	};
 

@@ -1,7 +1,7 @@
 #include "../../include/UI/UI.h"
 
 
-void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph) {
+void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, SaveSystem& save) {
 
 	toggleSettingsButtons[0].pos = { static_cast<float>(GetScreenWidth()) - 34.0f, 65.0f };
 	bool buttonShowSettingsHovering = toggleSettingsButtons[0].buttonLogic(showSettings);
@@ -92,6 +92,9 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph) {
 
 		bool buttonShipGasHovering = settingsButtonsArray[26].buttonLogic(myVar.isShipGasEnabled);
 
+		bool buttonSaveHovering = settingsButtonsArray[27].buttonLogic(save.saveFlag);
+		bool buttonLoadHovering = settingsButtonsArray[28].buttonLogic(save.loadFlag);
+
 		if (buttonFullscreenHovering ||
 			buttonDarkMatterHovering ||
 			buttonPeriodicBoundaryHovering ||
@@ -119,7 +122,9 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph) {
 			buttonDeltaVColorHovering ||
 			buttonShipGasHovering ||
 			buttonSPHHovering ||
-			buttonSPHColorHovering
+			buttonSPHColorHovering ||
+			buttonSaveHovering ||
+			buttonLoadHovering
 			) {
 			myVar.isMouseNotHoveringUI = false;
 			myVar.isDragging = false;
