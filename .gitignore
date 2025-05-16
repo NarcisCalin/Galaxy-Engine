@@ -6,6 +6,7 @@
 
 # Build directory
 build/
+GalaxyEngine/build/
 
 # Output directories
 GalaxyEngine/Video_*
