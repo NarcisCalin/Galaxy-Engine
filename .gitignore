@@ -12,5 +12,7 @@ GalaxyEngine/build/
 GalaxyEngine/Video_*
 GalaxyEngine/Frame_*
 GalaxyEngine/Screenshot_*
+GalaxyEngine/Screenshots/
 GalaxyEngine/compilerCommand.txt
 GalaxyEngine/x64/
+x64/
