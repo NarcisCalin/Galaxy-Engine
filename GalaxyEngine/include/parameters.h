@@ -105,6 +105,7 @@ struct UpdateVariables{
 	bool isForceSizeEnabled = false;
 	bool isShipGasEnabled = true;
 	bool isSPHEnabled = false;
+	bool sphGround = false;
 
 	bool isSpawningAllowed = true;
 

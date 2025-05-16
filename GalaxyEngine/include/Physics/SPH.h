@@ -92,14 +92,17 @@ public:
 
 	void computeDensityPressure(std::vector<ParticlePhysics>& particles, std::vector<ParticleRendering>& rParticles);
 	void computeForces(std::vector<ParticlePhysics>& particles, std::vector<ParticleRendering>& rParticles);
-	void Integrate(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, float& dt, Vector2& domainSize);
+	void Integrate(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, float& dt, Vector2& domainSize, bool& sphGround);
 
-	void Solver(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, float& dt, Vector2& domainSize) {
+	void Solver(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, float& dt, Vector2& domainSize, bool& sphGround) {
 
 		updateGrid(pParticles, rParticles);
 		computeDensityPressure(pParticles, rParticles);
 		computeForces(pParticles, rParticles);
-		//Integrate(pParticles, rParticles, dt, domainSize);
+
+		if (sphGround) {
+			Integrate(pParticles, rParticles, dt, domainSize, sphGround);
+		}
 	}
 
 };

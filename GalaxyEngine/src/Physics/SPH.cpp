@@ -100,6 +100,7 @@ void SPH::computeForces(std::vector<ParticlePhysics>& pParticles, std::vector<Pa
 				cohF.y = cohCoef * mJ * cohFactor * nr.y;
 
 				Vector2 Fij;
+
 				Fij.x = repF.x + pressF.x + viscF.x + cohF.x;
 				Fij.y = repF.y + pressF.y + viscF.y + cohF.y;
 
@@ -116,35 +117,34 @@ void SPH::computeForces(std::vector<ParticlePhysics>& pParticles, std::vector<Pa
 	}
 }
 
-// This is unused, I keep it here because it has basic boundary collisions logic for SPH
-void SPH::Integrate(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, float& dt, Vector2& domainSize) {
+void SPH::Integrate(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, float& dt, Vector2& domainSize, bool& sphGround) {
 	for (size_t i = 0; i < pParticles.size(); i++) {
 
 		if (!rParticles[i].isSPH) {
 			continue;
 		}
 
-		pParticles[i].vel += pParticles[i].acc * dt;
-		pParticles[i].pos += pParticles[i].vel * dt;
+		pParticles[i].acc.y += 5.0f;
 
+		// Left wall
 		if (pParticles[i].pos.x - radiusMultiplier < 0.0f)
 		{
 			pParticles[i].vel.x *= boundDamping;
 			pParticles[i].pos.x = radiusMultiplier;
 		}
-		// right wall
-		if (pParticles[i].pos.x + radiusMultiplier > domainSize.x - 3000.0f)
+		// Right wall
+		if (pParticles[i].pos.x + radiusMultiplier > domainSize.x)
 		{
 			pParticles[i].vel.x *= boundDamping;
-			pParticles[i].pos.x = (domainSize.x - 3000.0f) - radiusMultiplier;
+			pParticles[i].pos.x = (domainSize.x) - radiusMultiplier;
 		}
-		// bottom wall
+		// Bottom wall
 		if (pParticles[i].pos.y - radiusMultiplier < 0.0f)
 		{
 			pParticles[i].vel.y *= boundDamping;
 			pParticles[i].pos.y = radiusMultiplier;
 		}
-		// top wall
+		// Top wall
 		if (pParticles[i].pos.y + radiusMultiplier > domainSize.y)
 		{
 			pParticles[i].vel.y *= boundDamping;

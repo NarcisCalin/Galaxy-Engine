@@ -5,9 +5,9 @@ struct SPHWater {
 
 	float massMult = 0.6f;
 
-	float restPress = 0.25f;
-	float stiff = 0.015f;
-	float visc = 0.09f;
+	float restPress = 0.5f;
+	float stiff = 0.1f;
+	float visc = 0.095f;
 	float cohesion = 1.0f;
 
 	Color color = { 30, 65, 230, 150 };

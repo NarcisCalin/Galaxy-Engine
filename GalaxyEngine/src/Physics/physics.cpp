@@ -39,7 +39,7 @@ Vector2 Physics::calculateForceFromGrid(const Quadtree& grid, std::vector<Partic
 	return totalForce;
 }
 
-void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar) {
+void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar, bool& sphGround) {
 	if (myVar.isPeriodicBoundaryEnabled) {
 		for (size_t i = 0; i < pParticles.size(); i++) {
 			ParticlePhysics& pParticle = pParticles[i];
@@ -50,11 +50,13 @@ void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vecto
 			pParticle.pos.x += pParticle.vel.x * myVar.timeFactor;
 			pParticle.pos.y += pParticle.vel.y * myVar.timeFactor;
 		
-			if (pParticle.pos.x < 0) pParticle.pos.x += myVar.domainSize.x;
-			else if (pParticle.pos.x >= myVar.domainSize.x) pParticle.pos.x -= myVar.domainSize.x;
+			if (!sphGround) {
+				if (pParticle.pos.x < 0) pParticle.pos.x += myVar.domainSize.x;
+				else if (pParticle.pos.x >= myVar.domainSize.x) pParticle.pos.x -= myVar.domainSize.x;
 
-			if (pParticle.pos.y < 0) pParticle.pos.y += myVar.domainSize.y;
-			else if (pParticle.pos.y >= myVar.domainSize.y) pParticle.pos.y -= myVar.domainSize.y;
+				if (pParticle.pos.y < 0) pParticle.pos.y += myVar.domainSize.y;
+				else if (pParticle.pos.y >= myVar.domainSize.y) pParticle.pos.y -= myVar.domainSize.y;
+			}
 		}
 	}
 	else {
@@ -67,9 +69,11 @@ void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vecto
 			pParticle.pos.x += pParticle.vel.x * myVar.timeFactor;
 			pParticle.pos.y += pParticle.vel.y * myVar.timeFactor;
 
-			if (pParticles[i].pos.x < 0 || pParticles[i].pos.x >= myVar.domainSize.x || pParticles[i].pos.y < 0 || pParticles[i].pos.y >= myVar.domainSize.y) {
-				pParticles.erase(pParticles.begin() + i);
-				rParticles.erase(rParticles.begin() + i);
+			if (!sphGround) {
+				if (pParticles[i].pos.x < 0 || pParticles[i].pos.x >= myVar.domainSize.x || pParticles[i].pos.y < 0 || pParticles[i].pos.y >= myVar.domainSize.y) {
+					pParticles.erase(pParticles.begin() + i);
+					rParticles.erase(rParticles.begin() + i);
+				}
 			}
 		}
 	}

@@ -80,6 +80,12 @@ public:
 		WRITE(SPHMass, sph.mass);
 		WRITE(SPHViscosity, sph.viscosity);
 		WRITE(SPHCohesion, sph.cohesionCoefficient);
+		WRITE(SPHGround, myVar.sphGround);
+		WRITE(DomainWidth, myVar.domainSize.x);
+		WRITE(DomainHeight, myVar.domainSize.y);
+		WRITE(CameraTarget, myParam.myCamera.camera.target);
+		WRITE(CameraOffset, myParam.myCamera.camera.offset);
+		WRITE(CameraZoom, myParam.myCamera.camera.zoom);
 
 #undef WRITE
 
@@ -160,6 +166,12 @@ public:
 			READ(SPHMass, sph.mass);
 			READ(SPHViscosity, sph.viscosity);
 			READ(SPHCohesion, sph.cohesionCoefficient);
+			READ(SPHGround, myVar.sphGround);
+			READ(DomainWidth, myVar.domainSize.x);
+			READ(DomainHeight, myVar.domainSize.y);
+			READ(CameraTarget, myParam.myCamera.camera.target);
+			READ(CameraOffset, myParam.myCamera.camera.offset);
+			READ(CameraZoom, myParam.myCamera.camera.zoom);
 #undef READ
 			else if (key == "numParticles") {
 				size_t n;

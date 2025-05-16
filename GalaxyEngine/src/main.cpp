@@ -78,6 +78,9 @@ static void updateScene() {
 		myVar.isTimePlaying = !myVar.isTimePlaying;
 	}
 
+	myVar.halfDomainWidth = myVar.domainSize.x * 0.5f;
+	myVar.halfDomainHeight = myVar.domainSize.y * 0.5f;
+
 	myVar.timeFactor = myVar.fixedDeltaTime * myVar.timeStepMultiplier * static_cast<float>(myVar.isTimePlaying);
 
 	//if (myVar.timeFactor == 0) {
@@ -117,7 +120,10 @@ static void updateScene() {
 		}
 
 		if (myVar.isSPHEnabled) {
-			sph.Solver(myParam.pParticles, myParam.rParticles, myVar.timeFactor, myVar.domainSize);
+			sph.Solver(myParam.pParticles, myParam.rParticles, myVar.timeFactor, myVar.domainSize, myVar.sphGround);
+		}
+		else {
+			myVar.sphGround = false;
 		}
 
 #pragma omp parallel for schedule(dynamic)
@@ -141,7 +147,7 @@ static void updateScene() {
 			}
 		}
 
-		physics.physicsUpdate(myParam.pParticles, myParam.rParticles, myVar);
+		physics.physicsUpdate(myParam.pParticles, myParam.rParticles, myVar, myVar.sphGround);
 	}
 
 	if (myVar.isDensitySizeEnabled || myParam.colorVisuals.densityColor) {

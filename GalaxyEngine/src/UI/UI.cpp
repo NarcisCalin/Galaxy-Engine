@@ -36,7 +36,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		for (size_t i = 1; i < settingsButtonsArray.size(); ++i) {
 			if (GetScreenWidth() >= 1920 || GetScreenHeight() >= 1080) {
 
-				Vector2 buttonSize = { 175.0f, 20.0f };
+				Vector2 buttonSize = { 180.0f, 20.0f };
 
 				settingsButtonsArray[i].pos.x = settingsButtonsArray[i - 1].pos.x;
 				settingsButtonsArray[i].pos.y = settingsButtonsArray[i - 1].pos.y + buttonSize.y + 5.0f;
@@ -44,7 +44,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			}
 			else if (GetScreenWidth() < 1920 || GetScreenHeight() < 1080) {
 
-				Vector2 buttonSize = { 175.0f, 17.0f };
+				Vector2 buttonSize = { 180.0f, 17.0f };
 
 				settingsButtonsArray[i].pos.x = settingsButtonsArray[i - 1].pos.x;
 				settingsButtonsArray[i].pos.y = settingsButtonsArray[i - 1].pos.y + buttonSize.y + 2.0f;
@@ -78,22 +78,24 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		bool buttonMultiThreadingHovering = settingsButtonsArray[17].buttonLogic(myVar.isMultiThreadingEnabled);
 
 		bool buttonSPHHovering = settingsButtonsArray[18].buttonLogic(myVar.isSPHEnabled);
-		bool buttonCollisionsHovering = settingsButtonsArray[19].buttonLogic(myVar.isCollisionsEnabled);
+		bool buttonSPHGroundHovering = settingsButtonsArray[19].buttonLogic(myVar.sphGround);
 
-		bool buttonDensitySizeHovering = settingsButtonsArray[20].buttonLogic(myVar.isDensitySizeEnabled);
-		bool buttonForceSizeHovering = settingsButtonsArray[21].buttonLogic(myVar.isForceSizeEnabled);
+		bool buttonCollisionsHovering = settingsButtonsArray[20].buttonLogic(myVar.isCollisionsEnabled);
 
-		bool buttonGlowHovering = settingsButtonsArray[22].buttonLogic(myVar.isGlowEnabled);
+		bool buttonDensitySizeHovering = settingsButtonsArray[21].buttonLogic(myVar.isDensitySizeEnabled);
+		bool buttonForceSizeHovering = settingsButtonsArray[22].buttonLogic(myVar.isForceSizeEnabled);
 
-		bool buttonPredictPathsHovering = settingsButtonsArray[23].buttonLogic(myParam.particlesSpawning.enablePathPrediction);
+		bool buttonGlowHovering = settingsButtonsArray[23].buttonLogic(myVar.isGlowEnabled);
 
-		bool buttonVisualsSlidersHovering = settingsButtonsArray[24].buttonLogic(bVisualsSliders);
-		bool buttonPhysicsSlidersHovering = settingsButtonsArray[25].buttonLogic(bPhysicsSliders);
+		bool buttonPredictPathsHovering = settingsButtonsArray[24].buttonLogic(myParam.particlesSpawning.enablePathPrediction);
 
-		bool buttonShipGasHovering = settingsButtonsArray[26].buttonLogic(myVar.isShipGasEnabled);
+		bool buttonVisualsSlidersHovering = settingsButtonsArray[25].buttonLogic(bVisualsSliders);
+		bool buttonPhysicsSlidersHovering = settingsButtonsArray[26].buttonLogic(bPhysicsSliders);
 
-		bool buttonSaveHovering = settingsButtonsArray[27].buttonLogic(save.saveFlag);
-		bool buttonLoadHovering = settingsButtonsArray[28].buttonLogic(save.loadFlag);
+		bool buttonShipGasHovering = settingsButtonsArray[27].buttonLogic(myVar.isShipGasEnabled);
+
+		bool buttonSaveHovering = settingsButtonsArray[28].buttonLogic(save.saveFlag);
+		bool buttonLoadHovering = settingsButtonsArray[29].buttonLogic(save.loadFlag);
 
 		if (buttonFullscreenHovering ||
 			buttonDarkMatterHovering ||
@@ -124,7 +126,8 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			buttonSPHHovering ||
 			buttonSPHColorHovering ||
 			buttonSaveHovering ||
-			buttonLoadHovering
+			buttonLoadHovering ||
+			buttonSPHGroundHovering
 			) {
 			myVar.isMouseNotHoveringUI = false;
 			myVar.isDragging = false;
@@ -213,14 +216,14 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				myVar.isDragging = false;
 			}
 		}
-		else if (bPhysicsSliders) {
+		if (bPhysicsSliders || loadSettings) { // I use the loadSettings flag the first time the program is open to save default values
 
 			float sliderPosYBias = 32.0f;
 			physicsSliders[0].sliderPos = { 20.0f, 40.0f };
 			for (size_t i = 1; i < physicsSliders.size(); ++i) {
 				physicsSliders[i].sliderPos.x = physicsSliders[i - 1].sliderPos.x;
 				physicsSliders[i].sliderPos.y = physicsSliders[i - 1].sliderPos.y + physicsSliders[i].sliderSize.y + sliderPosYBias;
-				physicsSliders[i].sliderSize = physicsSliders[i - 1].sliderSize;
+				physicsSliders[i].sliderSize = sliderSize;
 			}
 
 			bool sliderSofteningHovering = physicsSliders[0].sliderLogic(1.0f, myVar.softening, 30.0f);
@@ -232,14 +235,17 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			bool sliderHeavyParticleMassHovering = physicsSliders[5].sliderLogic(0.005f, myParam.particlesSpawning.heavyParticleWeightMultiplier, 15.0f);
 			bool sliderParticlesBouncinessHovering = physicsSliders[6].sliderLogic(0.0f, myVar.particleBounciness, 1.0f);
 
-			bool sliderThreadsAmountHovering = physicsSliders[7].sliderLogic(1, myVar.threadsAmount, 32);
+			bool sliderDomainWidthHovering = physicsSliders[7].sliderLogic(200.0f, myVar.domainSize.x, 3840.0f);
+			bool sliderDomainHeightHovering = physicsSliders[8].sliderLogic(200.0f, myVar.domainSize.y, 2160.0f);
 
-			bool sliderSPHRestPressureHovering = physicsSliders[8].sliderLogic(0.01f, sph.restDensity, 5.0f);
-			bool sliderSPHStiffnessHovering = physicsSliders[9].sliderLogic(0.0f, sph.stiffness, 300.0f);
-			bool sliderSPHRadiusHovering = physicsSliders[10].sliderLogic(0.1f, sph.radiusMultiplier, 4.0f);
-			bool sliderSPHMassHovering = physicsSliders[11].sliderLogic(0.05f, sph.mass, 0.15f);
-			bool sliderSPHViscosityHovering = physicsSliders[12].sliderLogic(1.0f, sph.viscosity, 250.0f);
-			bool sliderSPHCohesionHovering = physicsSliders[13].sliderLogic(0.0f, sph.cohesionCoefficient, 10.0f);
+			bool sliderThreadsAmountHovering = physicsSliders[9].sliderLogic(1, myVar.threadsAmount, 32);
+
+			bool sliderSPHRestPressureHovering = physicsSliders[10].sliderLogic(0.01f, sph.restDensity, 5.0f);
+			bool sliderSPHStiffnessHovering = physicsSliders[11].sliderLogic(0.0f, sph.stiffness, 300.0f);
+			bool sliderSPHRadiusHovering = physicsSliders[12].sliderLogic(0.1f, sph.radiusMultiplier, 4.0f);
+			bool sliderSPHMassHovering = physicsSliders[13].sliderLogic(0.05f, sph.mass, 0.15f);
+			bool sliderSPHViscosityHovering = physicsSliders[14].sliderLogic(1.0f, sph.viscosity, 250.0f);
+			bool sliderSPHCohesionHovering = physicsSliders[15].sliderLogic(0.0f, sph.cohesionCoefficient, 10.0f);
 
 			if (
 				sliderSofteningHovering ||
@@ -255,7 +261,9 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				sliderSPHRadiusHovering ||
 				sliderSPHMassHovering ||
 				sliderSPHViscosityHovering ||
-				sliderSPHCohesionHovering
+				sliderSPHCohesionHovering ||
+				sliderDomainWidthHovering ||
+				sliderDomainHeightHovering
 				) {
 				myVar.isMouseNotHoveringUI = false;
 				myVar.isDragging = false;
@@ -325,6 +333,8 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				myParam.brush.SPHSand = false;
 				myParam.brush.SPHWater = false;
 			}
+
+			loadSettings = false;
 		}
 
 		if (buttonSolidColorHovering && IsMouseButtonPressed(0)) {

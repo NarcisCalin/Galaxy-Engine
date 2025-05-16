@@ -11,9 +11,7 @@ struct Physics {
 
 	Vector2 calculateForceFromGrid(const Quadtree& grid, std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar, ParticlePhysics& pParticle);
 
-	void pairWiseGravity(std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar);
-
-	void physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar);
+	void physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar, bool& sphGround);
 
 	void collisions(ParticlePhysics& pParticleA, ParticlePhysics& pParticleB,
 		ParticleRendering& rParticleA, ParticleRendering& rParticleB, UpdateVariables& myVar, float& dt);

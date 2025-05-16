@@ -19,7 +19,7 @@ public:
 	void uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, SaveSystem& save);
 
 
-	std::array<Button, 29> settingsButtonsArray = {
+	std::array<Button, 30> settingsButtonsArray = {
 
 Button({195.0f, 80.0f}, {175.0f, 20.0f}, "Fullscreen", true),
 
@@ -58,6 +58,8 @@ Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Looping Space", true),
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Multi-Threading", true),
 
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "SPH", true),
+
+Button({780.0f, 0.0f}, {200.0f, 50.0f}, "SPH Ground Mode", true),
 
 Button({780.0f, 0.0f}, {200.0f, 50.0f}, "Collisions (!!!)", true),
 
@@ -104,9 +106,12 @@ Button({195.0f, 80.0f}, {175.0f, 20.0f}, "SPH Mud", true)
 	)
 	};
 
+	Vector2 sliderSize = { 230.0f, 5.0f };
+	float sliderPosYBias = 32.0f;
+
 	std::array<Slider, 19> visualsSliders = {
 
-	Slider({20, 530.0f}, {230.0f, 7.0f}, {190, 100, 100, 255}, "Primary Red"),
+	Slider({20, 530.0f}, {230.0f, 5.0f}, {190, 100, 100, 255}, "Primary Red"),
 
 	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {100, 190, 100, 255}, "Primary Green"),
 
@@ -146,9 +151,9 @@ Button({195.0f, 80.0f}, {175.0f, 20.0f}, "SPH Mud", true)
 
 	};
 
-	std::array<Slider, 14> physicsSliders = {
+	std::array<Slider, 16> physicsSliders = {
 
-	Slider({20, 530.0f}, {230.0f, 7.0f}, {120, 128, 128, 255}, "Softening"),
+	Slider({20, 530.0f}, {230.0f, 5.0f}, {120, 128, 128, 255}, "Softening"),
 
 	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Theta"),
 
@@ -161,6 +166,10 @@ Button({195.0f, 80.0f}, {175.0f, 20.0f}, "SPH Mud", true)
 	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Heavy Particle Init Mass"),
 
 	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Collision Bounciness"),
+
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Domain Width"),
+
+	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Domain Height"),
 
 	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Threads Amount"),
 
@@ -179,5 +188,8 @@ Button({195.0f, 80.0f}, {175.0f, 20.0f}, "SPH Mud", true)
 	};
 
 	bool showSettings = true;
+
+	private:
+		bool loadSettings = true;
 
 };
