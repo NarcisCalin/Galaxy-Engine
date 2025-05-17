@@ -143,7 +143,7 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 			pCodecCtx->codec_id = AV_CODEC_ID_H264;
 			pCodecCtx->width = w;
 			pCodecCtx->height = h;
-			pCodecCtx->time_base = AVRational{ 1,24 };
+			pCodecCtx->time_base = AVRational{ 1,60 }; 
 			pCodecCtx->framerate = AVRational{ 24,1 };
 			pCodecCtx->pix_fmt = AV_PIX_FMT_YUV420P;
 			pCodecCtx->bit_rate = 256 * 1000 * 1000;

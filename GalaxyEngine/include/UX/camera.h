@@ -22,7 +22,7 @@ public:
 
 	SceneCamera();
 
-	Camera2D cameraLogic(bool& isLoading);
+	Camera2D cameraLogic(bool& isLoading, bool& isMouseNotHoveringUI);
 
 	void cameraFollowObject(UpdateVariables& myVar, UpdateParameters& myParam);
 

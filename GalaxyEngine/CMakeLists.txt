@@ -158,11 +158,24 @@ set(
     UX/screenCapture.cpp
 )
 
+set(IMGUI_DIR "${CMAKE_CURRENT_LIST_DIR}/external/imgui")
+
+set(IMGUI_SOURCES
+    ${IMGUI_DIR}/imgui.cpp
+    ${IMGUI_DIR}/imgui_draw.cpp
+    ${IMGUI_DIR}/imgui_tables.cpp
+    ${IMGUI_DIR}/imgui_widgets.cpp
+    ${IMGUI_DIR}/rlImGui.cpp
+)
+
 # Prepend the source directory to each source file path
 list(TRANSFORM GALAXYENGINE_SOURCES PREPEND ${CMAKE_CURRENT_LIST_DIR}/src/)
 
-# Declare the executable with its sources
-add_executable(GalaxyEngine ${GALAXYENGINE_SOURCES})
+# Combine all sources into one list for your executable
+set(ALL_SOURCES ${GALAXYENGINE_SOURCES} ${IMGUI_SOURCES})
+
+# Declare the executable with all sources
+add_executable(GalaxyEngine ${ALL_SOURCES})
 
 # Set C++ version
 target_compile_features(GalaxyEngine PRIVATE cxx_std_17)

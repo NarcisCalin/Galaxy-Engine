@@ -3,10 +3,19 @@
 
 void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, SaveSystem& save) {
 
-	toggleSettingsButtons[0].pos = { static_cast<float>(GetScreenWidth()) - 34.0f, 65.0f };
-	bool buttonShowSettingsHovering = toggleSettingsButtons[0].buttonLogic(showSettings);
 
-	if (buttonShowSettingsHovering) {
+	if (IsKeyPressed(KEY_U)) {
+		showSettings = !showSettings;
+	}
+
+	if (myVar.timeFactor == 0.0f) {
+		DrawRectangleV({ GetScreenWidth() - 200.0f, 20.0f }, { 10.0f, 30.0f }, WHITE);
+		DrawRectangleV({ GetScreenWidth() - 220.0f, 20.0f }, { 10.0f, 30.0f }, WHITE);
+	}
+
+	rlImGuiBegin();
+
+	if (ImGui::IsAnyItemHovered() || ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow)) {
 		myVar.isMouseNotHoveringUI = false;
 		myVar.isDragging = false;
 	}
@@ -14,129 +23,175 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		myVar.isMouseNotHoveringUI = true;
 	}
 
-	if (IsKeyPressed(KEY_U)) {
-		showSettings = !showSettings;
+	ImGui::GetIO().IniFilename = nullptr;
+
+	float screenX = static_cast<float>(GetScreenWidth());
+	float screenY = static_cast<float>(GetScreenHeight());
+
+	float buttonsWindowX = 300.0f;
+	float buttonsWindowY = screenY - 30.0f;
+
+	float settingsButtonX = 250.0f;
+	float settingsButtonY = 30.0f;
+
+	ImGui::SetNextWindowSize(ImVec2(buttonsWindowX, buttonsWindowY), ImGuiCond_Once);
+	ImGui::SetNextWindowSizeConstraints(ImVec2(buttonsWindowX, buttonsWindowY), ImVec2(buttonsWindowX, buttonsWindowY));
+	ImGui::SetNextWindowPos(ImVec2(screenX - buttonsWindowX, 0), ImGuiCond_Always);
+	ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_NoResize);
+
+	float contentRegionWidth = ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x;
+	float buttonX = (contentRegionWidth - settingsButtonX) * 0.5f;
+
+	struct settingsParams {
+		std::string text;
+		bool& parameter;
+
+		settingsParams(const std::string& t, bool& p) : text(t), parameter(p) {}
+	};
+
+	ImVec4 buttonEnabledColor = { 0.2f,0.5f, 0.2f, 1.0f };
+	ImVec4 buttonDisabledColor = { 0.3f,0.3f, 0.3f, 1.0f };
+
+	static std::array<settingsParams, 30> settingsButtonsParams = {
+		settingsParams("Fullscreen", myVar.fullscreenState),
+		settingsParams("Controls", myParam.controls.isShowControlsEnabled),
+		settingsParams("Information", myParam.controls.isInformationEnabled),
+		settingsParams("Global Trails", myVar.isGlobalTrailsEnabled),
+		settingsParams("Selected Trails", myVar.isSelectedTrailsEnabled),
+		settingsParams("Local Trails", myVar.isLocalTrailsEnabled),
+		settingsParams("White Trails", myParam.trails.whiteTrails),
+		settingsParams("Solid Color", myParam.colorVisuals.solidColor),
+		settingsParams("Density Color", myParam.colorVisuals.densityColor),
+		settingsParams("Force Color", myParam.colorVisuals.forceColor),
+		settingsParams("Velocity Color", myParam.colorVisuals.velocityColor),
+		settingsParams("DeltaV Color", myParam.colorVisuals.deltaVColor),
+		settingsParams("SPH Color", myParam.colorVisuals.SPHColor),
+		settingsParams("Selected Color", myParam.colorVisuals.selectedColor),
+		settingsParams("Dark Matter", myVar.isDarkMatterEnabled),
+		settingsParams("Show Dark Matter", myParam.colorVisuals.showDarkMatterEnabled),
+		settingsParams("Looping Space", myVar.isPeriodicBoundaryEnabled),
+		settingsParams("Multi-Threading", myVar.isMultiThreadingEnabled),
+		settingsParams("SPH", myVar.isSPHEnabled),
+		settingsParams("SPH Ground Mode", myVar.sphGround),
+		settingsParams("Collisions (!!!)", myVar.isCollisionsEnabled),
+		settingsParams("Density Size", myVar.isDensitySizeEnabled),
+		settingsParams("Force Size", myVar.isForceSizeEnabled),
+		settingsParams("Glow", myVar.isGlowEnabled),
+		settingsParams("Predict Path", myParam.particlesSpawning.enablePathPrediction),
+		settingsParams("Visual Settings", bVisualsSliders),
+		settingsParams("Physics Settings", bPhysicsSliders),
+		settingsParams("Ship Gas", myVar.isShipGasEnabled),
+		settingsParams("Save Scene", save.saveFlag),
+		settingsParams("Load Scene", save.loadFlag)
+
+	};
+
+	float oldSpacingY = ImGui::GetStyle().ItemSpacing.y;
+	ImGui::GetStyle().ItemSpacing.y = 5.0f; // Set the spacing only for the settings buttons
+
+
+	for (size_t i = 0; i < settingsButtonsParams.size(); i++) {
+		ImGui::SetCursorPosX(ImGui::GetWindowContentRegionMin().x);
+
+		bool isColor = settingsButtonsParams[i].text.find("Color") != std::string::npos;
+		bool& current = settingsButtonsParams[i].parameter;
+		const std::string& label = settingsButtonsParams[i].text;
+
+		ImVec4& col = current ? buttonEnabledColor : buttonDisabledColor;
+		ImGui::PushStyleColor(ImGuiCol_Button, col);
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(col.x + 0.1f, col.y + 0.1f, col.z + 0.1f, col.w));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(col.x - 0.1f, col.y - 0.1f, col.z - 0.1f, col.w));
+
+		auto toggleExclusive = [&](const std::string& self, const std::string& other) {
+			if (!current) {
+				current = true;
+				for (auto& p : settingsButtonsParams) {
+					if (p.text == other) p.parameter = false;
+				}
+			}
+			else {
+				current = false;
+			}
+			};
+
+		if (ImGui::Button(label.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, settingsButtonY))) {
+			if (label == "Information") {
+				toggleExclusive("Information", "Controls");
+			}
+			else if (label == "Controls") {
+				toggleExclusive("Controls", "Information");
+			}
+			else if (label == "Density Size") {
+				toggleExclusive("Density Size", "Force Size");
+			}
+			else if (label == "Force Size") {
+				toggleExclusive("Force Size", "Density Size");
+			}
+			else if (label == "Visual Settings") {
+				toggleExclusive("Visual Settings", "Physics Settings");
+			}
+			else if (label == "Physics Settings") {
+				toggleExclusive("Physics Settings", "Visual Settings");
+			}
+			else if (label == "SPH") {
+				current = !current;
+
+				// When SPH is turned ON, enable SPH Color and disable others (except "Selected Color")
+				if (current) {
+					for (auto& p : settingsButtonsParams) {
+						if (p.text.find("Color") != std::string::npos &&
+							p.text != "SPH Color" &&
+							p.text != "Selected Color") {
+							p.parameter = false;
+						}
+						if (p.text == "SPH Color") {
+							p.parameter = true;
+						}
+					}
+				}
+			}
+			else if (isColor && label != "Selected Color") {
+				// Standard color toggle logic
+				for (auto& p : settingsButtonsParams) {
+					if (p.text.find("Color") != std::string::npos &&
+						p.text != "Selected Color") {
+						p.parameter = false;
+					}
+				}
+				current = true;
+			}
+			else if (isColor && label != "Selected Color") {
+				for (auto& p : settingsButtonsParams) {
+					if (p.text.find("Color") != std::string::npos &&
+						p.text != "Selected Color") {
+						p.parameter = false;
+					}
+				}
+				current = true;
+			}
+			else {
+				current = !current;
+			}
+		}
+
+		ImGui::PopStyleColor(3);
 	}
 
-	DrawTriangle(
-		{ toggleSettingsButtons[0].pos.x + 3.0f, toggleSettingsButtons[0].pos.y + 5.0f },
-		{ toggleSettingsButtons[0].pos.x + 7.0f, toggleSettingsButtons[0].pos.y + 11.0f },
-		{ toggleSettingsButtons[0].pos.x + 11.0f ,toggleSettingsButtons[0].pos.y + 5.0f }, WHITE);
+	ImGui::GetStyle().ItemSpacing.y = oldSpacingY; // End the settings buttons spacing
 
-	if (myVar.timeFactor == 0.0f) {
-		DrawRectangleV({ GetScreenWidth() - 200.0f, 20.0f }, { 10.0f, 30.0f }, WHITE);
-		DrawRectangleV({ GetScreenWidth() - 220.0f, 20.0f }, { 10.0f, 30.0f }, WHITE);
-	}
+	/*ImGui::SliderFloat("Slider 1", &value1, 0.0f, 1.0f);
+	if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+		value1 = default1;
+	if (ImGui::IsItemHovered()) {
+		ImGui::SetTooltip("Right-click to reset");
+	}*/
 
+
+	ImGui::End();
+
+	rlImGuiEnd();
 
 	if (showSettings) {
-
-		settingsButtonsArray[0].pos = { static_cast<float>(GetScreenWidth()) - 195.0f, 80.0f };
-
-		for (size_t i = 1; i < settingsButtonsArray.size(); ++i) {
-			if (GetScreenWidth() >= 1920 || GetScreenHeight() >= 1080) {
-
-				Vector2 buttonSize = { 180.0f, 20.0f };
-
-				settingsButtonsArray[i].pos.x = settingsButtonsArray[i - 1].pos.x;
-				settingsButtonsArray[i].pos.y = settingsButtonsArray[i - 1].pos.y + buttonSize.y + 5.0f;
-				settingsButtonsArray[i].size = buttonSize;
-			}
-			else if (GetScreenWidth() < 1920 || GetScreenHeight() < 1080) {
-
-				Vector2 buttonSize = { 180.0f, 17.0f };
-
-				settingsButtonsArray[i].pos.x = settingsButtonsArray[i - 1].pos.x;
-				settingsButtonsArray[i].pos.y = settingsButtonsArray[i - 1].pos.y + buttonSize.y + 2.0f;
-				settingsButtonsArray[i].size = buttonSize;
-			}
-		}
-
-		bool buttonFullscreenHovering = settingsButtonsArray[0].buttonLogic(myVar.fullscreenState);
-
-		bool buttonControlsHovering = settingsButtonsArray[1].buttonLogic(myParam.controls.isShowControlsEnabled);
-		bool buttonInformationHovering = settingsButtonsArray[2].buttonLogic(myParam.controls.isInformationEnabled);
-
-		bool buttonGlobalTrailsHovering = settingsButtonsArray[3].buttonLogic(myVar.isGlobalTrailsEnabled);
-		bool buttonSelectedTrailsHovering = settingsButtonsArray[4].buttonLogic(myVar.isSelectedTrailsEnabled);
-		bool buttonLocalTrailsHovering = settingsButtonsArray[5].buttonLogic(myVar.isLocalTrailsEnabled);
-		bool buttonWhiteTrailsHovering = settingsButtonsArray[6].buttonLogic(myParam.trails.whiteTrails);
-
-		bool buttonSolidColorHovering = settingsButtonsArray[7].buttonLogic(myParam.colorVisuals.solidColor);
-		bool buttonDensityColorHovering = settingsButtonsArray[8].buttonLogic(myParam.colorVisuals.densityColor);
-		bool buttonForceColorHovering = settingsButtonsArray[9].buttonLogic(myParam.colorVisuals.forceColor);
-		bool buttonVelocityColorHovering = settingsButtonsArray[10].buttonLogic(myParam.colorVisuals.velocityColor);
-		bool buttonDeltaVColorHovering = settingsButtonsArray[11].buttonLogic(myParam.colorVisuals.deltaVColor);
-		bool buttonSPHColorHovering = settingsButtonsArray[12].buttonLogic(myParam.colorVisuals.SPHColor);
-		bool buttonSelectedColorHovering = settingsButtonsArray[13].buttonLogic(myParam.colorVisuals.selectedColor);
-
-		bool buttonDarkMatterHovering = settingsButtonsArray[14].buttonLogic(myVar.isDarkMatterEnabled);
-		bool buttonShowDarkMatterHovering = settingsButtonsArray[15].buttonLogic(myParam.colorVisuals.showDarkMatterEnabled);
-
-		bool buttonPeriodicBoundaryHovering = settingsButtonsArray[16].buttonLogic(myVar.isPeriodicBoundaryEnabled);
-
-		bool buttonMultiThreadingHovering = settingsButtonsArray[17].buttonLogic(myVar.isMultiThreadingEnabled);
-
-		bool buttonSPHHovering = settingsButtonsArray[18].buttonLogic(myVar.isSPHEnabled);
-		bool buttonSPHGroundHovering = settingsButtonsArray[19].buttonLogic(myVar.sphGround);
-
-		bool buttonCollisionsHovering = settingsButtonsArray[20].buttonLogic(myVar.isCollisionsEnabled);
-
-		bool buttonDensitySizeHovering = settingsButtonsArray[21].buttonLogic(myVar.isDensitySizeEnabled);
-		bool buttonForceSizeHovering = settingsButtonsArray[22].buttonLogic(myVar.isForceSizeEnabled);
-
-		bool buttonGlowHovering = settingsButtonsArray[23].buttonLogic(myVar.isGlowEnabled);
-
-		bool buttonPredictPathsHovering = settingsButtonsArray[24].buttonLogic(myParam.particlesSpawning.enablePathPrediction);
-
-		bool buttonVisualsSlidersHovering = settingsButtonsArray[25].buttonLogic(bVisualsSliders);
-		bool buttonPhysicsSlidersHovering = settingsButtonsArray[26].buttonLogic(bPhysicsSliders);
-
-		bool buttonShipGasHovering = settingsButtonsArray[27].buttonLogic(myVar.isShipGasEnabled);
-
-		bool buttonSaveHovering = settingsButtonsArray[28].buttonLogic(save.saveFlag);
-		bool buttonLoadHovering = settingsButtonsArray[29].buttonLogic(save.loadFlag);
-
-		if (buttonFullscreenHovering ||
-			buttonDarkMatterHovering ||
-			buttonPeriodicBoundaryHovering ||
-			buttonGlobalTrailsHovering ||
-			buttonMultiThreadingHovering ||
-			buttonSolidColorHovering ||
-			buttonDensityColorHovering ||
-			buttonVelocityColorHovering ||
-			buttonCollisionsHovering ||
-			buttonControlsHovering ||
-			buttonSelectedTrailsHovering ||
-			buttonLocalTrailsHovering ||
-			buttonDensitySizeHovering ||
-			buttonSelectedColorHovering ||
-			buttonWhiteTrailsHovering ||
-			buttonForceColorHovering ||
-			buttonGlowHovering ||
-			buttonPredictPathsHovering ||
-			buttonShowSettingsHovering ||
-			buttonInformationHovering ||
-			buttonForceSizeHovering ||
-			buttonShowDarkMatterHovering ||
-			buttonVisualsSlidersHovering ||
-			buttonPhysicsSlidersHovering ||
-			buttonDeltaVColorHovering ||
-			buttonShipGasHovering ||
-			buttonSPHHovering ||
-			buttonSPHColorHovering ||
-			buttonSaveHovering ||
-			buttonLoadHovering ||
-			buttonSPHGroundHovering
-			) {
-			myVar.isMouseNotHoveringUI = false;
-			myVar.isDragging = false;
-		}
-
-		if (buttonFullscreenHovering && IsMouseButtonPressed(0)) {
-			myParam.particlesSpawning.isSpawningAllowed = true;
-		}
-
 
 		if (bVisualsSliders) {
 
@@ -212,8 +267,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				sliderDMAmountMultHovering ||
 				sliderMaxDeltaVAccelHovering
 				) {
-				myVar.isMouseNotHoveringUI = false;
-				myVar.isDragging = false;
+
 			}
 		}
 		if (bPhysicsSliders || loadSettings) { // I use the loadSettings flag the first time the program is open to save default values
@@ -265,8 +319,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				sliderDomainWidthHovering ||
 				sliderDomainHeightHovering
 				) {
-				myVar.isMouseNotHoveringUI = false;
-				myVar.isDragging = false;
+
 			}
 
 			SPHMaterialButtonsArray[0].pos.x = 20.0f;
@@ -306,8 +359,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				buttonSandHovering ||
 				buttonMudHovering
 				) {
-				myVar.isMouseNotHoveringUI = false;
-				myVar.isDragging = false;
+
 			}
 
 			if (buttonWaterHovering && IsMouseButtonPressed(0)) {
@@ -337,108 +389,8 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			loadSettings = false;
 		}
 
-		if (buttonSolidColorHovering && IsMouseButtonPressed(0)) {
-			myParam.colorVisuals.velocityColor = false;
-			myParam.colorVisuals.densityColor = false;
-			myParam.colorVisuals.forceColor = false;
-			myParam.colorVisuals.deltaVColor = false;
-			myParam.colorVisuals.SPHColor = false;
-		}
-		if (buttonDensityColorHovering && IsMouseButtonPressed(0)) {
-			myParam.colorVisuals.velocityColor = false;
-			myParam.colorVisuals.solidColor = false;
-			myParam.colorVisuals.forceColor = false;
-			myParam.colorVisuals.deltaVColor = false;
-			myParam.colorVisuals.SPHColor = false;
-		}
-		if (buttonVelocityColorHovering && IsMouseButtonPressed(0)) {
-			myParam.colorVisuals.densityColor = false;
-			myParam.colorVisuals.solidColor = false;
-			myParam.colorVisuals.forceColor = false;
-			myParam.colorVisuals.deltaVColor = false;
-			myParam.colorVisuals.SPHColor = false;
-		}
-		if (buttonForceColorHovering && IsMouseButtonPressed(0)) {
-			myParam.colorVisuals.densityColor = false;
-			myParam.colorVisuals.solidColor = false;
-			myParam.colorVisuals.velocityColor = false;
-			myParam.colorVisuals.deltaVColor = false;
-			myParam.colorVisuals.SPHColor = false;
-		}
-		if (buttonDeltaVColorHovering && IsMouseButtonPressed(0)) {
-			myParam.colorVisuals.densityColor = false;
-			myParam.colorVisuals.solidColor = false;
-			myParam.colorVisuals.velocityColor = false;
-			myParam.colorVisuals.forceColor = false;
-			myParam.colorVisuals.SPHColor = false;
-		}
-
-		if (buttonSPHColorHovering && IsMouseButtonPressed(0)) {
-			myParam.colorVisuals.densityColor = false;
-			myParam.colorVisuals.solidColor = false;
-			myParam.colorVisuals.velocityColor = false;
-			myParam.colorVisuals.forceColor = false;
-			myParam.colorVisuals.deltaVColor = false;
-		}
-
-		if (buttonGlobalTrailsHovering && IsMouseButtonPressed(0)) {
-			myVar.isSelectedTrailsEnabled = false;
-			myParam.trails.trailDots.clear();
-		}
-		if (buttonSelectedTrailsHovering && IsMouseButtonPressed(0)) {
-			myVar.isGlobalTrailsEnabled = false;
-			myParam.trails.trailDots.clear();
-		}
-
-		if (buttonDensitySizeHovering && IsMouseButtonPressed(0)) {
-			myVar.isForceSizeEnabled = false;
-		}
-		if (buttonForceSizeHovering && IsMouseButtonPressed(0)) {
-			myVar.isDensitySizeEnabled = false;
-		}
-
-		if (buttonVisualsSlidersHovering && IsMouseButtonPressed(0)) {
-			bPhysicsSliders = false;
-		}
-		if (buttonPhysicsSlidersHovering && IsMouseButtonPressed(0)) {
-			bVisualsSliders = false;
-		}
-
-		if (buttonControlsHovering && IsMouseButtonPressed(0)) {
-			myParam.controls.isInformationEnabled = false;
-		}
-		if (buttonInformationHovering && IsMouseButtonPressed(0)) {
-			myParam.controls.isShowControlsEnabled = false;
-		}
-
-		if (buttonSPHHovering && myVar.isSPHEnabled && IsMouseButtonPressed(0)) {
-			myParam.colorVisuals.SPHColor = true;
-
-			myParam.colorVisuals.densityColor = false;
-			myParam.colorVisuals.solidColor = false;
-			myParam.colorVisuals.velocityColor = false;
-			myParam.colorVisuals.forceColor = false;
-			myParam.colorVisuals.deltaVColor = false;
-		}
-
-		if (buttonCollisionsHovering && IsMouseButtonPressed(0)) {
-			myVar.isSPHEnabled = false;
-		}
-		if (buttonSPHHovering && IsMouseButtonPressed(0)) {
-			myVar.isCollisionsEnabled = false;
-		}
-
 		myParam.controls.showControls(myVar.isMouseNotHoveringUI, myVar.isDragging);
 		myParam.controls.showMoreInfo();
-	}
-	else {
-
-		if (buttonShowSettingsHovering) {
-			myVar.isMouseNotHoveringUI = false;
-		}
-		else {
-			myVar.isMouseNotHoveringUI = true;
-		}
 	}
 
 	myParam.rightClickSettings.rightClickMenu(myVar, myParam);

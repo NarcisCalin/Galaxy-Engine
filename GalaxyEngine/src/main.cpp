@@ -35,6 +35,8 @@
 #include "../include/Particles/particleSpaceship.h"
 #include "../include/Physics/SPH.h"
 #include "../include/UX/saveSystem.h"
+#include "../external/imgui/imgui.h"
+#include "../external/imgui/rlImGui.h"
 
 
 UpdateParameters myParam;
@@ -330,6 +332,8 @@ int main() {
 
 	InitWindow(myVar.screenWidth, myVar.screenHeight, "Galaxy Engine");
 
+	rlImGuiSetup(true);
+
 	Texture2D particleBlurTex = LoadTexture("Textures/ParticleBlur.png");
 
 	Shader myBloom = LoadShader(nullptr, "Shaders/bloom.fs");
@@ -356,7 +360,6 @@ int main() {
 
 		fullscreenToggle(lastScreenWidth, lastScreenHeight, wasFullscreen, lastScreenState, myParticlesTexture, myUITexture);
 
-		
 
 		BeginTextureMode(myParticlesTexture);
 
@@ -364,7 +367,7 @@ int main() {
 
 		BeginBlendMode(myParam.colorVisuals.blendMode);
 
-		BeginMode2D(myParam.myCamera.cameraLogic(save.loadFlag));
+		BeginMode2D(myParam.myCamera.cameraLogic(save.loadFlag, myVar.isMouseNotHoveringUI));
 
 		updateScene();
 
@@ -416,6 +419,9 @@ int main() {
 
 		enableMultiThreading();
 	}
+
+	rlImGuiShutdown();
+
 
 	UnloadShader(myBloom);
 	UnloadTexture(particleBlurTex);

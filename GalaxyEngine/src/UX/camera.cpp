@@ -19,7 +19,7 @@ SceneCamera::SceneCamera() {
 	delta = { 0.0f, 0.0f };
 }
 
-Camera2D SceneCamera::cameraLogic(bool& loadFlag) {
+Camera2D SceneCamera::cameraLogic(bool& loadFlag, bool& isMouseNotHoveringUI) {
 
 	if (IsMouseButtonDown(1))
 	{
@@ -31,7 +31,7 @@ Camera2D SceneCamera::cameraLogic(bool& loadFlag) {
 	}
 
 	float wheel = GetMouseWheelMove();
-	if (wheel != 0 && !IsKeyDown(KEY_LEFT_CONTROL) && !loadFlag) {
+	if (wheel != 0 && !IsKeyDown(KEY_LEFT_CONTROL) && !loadFlag && isMouseNotHoveringUI) {
 		mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), camera);
 
 		if (isFollowing) {
