@@ -5,6 +5,7 @@
 #include "omp.h"
 #include <vector>
 #include <algorithm>
+#include <limits> 
 
 
 struct NeighborSearch {

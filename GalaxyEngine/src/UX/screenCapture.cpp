@@ -257,23 +257,46 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 	}
 
 	if (myFrames.size() > 0 && !isFunctionRecording && !isSafeFramesEnabled) {
-		Button exportFramesButton({ static_cast<float>(GetScreenWidth()) - 600.0f, 70.0f },
-			{ 170.0f, 35.0f }, "Export Frames", true);
-		Button deleteFramesButton({ static_cast<float>(GetScreenWidth()) - 600.0f, 110.0f },
-			{ 170.0f, 35.0f }, "Discard Frames", true);
 
-		bool isExportFramesButtonHovering = exportFramesButton.buttonLogic(exportMemoryFrames);
-		bool isDeleteFramesButtonHovering = deleteFramesButton.buttonLogic(deleteFrames);
+		float screenW = GetScreenWidth();
+		float screenH = GetScreenHeight();
 
-		DrawText("Might take a while", GetScreenWidth() - 420, 70, 20, RED);
+		ImVec2 framesMenuSize = { 400.0f, 160.0f };
 
-		if (isExportFramesButtonHovering || isDeleteFramesButtonHovering) {
-			myVar.isMouseNotHoveringUI = false;
-			myVar.isDragging = false;
+		ImGui::SetNextWindowSize(framesMenuSize, ImGuiCond_Once);
+		ImGui::SetNextWindowPos(ImVec2(screenW * 0.5f - framesMenuSize.x * 0.5f, screenH * 0.5f - framesMenuSize.y * 0.5f), ImGuiCond_Appearing);
+
+		ImGui::Begin("Export Frames", nullptr, ImGuiWindowFlags_NoCollapse);
+
+		ImVec4& exportCol = exportMemoryFrames ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
+		ImGui::PushStyleColor(ImGuiCol_Button, exportCol);
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(exportCol.x + 0.1f, exportCol.y + 0.1f, exportCol.z + 0.1f, exportCol.w));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(exportCol.x - 0.1f, exportCol.y - 0.1f, exportCol.z - 0.1f, exportCol.w));
+
+		if (ImGui::Button("Export Frames", ImVec2(ImGui::GetContentRegionAvail().x, 40.0f))) {
+			exportMemoryFrames = !exportMemoryFrames;
 		}
-		else {
-			myVar.isMouseNotHoveringUI = true;
+		ImGui::PopStyleColor(3);
+
+		ImVec4& discardCol = deleteFrames ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
+		ImGui::PushStyleColor(ImGuiCol_Button, discardCol);
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(discardCol.x + 0.1f, discardCol.y + 0.1f, discardCol.z + 0.1f, discardCol.w));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(discardCol.x - 0.1f, discardCol.y - 0.1f, discardCol.z - 0.1f, discardCol.w));
+
+		if (ImGui::Button("Discard Frames", ImVec2(ImGui::GetContentRegionAvail().x, 40.0f))) {
+			deleteFrames = !deleteFrames;
 		}
+		ImGui::PopStyleColor(3);
+
+		std::string warning = "EXPORTING MIGHT TAKE A WHILE";
+
+		float windowWidth = ImGui::GetWindowSize().x;
+		float textWidth = ImGui::CalcTextSize(warning.c_str()).x;
+
+		ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
+		ImGui::TextColored(ImVec4(0.9f, 0.0f, 0.0f, 1.0f), "%s", warning.c_str());
+
+		ImGui::End();
 	}
 
 	if (diskModeFrameIdx > 0 && (isSafeFramesEnabled || isVideoExportEnabled)) {

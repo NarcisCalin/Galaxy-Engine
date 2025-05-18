@@ -14,6 +14,9 @@
 #include "UI/controls.h"
 #include "Particles/particlesSpawning.h"
 #include "Particles/neighborSearch.h"
+#include "../external/imgui/imgui.h"
+#include "../external/imgui/rlImGui.h"
+#include "../external/imgui/rlImGuiColors.h"
 
 
 struct UpdateParameters {
@@ -57,8 +60,8 @@ struct UpdateParameters {
 };
 
 struct UpdateVariables{
-	int screenWidth = 1920;
-	int screenHeight = 1080;
+	int screenWidth = 1280;
+	int screenHeight = 720;
 	float halfScreenWidth = screenWidth * 0.5f;
 	float halfScreenHeight = screenHeight * 0.5f;
 
@@ -113,12 +116,12 @@ struct UpdateVariables{
 
 	int trailMaxLength = 48;
 
+	ImVec4 buttonEnabledColor = { 0.2f,0.5f, 0.2f, 1.0f };
+	ImVec4 buttonDisabledColor = { 0.3f,0.3f, 0.3f, 1.0f };
+
 	bool isRecording = false;
 
 	float particleSizeMultiplier = 1.0f;
-
-	bool subdivideAll = false;
-	bool subdivideSelected = false;
 
 	bool isDragging = false;
 	bool isMouseNotHoveringUI = false;

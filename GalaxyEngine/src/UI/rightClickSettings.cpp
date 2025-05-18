@@ -1,186 +1,119 @@
 #include "../../include/UI/rightClickSettings.h"
 #include "../../include/parameters.h"
 
-void RightClickSettings::rightClickMenuSpawnLogic(bool& isMouseNotHoveringUI) {
+void RightClickSettings::rightClickMenuSpawnLogic(bool& isMouseNotHoveringUI,
+	bool& isSpawningAllowed, bool& isDragging)
+{
+	static bool     isMouseMoving = false;
+	static Vector2  dragStartPos = { 0.0f, 0.0f };
+	static bool     spawnBlocked = false;
 
-	static bool isMouseMoving = false;
-	static Vector2 dragStartPos = { 0.0f, 0.0f };
-
-	if (isMenuActive) {
-		if (GetMousePosition().x > menuPos.x &&
-			GetMousePosition().x < menuPos.x + menuSize.x &&
-			GetMousePosition().y > menuPos.y &&
-			GetMousePosition().y < menuPos.y + menuSize.y
-			) {
-			isMouseOnMenu = true;
-		}
-		else {
-			isMouseOnMenu = false;
-		}
-	}
-	else {
-		isMouseOnMenu = false;
-	}
-
-	if (IsMouseButtonPressed(1) && isMouseNotHoveringUI && !isMouseOnMenu) {
+	if (IsMouseButtonPressed(1) && isMouseNotHoveringUI) {
 		dragStartPos = GetMousePosition();
 		isMouseMoving = false;
 	}
 
-	if (IsMouseButtonDown(1) && isMouseNotHoveringUI && !isMouseOnMenu) {
-		Vector2 currentPos = GetMousePosition();
-		float dragThreshold = 5.0f;
-		float dx = currentPos.x - dragStartPos.x;
-		float dy = currentPos.y - dragStartPos.y;
-
-		if (dx * dx + dy * dy > dragThreshold * dragThreshold) {
+	if (IsMouseButtonDown(1) && isMouseNotHoveringUI) {
+		Vector2 cur = GetMousePosition();
+		float dx = cur.x - dragStartPos.x,
+			dy = cur.y - dragStartPos.y;
+		if (dx * dx + dy * dy > 5.0f * 5.0f)
 			isMouseMoving = true;
-		}
 	}
 
-	if (IsMouseButtonReleased(1) && (!IsKeyDown(KEY_LEFT_CONTROL) && !IsKeyDown(KEY_LEFT_ALT)) &&
-		!isMouseMoving && isMouseNotHoveringUI && !IsMouseButtonDown(0) && !isMouseOnMenu) {
+	if (IsMouseButtonPressed(1)) {
+		isMenuActive = false;
+	}
+
+	if (IsMouseButtonReleased(1) &&
+		!IsKeyDown(KEY_LEFT_CONTROL) &&
+		!IsKeyDown(KEY_LEFT_ALT) &&
+		!isMouseMoving &&
+		isMouseNotHoveringUI &&
+		!IsMouseButtonDown(0)){
 		isMenuActive = true;
+		spawnBlocked = false;
+	}
 
-		menuSize.x = buttonSizeX + 5.0f;
-		menuSize.y = (menuButtons.size() + 1) * (buttonSizeY + menuButtonGap) +
-			(menuSliders.size() + 1) * (sliderSizeY + menuSliderGap - (menuSliderGap / static_cast<float>(menuSliders.size())));
+	if (IsMouseButtonPressed(0) &&
+		isMouseNotHoveringUI &&
+		isMenuActive){
+		isMenuActive = false;
+		isSpawningAllowed = false;
+		isDragging = false;
+		spawnBlocked = true;
+	}
 
-		menuPos.x = std::clamp(static_cast<float>(GetMouseX()), 0.0f, static_cast<float>(GetScreenWidth()) - menuSize.x);
-		menuPos.y = std::clamp(static_cast<float>(GetMouseY()), 0.0f, static_cast<float>(GetScreenHeight()) - menuSize.y);
-
-		menuButtons[0].pos = menuPos;
+	else if (IsMouseButtonPressed(0) && 
+		isMouseNotHoveringUI && 
+		!isMenuActive && 
+		spawnBlocked){
+		isSpawningAllowed = true;
+		spawnBlocked = false;
 	}
 }
 
 
 void RightClickSettings::rightClickMenu(UpdateVariables& myVar, UpdateParameters& myParam) {
 
-	rightClickMenuSpawnLogic(myVar.isMouseNotHoveringUI);
-
+	rightClickMenuSpawnLogic(myVar.isMouseNotHoveringUI, myParam.particlesSpawning.isSpawningAllowed, myVar.isDragging);
 
 	if (isMenuActive) {
 
-		menuButtons[0].pos.x = menuPos.x + menuButtonGap;
+		static std::array<rightClickParams, 13> rightClickButtons = {
+		rightClickParams("Subdivide All", myParam.subdivision.subdivideAll),
+		rightClickParams("Subdivide Selected", myParam.subdivision.subdivideSelected),
+		rightClickParams("Invert Particle Selec.", myParam.particleSelection.invertParticleSelection),
+		rightClickParams("Deselect All", myParam.particleSelection.deselectParticles),
+		rightClickParams("Follow selection", myParam.myCamera.centerCamera),
+		rightClickParams("Select Clusters", myParam.particleSelection.selectManyClusters),
+		rightClickParams("Delete Selection", myParam.particleDeletion.deleteSelection),
+		rightClickParams("Delete Stray Particles", myParam.particleDeletion.deleteNonImportant),
+		rightClickParams("Reset Custom Colors", resetParticleColors),
+		rightClickParams("Draw Z Curves", myVar.drawZCurves),
+		rightClickParams("Draw Quadtree", myVar.drawQuadtree),
+		rightClickParams("Enable Frames Export", myParam.screenCapture.isExportFramesEnabled),
+		rightClickParams("Safe Frames Export", myParam.screenCapture.isSafeFramesEnabled),
+		
+		};
 
-		menuButtons[0].pos.y = menuPos.y + menuButtonGap;
+		ImGui::SetNextWindowSize(ImVec2(200.0f, 425.0f), ImGuiCond_Once);
+		ImGui::SetNextWindowPos(ImVec2(GetMousePosition().x, GetMousePosition().y), ImGuiCond_Appearing);
 
-		menuButtons[0].size = { buttonSizeX, buttonSizeY };
-
-
-		for (size_t i = 1; i < menuButtons.size(); i++) {
-
-			menuButtons[i].pos.x = menuButtons[i - 1].pos.x;
-			menuButtons[i].pos.y = menuButtons[i - 1].pos.y + menuButtons[i].size.y + 5.0f;
-			menuButtons[i].size = menuButtons[i - 1].size;
-		}
-
-
-		DrawRectangleV(menuPos, menuSize, menuColor);
-
-		bool buttonSubdivideAllHovering = menuButtons[0].buttonLogic(myParam.subdivision.subdivideAll);
-		bool buttonSubdivideSelectedHovering = menuButtons[1].buttonLogic(myParam.subdivision.subdivideSelected);
-
-		bool buttonInvertSelectionHovering = menuButtons[2].buttonLogic(myParam.particleSelection.invertParticleSelection);
-		bool buttonDeselectAllHovering = menuButtons[3].buttonLogic(myParam.particleSelection.deselectParticles);
-
-		bool buttonFollowSelectionHovering = menuButtons[4].buttonLogic(myParam.myCamera.centerCamera);
-
-		bool buttonClustersSelectionHovering = menuButtons[5].buttonLogic(myParam.particleSelection.selectManyClusters);
-
-		bool buttonDeleteSelectionHovering = menuButtons[6].buttonLogic(myParam.particleDeletion.deleteSelection);
-		bool buttonDeleteStraysHovering = menuButtons[7].buttonLogic(myParam.particleDeletion.deleteNonImportant);
-
-		bool buttonResetColorsHovering = menuButtons[8].buttonLogic(resetParticleColors);
-
-		bool buttonDrawZCurvesHovering = menuButtons[9].buttonLogic(myVar.drawZCurves);
-		bool buttonDrawQuadtreeHovering = menuButtons[10].buttonLogic(myVar.drawQuadtree);
-
-		bool buttonRecordDiskModeHovering = false;
-		bool buttonExportFramesEnabledHovering = false;
-		if (!myParam.screenCapture.isFunctionRecording) { // If it is recording, lock these settings
-			buttonDrawQuadtreeHovering = menuButtons[11].buttonLogic(myParam.screenCapture.isExportFramesEnabled);
-			if (myParam.screenCapture.isExportFramesEnabled) {
-				buttonRecordDiskModeHovering = menuButtons[12].buttonLogic(myParam.screenCapture.isSafeFramesEnabled);
+		if (ImGui::Begin("Right Click Menu", nullptr, ImGuiWindowFlags_NoCollapse)) {
+			if (ImGui::IsWindowHovered()) {
+				isMouseOnMenu = true;
+			}
+			else {
+				isMouseOnMenu = false;
 			}
 		}
 
+		for (size_t i = 0; i < rightClickButtons.size(); i++) {
 
-		if (buttonSubdivideAllHovering ||
-			buttonSubdivideSelectedHovering ||
-			buttonInvertSelectionHovering ||
-			buttonFollowSelectionHovering ||
-			buttonDeleteSelectionHovering ||
-			buttonClustersSelectionHovering ||
-			buttonDeleteStraysHovering ||
-			buttonResetColorsHovering ||
-			buttonDrawZCurvesHovering ||
-			buttonDrawQuadtreeHovering ||
-			buttonDeselectAllHovering ||
-			buttonDrawQuadtreeHovering ||
-			buttonRecordDiskModeHovering
-			) {
-			myVar.isMouseNotHoveringUI = false;
-			myVar.isDragging = false;
-		}
+			bool& param = rightClickButtons[i].parameter;
 
-		menuSliders[0].sliderPos.x = menuPos.x + menuButtonGap;
+			ImVec4& col = param ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
+			ImGui::PushStyleColor(ImGuiCol_Button, col);
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(col.x + 0.1f, col.y + 0.1f, col.z + 0.1f, col.w));
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(col.x - 0.1f, col.y - 0.1f, col.z - 0.1f, col.w));
 
-		menuSliders[0].sliderPos.y = menuPos.y + (menuButtons.size() + 1) * (buttonSizeY + menuButtonGap) + menuSliderGap + 15.0f;
+			if (ImGui::Button(rightClickButtons[i].text.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 20.0f))) {
+				param = !param;
 
-		menuSliders[0].sliderSize = { buttonSizeX, sliderSizeY };
-
-		for (size_t i = 1; i < menuSliders.size(); i++) {
-
-			menuSliders[i].sliderSize = menuSliders[i - 1].sliderSize;
-			menuSliders[i].sliderPos.x = menuSliders[i - 1].sliderPos.x;
-			menuSliders[i].sliderPos.y = menuSliders[i - 1].sliderPos.y + menuSliders[i].sliderSize.y + 25.0f;
-		}
-
-		bool sliderPRHovering = menuSliders[0].sliderLogic(0.0f, pR, 1.0f);
-		bool sliderPGHovering = menuSliders[1].sliderLogic(0.0f, pG, 1.0f);
-		bool sliderPBHovering = menuSliders[2].sliderLogic(0.0f, pB, 1.0f);
-		bool sliderPAHovering = menuSliders[3].sliderLogic(0.0f, pA, 1.0f);
-
-		bool sliderSRHovering = menuSliders[4].sliderLogic(0.0f, sR, 1.0f);
-		bool sliderSGHovering = menuSliders[5].sliderLogic(0.0f, sG, 1.0f);
-		bool sliderSBHovering = menuSliders[6].sliderLogic(0.0f, sB, 1.0f);
-		bool sliderSAHovering = menuSliders[7].sliderLogic(0.0f, sA, 1.0f);
-
-		// Color sliders only
-		if (sliderPRHovering ||
-			sliderPGHovering ||
-			sliderPBHovering ||
-			sliderPAHovering ||
-			sliderSRHovering ||
-			sliderSGHovering ||
-			sliderSBHovering ||
-			sliderSAHovering
-			) {
-			myVar.isMouseNotHoveringUI = false;
-			myVar.isDragging = false;
-			isMouseOnSlider = true;
-
-			if (IsMouseButtonPressed(0)) {
-				if (myParam.colorVisuals.selectedColor) {
-					selectedColorChanged = true;
-					myParam.colorVisuals.selectedColor = false;
-				}
+				isMenuActive = false;
 			}
-		}
-		else {
-			isMouseOnSlider = false;
+
+			ImGui::PopStyleColor(3);
 		}
 
-		if (IsMouseButtonPressed(0) && !isMouseOnSlider) {
-			myVar.isMouseNotHoveringUI = false;
-			myVar.isDragging = false;
-			isMenuActive = false;
-			if (selectedColorChanged) {
-				myParam.colorVisuals.selectedColor = true;
-				selectedColorChanged = false;
-			}
-		}
+		ImGui::Text("Primary Color");
+		ImGui::ColorEdit4("##pCol", (float*)&pCol);
+
+		ImGui::Text("Secondary Color");
+		ImGui::ColorEdit4("##sCol", (float*)&sCol);
+
+		ImGui::End();
 
 		if (resetParticleColors) {
 			for (size_t i = 0; i < myParam.rParticles.size(); i++) {
@@ -192,15 +125,15 @@ void RightClickSettings::rightClickMenu(UpdateVariables& myVar, UpdateParameters
 
 		if (myParam.rParticlesSelected.size() > 0 && !IsMouseButtonDown(0)) {
 
-			pR = 0.0f;
-			pG = 0.0f;
-			pB = 0.0f;
-			pA = 0.0f;
+			pCol.x = 0.0f;
+			pCol.y = 0.0f;
+			pCol.z = 0.0f;
+			pCol.w = 0.0f;
 
-			sR = 0.0f;
-			sG = 0.0f;
-			sB = 0.0f;
-			sA = 0.0f;
+			sCol.x = 0.0f;
+			sCol.y = 0.0f;
+			sCol.z = 0.0f;
+			sCol.w = 0.0f;
 
 			int visibleSelectedAmount = 0;
 
@@ -211,29 +144,29 @@ void RightClickSettings::rightClickMenu(UpdateVariables& myVar, UpdateParameters
 				if (rP.isSelected && (!rP.isDarkMatter || !rP.uniqueColor)) {
 
 
-					pR += rP.PRGBA.r;
-					pG += rP.PRGBA.g;
-					pB += rP.PRGBA.b;
-					pA += rP.PRGBA.a;
+					pCol.x += rP.PRGBA.r;
+					pCol.y += rP.PRGBA.g;
+					pCol.z += rP.PRGBA.b;
+					pCol.w += rP.PRGBA.a;
 
-					sR += rP.SRGBA.r;
-					sG += rP.SRGBA.g;
-					sB += rP.SRGBA.b;
-					sA += rP.SRGBA.a;
+					sCol.x += rP.SRGBA.r;
+					sCol.y += rP.SRGBA.g;
+					sCol.z += rP.SRGBA.b;
+					sCol.w += rP.SRGBA.a;
 
 					visibleSelectedAmount++;
 				}
 			}
 
-			pR /= visibleSelectedAmount;
-			pG /= visibleSelectedAmount;
-			pB /= visibleSelectedAmount;
-			pA /= visibleSelectedAmount;
+			pCol.x /= visibleSelectedAmount;
+			pCol.y /= visibleSelectedAmount;
+			pCol.z /= visibleSelectedAmount;
+			pCol.w /= visibleSelectedAmount;
 
-			sR /= visibleSelectedAmount;
-			sG /= visibleSelectedAmount;
-			sB /= visibleSelectedAmount;
-			sA /= visibleSelectedAmount;
+			sCol.x /= visibleSelectedAmount;
+			sCol.y /= visibleSelectedAmount;
+			sCol.z /= visibleSelectedAmount;
+			sCol.w /= visibleSelectedAmount;
 		}
 
 		if (IsMouseButtonDown(0) && myParam.rParticlesSelected.size() > 0 && isMenuActive) {
@@ -242,15 +175,15 @@ void RightClickSettings::rightClickMenu(UpdateVariables& myVar, UpdateParameters
 				ParticleRendering& rP = myParam.rParticles[i];
 				if (rP.isSelected && (!rP.isDarkMatter || !rP.uniqueColor)) {
 
-					rP.PRGBA.r = pR;
-					rP.PRGBA.g = pG;
-					rP.PRGBA.b = pB;
-					rP.PRGBA.a = pA;
+					rP.PRGBA.r = pCol.x;
+					rP.PRGBA.g = pCol.y;
+					rP.PRGBA.b = pCol.z;
+					rP.PRGBA.a = pCol.w;
 
-					rP.SRGBA.r = sR;
-					rP.SRGBA.g = sG;
-					rP.SRGBA.b = sB;
-					rP.SRGBA.a = sA;
+					rP.SRGBA.r = sCol.x;
+					rP.SRGBA.g = sCol.y;
+					rP.SRGBA.b = sCol.z;
+					rP.SRGBA.a = sCol.w;
 				}
 			}
 

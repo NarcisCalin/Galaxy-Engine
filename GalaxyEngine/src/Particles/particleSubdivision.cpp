@@ -9,24 +9,46 @@ void ParticleSubdivision::subdivideParticles(UpdateVariables& myVar, UpdateParam
 			subdivideAll = false;
 		}
 		if (myParam.pParticles.size() >= particlesThreshold) {
-			Button confirm({ GetScreenWidth() / 2.0f - 5.0f - buttonSize.x, GetScreenHeight() / 2.0f }, { buttonSize }, "Subdivide", true);
-			Button quit({ GetScreenWidth() / 2.0f + 5.0f, GetScreenHeight() / 2.0f }, { buttonSize }, "Quit", true);
 
-			Vector2 textCompensation = MeasureTextEx(GetFontDefault(), warningText.c_str(), textSize, textSpacing);
+			float screenW = GetScreenWidth();
+			float screenH = GetScreenHeight();
 
-			DrawTextEx(GetFontDefault(), warningText.c_str(), { static_cast<float>(GetScreenWidth() / 2 - (textCompensation.x / 2)),
-				static_cast<float>(GetScreenHeight() / 2 - (textCompensation.y / 2) - 25.0f) }, textSize, textSpacing, WHITE);
+			ImVec2 subdivisionMenuSize = { 500.0f, 200.0f };
+			
+			ImGui::SetNextWindowSize(subdivisionMenuSize, ImGuiCond_Once);
+			ImGui::SetNextWindowPos(ImVec2(screenW * 0.5f - subdivisionMenuSize.x * 0.5f, screenH * 0.5f - subdivisionMenuSize.y * 0.5f), ImGuiCond_Appearing);
 
-			bool confirmHovering = confirm.buttonLogic(confirmState);
-			bool quitHovering = quit.buttonLogic(quitState);
+			ImGui::Begin("##SubdivisionWarning", nullptr, ImGuiWindowFlags_NoCollapse);
 
-			if (confirmHovering || quitHovering) {
-				myVar.isMouseNotHoveringUI = false;
-				myVar.isDragging = false;
+			std::string warning = "SUBDIVIDING FURTHER MIGHT HEAVILY SLOW DOWN PERFORMANCE";
+
+			float windowWidth = ImGui::GetWindowSize().x;
+			float textWidth = ImGui::CalcTextSize(warning.c_str()).x;
+
+			ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
+			ImGui::TextColored(ImVec4(0.9f, 0.0f, 0.0f, 1.0f), "%s", warning.c_str());
+
+			ImVec4& confirmCol = confirmState ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
+			ImGui::PushStyleColor(ImGuiCol_Button, confirmCol);
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(confirmCol.x + 0.1f, confirmCol.y + 0.1f, confirmCol.z + 0.1f, confirmCol.w));
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(confirmCol.x - 0.1f, confirmCol.y - 0.1f, confirmCol.z - 0.1f, confirmCol.w));
+
+			if (ImGui::Button("Confirm", ImVec2(ImGui::GetContentRegionAvail().x, 40.0f))) {
+				confirmState = !confirmState;
 			}
-			else {
-				myVar.isMouseNotHoveringUI = true;
+			ImGui::PopStyleColor(3);
+
+			ImVec4& quitCol = quitState ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
+			ImGui::PushStyleColor(ImGuiCol_Button, quitCol);
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(quitCol.x + 0.1f, quitCol.y + 0.1f, quitCol.z + 0.1f, quitCol.w));
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(quitCol.x - 0.1f, quitCol.y - 0.1f, quitCol.z - 0.1f, quitCol.w));
+
+			if (ImGui::Button("Quit", ImVec2(ImGui::GetContentRegionAvail().x, 40.0f))) {
+				quitState = !quitState;
 			}
+			ImGui::PopStyleColor(3);
+
+			ImGui::End();
 		}
 
 		if (quitState) {

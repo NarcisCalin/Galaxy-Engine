@@ -3,14 +3,51 @@
 #include <array>
 #include "../raylib/raylib.h"
 #include "../Particles/particle.h"
-#include "button.h"
 #include "../parameters.h"
-#include "slider.h"
 #include "../Physics/quadtree.h"
 #include "../Physics/SPH.h"
 #include "../UX/saveSystem.h"
 #include "../../external/imgui/imgui.h"
 #include "../../external/imgui/rlImGui.h"
+#include "../../external/imgui/rlImGuiColors.h"
+
+struct settingsParams {
+	std::string text;
+	bool& parameter;
+
+	settingsParams(const std::string& t, bool& p) : text(t), parameter(p) {}
+};
+
+template<typename T>
+struct visualSlidersParams {
+	std::string text;
+	T& parameter;
+	T min;
+	T max;
+	const T defaultVal;
+	visualSlidersParams(const std::string& t, T& p, T min, T max)
+		: text(t), parameter(p), min(min), max(max), defaultVal(p) {
+	}
+};
+
+template<typename T>
+struct physicsSlidersParams {
+	std::string text;
+	T& parameter;
+	T min;
+	T max;
+	const T defaultVal;
+	physicsSlidersParams(const std::string& t, T& p, T min, T max)
+		: text(t), parameter(p), min(min), max(max), defaultVal(p) {
+	}
+};
+
+struct sphParams {
+	std::string text;
+	bool& parameter;
+
+	sphParams(const std::string& t, bool& p) : text(t), parameter(p) {}
+};
 
 class UI {
 public:
@@ -19,17 +56,6 @@ public:
 	bool bPhysicsSliders = false;
 
 	void uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, SaveSystem& save);
-
-	std::array<Button, 4> SPHMaterialButtonsArray = {
-
-Button({195.0f, 80.0f}, {175.0f, 20.0f}, "SPH Water", true),
-
-Button({195.0f, 80.0f}, {175.0f, 20.0f}, "SPH Rock", true),
-
-Button({195.0f, 80.0f}, {175.0f, 20.0f}, "SPH Sand", true),
-
-Button({195.0f, 80.0f}, {175.0f, 20.0f}, "SPH Mud", true)
-	};
 
 
 	std::array<Button, 1> toggleSettingsButtons = {
@@ -42,90 +68,9 @@ Button({195.0f, 80.0f}, {175.0f, 20.0f}, "SPH Mud", true)
 	)
 	};
 
-	Vector2 sliderSize = { 230.0f, 5.0f };
-	float sliderPosYBias = 32.0f;
-
-	std::array<Slider, 19> visualsSliders = {
-
-	Slider({20, 530.0f}, {230.0f, 5.0f}, {190, 100, 100, 255}, "Primary Red"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {100, 190, 100, 255}, "Primary Green"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {100, 100, 190, 255}, "Primary Blue"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Primary Alpha"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {150, 80, 80, 255}, "Secondary Red"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {80, 150, 80, 255}, "Secondary Green"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {80, 80, 150, 255}, "Secondary Blue"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {108, 108, 108, 255}, "Secondary Alpha"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Density Radius"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Max Neighbors"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Max Color Force"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Max Size Force"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Max DeltaV Accel"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Trails Length"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Trails Thickness"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Particles Size"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Path Prediction Length"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Particle Amount Multiplier"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "DM Amount Multiplier")
-
-	};
-
-	std::array<Slider, 16> physicsSliders = {
-
-	Slider({20, 530.0f}, {230.0f, 5.0f}, {120, 128, 128, 255}, "Softening"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Theta"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Time Scale"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Collision Substeps"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Gravity Strength"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Heavy Particle Init Mass"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Collision Bounciness"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Domain Width"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Domain Height"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "Threads Amount"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "SPH Rest Pressure"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "SPH Stiffness"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "SPH Radius"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "SPH Mass Multiplier"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "SPH Viscosity"),
-
-	Slider({450.0f, 450.0f}, {250.0f, 10.0f}, {128, 128, 128, 255}, "SPH Cohesion")
-
-	};
-
 	bool showSettings = true;
 
-	private:
-		bool loadSettings = true;
+private:
+	bool loadSettings = true;
 
 };

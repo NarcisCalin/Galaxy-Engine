@@ -360,7 +360,6 @@ int main() {
 
 		fullscreenToggle(lastScreenWidth, lastScreenHeight, wasFullscreen, lastScreenState, myParticlesTexture, myUITexture);
 
-
 		BeginTextureMode(myParticlesTexture);
 
 		ClearBackground(BLACK);
@@ -368,6 +367,8 @@ int main() {
 		BeginBlendMode(myParam.colorVisuals.blendMode);
 
 		BeginMode2D(myParam.myCamera.cameraLogic(save.loadFlag, myVar.isMouseNotHoveringUI));
+
+		rlImGuiBegin();
 
 		updateScene();
 
@@ -413,6 +414,8 @@ int main() {
 		if (myVar.isRecording) {
 			DrawRectangleLinesEx({ 0,0, static_cast<float>(GetScreenWidth()), static_cast<float>(GetScreenHeight()) }, 3, RED);
 		}
+
+		rlImGuiEnd();
 
 		EndDrawing();
 

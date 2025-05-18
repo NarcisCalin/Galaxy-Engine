@@ -1,154 +1,82 @@
 #include "../../include/UI/controls.h"
 #include "../../include/parameters.h"
 
-void Controls::showControls(bool& isMouseNotHoveringUI, bool& isDragging) {
-    if (!isShowControlsEnabled) return;
+void Controls::showControls() {
+    if (isShowControlsEnabled) {
 
-    float screenW = static_cast<float>(GetScreenWidth());
-    float screenH = static_cast<float>(GetScreenHeight());
+        float screenW = static_cast<float>(GetScreenWidth());
+        float screenH = static_cast<float>(GetScreenHeight());
 
-    constexpr float referenceWidth = 1920.0f;
-    constexpr float referenceHeight = 1080.0f;
+        ImVec2 controlSize = { screenW * 0.15f, screenH * 0.4f };
 
-    float scaleX = screenW / referenceWidth;
-    float scaleY = screenH / referenceHeight;
-    float uiScale = std::clamp(std::min(scaleX, scaleY), 0.5f, 2.0f);
+        controlSize.x = std::clamp(controlSize.x, 400.0f, 2000.0f);
+        controlSize.y = std::clamp(controlSize.y, 600.0f, 2000.0f);
 
-    controlsBoxSizeX = 435.0f * uiScale;
-    controlsBoxSizeY = 810.0f * uiScale;
+        ImGui::SetNextWindowSize(controlSize, ImGuiCond_Always);
+        ImGui::SetNextWindowPos(ImVec2(screenW * 0.5f - controlSize.x * 0.5f, screenH * 0.5f - controlSize.y * 0.5f), ImGuiCond_Always);
 
-    fontSize = 18.0f * uiScale;
-    fontSeparation = 1.0f * uiScale;
-    fontYBias = 0.0f * uiScale;
-    fontYSpacing = 30.0f * uiScale;
+        ImGui::Begin("Controls", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
 
-    Vector2 pageButtonSize = { 170.0f * uiScale, 24.0f * uiScale };
+        for (size_t i = 0; i < controlsArray.size(); i++) {
 
-    Vector2 pageButtonPos = {
-        screenW * 0.5f - pageButtonSize.x * 0.5f,
-        screenH * 0.5f - controlsBoxSizeY * 0.5f - pageButtonSize.y
-    };
-    Button changePageButton(
-        pageButtonPos,
-        pageButtonSize,
-        "Next Page", 
-        true);
+            std::string text = controlsArray[i];
 
-    bool buttonNextPageHovering = changePageButton.buttonLogic(nextPage);
-    if (buttonNextPageHovering) {
-        isMouseNotHoveringUI = false;
-        isDragging = false;
-    }
+           /* float windowWidth = ImGui::GetWindowSize().x;
+            float textWidth = ImGui::CalcTextSize(text.c_str()).x;
 
-    DrawTriangle(
-        { pageButtonPos.x + 3.0f * uiScale, pageButtonPos.y + 5.0f * uiScale },
-        { pageButtonPos.x + 7.0f * uiScale, pageButtonPos.y + 11.0f * uiScale },
-        { pageButtonPos.x + 11.0f * uiScale, pageButtonPos.y + 5.0f * uiScale },
-        WHITE
-    );
+            ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);*/
 
-    DrawRectangle(screenW * 0.5f - controlsBoxSizeX * 0.5f,
-        screenH * 0.5f - controlsBoxSizeY * 0.5f,
-        controlsBoxSizeX, controlsBoxSizeY,
-        { 170,170,170,170 });
-
-    float leftMargin = 20.0f * uiScale;
-    float initialY = screenH * 0.5f - controlsBoxSizeY * 0.5f + 70.0f * uiScale;
-
-    if (!nextPage) {
-        DrawText("PAGE 1.",
-            screenW * 0.5f - controlsBoxSizeX * 0.5f + leftMargin,
-            screenH * 0.5f - controlsBoxSizeY * 0.5f + 20.0f * uiScale,
-            30.0f * uiScale,
-            WHITE);
-
-        float leftMargin = 20.0f * uiScale;
-        float yCursor = screenH * 0.5f - controlsBoxSizeY * 0.5f + 70.0f * uiScale;
-
-        for (size_t i = 0; i < controlsArrayParticles.size(); i++) {
-            DrawTextEx(
-                GetFontDefault(),
-                TextFormat("%s", controlsArrayParticles[i].c_str()),
-                { screenW * 0.5f - controlsBoxSizeX * 0.5f + leftMargin,
-                  yCursor },
-                fontSize, fontSeparation, WHITE);
-            yCursor += fontYSpacing;
+            ImGui::Text("%s", text.c_str());
         }
 
-        float secondListY = initialY + controlsArrayParticles.size() * (fontYSpacing + fontSize);
-        for (size_t i = 0; i < controlsArrayCamAndSelec.size(); i++) {
-            DrawTextEx(
-                GetFontDefault(),
-                TextFormat("%s", controlsArrayCamAndSelec[i].c_str()),
-                { screenW * 0.5f - controlsBoxSizeX * 0.5f + leftMargin,
-                  yCursor },
-                fontSize, fontSeparation, WHITE);
-            yCursor += fontYSpacing;
-        }
-    }
-    else {
-        DrawText("PAGE 2.",
-            screenW * 0.5f - controlsBoxSizeX * 0.5f + leftMargin,
-            screenH * 0.5f - controlsBoxSizeY * 0.5f + 20.0f * uiScale,
-            30.0f * uiScale,
-            WHITE);
-
-        for (size_t i = 0; i < controlsArrayUtility.size(); i++) {
-            DrawTextEx(GetFontDefault(),
-                TextFormat("%s", controlsArrayUtility[i].c_str()),
-                { screenW * 0.5f - controlsBoxSizeX * 0.5f + leftMargin,
-                  initialY + fontYSpacing * i + fontYBias },
-                fontSize,
-                fontSeparation,
-                WHITE);
-        }
+        ImGui::End();
     }
 }
 
-void Controls::showMoreInfo() {
-    if (!isInformationEnabled) return;
+void Controls::showInfo(bool& fullscreen) {
+    if (isInformationEnabled) {
 
-    float screenW = static_cast<float>(GetScreenWidth());
-    float screenH = static_cast<float>(GetScreenHeight());
+        float screenW = static_cast<float>(GetScreenWidth());
+        float screenH = static_cast<float>(GetScreenHeight());
 
-    constexpr float referenceWidth = 1920.0f;
-    constexpr float referenceHeight = 1080.0f;
-    float scaleX = screenW / referenceWidth;
-    float scaleY = screenH / referenceHeight;
-    float uiScale = std::clamp(std::min(scaleX, scaleY), 0.5f, 2.0f);
+        ImVec2 infoSize = { screenW * 0.3f, screenH * 0.4f };
 
-    float leftMargin = 20.0f * uiScale;
-    float topMargin = 10.0f * uiScale;
-    float lineSpacing = 30.0f * uiScale;
-    float infoFontSize = 18.0f * uiScale;
-    float fontSpacing = 1.0f * uiScale;
+        infoSize.x = std::clamp(infoSize.x, 700.0f, 2000.0f);
+        infoSize.y = std::clamp(infoSize.y, 600.0f, 2000.0f);
 
-    Font font = GetFontDefault();
-    float maxLineWidth = 0;
-    for (auto& line : informationArray) {
-        Vector2 sz = MeasureTextEx(font, line.c_str(), infoFontSize, fontSpacing);
-        maxLineWidth = std::max(maxLineWidth, sz.x);
-    }
-    float textBlockHeight = informationArray.size() * lineSpacing;
+        ImGui::SetNextWindowSize(infoSize, ImGuiCond_Always);
+        ImGui::SetNextWindowPos(ImVec2(screenW * 0.5f - infoSize.x * 0.5f, screenH * 0.5f - infoSize.y * 0.5f), ImGuiCond_Always);
 
-    float infoBoxW = leftMargin * 2 + maxLineWidth;
-    float infoBoxH = topMargin * 2 + textBlockHeight;
+        ImGui::Begin("Information", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
 
-    infoBoxW = std::min(infoBoxW, screenW * 0.9f);
-    infoBoxH = std::min(infoBoxH, screenH * 0.9f);
+        for (size_t i = 0; i < infoArray.size(); i++) {
 
-    float boxX = screenW * 0.5f - infoBoxW * 0.5f;
-    float boxY = screenH * 0.5f - infoBoxH * 0.5f;
-    DrawRectangleV(
-        { boxX, boxY },
-        { infoBoxW, infoBoxH },
-        { 170, 170, 170, 170 }
-    );
+            std::string text = infoArray[i];
 
-    float xPos = boxX + leftMargin;
-    float yCursor = boxY + topMargin;
-    for (auto& line : informationArray) {
-        DrawTextEx(font, line.c_str(), { xPos, yCursor }, infoFontSize, fontSpacing, WHITE);
-        yCursor += lineSpacing;
+            /* float windowWidth = ImGui::GetWindowSize().x;
+             float textWidth = ImGui::CalcTextSize(text.c_str()).x;
+
+             ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);*/
+
+            ImGui::Text("%s", text.c_str());
+        }
+
+        ImVec2 linkButtonSize= { 200.0f, 30.0f };
+
+        ImGui::TextColored(ImVec4(0.8f, 0.0f, 0.0f, 1.0f), "The links might not work on Linux");
+
+        if (ImGui::Button("GitHub Repository", linkButtonSize)) {
+            fullscreen = false;
+            OpenURL("https://github.com/NarcisCalin/Galaxy-Engine");
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Join Our Discord Community!", linkButtonSize)) {
+            fullscreen = false;
+            OpenURL("https://discord.gg/Xd5JUqNFPM");
+        }
+
+        ImGui::End();
     }
 }

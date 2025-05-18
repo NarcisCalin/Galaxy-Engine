@@ -4,6 +4,8 @@
 #include "../parameters.h"
 #include "../UI/button.h"
 #include "../Physics/SPH.h"
+#include "../../external/imgui/imgui.h"
+#include "../../external/imgui/rlImGui.h"
 #include <vector>
 #include <fstream>
 #include <sstream>
@@ -305,64 +307,29 @@ public:
 
 			float filesAmount = static_cast<float>(files.size());
 
-			if (GetMouseWheelMove() != 0) {
-				scrollAmount += GetMouseWheelMove() * scrollSpeed;
-			}
+			ImGui::SetNextWindowSize(loadMenuSize, ImGuiCond_Once);
+			ImGui::SetNextWindowPos(ImVec2(static_cast<float>(GetScreenWidth()) * 0.5f - loadMenuSize.x * 0.5f, 450.0f), ImGuiCond_Once);
+			ImGui::Begin("Files");
 
 			for (const auto& [filename, fullPath] : files) {
-				fileButtons.emplace_back(Button(
-					{ GetScreenWidth() * 0.5f - buttonSize.x * 0.5f,
-					(GetScreenHeight() * 0.5f + buttonSize.y +
-					 ((buttonSize.y + buttonsGap) * fileIndex) -
-					 buttonSize.y -
-					 (buttonSize.y + buttonsGap) * filesAmount * 0.5f
-					) + scrollAmount },
-					{ buttonSize },
-					filename, true));
+				
+				if (ImGui::Button(fullPath.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, buttonHeight))) {
+					loadSimulation(fullPath.c_str(), myVar, myParam, sph);
+					loadFlag = false;
+				}
 
 				filePaths.push_back(fullPath);
 				fileIndex++;
 			}
 
-			int isOnTop = 0;
-			for (size_t i = 0; i < fileButtons.size(); i++) {
-
-				bool flag = false;
-				bool buttonHovering = false;
-				if (fileButtons[i].pos.y >= buttonsThresholdY &&
-					fileButtons[i].pos.y <= static_cast<float>(GetScreenHeight()) - buttonsThresholdY) {
-					buttonHovering = fileButtons[i].buttonLogic(flag);
-				}
-
-				if (buttonHovering) {
-					isOnTop++;
-				}
-
-				if (buttonHovering && IsMouseButtonPressed(0)) {
-					loadSimulation(filePaths[i], myVar, myParam, sph);
-					loadFlag = false;
-					break;
-				}
-			}
-
-			if (isOnTop != 0) {
-				myVar.isMouseNotHoveringUI = false;
-				myVar.isDragging = false;
-			}
-			else {
-				myVar.isMouseNotHoveringUI = true;
-			}
+			ImGui::End();
 		}
 	}
 
 private:
 
-	Vector2 buttonSize = { 500.0f, 20.0f };
-
-	float scrollAmount = 0.0f;
-	float scrollSpeed = 40.0f;
-
-	float buttonsThresholdY = 100.0f;
+	ImVec2 loadMenuSize = { 600.0f, 500.0f };
+	float buttonHeight = 30.0f;
 
 	float buttonsGap = 5.0f;
 

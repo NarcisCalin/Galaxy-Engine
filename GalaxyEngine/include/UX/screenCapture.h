@@ -1,7 +1,9 @@
 #pragma once
 
 #include "../raylib/raylib.h"
-#include "../UI/button.h"
+#include "../../external/imgui/imgui.h"
+#include "../../external/imgui/rlImGui.h"
+#include <string>
 #include <vector>
 
 struct UpdateVariables;

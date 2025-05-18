@@ -3,7 +3,6 @@
 #include <vector>
 #include "../raylib/raylib.h"
 #include "particle.h"
-#include "../UI/button.h"
 
 struct UpdateVariables;
 struct UpdateParameters;
