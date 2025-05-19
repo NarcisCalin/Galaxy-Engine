@@ -23,8 +23,8 @@ Special thanks to [Emily](https://github.com/Th3T3chn0G1t) for helping me on mul
 ---
 ![ManyGalaxiesGif](https://github.com/user-attachments/assets/70b784ac-22ab-4261-9cf6-5e651492cf6f)
 
+![SPH1](https://github.com/user-attachments/assets/926cdae3-43f9-48a5-9f97-5aa2dd4785ec)
 
-![Brush](https://github.com/user-attachments/assets/b68eb4cb-9ce4-4dfb-b366-0607598cebcc)
 
 ![BigBangBanner](https://github.com/user-attachments/assets/a3e2bef5-d9b0-4175-91f6-7edd0d532a44)
 
@@ -52,6 +52,14 @@ Add more quality to the simulation easily by subdividing the particles
 ![Subdivision](https://github.com/user-attachments/assets/c414549b-920f-45ad-b330-205f94632465)
 
 
+### SPH FLUID PHYSICS
+Galaxy Engine includes SPH fluid physics for planetary simulation
+
+![SPH2](https://github.com/user-attachments/assets/9b990a20-732a-4887-8254-68708faae182)
+
+![SPH4](https://github.com/user-attachments/assets/4a348533-0fa5-4d32-9060-66ad1c32b138)
+
+![SPH3](https://github.com/user-attachments/assets/a99bbd1c-6ad8-4676-ba13-e55e8c934c3c)
 
 
 ### REAL TIME PHYSICS
