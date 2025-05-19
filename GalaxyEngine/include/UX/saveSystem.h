@@ -2,7 +2,6 @@
 #include "../raylib/raylib.h"
 #include "../Particles/particle.h"
 #include "../parameters.h"
-#include "../UI/button.h"
 #include "../Physics/SPH.h"
 #include "../../external/imgui/imgui.h"
 #include "../../external/imgui/rlImGui.h"
@@ -230,7 +229,6 @@ public:
 
 			int fileIndex = 1;
 
-			fileButtons.clear();
 			filePaths.clear();
 
 			if (!std::filesystem::exists("Saves")) {
@@ -333,7 +331,6 @@ private:
 
 	float buttonsGap = 5.0f;
 
-	std::vector<Button> fileButtons;
 	std::vector<std::string> filePaths;
 
 	int saveIndex = 0;

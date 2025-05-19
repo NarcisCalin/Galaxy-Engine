@@ -436,22 +436,35 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	myParam.controls.showControls();
 	myParam.controls.showInfo(myVar.fullscreenState);
 
-	if (showSettings) {
+	ImVec2 statsSize = { 250.0f, 120.0f };
 
-		DrawText(TextFormat("Particles: %i", myParam.pParticles.size()), 400, 50, 25, WHITE);
-		if (myParam.pParticlesSelected.size() > 0) {
-			DrawText(TextFormat("Selected Particles: %i", myParam.pParticlesSelected.size()), 700, 50, 25, WHITE);
-		}
+	ImGui::SetNextWindowSize(statsSize, ImGuiCond_Always);
+	ImGui::SetNextWindowPos(ImVec2(screenX - statsSize.x - buttonsWindowX - 20.0f, 0.0f), ImGuiCond_Always);
 
-		if (GetFPS() >= 60) {
-			DrawText(TextFormat("FPS: %i", GetFPS()), GetScreenWidth() - 150, 50, 18, GREEN);
+	ImGui::Begin("Stats", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
 
-		}
-		else if (GetFPS() < 60 && GetFPS() > 30) {
-			DrawText(TextFormat("FPS: %i", GetFPS()), GetScreenWidth() - 150, 50, 18, YELLOW);
-		}
-		else {
-			DrawText(TextFormat("FPS: %i", GetFPS()), GetScreenWidth() - 150, 50, 18, RED);
-		}
+	ImGui::PushFont(myVar.specialFont);
+
+	ImGui::SetWindowFontScale(1.5f);
+
+	int particlesAmout = static_cast<int>(myParam.pParticles.size());
+	int selecParticlesAmout = static_cast<int>(myParam.pParticlesSelected.size());
+
+	ImGui::Text("%s%d","Total Particles: ", particlesAmout);
+
+	ImGui::Text("%s%d", "Selected Particles: ", selecParticlesAmout);
+
+	if (GetFPS() >= 60) {
+		ImGui::TextColored(ImVec4(0.0f, 0.8f, 0.0f, 1.0f), "%s%d", "FPS: ", GetFPS());
 	}
+	else if (GetFPS() < 60 && GetFPS() > 30) {
+		ImGui::TextColored(ImVec4(0.8f, 0.8f, 0.0f, 1.0f), "%s%d", "FPS: ", GetFPS());
+	}
+	else {
+		ImGui::TextColored(ImVec4(0.8f, 0.0f, 0.0f, 1.0f), "%s%d", "FPS: ", GetFPS());
+	}
+
+	ImGui::PopFont();
+
+	ImGui::End();
 }

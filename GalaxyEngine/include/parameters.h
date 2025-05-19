@@ -60,8 +60,8 @@ struct UpdateParameters {
 };
 
 struct UpdateVariables{
-	int screenWidth = 1280;
-	int screenHeight = 720;
+	int screenWidth = 1920;
+	int screenHeight = 1080;
 	float halfScreenWidth = screenWidth * 0.5f;
 	float halfScreenHeight = screenHeight * 0.5f;
 
@@ -138,4 +138,6 @@ struct UpdateVariables{
 	int threadsAmount = 16;
 
 	bool longExposure = false;
+
+	ImFont* specialFont = nullptr;
 };

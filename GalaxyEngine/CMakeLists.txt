@@ -149,10 +149,8 @@ set(
     Physics/slingshot.cpp
     Physics/SPH.cpp
     UI/brush.cpp
-    UI/button.cpp
     UI/controls.cpp
     UI/rightClickSettings.cpp
-    UI/slider.cpp
     UI/UI.cpp
     UX/camera.cpp
     UX/screenCapture.cpp

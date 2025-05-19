@@ -57,17 +57,6 @@ public:
 
 	void uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, SaveSystem& save);
 
-
-	std::array<Button, 1> toggleSettingsButtons = {
-	Button
-	(
-		{ 34.0f, 65.0f },
-		{ 14.0f,14.0f },
-		"",
-		false
-	)
-	};
-
 	bool showSettings = true;
 
 private:

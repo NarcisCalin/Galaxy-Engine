@@ -13,17 +13,21 @@ void ParticleSubdivision::subdivideParticles(UpdateVariables& myVar, UpdateParam
 			float screenW = GetScreenWidth();
 			float screenH = GetScreenHeight();
 
-			ImVec2 subdivisionMenuSize = { 500.0f, 200.0f };
+			ImVec2 subdivisionMenuSize = { 550.0f, 150.0f };
 			
 			ImGui::SetNextWindowSize(subdivisionMenuSize, ImGuiCond_Once);
 			ImGui::SetNextWindowPos(ImVec2(screenW * 0.5f - subdivisionMenuSize.x * 0.5f, screenH * 0.5f - subdivisionMenuSize.y * 0.5f), ImGuiCond_Appearing);
 
 			ImGui::Begin("##SubdivisionWarning", nullptr, ImGuiWindowFlags_NoCollapse);
 
+			ImGui::PushFont(myVar.specialFont);
+
 			std::string warning = "SUBDIVIDING FURTHER MIGHT HEAVILY SLOW DOWN PERFORMANCE";
 
 			float windowWidth = ImGui::GetWindowSize().x;
 			float textWidth = ImGui::CalcTextSize(warning.c_str()).x;
+
+			ImGui::SetWindowFontScale(1.2f);
 
 			ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
 			ImGui::TextColored(ImVec4(0.9f, 0.0f, 0.0f, 1.0f), "%s", warning.c_str());
@@ -46,6 +50,8 @@ void ParticleSubdivision::subdivideParticles(UpdateVariables& myVar, UpdateParam
 			if (ImGui::Button("Quit", ImVec2(ImGui::GetContentRegionAvail().x, 40.0f))) {
 				quitState = !quitState;
 			}
+
+			ImGui::PopFont();
 			ImGui::PopStyleColor(3);
 
 			ImGui::End();

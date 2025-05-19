@@ -122,7 +122,7 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 				std::cout << "Failed to create folder: " << folderName << std::endl;
 			}
 		}
- 
+
 		if (!isFunctionRecording) {
 			int w = GetScreenWidth();
 			int h = GetScreenHeight();
@@ -143,7 +143,7 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 			pCodecCtx->codec_id = AV_CODEC_ID_H264;
 			pCodecCtx->width = w;
 			pCodecCtx->height = h;
-			pCodecCtx->time_base = AVRational{ 1,60 }; 
+			pCodecCtx->time_base = AVRational{ 1,60 };
 			pCodecCtx->framerate = AVRational{ 24,1 };
 			pCodecCtx->pix_fmt = AV_PIX_FMT_YUV420P;
 			pCodecCtx->bit_rate = 256 * 1000 * 1000;
@@ -256,54 +256,62 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 		myFrames.push_back(LoadImageFromTexture(myParticlesTexture.texture));
 	}
 
-	if (myFrames.size() > 0 && !isFunctionRecording && !isSafeFramesEnabled) {
+	float screenW = GetScreenWidth();
+	float screenH = GetScreenHeight();
 
-		float screenW = GetScreenWidth();
-		float screenH = GetScreenHeight();
-
-		ImVec2 framesMenuSize = { 400.0f, 160.0f };
-
+	ImVec2 framesMenuSize = { 400.0f, 200.0f };
+	if (myFrames.size() > 0 || diskModeFrameIdx > 0) {
 		ImGui::SetNextWindowSize(framesMenuSize, ImGuiCond_Once);
 		ImGui::SetNextWindowPos(ImVec2(screenW * 0.5f - framesMenuSize.x * 0.5f, screenH * 0.5f - framesMenuSize.y * 0.5f), ImGuiCond_Appearing);
 
-		ImGui::Begin("Export Frames", nullptr, ImGuiWindowFlags_NoCollapse);
+		ImGui::Begin("Recording Menu", nullptr, ImGuiWindowFlags_NoCollapse);
 
-		ImVec4& exportCol = exportMemoryFrames ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
-		ImGui::PushStyleColor(ImGuiCol_Button, exportCol);
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(exportCol.x + 0.1f, exportCol.y + 0.1f, exportCol.z + 0.1f, exportCol.w));
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(exportCol.x - 0.1f, exportCol.y - 0.1f, exportCol.z - 0.1f, exportCol.w));
+		ImGui::PushFont(myVar.specialFont);
 
-		if (ImGui::Button("Export Frames", ImVec2(ImGui::GetContentRegionAvail().x, 40.0f))) {
-			exportMemoryFrames = !exportMemoryFrames;
+		ImGui::SetWindowFontScale(1.5f);
+
+		if (diskModeFrameIdx > 0 && (isSafeFramesEnabled || isVideoExportEnabled)) {
+			ImGui::TextColored(ImVec4(0.8f, 0.0f, 0.0f, 1.0f), "%s%d", "Rendered Frames: ", diskModeFrameIdx);
 		}
-		ImGui::PopStyleColor(3);
-
-		ImVec4& discardCol = deleteFrames ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
-		ImGui::PushStyleColor(ImGuiCol_Button, discardCol);
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(discardCol.x + 0.1f, discardCol.y + 0.1f, discardCol.z + 0.1f, discardCol.w));
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(discardCol.x - 0.1f, discardCol.y - 0.1f, discardCol.z - 0.1f, discardCol.w));
-
-		if (ImGui::Button("Discard Frames", ImVec2(ImGui::GetContentRegionAvail().x, 40.0f))) {
-			deleteFrames = !deleteFrames;
+		else if (myFrames.size() > 0 && !isSafeFramesEnabled) {
+			ImGui::TextColored(ImVec4(0.8f, 0.0f, 0.0f, 1.0f), "%s%d", "Rendered Frames: ", static_cast<int>(myFrames.size()));
 		}
-		ImGui::PopStyleColor(3);
 
-		std::string warning = "EXPORTING MIGHT TAKE A WHILE";
 
-		float windowWidth = ImGui::GetWindowSize().x;
-		float textWidth = ImGui::CalcTextSize(warning.c_str()).x;
+		if (myFrames.size() > 0 && !isFunctionRecording && !isSafeFramesEnabled) {
 
-		ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
-		ImGui::TextColored(ImVec4(0.9f, 0.0f, 0.0f, 1.0f), "%s", warning.c_str());
+			ImVec4& exportCol = exportMemoryFrames ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
+			ImGui::PushStyleColor(ImGuiCol_Button, exportCol);
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(exportCol.x + 0.1f, exportCol.y + 0.1f, exportCol.z + 0.1f, exportCol.w));
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(exportCol.x - 0.1f, exportCol.y - 0.1f, exportCol.z - 0.1f, exportCol.w));
 
+			if (ImGui::Button("Export Frames", ImVec2(ImGui::GetContentRegionAvail().x, 40.0f))) {
+				exportMemoryFrames = !exportMemoryFrames;
+			}
+			ImGui::PopStyleColor(3);
+
+			ImVec4& discardCol = deleteFrames ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
+			ImGui::PushStyleColor(ImGuiCol_Button, discardCol);
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(discardCol.x + 0.1f, discardCol.y + 0.1f, discardCol.z + 0.1f, discardCol.w));
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(discardCol.x - 0.1f, discardCol.y - 0.1f, discardCol.z - 0.1f, discardCol.w));
+
+			if (ImGui::Button("Discard Frames", ImVec2(ImGui::GetContentRegionAvail().x, 40.0f))) {
+				deleteFrames = !deleteFrames;
+			}
+			ImGui::PopStyleColor(3);
+
+			std::string warning = "EXPORTING MIGHT TAKE A WHILE";
+
+			float windowWidth = ImGui::GetWindowSize().x;
+			float textWidth = ImGui::CalcTextSize(warning.c_str()).x;
+
+			ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
+			ImGui::TextColored(ImVec4(0.9f, 0.0f, 0.0f, 1.0f), "%s", warning.c_str());
+
+
+		}
+		ImGui::PopFont();
 		ImGui::End();
-	}
-
-	if (diskModeFrameIdx > 0 && (isSafeFramesEnabled || isVideoExportEnabled)) {
-		DrawText(TextFormat("Rendered Frames: %i", diskModeFrameIdx), GetScreenWidth() - 600, 40, 25, RED);
-	}
-	else if (myFrames.size() > 0 && !isSafeFramesEnabled) {
-		DrawText(TextFormat("Rendered Frames: %i", myFrames.size()), GetScreenWidth() - 600, 40, 25, RED);
 	}
 
 	if (!isFunctionRecording && diskModeFrameIdx > 0 && (isSafeFramesEnabled || isVideoExportEnabled)) {

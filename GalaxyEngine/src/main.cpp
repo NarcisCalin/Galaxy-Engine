@@ -11,10 +11,8 @@
 #include "../include/Physics/quadtree.h"
 #include "../include/Physics/slingshot.h"
 #include "../include/Particles/particleTrails.h"
-#include "../include/UI/button.h"
 #include "../include/UX/screenCapture.h"
 #include "../include/Physics/morton.h"
-#include "../include/UI/slider.h"
 #include "../include/UX/camera.h"
 #include "../include/raylib/raylib.h"
 #include "../include/raylib/rlgl.h"
@@ -355,6 +353,34 @@ int main() {
 		std::filesystem::create_directory("Saves");
 	}
 	save.saveSimulation("Saves/DefaultSettings.galaxsim", myVar, myParam, sph);
+
+	ImGuiIO& io = ImGui::GetIO();
+
+	ImFontConfig config;
+	config.SizePixels = 14.0f;        // Base font size in pixels
+	config.RasterizerDensity = 2.0f;  // Improves rendering at small sizes
+	config.OversampleH = 4;           // Horizontal anti-aliasing
+	config.OversampleV = 4;           // Vertical anti-aliasing
+	config.PixelSnapH = false;        // Disable pixel snapping for smoother text
+	config.RasterizerMultiply = 0.9f; // Slightly boosts brightness
+
+	myVar.specialFont = io.Fonts->AddFontFromFileTTF(
+		"fonts/Roboto-Medium.ttf",
+		config.SizePixels,
+		&config,
+		io.Fonts->GetGlyphRangesDefault()
+	);
+
+	if (!myVar.specialFont) {
+		std::cerr << "Failed to load special font!\n";
+	}
+	else {
+		std::cout << "Special font loaded successfully\n";
+	}
+
+	io.Fonts->Build();
+	rlImGuiReloadFonts();
+
 
 	while (!WindowShouldClose()) {
 
