@@ -21,7 +21,8 @@ Special thanks to [Emily](https://github.com/Th3T3chn0G1t) for helping me on mul
 
 
 ---
-![ManyGalaxiesGif](https://github.com/user-attachments/assets/70b784ac-22ab-4261-9cf6-5e651492cf6f)
+![RecordResult2](https://github.com/user-attachments/assets/8a9f8958-a7df-4d9c-bd39-518758e6aea7)
+
 
 ![SPH1](https://github.com/user-attachments/assets/926cdae3-43f9-48a5-9f97-5aa2dd4785ec)
 
