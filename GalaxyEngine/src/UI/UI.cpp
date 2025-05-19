@@ -10,8 +10,8 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	}
 
 	if (myVar.timeFactor == 0.0f) {
-		DrawRectangleV({ GetScreenWidth() - 200.0f, 20.0f }, { 10.0f, 30.0f }, WHITE);
-		DrawRectangleV({ GetScreenWidth() - 220.0f, 20.0f }, { 10.0f, 30.0f }, WHITE);
+		DrawRectangleV({ GetScreenWidth() - 700.0f, 20.0f }, { 10.0f, 30.0f }, WHITE);
+		DrawRectangleV({ GetScreenWidth() - 720.0f, 20.0f }, { 10.0f, 30.0f }, WHITE);
 	}
 
 	if (ImGui::IsAnyItemHovered() || ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow)) {
@@ -42,34 +42,34 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	float buttonX = (contentRegionWidth - settingsButtonX) * 0.5f;
 
 	static std::array<settingsParams, 28> settingsButtonsParams = {
-		settingsParams("Fullscreen", myVar.fullscreenState),
-		settingsParams("Controls", myParam.controls.isShowControlsEnabled),
-		settingsParams("Information", myParam.controls.isInformationEnabled),
-		settingsParams("Global Trails", myVar.isGlobalTrailsEnabled),
-		settingsParams("Selected Trails", myVar.isSelectedTrailsEnabled),
-		settingsParams("Local Trails", myVar.isLocalTrailsEnabled),
-		settingsParams("White Trails", myParam.trails.whiteTrails),
-		settingsParams("Solid Color", myParam.colorVisuals.solidColor),
-		settingsParams("Density Color", myParam.colorVisuals.densityColor),
-		settingsParams("Force Color", myParam.colorVisuals.forceColor),
-		settingsParams("Velocity Color", myParam.colorVisuals.velocityColor),
-		settingsParams("DeltaV Color", myParam.colorVisuals.deltaVColor),
-		settingsParams("SPH Color", myParam.colorVisuals.SPHColor),
-		settingsParams("Selected Color", myParam.colorVisuals.selectedColor),
-		settingsParams("Dark Matter", myVar.isDarkMatterEnabled),
-		settingsParams("Show Dark Matter", myParam.colorVisuals.showDarkMatterEnabled),
-		settingsParams("Looping Space", myVar.isPeriodicBoundaryEnabled),
-		settingsParams("Multi-Threading", myVar.isMultiThreadingEnabled),
-		settingsParams("SPH", myVar.isSPHEnabled),
-		settingsParams("SPH Ground Mode", myVar.sphGround),
-		settingsParams("Collisions (!!!)", myVar.isCollisionsEnabled),
-		settingsParams("Density Size", myVar.isDensitySizeEnabled),
-		settingsParams("Force Size", myVar.isForceSizeEnabled),
-		settingsParams("Glow", myVar.isGlowEnabled),
-		settingsParams("Predict Path", myParam.particlesSpawning.enablePathPrediction),
-		settingsParams("Ship Gas", myVar.isShipGasEnabled),
-		settingsParams("Save Scene", save.saveFlag),
-		settingsParams("Load Scene", save.loadFlag)
+		settingsParams("Fullscreen", "Toggles fulscreen", myVar.fullscreenState),
+		settingsParams("Controls", "Open controls panel", myParam.controls.isShowControlsEnabled),
+		settingsParams("Information", "Open information panel", myParam.controls.isInformationEnabled),
+		settingsParams("Global Trails", "Enables trails for all particles", myVar.isGlobalTrailsEnabled),
+		settingsParams("Selected Trails", "Enables trails for selected particles", myVar.isSelectedTrailsEnabled),
+		settingsParams("Local Trails", "Enables trails moving relative to particles average position", myVar.isLocalTrailsEnabled),
+		settingsParams("White Trails", "Makes all trails white", myParam.trails.whiteTrails),
+		settingsParams("Solid Color", "Particles will only use the primary color", myParam.colorVisuals.solidColor),
+		settingsParams("Density Color", "Maps particle neighbor amount to the primary and secondary colors", myParam.colorVisuals.densityColor),
+		settingsParams("Force Color", "Maps particle acceleration to the primary and secondary colors",myParam.colorVisuals.forceColor),
+		settingsParams("Velocity Color", "Maps particle velocity to the primary and secondary colors", myParam.colorVisuals.velocityColor),
+		settingsParams("DeltaV Color", "Maps particle change in speed to the primary and secondary colors", myParam.colorVisuals.deltaVColor),
+		settingsParams("SPH Color", "Uses the SPH materials colors", myParam.colorVisuals.SPHColor),
+		settingsParams("Selected Color", "Highlight selected particles", myParam.colorVisuals.selectedColor),
+		settingsParams("Dark Matter", "Enables dark matter particles. This works for galaxies and Big Bang", myVar.isDarkMatterEnabled),
+		settingsParams("Show Dark Matter", "Unhides dark matter particles", myParam.colorVisuals.showDarkMatterEnabled),
+		settingsParams("Looping Space", "Particles disappearing on one side will appear on the other side", myVar.isPeriodicBoundaryEnabled),
+		settingsParams("Multi-Threading", "Distributes the simulation across multiple threads", myVar.isMultiThreadingEnabled),
+		settingsParams("SPH", "Enables SPH fluids", myVar.isSPHEnabled),
+		settingsParams("SPH Ground Mode", "Adds vertical gravity and makes particles collide with the domain walls", myVar.sphGround),
+		settingsParams("Collisions (!!!)", "Enables elastic collisions", myVar.isCollisionsEnabled),
+		settingsParams("Density Size", "Maps particle neighbor amount to size", myVar.isDensitySizeEnabled),
+		settingsParams("Force Size", "Maps particle acceleration to size", myVar.isForceSizeEnabled),
+		settingsParams("Glow", "Enables glow shader", myVar.isGlowEnabled),
+		settingsParams("Predict Path", "Predicts the trajectory of heavy particles before launching them", myParam.particlesSpawning.enablePathPrediction),
+		settingsParams("Ship Gas", "Enables gas particles coming from the ship when controlling particles", myVar.isShipGasEnabled),
+		settingsParams("Save Scene", "Save current scene to disk", save.saveFlag),
+		settingsParams("Load Scene", "Load a scene from disk", save.loadFlag)
 
 	};
 
@@ -77,40 +77,40 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		visualSlidersParams<float>,
 		visualSlidersParams<int>>,
 		11> visualSliders = {
-		visualSlidersParams<float>("Density Radius", myParam.neighborSearch.densityRadius, 0.0f, 7.0f),
-		visualSlidersParams<int>("Max Neighbors", myParam.colorVisuals.maxNeighbors, 1, 500),
-		visualSlidersParams<float>("Max Color Force", myParam.colorVisuals.maxColorAcc, 1.0f, 400.0f),
-		visualSlidersParams<float>("Max Size Force", myParam.densitySize.sizeAcc, 1.0f, 400.0f),
-		visualSlidersParams<float>("Max DeltaV Accel", myParam.colorVisuals.deltaVMaxAccel, 1.0f, 40.0f),
-		visualSlidersParams<int>("Trails Length", myVar.trailMaxLength, 0, 1500),
-		visualSlidersParams<float>("Trails Thickness", myParam.trails.trailThickness, 0.007f, 0.5f),
-		visualSlidersParams<float>("Particles Size", myVar.particleSizeMultiplier, 0.1f, 5.0f),
-		visualSlidersParams<int>("Path Prediction Lenght", myParam.particlesSpawning.predictPathLength, 100, 2000),
-		visualSlidersParams<float>("Visible P. Amount Multiplier", myParam.particlesSpawning.particleAmountMultiplier, 0.1f, 100.0f),
-		visualSlidersParams<float>("DM P. Amount Multiplier", myParam.particlesSpawning.DMAmountMultiplier, 0.1f, 100.0f)
+		visualSlidersParams<float>("Density Radius", "Controls the neighbor search radius", myParam.neighborSearch.densityRadius, 0.0f, 7.0f),
+		visualSlidersParams<int>("Max Neighbors", "Controls the maximum neighbor count range", myParam.colorVisuals.maxNeighbors, 1, 500),
+		visualSlidersParams<float>("Max Color Force", "Controls the acceleration threshold to use the secondary color", myParam.colorVisuals.maxColorAcc, 1.0f, 400.0f),
+		visualSlidersParams<float>("Max Size Force", "Controls the acceleration threshold to map the particle size", myParam.densitySize.sizeAcc, 1.0f, 400.0f),
+		visualSlidersParams<float>("Max DeltaV Accel", "Controls the change in speed threshold to map the particle color in DeltaV color mode", myParam.colorVisuals.deltaVMaxAccel, 1.0f, 40.0f),
+		visualSlidersParams<int>("Trails Length", "Controls how long should the trails be. This feature is computationally expensive", myVar.trailMaxLength, 0, 1500),
+		visualSlidersParams<float>("Trails Thickness", "Controls the trails thickness", myParam.trails.trailThickness, 0.007f, 0.5f),
+		visualSlidersParams<float>("Particles Size", "Controls the size of all particles", myVar.particleSizeMultiplier, 0.1f, 5.0f),
+		visualSlidersParams<int>("Path Prediction Lenght", "Controls how long is the predicted path", myParam.particlesSpawning.predictPathLength, 100, 2000),
+		visualSlidersParams<float>("Visible P. Amount Multiplier", "Controls the spawn amount of visible particles", myParam.particlesSpawning.particleAmountMultiplier, 0.1f, 100.0f),
+		visualSlidersParams<float>("DM P. Amount Multiplier", "Controls the spawn amount of dark matter particles", myParam.particlesSpawning.DMAmountMultiplier, 0.1f, 100.0f)
 	};
 
 	static std::array<std::variant<
 		physicsSlidersParams<float>,
 		physicsSlidersParams<int>>,
 		16> physicsSliders = {
-		physicsSlidersParams<float>("Softening", myVar.softening, 1.0f, 30.0f),
-		physicsSlidersParams<float>("Theta", myVar.theta, 0.1f, 5.0f),
-		physicsSlidersParams<float>("Time Scale", myVar.timeStepMultiplier, 0.0f, 15.0f),
-		physicsSlidersParams<int>("Collision Substeps", myVar.substeps, 1, 64),
-		physicsSlidersParams<float>("Gravity Strength", myVar.gravityMultiplier, 0.0f, 100.0f),
-		physicsSlidersParams<float>("Heavy Particle Init Mass", myParam.particlesSpawning.heavyParticleWeightMultiplier, 0.005f, 15.0f),
-		physicsSlidersParams<float>("Collisions Bounciness", myVar.particleBounciness, 0.0f, 1.0f),
-		physicsSlidersParams<float>("Domain Width", myVar.domainSize.x, 200.0f, 3840.0f),
-		physicsSlidersParams<float>("Domain Height", myVar.domainSize.y, 200.0f, 2160.0f),
-		physicsSlidersParams<int>("Threads Amount", myVar.threadsAmount, 1, 32),
+		physicsSlidersParams<float>("Softening", "Controls the smoothness of the gravity forces", myVar.softening, 1.0f, 30.0f),
+		physicsSlidersParams<float>("Theta", "Controls the quality of the gravity calculation. Higher means lower quality", myVar.theta, 0.1f, 5.0f),
+		physicsSlidersParams<float>("Time Scale", "Controls how fast time passes", myVar.timeStepMultiplier, 0.0f, 15.0f),
+		physicsSlidersParams<int>("Collision Substeps", "Controls the amount of collision substeps. Only works if collisions are on", myVar.substeps, 1, 64),
+		physicsSlidersParams<float>("Gravity Strength", "Controls how mcuh particles attract eachother", myVar.gravityMultiplier, 0.0f, 100.0f),
+		physicsSlidersParams<float>("Heavy Particle Init Mass", "Controls the mass of the heavy particles when spawned", myParam.particlesSpawning.heavyParticleWeightMultiplier, 0.005f, 15.0f),
+		physicsSlidersParams<float>("Collisions Bounciness", "Controls how much particles bounce when collisions mode is enabled", myVar.particleBounciness, 0.0f, 1.0f),
+		physicsSlidersParams<float>("Domain Width", "Controls the width of the global container", myVar.domainSize.x, 200.0f, 3840.0f),
+		physicsSlidersParams<float>("Domain Height", "Controls the height of the global container", myVar.domainSize.y, 200.0f, 2160.0f),
+		physicsSlidersParams<int>("Threads Amount", "Controls the amount of cpu threads used by the simulation", myVar.threadsAmount, 1, 32),
 
-		physicsSlidersParams<float>("SPH Rest Pressure", sph.restDensity, 0.01f, 5.0f),
-		physicsSlidersParams<float>("SPH Stiffness", sph.stiffness, 0.0f, 300.0f),
-		physicsSlidersParams<float>("SPH Radius", sph.radiusMultiplier, 0.1f, 4.0f),
-		physicsSlidersParams<float>("SPH Mass Multiplier", sph.mass, 0.05f, 0.15f),
-		physicsSlidersParams<float>("SPH Viscosity", sph.viscosity, 1.0f, 250.0f),
-		physicsSlidersParams<float>("SPH Cohesion", sph.cohesionCoefficient, 0.0f, 10.0f),
+		physicsSlidersParams<float>("SPH Rest Density", "Controls what the density should be in equilibrium", sph.restDensity, 0.01f, 5.0f),
+		physicsSlidersParams<float>("SPH Stiffness", "Controls how rigid particles are", sph.stiffness, 0.0f, 300.0f),
+		physicsSlidersParams<float>("SPH Radius", "Controls the hitbox of the particles in SPH mode", sph.radiusMultiplier, 0.1f, 4.0f),
+		physicsSlidersParams<float>("SPH Mass Multiplier", "Controls the fluid mass of particles", sph.mass, 0.05f, 0.15f),
+		physicsSlidersParams<float>("SPH Viscosity", "Controls how viscous particles are", sph.viscosity, 1.0f, 250.0f),
+		physicsSlidersParams<float>("SPH Cohesion", "Controls how sticky particles are", sph.cohesionCoefficient, 0.0f, 10.0f),
 	};
 
 	float oldSpacingY = ImGui::GetStyle().ItemSpacing.y;
@@ -123,6 +123,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		bool isColor = settingsButtonsParams[i].text.find("Color") != std::string::npos;
 		bool& current = settingsButtonsParams[i].parameter;
 		const std::string& label = settingsButtonsParams[i].text;
+		const std::string& tooltip = settingsButtonsParams[i].tooltip;
 
 		ImVec4& col = current ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
 		ImGui::PushStyleColor(ImGuiCol_Button, col);
@@ -199,6 +200,10 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			else {
 				current = !current;
 			}
+		}
+
+		if (ImGui::IsItemHovered()) {
+			ImGui::SetTooltip("%s", tooltip.c_str());
 		}
 
 		ImGui::PopStyleColor(3);
@@ -311,6 +316,10 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 						s.max
 					);
 
+					if (ImGui::IsItemHovered()) {
+						ImGui::SetTooltip("%s", s.tooltip.c_str());
+					}
+
 					if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
 						s.parameter = s.defaultVal;
 					}
@@ -325,16 +334,15 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 						s.max
 					);
 
+					if (ImGui::IsItemHovered()) {
+						ImGui::SetTooltip("%s", s.tooltip.c_str());
+					}
+
 					if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
 						s.parameter = s.defaultVal;
 					}
 				}
 				}, visualSliders[i]);
-
-
-			if (ImGui::IsItemHovered()) {
-				ImGui::SetTooltip("Right-click to reset");
-			}
 
 		}
 	}
@@ -355,6 +363,10 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 						s.max
 					);
 
+					if (ImGui::IsItemHovered()) {
+						ImGui::SetTooltip("%s", s.tooltip.c_str());
+					}
+
 					if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
 						s.parameter = s.defaultVal;
 					}
@@ -368,6 +380,10 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 						s.min,
 						s.max
 					);
+
+					if (ImGui::IsItemHovered()) {
+						ImGui::SetTooltip("%s", s.tooltip.c_str());
+					}
 
 					if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
 						s.parameter = s.defaultVal;

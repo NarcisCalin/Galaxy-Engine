@@ -13,32 +13,35 @@
 
 struct settingsParams {
 	std::string text;
+	std::string tooltip;
 	bool& parameter;
 
-	settingsParams(const std::string& t, bool& p) : text(t), parameter(p) {}
+	settingsParams(const std::string& t, const std::string& tool, bool& p) : text(t), tooltip(tool), parameter(p) {}
 };
 
 template<typename T>
 struct visualSlidersParams {
 	std::string text;
+	std::string tooltip;
 	T& parameter;
 	T min;
 	T max;
 	const T defaultVal;
-	visualSlidersParams(const std::string& t, T& p, T min, T max)
-		: text(t), parameter(p), min(min), max(max), defaultVal(p) {
+	visualSlidersParams(const std::string& t, const std::string& tool, T& p, T min, T max)
+		: text(t), tooltip(tool), parameter(p), min(min), max(max), defaultVal(p) {
 	}
 };
 
 template<typename T>
 struct physicsSlidersParams {
 	std::string text;
+	std::string tooltip;
 	T& parameter;
 	T min;
 	T max;
 	const T defaultVal;
-	physicsSlidersParams(const std::string& t, T& p, T min, T max)
-		: text(t), parameter(p), min(min), max(max), defaultVal(p) {
+	physicsSlidersParams(const std::string& t, const std::string& tool, T& p, T min, T max)
+		: text(t), tooltip(tool), parameter(p), min(min), max(max), defaultVal(p) {
 	}
 };
 

@@ -18,9 +18,10 @@ struct UpdateParameters;
 
 struct rightClickParams {
 	std::string text;
+	std::string tooltip;
 	bool& parameter;
 
-	rightClickParams(const std::string& t, bool& p) : text(t), parameter(p) {}
+	rightClickParams(const std::string& t, const std::string& tool, bool& p) : text(t), tooltip(tool), parameter(p) {}
 };
 
 class RightClickSettings {
@@ -28,7 +29,7 @@ public:
 	Vector2 menuPos = { 0.0f, 0.0f };
 	Vector2 menuSize = { 0.0f, 0.0f };
 
-	void rightClickMenuSpawnLogic(bool& isMouseNotHoveringUI, bool& isSpawningAlone, bool& isDragging);
+	void rightClickMenuSpawnLogic(bool& isMouseNotHoveringUI, bool& isSpawningAlone, bool& isDragging, bool& selectedColor);
 
 	void rightClickMenu(UpdateVariables& myVar, UpdateParameters& myParam);
 
@@ -49,6 +50,7 @@ private:
 	float menuSliderGap = 28.0f;
 
 	bool selectedColorChanged = false;
+	bool selectedColorOriginal = false;
 
 	float pR = 1.0f;
 	float pG = 1.0f;

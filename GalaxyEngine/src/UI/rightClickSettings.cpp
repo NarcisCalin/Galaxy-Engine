@@ -2,7 +2,7 @@
 #include "../../include/parameters.h"
 
 void RightClickSettings::rightClickMenuSpawnLogic(bool& isMouseNotHoveringUI,
-	bool& isSpawningAllowed, bool& isDragging)
+	bool& isSpawningAllowed, bool& isDragging, bool& selectedColor)
 {
 	static bool     isMouseMoving = false;
 	static Vector2  dragStartPos = { 0.0f, 0.0f };
@@ -33,15 +33,20 @@ void RightClickSettings::rightClickMenuSpawnLogic(bool& isMouseNotHoveringUI,
 		!IsMouseButtonDown(0)){
 		isMenuActive = true;
 		spawnBlocked = false;
+		selectedColorOriginal = selectedColor;
 	}
 
 	if (IsMouseButtonPressed(0) &&
 		isMouseNotHoveringUI &&
-		isMenuActive){
+		isMenuActive &&
+		!isMouseOnMenu)
+	{
 		isMenuActive = false;
 		isSpawningAllowed = false;
 		isDragging = false;
 		spawnBlocked = true;
+		selectedColor = selectedColorOriginal;
+		selectedColorChanged = false;
 	}
 
 	else if (IsMouseButtonPressed(0) && 
@@ -56,24 +61,24 @@ void RightClickSettings::rightClickMenuSpawnLogic(bool& isMouseNotHoveringUI,
 
 void RightClickSettings::rightClickMenu(UpdateVariables& myVar, UpdateParameters& myParam) {
 
-	rightClickMenuSpawnLogic(myVar.isMouseNotHoveringUI, myParam.particlesSpawning.isSpawningAllowed, myVar.isDragging);
+	rightClickMenuSpawnLogic(myVar.isMouseNotHoveringUI, myParam.particlesSpawning.isSpawningAllowed, myVar.isDragging, myParam.colorVisuals.selectedColor);
 
 	if (isMenuActive) {
 
 		static std::array<rightClickParams, 13> rightClickButtons = {
-		rightClickParams("Subdivide All", myParam.subdivision.subdivideAll),
-		rightClickParams("Subdivide Selected", myParam.subdivision.subdivideSelected),
-		rightClickParams("Invert Particle Selec.", myParam.particleSelection.invertParticleSelection),
-		rightClickParams("Deselect All", myParam.particleSelection.deselectParticles),
-		rightClickParams("Follow selection", myParam.myCamera.centerCamera),
-		rightClickParams("Select Clusters", myParam.particleSelection.selectManyClusters),
-		rightClickParams("Delete Selection", myParam.particleDeletion.deleteSelection),
-		rightClickParams("Delete Stray Particles", myParam.particleDeletion.deleteNonImportant),
-		rightClickParams("Reset Custom Colors", resetParticleColors),
-		rightClickParams("Draw Z Curves", myVar.drawZCurves),
-		rightClickParams("Draw Quadtree", myVar.drawQuadtree),
-		rightClickParams("Enable Frames Export", myParam.screenCapture.isExportFramesEnabled),
-		rightClickParams("Safe Frames Export", myParam.screenCapture.isSafeFramesEnabled),
+		rightClickParams("Subdivide All", "Subdivide all normal particles", myParam.subdivision.subdivideAll),
+		rightClickParams("Subdivide Selected", "Subdivide all selected normal particles", myParam.subdivision.subdivideSelected),
+		rightClickParams("Invert Particle Selec.", "Invert the particle selection", myParam.particleSelection.invertParticleSelection),
+		rightClickParams("Deselect All", "Deselects all particles", myParam.particleSelection.deselectParticles),
+		rightClickParams("Follow selection", "Make the camera follow the selected particles", myParam.myCamera.centerCamera),
+		rightClickParams("Select Clusters", "Selects multiple clusters of particles", myParam.particleSelection.selectManyClusters),
+		rightClickParams("Delete Selection", "Deletes selected particles", myParam.particleDeletion.deleteSelection),
+		rightClickParams("Delete Stray Particles", "Deletes all particles that are not in groups", myParam.particleDeletion.deleteNonImportant),
+		rightClickParams("Reset Custom Colors", "Resets custom colors changed in the right click menu", resetParticleColors),
+		rightClickParams("Draw Z-Curves", "Display the particles indices, sorted by Z-Curves", myVar.drawZCurves),
+		rightClickParams("Draw Quadtree", "Display Barnes-Hut algorithm quadtree", myVar.drawQuadtree),
+		rightClickParams("Enable Frames Export", "Exports recorded frames to disk", myParam.screenCapture.isExportFramesEnabled),
+		rightClickParams("Safe Frames Export", "Store frames directly to the disk. Disabling it will make recording faster, but might crash if you run out of memory", myParam.screenCapture.isSafeFramesEnabled),
 		
 		};
 
@@ -81,13 +86,18 @@ void RightClickSettings::rightClickMenu(UpdateVariables& myVar, UpdateParameters
 		ImGui::SetNextWindowPos(ImVec2(GetMousePosition().x, GetMousePosition().y), ImGuiCond_Appearing);
 
 		if (ImGui::Begin("Right Click Menu", nullptr, ImGuiWindowFlags_NoCollapse)) {
-			if (ImGui::IsWindowHovered()) {
-				isMouseOnMenu = true;
-			}
-			else {
-				isMouseOnMenu = false;
-			}
+
+			bool hovered = ImGui::IsWindowHovered(
+				ImGuiHoveredFlags_AllowWhenBlockedByPopup |
+				ImGuiHoveredFlags_AllowWhenBlockedByActiveItem
+			);
+			isMouseOnMenu = hovered;
 		}
+
+		bool hovered = ImGui::IsWindowHovered(
+			ImGuiHoveredFlags_AllowWhenBlockedByPopup |
+			ImGuiHoveredFlags_AllowWhenBlockedByActiveItem
+		);
 
 		for (size_t i = 0; i < rightClickButtons.size(); i++) {
 
@@ -104,14 +114,22 @@ void RightClickSettings::rightClickMenu(UpdateVariables& myVar, UpdateParameters
 				isMenuActive = false;
 			}
 
+			if (ImGui::IsItemHovered()) {
+				ImGui::SetTooltip("%s", rightClickButtons[i].tooltip.c_str());
+			}
+
 			ImGui::PopStyleColor(3);
 		}
 
 		ImGui::Text("Primary Color");
-		ImGui::ColorEdit4("##pCol", (float*)&pCol);
+		if (ImGui::ColorEdit4("##pCol", (float*)&pCol)) {
+			myParam.colorVisuals.selectedColor = false;
+		}
 
 		ImGui::Text("Secondary Color");
-		ImGui::ColorEdit4("##sCol", (float*)&sCol);
+		if (ImGui::ColorEdit4("##sCol", (float*)&sCol)) {
+			myParam.colorVisuals.selectedColor = false;
+		}
 
 		ImGui::End();
 
