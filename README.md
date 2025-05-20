@@ -26,8 +26,7 @@ Special thanks to [Emily](https://github.com/Th3T3chn0G1t) for helping me on mul
 
 ![SPH1](https://github.com/user-attachments/assets/926cdae3-43f9-48a5-9f97-5aa2dd4785ec)
 
-
-![BigBangBanner](https://github.com/user-attachments/assets/a3e2bef5-d9b0-4175-91f6-7edd0d532a44)
+![BigBang](https://github.com/user-attachments/assets/e5bea8d7-f937-427a-90aa-38e5c59fd861)
 
 ## Features
 ---
