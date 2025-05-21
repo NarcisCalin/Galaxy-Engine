@@ -1308,9 +1308,17 @@
     <ClInclude Include="include\UX\camera.h" />
     <ClInclude Include="include\UX\saveSystem.h" />
     <ClInclude Include="include\UX\screenCapture.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="resource1.h" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="include\raylib\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="src\GalaxyEngineIcon.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="resources.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

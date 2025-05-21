@@ -5,6 +5,23 @@ cmake_policy(SET CMP0077 NEW)
 # Set the project name
 project(GalaxyEngine)
 
+# Windows icon resource setup
+if(WIN32)
+    set(RC_FILE ${CMAKE_CURRENT_SOURCE_DIR}/resources.rc)
+    set(RC_OBJ ${CMAKE_CURRENT_BINARY_DIR}/resources.obj)
+    set(ICON_PATH ${CMAKE_CURRENT_SOURCE_DIR}/src/GalaxyEngineIcon.ico)
+
+    # Compile the .rc file using llvm-rc
+    add_custom_command(OUTPUT ${RC_OBJ}
+        COMMAND llvm-rc /fo ${RC_OBJ} ${RC_FILE}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        DEPENDS ${RC_FILE} ${ICON_PATH}
+        COMMENT "Compiling icon resource: ${RC_FILE}"
+    )
+
+    add_custom_target(icon_resource ALL DEPENDS ${RC_OBJ})
+endif()
+
 # Download and build raylib
 set(BUILD_EXAMPLES OFF)
 include(FetchContent)
@@ -173,7 +190,19 @@ list(TRANSFORM GALAXYENGINE_SOURCES PREPEND ${CMAKE_CURRENT_LIST_DIR}/src/)
 set(ALL_SOURCES ${GALAXYENGINE_SOURCES} ${IMGUI_SOURCES})
 
 # Declare the executable with all sources
-add_executable(GalaxyEngine ${ALL_SOURCES})
+if(WIN32)
+    add_executable(GalaxyEngine WIN32 ${ALL_SOURCES} ${RC_OBJ})
+    
+    # For Clang on Windows, we need to use -Xlinker to pass options to the linker
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        target_link_options(GalaxyEngine PRIVATE -Xlinker /ENTRY:mainCRTStartup)
+    else()
+        # For MSVC or other compilers
+        target_link_options(GalaxyEngine PRIVATE /ENTRY:mainCRTStartup)
+    endif()
+else()
+    add_executable(GalaxyEngine ${ALL_SOURCES})
+endif()
 
 # Set C++ version
 target_compile_features(GalaxyEngine PRIVATE cxx_std_17)
