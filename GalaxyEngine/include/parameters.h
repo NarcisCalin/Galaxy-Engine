@@ -140,5 +140,5 @@ struct UpdateVariables{
 
 	bool longExposure = false;
 
-	ImFont* specialFont = nullptr;
+	ImFont* robotoMediumFont = nullptr;
 };

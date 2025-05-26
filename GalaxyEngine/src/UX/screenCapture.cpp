@@ -266,7 +266,7 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 
 		ImGui::Begin("Recording Menu", nullptr, ImGuiWindowFlags_NoCollapse);
 
-		ImGui::PushFont(myVar.specialFont);
+		ImGui::PushFont(myVar.robotoMediumFont);
 
 		ImGui::SetWindowFontScale(1.5f);
 

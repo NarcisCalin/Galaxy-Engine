@@ -82,9 +82,9 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		visualSlidersParams<int>("Max Neighbors", "Controls the maximum neighbor count range", myParam.colorVisuals.maxNeighbors, 1, 500),
 		visualSlidersParams<float>("Max Color Force", "Controls the acceleration threshold to use the secondary color", myParam.colorVisuals.maxColorAcc, 1.0f, 400.0f),
 		visualSlidersParams<float>("Max Size Force", "Controls the acceleration threshold to map the particle size", myParam.densitySize.sizeAcc, 1.0f, 400.0f),
-		visualSlidersParams<float>("Max DeltaV Accel", "Controls the change in speed threshold to map the particle color in DeltaV color mode", myParam.colorVisuals.deltaVMaxAccel, 1.0f, 40.0f),
+		visualSlidersParams<float>("Max DeltaV Accel", "Controls the change in speed threshold to map the particle color in DeltaV color mode", myParam.colorVisuals.deltaVMaxAccel, 0.1f, 40.0f),
 		visualSlidersParams<float>("Max Velocity Color", "Controls the max velocity used to map the colors in the velocity color mode", myParam.colorVisuals.maxVel, 10.0f, 10000.0f),
-		visualSlidersParams<float>("Max Pressure Color", "Controls the max pressure used to map the colors in the pressure color mode", myParam.colorVisuals.maxPress, 100.0f, 5000.0f),
+		visualSlidersParams<float>("Max Pressure Color", "Controls the max pressure used to map the colors in the pressure color mode", myParam.colorVisuals.maxPress, 100.0f, 100000.0f),
 		visualSlidersParams<int>("Trails Length", "Controls how long should the trails be. This feature is computationally expensive", myVar.trailMaxLength, 0, 1500),
 		visualSlidersParams<float>("Trails Thickness", "Controls the trails thickness", myParam.trails.trailThickness, 0.007f, 0.5f),
 		visualSlidersParams<float>("Particles Size", "Controls the size of all particles", myVar.particleSizeMultiplier, 0.1f, 5.0f),
@@ -313,12 +313,23 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				if constexpr (std::is_same_v<T, visualSlidersParams<float>>) {
 					ImGui::Text("%s", s.text.c_str());
 
-					ImGui::SliderFloat(
-						("##" + s.text).c_str(),
-						&s.parameter,
-						s.min,
-						s.max
-					);
+					if (s.min > 0.0f) {
+						ImGui::SliderFloat(
+							("##" + s.text).c_str(),
+							&s.parameter,
+							s.min,
+							s.max,
+							"%.3f", ImGuiSliderFlags_Logarithmic
+						);
+					}
+					else {
+						ImGui::SliderFloat(
+							("##" + s.text).c_str(),
+							&s.parameter,
+							s.min,
+							s.max
+						);
+					}
 
 					if (ImGui::IsItemHovered()) {
 						ImGui::SetTooltip("%s", s.tooltip.c_str());
@@ -463,7 +474,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 	ImGui::Begin("Stats", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
 
-	ImGui::PushFont(myVar.specialFont);
+	ImGui::PushFont(myVar.robotoMediumFont);
 
 	ImGui::SetWindowFontScale(1.5f);
 

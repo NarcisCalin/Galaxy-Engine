@@ -74,7 +74,7 @@ void SPH::PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleR
 
 	for (size_t i = 0; i < N; ++i) {
 		pParticles[i].press = 0.0f;
-		pParticles[i].pressV = { 0.0f, 0.0f };
+		pParticles[i].pressF = { 0.0f, 0.0f };
 	}
 
 	computeViscCohesionForces(pParticles, rParticles, sphForce, N);
@@ -200,13 +200,13 @@ void SPH::PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleR
 	for (size_t i = 0; i < N; ++i) {
 		auto& p = pParticles[i];
 
-		p.pressV = {
+		p.pressF = {
   sphForce[i].x / p.sphMass,
   sphForce[i].y / p.sphMass
 		};
 
-		p.acc.x += p.pressV.x;
-		p.acc.y += p.pressV.y;
+		p.acc.x += p.pressF.x;
+		p.acc.y += p.pressF.y;
 	}
 }
 
