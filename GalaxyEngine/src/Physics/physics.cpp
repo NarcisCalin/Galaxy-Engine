@@ -47,15 +47,30 @@ void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vecto
 			pParticle.vel.x += myVar.timeFactor * 1.5f * pParticle.acc.x;
 			pParticle.vel.y += myVar.timeFactor * 1.5f * pParticle.acc.y;
 
+			// Max velocity for SPH
+			if (myVar.isSPHEnabled) {
+				const float sphMaxVelSq = myVar.sphMaxVel * myVar.sphMaxVel;
+				float vSq = pParticle.vel.x * pParticle.vel.x + pParticle.vel.y * pParticle.vel.y;
+				if (vSq > sphMaxVelSq) {
+					float invLen = myVar.sphMaxVel / sqrtf(vSq);
+					pParticle.vel.x *= invLen;
+					pParticle.vel.y *= invLen;
+				}
+			}
+
 			pParticle.pos.x += pParticle.vel.x * myVar.timeFactor;
 			pParticle.pos.y += pParticle.vel.y * myVar.timeFactor;
-		
-			if (!sphGround) {
-				if (pParticle.pos.x < 0) pParticle.pos.x += myVar.domainSize.x;
-				else if (pParticle.pos.x >= myVar.domainSize.x) pParticle.pos.x -= myVar.domainSize.x;
 
-				if (pParticle.pos.y < 0) pParticle.pos.y += myVar.domainSize.y;
-				else if (pParticle.pos.y >= myVar.domainSize.y) pParticle.pos.y -= myVar.domainSize.y;
+			if (!sphGround) {
+				if (pParticle.pos.x < 0)
+					pParticle.pos.x += myVar.domainSize.x;
+				else if (pParticle.pos.x >= myVar.domainSize.x)
+					pParticle.pos.x -= myVar.domainSize.x;
+
+				if (pParticle.pos.y < 0)
+					pParticle.pos.y += myVar.domainSize.y;
+				else if (pParticle.pos.y >= myVar.domainSize.y)
+					pParticle.pos.y -= myVar.domainSize.y;
 			}
 		}
 	}

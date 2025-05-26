@@ -25,7 +25,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 				Vector2{ slingshot.normalizedX * slingshot.length, slingshot.normalizedY * slingshot.length },
 				heavyParticleInitMass * heavyParticleWeightMultiplier,
 
-				1.0f,
+				0.008f,
 				1.0f,
 				1.0f,
 				1.0f
@@ -97,7 +97,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 						velocityY + (slingshot.normalizedY * slingshot.length * 0.3f) },
 					8500000000.0f / particleAmountMultiplier,
 
-					1.0f,
+					0.008f,
 					1.0f,
 					1.0f,
 					1.0f
@@ -146,7 +146,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 						},
 						141600000000.0f / DMAmountMultiplier,
 
-						1.0f,
+						0.008f,
 						1.0f,
 						1.0f,
 						1.0f
@@ -220,7 +220,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 					},
 					8500000000.0f / particleAmountMultiplier,
 
-					1.0f,
+					0.008f,
 					1.0f,
 					1.0f,
 					1.0f
@@ -268,7 +268,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 						},
 						141600000000.0f / DMAmountMultiplier,
 
-						1.0f,
+						0.008f,
 						1.0f,
 						1.0f,
 						1.0f
@@ -309,7 +309,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 					Vector2{ (slingshot.normalizedX * slingshot.length * 0.3f),  +(slingshot.normalizedY * slingshot.length * 0.3f) },
 					8500000000.0f / particleAmountMultiplier,
 
-					1.0f,
+					0.008f,
 					1.0f,
 					1.0f,
 					1.0f
@@ -363,7 +363,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 					Vector2{ vel.x, vel.y },
 					8500000000.0f / particleAmountMultiplier,
 
-					1.0f,
+					0.008f,
 					1.0f,
 					1.0f,
 					1.0f
@@ -414,7 +414,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 						Vector2{ vel.x, vel.y },
 						141600000000.0f / DMAmountMultiplier,
 
-						1.0f,
+						0.008f,
 						1.0f,
 						1.0f,
 						1.0f

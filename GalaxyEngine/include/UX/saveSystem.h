@@ -34,6 +34,7 @@ public:
 		WRITE(ForceColor, myParam.colorVisuals.forceColor);
 		WRITE(VelocityColor, myParam.colorVisuals.velocityColor);
 		WRITE(DeltaVColor, myParam.colorVisuals.deltaVColor);
+		WRITE(PressureColor, myParam.colorVisuals.pressureColor);
 		WRITE(SPHColor, myParam.colorVisuals.SPHColor);
 		WRITE(SelectedColor, myParam.colorVisuals.selectedColor);
 		WRITE(DarkMatter, myVar.isDarkMatterEnabled);
@@ -76,17 +77,20 @@ public:
 		WRITE(HeavyParticlesMass, myParam.particlesSpawning.heavyParticleWeightMultiplier);
 		WRITE(CollisionBounciness, myVar.particleBounciness);
 		WRITE(SPHRestDens, sph.restDensity);
-		WRITE(SPHStiffness, sph.stiffness);
 		WRITE(SPHRadiusMult, sph.radiusMultiplier);
 		WRITE(SPHMass, sph.mass);
 		WRITE(SPHViscosity, sph.viscosity);
 		WRITE(SPHCohesion, sph.cohesionCoefficient);
 		WRITE(SPHGround, myVar.sphGround);
+		WRITE(SPHDelta, sph.delta);
+		WRITE(SPHMaxVel, myVar.sphMaxVel);
 		WRITE(DomainWidth, myVar.domainSize.x);
 		WRITE(DomainHeight, myVar.domainSize.y);
 		WRITE(CameraTarget, myParam.myCamera.camera.target);
 		WRITE(CameraOffset, myParam.myCamera.camera.offset);
 		WRITE(CameraZoom, myParam.myCamera.camera.zoom);
+		WRITE(ColorMaxVel, myParam.colorVisuals.maxVel);
+		WRITE(ColorMaxPressure, myParam.colorVisuals.maxPress);
 
 #undef WRITE
 
@@ -120,6 +124,7 @@ public:
 			READ(ForceColor, myParam.colorVisuals.forceColor);
 			READ(VelocityColor, myParam.colorVisuals.velocityColor);
 			READ(DeltaVColor, myParam.colorVisuals.deltaVColor);
+			READ(PressureColor, myParam.colorVisuals.pressureColor);
 			READ(SPHColor, myParam.colorVisuals.SPHColor);
 			READ(SelectedColor, myParam.colorVisuals.selectedColor);
 			READ(DarkMatter, myVar.isDarkMatterEnabled);
@@ -162,17 +167,21 @@ public:
 			READ(HeavyParticlesMass, myParam.particlesSpawning.heavyParticleWeightMultiplier);
 			READ(CollisionBounciness, myVar.particleBounciness);
 			READ(SPHRestDens, sph.restDensity);
-			READ(SPHStiffness, sph.stiffness);
 			READ(SPHRadiusMult, sph.radiusMultiplier);
 			READ(SPHMass, sph.mass);
 			READ(SPHViscosity, sph.viscosity);
 			READ(SPHCohesion, sph.cohesionCoefficient);
 			READ(SPHGround, myVar.sphGround);
+			READ(SPHDelta, sph.delta);
+			READ(SPHMaxVel, myVar.sphMaxVel);
 			READ(DomainWidth, myVar.domainSize.x);
 			READ(DomainHeight, myVar.domainSize.y);
 			READ(CameraTarget, myParam.myCamera.camera.target);
 			READ(CameraOffset, myParam.myCamera.camera.offset);
 			READ(CameraZoom, myParam.myCamera.camera.zoom);
+			READ(ColorMaxVel, myParam.colorVisuals.maxVel);
+			READ(ColorMaxPressure, myParam.colorVisuals.maxPress);
+			
 #undef READ
 			else if (key == "numParticles") {
 				size_t n;

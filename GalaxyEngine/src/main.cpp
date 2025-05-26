@@ -119,13 +119,6 @@ static void updateScene() {
 			myParam.pParticles[i].acc = { 0.0f, 0.0f };
 		}
 
-		if (myVar.isSPHEnabled) {
-			sph.Solver(myParam.pParticles, myParam.rParticles, myVar.timeFactor, myVar.domainSize, myVar.sphGround);
-		}
-		else {
-			myVar.sphGround = false;
-		}
-
 #pragma omp parallel for schedule(dynamic)
 		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 
@@ -133,8 +126,12 @@ static void updateScene() {
 
 			Vector2 netForce = physics.calculateForceFromGrid(*grid, myParam.pParticles, myVar, pParticle);
 
-			pParticle.acc.x += netForce.x / pParticle.mass;
-			pParticle.acc.y += netForce.y / pParticle.mass;
+			pParticle.acc.x = netForce.x / pParticle.mass;
+			pParticle.acc.y = netForce.y / pParticle.mass;
+		}
+
+		if (myVar.isSPHEnabled) {
+			sph.pcisphSolver(myParam.pParticles, myParam.rParticles, myVar.timeFactor, myVar.domainSize, myVar.sphGround);
 		}
 
 		ship.spaceshipLogic(myParam.pParticles, myParam.rParticles, myVar.isShipGasEnabled);
@@ -328,7 +325,12 @@ int main() {
 
 	SetConfigFlags(FLAG_WINDOW_RESIZABLE);
 
+
+
 	InitWindow(myVar.screenWidth, myVar.screenHeight, "Galaxy Engine");
+
+	Image icon = LoadImage("Textures/WindowIcon.png");
+	SetWindowIcon(icon);
 
 	rlImGuiSetup(true);
 
@@ -456,6 +458,7 @@ int main() {
 	UnloadTexture(particleBlurTex);
 	UnloadRenderTexture(myParticlesTexture);
 	UnloadRenderTexture(myUITexture);
+	UnloadImage(icon);
 
 	CloseWindow();
 

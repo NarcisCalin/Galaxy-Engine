@@ -44,8 +44,11 @@ struct ColorVisuals {
 	float deltaVMaxAccel = 5.0f;
 	float deltaVMinAccel = 0.0f;
 
-	float maxVel = 11000.0f;
+	float maxVel = 100.0f;
 	float minVel = 0.0f;
+
+	float maxPress = 1000.0f;
+	float minPress = 0.0f;
 
 	Vector2 prevVel = { 0.0f, 0.0f };
 
@@ -173,6 +176,25 @@ struct ColorVisuals {
 
 			}
 				blendMode = 0;
+		}
+
+		if (pressureColor) {
+#pragma omp parallel for schedule(dynamic)
+			for (size_t i = 0; i < pParticles.size(); i++) {
+
+				float clampedPress = std::clamp(pParticles[i].press, minPress, maxPress);
+				float normalizedPress = clampedPress / maxPress;
+
+				hue = (1.0f - normalizedPress) * 240.0f;
+				saturation = 1.0f;
+				value = 1.0f;
+
+				if (!rParticles[i].uniqueColor) {
+					rParticles[i].color = ColorFromHSV(hue, saturation, value);
+				}
+			}
+
+			blendMode = 0;
 		}
 
 		if (SPHColor) {

@@ -17,17 +17,23 @@ struct ParticlePhysics {
 	Vector2 pos;
 	Vector2 predPos;
 	Vector2 vel;
+	Vector2 predVel;
 	Vector2 prevVel;
 	Vector2 acc;
-	float   mass;
+	float mass;
 
 	// SPH Parameters
-	float pressF;
+	float press;
+	float pressTmp;
+	float delta;
+	Vector2 pressV;
+	Vector2 force;
 	float dens;
+	float predDens;
 	float sphMass;
 
 	// SPH Input parameters
-	float restPress;
+	float restDens;
 	float stiff;
 	float visc;
 	float cohesion;
@@ -36,28 +42,35 @@ struct ParticlePhysics {
 	// Default constructor
 	ParticlePhysics()
 		: pos{ 0,0 }, predPos{ 0,0 }, vel{ 0,0 }, prevVel{ 0,0 }, acc{ 0,0 },
-		mass(1.0f), pressF(0.0f), dens(0.0f), sphMass(0.0f),
-		restPress(0.0f), stiff(0.0f), visc(0.0f), cohesion(0.0f),
+		mass(1.0f), press(0.0f), dens(0.0f), sphMass(0.0f),
+		restDens(0.0f), stiff(0.0f), visc(0.0f), cohesion(0.0f),
 		mortonKey(0)
 	{
 	}
 
 	// Parameterized constructor
-	ParticlePhysics(Vector2 pos, Vector2 vel, float mass, float restPress, float stiff, float visc, float cohesion) {
+	ParticlePhysics(Vector2 pos, Vector2 vel, float mass, float restDens, float stiff, float visc, float cohesion) {
 		this->pos = pos;
 		this->predPos = { 0.0f, 0.0f };
 		this->vel = vel;
+		this->predVel = { 0.0f, 0.0f };
 		this->prevVel = vel;
 		this->acc = { 0.0f, 0.0f };
 		this->mass = mass;
 
 		// SPH Parameters
-		this->pressF = 0.0f;
+		this->press = 0.0f;
+		this->pressTmp = 0.0f;
+		this->delta = 0.0f;
+		this->pressV = { 0.0f, 0.0f };
+		this->force = { 0.0f, 0.0f };
 		this->dens = 0.0f;
+		this->predDens = 0.0f;
+
 		this->sphMass = mass / 8500000000.0f; // I divide by the base standard mass
 
 		// SPH Input parameters
-		this->restPress = restPress;
+		this->restDens = restDens;
 		this->stiff = stiff;
 		this->visc = visc;
 		this->cohesion = cohesion;
@@ -76,10 +89,10 @@ inline std::ostream& operator<<(std::ostream& os, ParticlePhysics const& p) {
 		<< p.prevVel << ' '
 		<< p.acc << ' '
 		<< p.mass << ' '
-		<< p.pressF << ' '
+		<< p.press << ' '
 		<< p.dens << ' '
 		<< p.sphMass << ' '
-		<< p.restPress << ' '
+		<< p.restDens << ' '
 		<< p.stiff << ' '
 		<< p.visc << ' '
 		<< p.cohesion << ' '
@@ -94,10 +107,10 @@ inline std::istream& operator>>(std::istream& is, ParticlePhysics& p) {
 		>> p.prevVel.x >> p.prevVel.y
 		>> p.acc.x >> p.acc.y
 		>> p.mass
-		>> p.pressF
+		>> p.press
 		>> p.dens
 		>> p.sphMass
-		>> p.restPress
+		>> p.restDens
 		>> p.stiff
 		>> p.visc
 		>> p.cohesion

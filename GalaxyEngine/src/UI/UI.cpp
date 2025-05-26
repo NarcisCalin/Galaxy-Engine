@@ -41,7 +41,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	float contentRegionWidth = ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x;
 	float buttonX = (contentRegionWidth - settingsButtonX) * 0.5f;
 
-	static std::array<settingsParams, 28> settingsButtonsParams = {
+	static std::array<settingsParams, 29> settingsButtonsParams = {
 		settingsParams("Fullscreen", "Toggles fulscreen", myVar.fullscreenState),
 		settingsParams("Controls", "Open controls panel", myParam.controls.isShowControlsEnabled),
 		settingsParams("Information", "Open information panel", myParam.controls.isInformationEnabled),
@@ -52,8 +52,9 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		settingsParams("Solid Color", "Particles will only use the primary color", myParam.colorVisuals.solidColor),
 		settingsParams("Density Color", "Maps particle neighbor amount to the primary and secondary colors", myParam.colorVisuals.densityColor),
 		settingsParams("Force Color", "Maps particle acceleration to the primary and secondary colors",myParam.colorVisuals.forceColor),
-		settingsParams("Velocity Color", "Maps particle velocity to the primary and secondary colors", myParam.colorVisuals.velocityColor),
-		settingsParams("DeltaV Color", "Maps particle change in speed to the primary and secondary colors", myParam.colorVisuals.deltaVColor),
+		settingsParams("Velocity Color", "Maps particle velocity to color", myParam.colorVisuals.velocityColor),
+		settingsParams("DeltaV Color", "Maps particle change in speed to color", myParam.colorVisuals.deltaVColor),
+		settingsParams("Pressure Color", "Maps particle pressure to color", myParam.colorVisuals.pressureColor),
 		settingsParams("SPH Color", "Uses the SPH materials colors", myParam.colorVisuals.SPHColor),
 		settingsParams("Selected Color", "Highlight selected particles", myParam.colorVisuals.selectedColor),
 		settingsParams("Dark Matter", "Enables dark matter particles. This works for galaxies and Big Bang", myVar.isDarkMatterEnabled),
@@ -76,12 +77,14 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	static std::array<std::variant<
 		visualSlidersParams<float>,
 		visualSlidersParams<int>>,
-		11> visualSliders = {
+		13> visualSliders = {
 		visualSlidersParams<float>("Density Radius", "Controls the neighbor search radius", myParam.neighborSearch.densityRadius, 0.0f, 7.0f),
 		visualSlidersParams<int>("Max Neighbors", "Controls the maximum neighbor count range", myParam.colorVisuals.maxNeighbors, 1, 500),
 		visualSlidersParams<float>("Max Color Force", "Controls the acceleration threshold to use the secondary color", myParam.colorVisuals.maxColorAcc, 1.0f, 400.0f),
 		visualSlidersParams<float>("Max Size Force", "Controls the acceleration threshold to map the particle size", myParam.densitySize.sizeAcc, 1.0f, 400.0f),
 		visualSlidersParams<float>("Max DeltaV Accel", "Controls the change in speed threshold to map the particle color in DeltaV color mode", myParam.colorVisuals.deltaVMaxAccel, 1.0f, 40.0f),
+		visualSlidersParams<float>("Max Velocity Color", "Controls the max velocity used to map the colors in the velocity color mode", myParam.colorVisuals.maxVel, 10.0f, 10000.0f),
+		visualSlidersParams<float>("Max Pressure Color", "Controls the max pressure used to map the colors in the pressure color mode", myParam.colorVisuals.maxPress, 100.0f, 5000.0f),
 		visualSlidersParams<int>("Trails Length", "Controls how long should the trails be. This feature is computationally expensive", myVar.trailMaxLength, 0, 1500),
 		visualSlidersParams<float>("Trails Thickness", "Controls the trails thickness", myParam.trails.trailThickness, 0.007f, 0.5f),
 		visualSlidersParams<float>("Particles Size", "Controls the size of all particles", myVar.particleSizeMultiplier, 0.1f, 5.0f),
@@ -93,7 +96,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	static std::array<std::variant<
 		physicsSlidersParams<float>,
 		physicsSlidersParams<int>>,
-		16> physicsSliders = {
+		17> physicsSliders = {
 		physicsSlidersParams<float>("Softening", "Controls the smoothness of the gravity forces", myVar.softening, 1.0f, 30.0f),
 		physicsSlidersParams<float>("Theta", "Controls the quality of the gravity calculation. Higher means lower quality", myVar.theta, 0.1f, 5.0f),
 		physicsSlidersParams<float>("Time Scale", "Controls how fast time passes", myVar.timeStepMultiplier, 0.0f, 15.0f),
@@ -105,12 +108,13 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		physicsSlidersParams<float>("Domain Height", "Controls the height of the global container", myVar.domainSize.y, 200.0f, 2160.0f),
 		physicsSlidersParams<int>("Threads Amount", "Controls the amount of cpu threads used by the simulation", myVar.threadsAmount, 1, 32),
 
-		physicsSlidersParams<float>("SPH Rest Density", "Controls what the density should be in equilibrium", sph.restDensity, 0.01f, 5.0f),
-		physicsSlidersParams<float>("SPH Stiffness", "Controls how rigid particles are", sph.stiffness, 0.0f, 300.0f),
+		physicsSlidersParams<float>("SPH Rest Density", "Controls what the density should be in equilibrium", sph.restDensity, 0.001f, 10.0f),
 		physicsSlidersParams<float>("SPH Radius", "Controls the hitbox of the particles in SPH mode", sph.radiusMultiplier, 0.1f, 4.0f),
-		physicsSlidersParams<float>("SPH Mass Multiplier", "Controls the fluid mass of particles", sph.mass, 0.05f, 0.15f),
-		physicsSlidersParams<float>("SPH Viscosity", "Controls how viscous particles are", sph.viscosity, 1.0f, 250.0f),
+		physicsSlidersParams<float>("SPH Mass Multiplier", "Controls the fluid mass of particles", sph.mass, 0.005f, 0.15f),
+		physicsSlidersParams<float>("SPH Viscosity", "Controls how viscous particles are", sph.viscosity, 0.01f, 15.0f),
 		physicsSlidersParams<float>("SPH Cohesion", "Controls how sticky particles are", sph.cohesionCoefficient, 0.0f, 10.0f),
+		physicsSlidersParams<float>("SPH Delta", "Controls the scaling factor in the pressure solver to enforce fluid incompressibility", sph.delta, 500.0f, 20000.0f),
+		physicsSlidersParams<float>("SPH Max Velocity", "Controls the maximum velocity a particle can have in SPH mode", myVar.sphMaxVel, 0.0f, 2000.0f),
 	};
 
 	float oldSpacingY = ImGui::GetStyle().ItemSpacing.y;

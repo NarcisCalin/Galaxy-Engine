@@ -39,7 +39,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 				Vector2{ 0, 0 },
 				8500000000.0f / myParam.particlesSpawning.particleAmountMultiplier,
 
-				1.0f,
+				0.008f,
 				1.0f,
 				1.0f,
 				1.0f);
@@ -65,7 +65,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 					Vector2{ 0, 0 },
 					(8500000000.0f * water.massMult) / myParam.particlesSpawning.particleAmountMultiplier,
 
-					water.restPress,
+					water.restDens,
 					water.stiff,
 					water.visc,
 					water.cohesion);
@@ -91,7 +91,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 					Vector2{ 0, 0 },
 					(8500000000.0f * rock.massMult) / myParam.particlesSpawning.particleAmountMultiplier,
 
-					rock.restPress,
+					rock.restDens,
 					rock.stiff,
 					rock.visc,
 					rock.cohesion);
@@ -141,7 +141,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 					Vector2{ 0, 0 },
 					(8500000000.0f * sand.massMult) / myParam.particlesSpawning.particleAmountMultiplier,
 
-					sand.restPress,
+					sand.restDens,
 					sand.stiff,
 					sand.visc,
 					sand.cohesion);
@@ -191,7 +191,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 					Vector2{ 0, 0 },
 					(8500000000.0f * mud.massMult) / myParam.particlesSpawning.particleAmountMultiplier,
 
-					mud.restPress,
+					mud.restDens,
 					mud.stiff,
 					mud.visc,
 					mud.cohesion);

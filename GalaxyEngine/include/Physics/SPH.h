@@ -9,6 +9,7 @@
 #include <algorithm>
 
 struct UpdateVariables;
+struct UpdateVariables;
 
 struct GridCell {
 	std::vector<size_t> particleIndices;
@@ -16,14 +17,19 @@ struct GridCell {
 
 class SPH {
 public:
-	float restDensity = 1.24f;
-	float stiffness = 100.0f;
+	float restDensity = 0.008f;
 	float radiusMultiplier = 3.0f;
 	float radiusSq = radiusMultiplier * radiusMultiplier;
-	float mass = 0.1f;
-	float viscosity = 15.0f;
+	float mass = 0.03f;
+	float viscosity = 0.1f;
 	float cohesionCoefficient = 1.0f;
-	const float boundDamping = -0.5f;
+	const float boundDamping = -0.1f;
+	float delta = 9500.0f;
+
+	float densTolerance = 0.08f;
+
+	int maxIter = 1; // I keep only 1 iteration when I don't use the density error condition
+	int iter = 0;
 
 	float cellSize;
 	std::unordered_map<size_t, GridCell> grid;
@@ -90,19 +96,42 @@ public:
 		}
 	}
 
-	void computeDensityPressure(std::vector<ParticlePhysics>& particles, std::vector<ParticleRendering>& rParticles);
-	void computeForces(std::vector<ParticlePhysics>& particles, std::vector<ParticleRendering>& rParticles);
-	void Integrate(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, float& dt, Vector2& domainSize, bool& sphGround);
+	// Currently unused
+	float computeDelta(const std::vector<Vector2>& kernelGradients, float dt, float mass, float restDensity) {
+		float beta = (dt * dt * mass * mass) / (restDensity * restDensity);
 
-	void Solver(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, float& dt, Vector2& domainSize, bool& sphGround) {
+		Vector2 sumGradW = { 0.0f, 0.0f };
+		float sumGradW_dot = 0.0f;
 
-		updateGrid(pParticles, rParticles);
-		computeDensityPressure(pParticles, rParticles);
-		computeForces(pParticles, rParticles);
+		for (const Vector2& gradW : kernelGradients) {
+			sumGradW.x += gradW.x;
+			sumGradW.y += gradW.y;
 
-		if (sphGround) {
-			Integrate(pParticles, rParticles, dt, domainSize, sphGround);
+			sumGradW_dot += gradW.x * gradW.x + gradW.y * gradW.y;
 		}
+
+		float sumDot = sumGradW.x * sumGradW.x + sumGradW.y * sumGradW.y;
+
+		float delta = -1.0f / (beta * (-sumDot - sumGradW_dot));
+
+		return delta;
 	}
 
+	void computeViscCohesionForces(std::vector<ParticlePhysics>& pParticles,
+		std::vector<ParticleRendering>& rParticles, std::vector<Vector2>& sphForce, size_t& N);
+
+	void groundModeBoundary(std::vector<ParticlePhysics>& pParticles,
+		std::vector<ParticleRendering>& rParticles, Vector2 domainSize);
+
+	void PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, float& dt);
+
+	void pcisphSolver(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, float& dt, Vector2& domainSize, bool& sphGround) {
+
+		updateGrid(pParticles, rParticles);
+		PCISPH(pParticles, rParticles, dt);
+
+		if (sphGround) {
+			groundModeBoundary(pParticles, rParticles, domainSize);
+		}
+	}
 };

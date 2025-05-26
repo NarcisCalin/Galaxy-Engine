@@ -73,7 +73,7 @@ struct UpdateVariables{
 	float halfDomainWidth = domainSize.x * 0.5f;
 	float halfDomainHeight = domainSize.y * 0.5f;
 
-	bool fullscreenState = true;
+	bool fullscreenState = false;
 
 	int targetFPS = 144;
 
@@ -82,6 +82,7 @@ struct UpdateVariables{
 	float softening = 2.5f;
 	float theta = 0.8f;
 	float timeStepMultiplier = 1.0f;
+	float sphMaxVel = 250.0f;
 
 	const float particleBaseMass = 8500000000.0f;
 

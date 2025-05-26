@@ -86,7 +86,7 @@ void ParticleSubdivision::subdivideParticles(UpdateVariables& myVar, UpdateParam
 							newPos, 
 							myParam.pParticles[i].vel, 
 							myParam.pParticles[i].mass / 4.0f,
-							myParam.pParticles[i].restPress,
+							myParam.pParticles[i].restDens,
 							myParam.pParticles[i].stiff,
 							myParam.pParticles[i].visc,
 							myParam.pParticles[i].cohesion

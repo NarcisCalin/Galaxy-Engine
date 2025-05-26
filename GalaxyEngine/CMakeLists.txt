@@ -191,7 +191,7 @@ set(ALL_SOURCES ${GALAXYENGINE_SOURCES} ${IMGUI_SOURCES})
 
 # Declare the executable with all sources
 if(WIN32)
-    add_executable(GalaxyEngine WIN32 ${ALL_SOURCES} ${RC_OBJ})
+    add_executable(GalaxyEngine ${ALL_SOURCES} ${RC_OBJ})
     
     # For Clang on Windows, we need to use -Xlinker to pass options to the linker
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -203,6 +203,7 @@ if(WIN32)
 else()
     add_executable(GalaxyEngine ${ALL_SOURCES})
 endif()
+
 
 # Set C++ version
 target_compile_features(GalaxyEngine PRIVATE cxx_std_17)
@@ -219,7 +220,7 @@ find_package(OpenMP)
 # If OpenMP is found natively, link it
 if(OpenMP_CXX_FOUND)
     message(STATUS "OpenMP found natively")
-    target_link_libraries(GalaxyEngine PUBLIC OpenMP::OpenMP_CXX)
+    target_link_libraries(GalaxyEngine PUBLIC ${OpenMP_CXX_LIBRARIES})
 else()
     # Apply manual fixes based on compiler and OS
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")

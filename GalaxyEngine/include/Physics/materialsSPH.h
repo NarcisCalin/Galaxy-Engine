@@ -5,10 +5,10 @@ struct SPHWater {
 
 	float massMult = 0.6f;
 
-	float restPress = 0.5f;
-	float stiff = 0.1f;
-	float visc = 0.095f;
-	float cohesion = 1.0f;
+	float restDens = 0.095f;
+	float stiff = 1.0f;
+	float visc = 0.075f;
+	float cohesion = 0.05f;
 
 	Color color = { 30, 65, 230, 150 };
 };
@@ -17,8 +17,8 @@ struct SPHRock {
 
 	float massMult = 4.0f;
 
-	float restPress = 1.0f;
-	float stiff = 2.1f;
+	float restDens = 0.008f;
+	float stiff = 1.4f;
 	float visc = 3.0f;
 	float cohesion = 1750.0f;
 
@@ -29,7 +29,7 @@ struct SPHSand {
 
 	float massMult = 2.1f;
 
-	float restPress = 1.0f;
+	float restDens = 0.008f;
 	float stiff = 1.255f;
 	float visc = 0.74f;
 	float cohesion = 1.0f;
@@ -41,7 +41,7 @@ struct SPHMud {
 
 	float massMult = 2.5f;
 
-	float restPress = 1.0f;
+	float restDens = 0.008f;
 	float stiff = 1.0f;
 	float visc = 2.23f;
 	float cohesion = 3000.0f;
@@ -53,7 +53,7 @@ struct SPHAir {
 
 	float massMult = 0.45f;
 
-	float restPress = 0.20f;
+	float restDens = 0.20f;
 	float stiff = 0.01f;
 	float visc = 0.07f;
 	float cohesion = 1.0f;
