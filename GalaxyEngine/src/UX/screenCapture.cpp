@@ -130,7 +130,7 @@ std::string ScreenCapture::generateVideoFilename() {
 
 bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariables& myVar) {
 
-	if (IsKeyPressed(KEY_S)) {
+	if (IO::handleShortcut(KEY_S)) {
 		if (!std::filesystem::exists("Screenshots")) {
 			std::filesystem::create_directory("Screenshots");
 		}
@@ -165,7 +165,7 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 	// There is a bug running the game on X11 on linux where the R key doesn't work
 	// on windowed mode. Possibly an upstream issue with either X11 or FFMPEG.
 	// TODO: Investigate this bug further.
-	if (IsKeyPressed(KEY_R)) {
+	if (IO::handleShortcut(KEY_R)) {
 		if (!isFunctionRecording && !isSafeFramesEnabled) {
 			for (Image& frame : myFrames) {
 				UnloadImage(frame);

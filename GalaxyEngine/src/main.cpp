@@ -74,7 +74,7 @@ static void updateScene() {
 
 	myVar.G = 6.674e-11 * myVar.gravityMultiplier;
 
-	if (IsKeyPressed(KEY_SPACE)) {
+	if (IO::handleShortcut(KEY_SPACE)) {
 		myVar.isTimePlaying = !myVar.isTimePlaying;
 	}
 
@@ -282,7 +282,7 @@ static void enableMultiThreading() {
 void fullscreenToggle(int& lastScreenWidth, int& lastScreenHeight, 
 	bool& wasFullscreen, bool& lastScreenState, 
 	RenderTexture2D& myParticlesTexture, RenderTexture2D& myUITexture) {
-	if (IsKeyPressed(KEY_TAB)) {
+	if (IO::handleShortcut(KEY_TAB)) {
 		myVar.fullscreenState = !myVar.fullscreenState;
 	}
 

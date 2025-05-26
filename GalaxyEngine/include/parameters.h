@@ -139,6 +139,5 @@ struct UpdateVariables{
 	int threadsAmount = 16;
 
 	bool longExposure = false;
-
 	ImFont* robotoMediumFont = nullptr;
 };

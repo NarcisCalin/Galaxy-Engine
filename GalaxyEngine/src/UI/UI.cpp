@@ -5,7 +5,7 @@
 void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, SaveSystem& save) {
 
 
-	if (IsKeyPressed(KEY_U)) {
+	if (IO::handleShortcut(KEY_U)) {
 		showSettings = !showSettings;
 	}
 
