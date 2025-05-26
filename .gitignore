@@ -9,7 +9,8 @@ build/
 GalaxyEngine/build/
 
 # Output directories
-GalaxyEngine/Videos/
+GalaxyEngine/Video_*
+GalaxyEngine/Frame_*
 GalaxyEngine/Screenshot_*
 GalaxyEngine/Screenshots/
 GalaxyEngine/compilerCommand.txt
