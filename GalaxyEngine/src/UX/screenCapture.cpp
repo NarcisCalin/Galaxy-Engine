@@ -5,7 +5,8 @@
 #include <string>
 #include <algorithm>
 #include <regex>
-#include <sstream>         
+#include <sstream>
+#include <cstring>         
 #ifdef _WIN32
 #include <io.h>          
 #include <fcntl.h>    
@@ -39,8 +40,93 @@ extern "C" {
 }
 #endif
 
-AVFormatContext* pFormatCtx = nullptr;
-std::string outFileName;
+void ScreenCapture::cleanupFFmpeg() {
+	if (pCodecCtx) {
+		avcodec_send_frame(pCodecCtx, nullptr);
+
+		AVPacket* pkt = av_packet_alloc();
+		if (pkt) {
+			while (avcodec_receive_packet(pCodecCtx, pkt) == 0) {
+				av_packet_unref(pkt);
+			}
+			av_packet_free(&pkt);
+		}
+	}
+
+	if (swsCtx) {
+		sws_freeContext(swsCtx);
+		swsCtx = nullptr;
+	}
+	
+	if (frame) {
+		av_frame_free(&frame);
+		frame = nullptr;
+	}
+	
+	if (pCodecCtx) {
+		avcodec_free_context(&pCodecCtx);
+		pCodecCtx = nullptr;
+	}
+	
+	if (pFormatCtx) {
+		if (pFormatCtx->oformat && !(pFormatCtx->oformat->flags & AVFMT_NOFILE)) {
+			avio_closep(&pFormatCtx->pb);
+		}
+		avformat_free_context(pFormatCtx);
+		pFormatCtx = nullptr;
+	}
+	
+	pStream = nullptr;
+	frameIndex = 0;
+}
+
+void ScreenCapture::exportFrameToFile(const Image& frame, const std::string& framesFolder, int frameNumber) {
+	Image frameCopy = frame;
+	ImageFlipVertical(&frameCopy);
+	
+	std::string filename = framesFolder + "/Frame_" + std::to_string(frameNumber) + ".png";
+	ExportImage(frameCopy, filename.c_str());
+	
+	UnloadImage(frameCopy);
+}
+
+void ScreenCapture::createFramesFolder(const std::string& folderPath) {
+	if (!std::filesystem::exists(folderPath)) {
+		std::filesystem::create_directory(folderPath);
+	}
+}
+
+void ScreenCapture::applyButtonStyle(const ImVec4& baseColor) {
+	ImGui::PushStyleColor(ImGuiCol_Button, baseColor);
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(baseColor.x + 0.1f, baseColor.y + 0.1f, baseColor.z + 0.1f, baseColor.w));
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(baseColor.x - 0.1f, baseColor.y - 0.1f, baseColor.z - 0.1f, baseColor.w));
+}
+
+void ScreenCapture::popButtonStyle() {
+	ImGui::PopStyleColor(3);
+}
+
+std::string ScreenCapture::generateVideoFilename() {
+	// Always use default Video_X pattern, custom naming happens at save time
+	int maxNumberFound = 0;
+	std::regex videoFileRegex(R"(Video_(\d+)\.mp4)");
+
+	if (std::filesystem::exists("Videos")) {
+		for (const auto& entry : std::filesystem::directory_iterator("Videos")) {
+			if (entry.is_regular_file()) {
+				std::string fileName = entry.path().filename().string();
+				std::smatch match;
+				if (std::regex_match(fileName, match, videoFileRegex)) {
+					int number = std::stoi(match[1].str());
+					maxNumberFound = std::max(maxNumberFound, number);
+				}
+			}
+		}
+	}
+
+	int nextAvailableNumber = maxNumberFound + 1;
+	return "Videos/Video_" + std::to_string(nextAvailableNumber) + ".mp4";
+}
 
 bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariables& myVar) {
 
@@ -74,16 +160,11 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 		UnloadImage(renderImage);
 		screenshotIndex++;
 	}
-
-	static bool recording = false;
-	static AVFormatContext* pFormatCtx = nullptr;
-	static AVCodecContext* pCodecCtx = nullptr;
-	static AVStream* pStream = nullptr;
-	static struct SwsContext* swsCtx = nullptr;
-	static AVFrame* frame = nullptr;
-	static int             frameIndex = 0;
-
-
+	
+	
+	// There is a bug running the game on X11 on linux where the R key doesn't work
+	// on windowed mode. Possibly an upstream issue with either X11 or FFMPEG.
+	// TODO: Investigate this bug further.
 	if (IsKeyPressed(KEY_R)) {
 		if (!isFunctionRecording && !isSafeFramesEnabled) {
 			for (Image& frame : myFrames) {
@@ -97,29 +178,21 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 
 			diskModeFrameIdx = 0;
 
-			int maxNumberFound = 0;
-			std::regex folderRegex(R"(Video_(\d+))");
-
-			for (const auto& entry : std::filesystem::directory_iterator(std::filesystem::current_path())) {
-				if (entry.is_directory()) {
-					std::string folderName = entry.path().filename().string();
-					std::smatch match;
-					if (std::regex_match(folderName, match, folderRegex)) {
-						int number = std::stoi(match[1].str());
-						maxNumberFound = std::max(maxNumberFound, number);
-					}
-				}
+			// Create Videos directory if it doesn't exist
+			if (!std::filesystem::exists("Videos")) {
+				std::filesystem::create_directory("Videos");
 			}
 
-			int nextAvailableNumber = maxNumberFound + 1;
-			folderName = "Video_" + std::to_string(nextAvailableNumber);
-
-			std::filesystem::create_directory(folderName);
-
-			outFileName = folderName + "/" + folderName + ".mp4";
-
-			if (!std::filesystem::exists(folderName)) {
-				std::cout << "Failed to create folder: " << folderName << std::endl;
+			// Generate filename based on custom name or default pattern
+			outFileName = generateVideoFilename();
+			
+			// Extract folder name for frame exports
+			size_t lastSlash = outFileName.find_last_of('/');
+			size_t lastDot = outFileName.find_last_of('.');
+			if (lastSlash != std::string::npos && lastDot != std::string::npos) {
+				folderName = outFileName.substr(lastSlash + 1, lastDot - lastSlash - 1);
+			} else {
+				folderName = "Video_1"; // fallback
 			}
 		}
 
@@ -163,8 +236,11 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 					return false;
 				}
 			}
-
-			avformat_write_header(pFormatCtx, nullptr);
+			// Write the stream header
+			if (avformat_write_header(pFormatCtx, nullptr) < 0) {
+				printf("Could not write header\n");
+				return false;
+			}
 
 			frame = av_frame_alloc();
 			frame->format = pCodecCtx->pix_fmt;
@@ -185,39 +261,36 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 			return true;
 		}
 		else {
-			avcodec_send_frame(pCodecCtx, nullptr);
-
-			AVPacket* pkt = av_packet_alloc();
-			if (!pkt) {
-				printf("Could not allocate packet\n");
-				return false;
-			}
-
-			while (avcodec_receive_packet(pCodecCtx, pkt) == 0) {
-				pkt->stream_index = pStream->index;
-				av_interleaved_write_frame(pFormatCtx, pkt);
-				av_packet_unref(pkt);
-			}
-
 			av_write_trailer(pFormatCtx);
-			av_packet_free(&pkt);
-
-			sws_freeContext(swsCtx);
-			av_frame_free(&frame);
-			avcodec_free_context(&pCodecCtx);
-			if (!(pFormatCtx->oformat->flags & AVFMT_NOFILE))
-				avio_closep(&pFormatCtx->pb);
-			avformat_free_context(pFormatCtx);
-
-			pFormatCtx = nullptr;
-			pCodecCtx = nullptr;
-			pStream = nullptr;
-			swsCtx = nullptr;
-			frame = nullptr;
+			cleanupFFmpeg();
 			isFunctionRecording = false;
 
-			printf("Stopped recording. File saved as '%s'\n", outFileName.c_str());
+			// Show save confirmation dialog
+			lastVideoPath = outFileName;
+			showSaveConfirmationDialog = true;
+
+			printf("Stopped recording. File saved as '%s'\\n", outFileName.c_str());
 		}
+	}
+
+	// Handle cancel recording request
+	if (cancelRecording && isFunctionRecording) {
+		cleanupFFmpeg();
+		isFunctionRecording = false;
+
+		if (std::filesystem::exists(outFileName)) {
+			std::filesystem::remove(outFileName);
+			printf("Recording cancelled and file deleted: %s\n", outFileName.c_str());
+		}
+
+		for (Image& frameImg : myFrames) {
+			UnloadImage(frameImg);
+		}
+		myFrames.clear();
+		std::vector<Image>().swap(myFrames);
+		diskModeFrameIdx = 0;
+
+		cancelRecording = false;
 	}
 
 	if (isFunctionRecording) {
@@ -231,7 +304,14 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 		int srcStride[1] = { 4 * w };
 
 		sws_scale(swsCtx, srcSlices, srcStride, 0, h, frame->data, frame->linesize);
-		frame->pts = av_rescale_q(frameIndex++, pCodecCtx->time_base, pStream->time_base);
+		
+		if (frame) {
+			if (pStream) {
+				frame->pts = av_rescale_q(frameIndex++, pCodecCtx->time_base, pStream->time_base);
+			} else {
+				frame->pts = frameIndex++;
+			}
+		}
 
 		avcodec_send_frame(pCodecCtx, frame);
 
@@ -242,8 +322,10 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 		}
 
 		while (avcodec_receive_packet(pCodecCtx, pkt) == 0) {
-			pkt->stream_index = pStream->index;
-			av_interleaved_write_frame(pFormatCtx, pkt);
+			if (pStream) {
+				pkt->stream_index = pStream->index;
+				av_interleaved_write_frame(pFormatCtx, pkt);
+			}
 			av_packet_unref(pkt);
 		}
 
@@ -260,45 +342,60 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 	float screenH = GetScreenHeight();
 
 	ImVec2 framesMenuSize = { 400.0f, 200.0f };
-	if (myFrames.size() > 0 || diskModeFrameIdx > 0) {
+	if (myFrames.size() > 0 || diskModeFrameIdx > 0 || isFunctionRecording) {
 		ImGui::SetNextWindowSize(framesMenuSize, ImGuiCond_Once);
-		ImGui::SetNextWindowPos(ImVec2(screenW * 0.5f - framesMenuSize.x * 0.5f, screenH * 0.5f - framesMenuSize.y * 0.5f), ImGuiCond_Appearing);
+		ImGui::SetNextWindowPos(ImVec2(screenW - framesMenuSize.x - 10.0f, 10.0f), ImGuiCond_Appearing);
 
 		ImGui::Begin("Recording Menu", nullptr, ImGuiWindowFlags_NoCollapse);
-
 		ImGui::PushFont(myVar.specialFont);
-
 		ImGui::SetWindowFontScale(1.5f);
 
 		if (diskModeFrameIdx > 0 && (isSafeFramesEnabled || isVideoExportEnabled)) {
-			ImGui::TextColored(ImVec4(0.8f, 0.0f, 0.0f, 1.0f), "%s%d", "Rendered Frames: ", diskModeFrameIdx);
+			float recordedSeconds = static_cast<float>(diskModeFrameIdx) / 60.0f;
+			ImGui::TextColored(ImVec4(0.8f, 0.0f, 0.0f, 1.0f), "Frames: %d (%.2f s)", diskModeFrameIdx, recordedSeconds);
 		}
 		else if (myFrames.size() > 0 && !isSafeFramesEnabled) {
-			ImGui::TextColored(ImVec4(0.8f, 0.0f, 0.0f, 1.0f), "%s%d", "Rendered Frames: ", static_cast<int>(myFrames.size()));
+			float recordedSeconds = static_cast<float>(myFrames.size()) / 60.0f;
+			ImGui::TextColored(ImVec4(0.8f, 0.0f, 0.0f, 1.0f), "Frames: %d (%.2f s)", static_cast<int>(myFrames.size()), recordedSeconds);
 		}
+
+		if (isFunctionRecording) {
+			ImGui::Separator();
+			
+			// Red cancel button
+			applyButtonStyle(ImVec4(0.8f, 0.2f, 0.2f, 1.0f));
+			
+			if (ImGui::Button("Cancel Recording", ImVec2(ImGui::GetContentRegionAvail().x, 40.0f))) {
+				cancelRecording = true;
+			}
+			
+			popButtonStyle();
+			
+			if (ImGui::IsItemHovered()) {
+				ImGui::SetTooltip("Stop recording and discard the video file");
+			}
+		}
+
+
 
 
 		if (myFrames.size() > 0 && !isFunctionRecording && !isSafeFramesEnabled) {
 
 			ImVec4& exportCol = exportMemoryFrames ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
-			ImGui::PushStyleColor(ImGuiCol_Button, exportCol);
-			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(exportCol.x + 0.1f, exportCol.y + 0.1f, exportCol.z + 0.1f, exportCol.w));
-			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(exportCol.x - 0.1f, exportCol.y - 0.1f, exportCol.z - 0.1f, exportCol.w));
+			applyButtonStyle(exportCol);
 
 			if (ImGui::Button("Export Frames", ImVec2(ImGui::GetContentRegionAvail().x, 40.0f))) {
 				exportMemoryFrames = !exportMemoryFrames;
 			}
-			ImGui::PopStyleColor(3);
+			popButtonStyle();
 
 			ImVec4& discardCol = deleteFrames ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
-			ImGui::PushStyleColor(ImGuiCol_Button, discardCol);
-			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(discardCol.x + 0.1f, discardCol.y + 0.1f, discardCol.z + 0.1f, discardCol.w));
-			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(discardCol.x - 0.1f, discardCol.y - 0.1f, discardCol.z - 0.1f, discardCol.w));
+			applyButtonStyle(discardCol);
 
 			if (ImGui::Button("Discard Frames", ImVec2(ImGui::GetContentRegionAvail().x, 40.0f))) {
 				deleteFrames = !deleteFrames;
 			}
-			ImGui::PopStyleColor(3);
+			popButtonStyle();
 
 			std::string warning = "EXPORTING MIGHT TAKE A WHILE";
 
@@ -311,6 +408,81 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 
 		}
 		ImGui::PopFont();
+		ImGui::End();
+	}
+
+	// Save confirmation dialog
+	if (showSaveConfirmationDialog) {
+		ImGui::SetNextWindowSize(ImVec2(400, 200), ImGuiCond_Always);
+		ImGui::SetNextWindowPos(ImVec2(screenW * 0.5f - 200, screenH * 0.5f - 90), ImGuiCond_Appearing);
+		ImGui::Begin("Save Recording?", &showSaveConfirmationDialog, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
+		ImGui::PushFont(myVar.specialFont);
+		ImGui::SetWindowFontScale(1.5f);
+
+		ImGui::Text("Do you want to save the recording?");
+		ImGui::Text("Current: %s", lastVideoPath.c_str());
+		
+		ImGui::Separator();
+		
+		// Custom name input
+		ImGui::Text("Custom Name (optional):");
+		static char nameBuffer[256] = "";
+		ImGui::InputText("##CustomVideoName", nameBuffer, sizeof(nameBuffer));
+		
+		if (ImGui::IsItemHovered()) {
+			ImGui::SetTooltip("Leave empty to keep current name");
+		}
+		
+		ImGui::Separator();
+		
+		if (ImGui::Button("Save", ImVec2(100, 30))) {
+			// Check if user entered a custom name
+			std::string customName = std::string(nameBuffer);
+			if (!customName.empty()) {
+				// Clean the custom name
+				customName.erase(std::remove_if(customName.begin(), customName.end(), 
+					[](char c) { return c == '<' || c == '>' || c == ':' || c == '"' || 
+								 c == '|' || c == '?' || c == '*' || c == '/'; }), customName.end());
+				
+				if (!customName.empty()) {
+					// Add .mp4 extension if not present
+					if (customName.length() < 4 || customName.substr(customName.length() - 4) != ".mp4") {
+						customName += ".mp4";
+					}
+					
+					std::string newPath = "Videos/" + customName;
+					
+					// Rename the file if the new name is different
+					if (newPath != lastVideoPath && std::filesystem::exists(lastVideoPath)) {
+						try {
+							std::filesystem::rename(lastVideoPath, newPath);
+							printf("Video renamed to: %s\n", newPath.c_str());
+						} catch (const std::exception& e) {
+							printf("Failed to rename video: %s\n", e.what());
+						}
+					}
+				}
+			}
+			
+			// Clear the buffer for next time
+			memset(nameBuffer, 0, sizeof(nameBuffer));
+			showSaveConfirmationDialog = false;
+		}
+		
+		ImGui::SameLine();
+		
+		if (ImGui::Button("Discard", ImVec2(100, 30))) {
+			if (std::filesystem::exists(lastVideoPath)) {
+				std::filesystem::remove(lastVideoPath);
+				printf("Recording discarded: %s\n", lastVideoPath.c_str());
+			}
+			
+			memset(nameBuffer, 0, sizeof(nameBuffer));
+			showSaveConfirmationDialog = false;
+		}
+
+		ImGui::PopFont();
+		
 		ImGui::End();
 	}
 
@@ -332,40 +504,28 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 
 		int numFrames = static_cast<int>(myFrames.size());
 
-		int maxNumberFound = 0;
-		std::regex folderRegex(R"(Video_(\d+))");
-
-		for (const auto& entry : std::filesystem::directory_iterator(std::filesystem::current_path())) {
-			if (entry.is_directory()) {
-				std::string folderName = entry.path().filename().string();
-				std::smatch match;
-				if (std::regex_match(folderName, match, folderRegex)) {
-					int number = std::stoi(match[1].str());
-					maxNumberFound = std::max(maxNumberFound, number);
-				}
-			}
+		if (!std::filesystem::exists("Videos")) {
+			std::filesystem::create_directory("Videos");
 		}
 
-		if (!isVideoExportEnabled) {
-			int nextAvailableNumber = maxNumberFound + 1;
-			folderName = "Video_" + std::to_string(nextAvailableNumber);
-		}
-		else {
-			int nextAvailableNumber = maxNumberFound;
-			folderName = "Video_" + std::to_string(nextAvailableNumber);
+		std::string filename = generateVideoFilename();
+		
+		size_t lastSlash = filename.find_last_of('/');
+		size_t lastDot = filename.find_last_of('.');
+		std::string baseName;
+		if (lastSlash != std::string::npos && lastDot != std::string::npos) {
+			baseName = filename.substr(lastSlash + 1, lastDot - lastSlash - 1);
+		} else {
+			baseName = "Video_1";
 		}
 
-		std::filesystem::create_directory(folderName);
+		std::string framesFolder = "Videos/" + baseName + "_frames";
+
+		createFramesFolder(framesFolder);
 
 #pragma omp parallel for
 		for (int i = 0; i < numFrames; ++i) {
-			Image frame = myFrames[i];
-			ImageFlipVertical(&frame);
-
-			std::string filename = folderName + "/" + folderName + "_Frame_" + std::to_string(i) + ".png";
-			ExportImage(frame, filename.c_str());
-
-			UnloadImage(frame);
+			exportFrameToFile(myFrames[i], framesFolder, i);
 		}
 
 		myFrames.clear();
@@ -378,11 +538,11 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 
 		if (isSafeFramesEnabled && isExportFramesEnabled) {
 			Image frame = LoadImageFromTexture(myParticlesTexture.texture);
-			ImageFlipVertical(&frame);
 
-			std::string filename = folderName + "/" + folderName + "_Frame_" + std::to_string(diskModeFrameIdx) + ".png";
-			ExportImage(frame, filename.c_str());
+			std::string framesFolder = "Videos/" + folderName + "_frames";
+			createFramesFolder(framesFolder);
 
+			exportFrameToFile(frame, framesFolder, diskModeFrameIdx);
 			UnloadImage(frame);
 		}
 
