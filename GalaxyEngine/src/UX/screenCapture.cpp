@@ -418,7 +418,7 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 		ImGui::SetNextWindowSize(ImVec2(400, 200), ImGuiCond_Always);
 		ImGui::SetNextWindowPos(ImVec2(screenW * 0.5f - 200, screenH * 0.5f - 90), ImGuiCond_Appearing);
 		ImGui::Begin("Save Recording?", &showSaveConfirmationDialog, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
-		ImGui::PushFont(myVar.specialFont);
+		ImGui::PushFont(myVar.robotoMediumFont);
 		ImGui::SetWindowFontScale(1.5f);
 
 		ImGui::Text("Do you want to save the recording?");
