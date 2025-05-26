@@ -347,7 +347,9 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 		ImGui::SetNextWindowPos(ImVec2(screenW - framesMenuSize.x - 10.0f, 10.0f), ImGuiCond_Appearing);
 
 		ImGui::Begin("Recording Menu", nullptr, ImGuiWindowFlags_NoCollapse);
-		ImGui::PushFont(myVar.specialFont);
+
+		ImGui::PushFont(myVar.robotoMediumFont);
+
 		ImGui::SetWindowFontScale(1.5f);
 
 		if (diskModeFrameIdx > 0 && (isSafeFramesEnabled || isVideoExportEnabled)) {

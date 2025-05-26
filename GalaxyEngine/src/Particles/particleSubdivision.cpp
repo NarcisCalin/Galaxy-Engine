@@ -20,7 +20,7 @@ void ParticleSubdivision::subdivideParticles(UpdateVariables& myVar, UpdateParam
 
 			ImGui::Begin("##SubdivisionWarning", nullptr, ImGuiWindowFlags_NoCollapse);
 
-			ImGui::PushFont(myVar.specialFont);
+			ImGui::PushFont(myVar.robotoMediumFont);
 
 			std::string warning = "SUBDIVIDING FURTHER MIGHT HEAVILY SLOW DOWN PERFORMANCE";
 

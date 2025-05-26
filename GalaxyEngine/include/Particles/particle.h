@@ -25,9 +25,7 @@ struct ParticlePhysics {
 	// SPH Parameters
 	float press;
 	float pressTmp;
-	float delta;
-	Vector2 pressV;
-	Vector2 force;
+	Vector2 pressF;
 	float dens;
 	float predDens;
 	float sphMass;
@@ -41,12 +39,11 @@ struct ParticlePhysics {
 
 	// Default constructor
 	ParticlePhysics()
-		: pos{ 0,0 }, predPos{ 0,0 }, vel{ 0,0 }, prevVel{ 0,0 }, acc{ 0,0 },
-		mass(1.0f), press(0.0f), dens(0.0f), sphMass(0.0f),
+		: pos{ 0,0 }, predPos{ 0,0 }, vel{ 0,0 }, predVel{0.0f, 0.0f}, prevVel{ 0,0 }, acc{ 0,0 },
+		mass(1.0f), press(0.0f), pressTmp(0.0f), pressF{ 0.0f,0.0f }, dens(0.0f), predDens(0.0f), sphMass(0.0f),
 		restDens(0.0f), stiff(0.0f), visc(0.0f), cohesion(0.0f),
 		mortonKey(0)
-	{
-	}
+	{}
 
 	// Parameterized constructor
 	ParticlePhysics(Vector2 pos, Vector2 vel, float mass, float restDens, float stiff, float visc, float cohesion) {
@@ -61,12 +58,9 @@ struct ParticlePhysics {
 		// SPH Parameters
 		this->press = 0.0f;
 		this->pressTmp = 0.0f;
-		this->delta = 0.0f;
-		this->pressV = { 0.0f, 0.0f };
-		this->force = { 0.0f, 0.0f };
+		this->pressF = { 0.0f, 0.0f };
 		this->dens = 0.0f;
 		this->predDens = 0.0f;
-
 		this->sphMass = mass / 8500000000.0f; // I divide by the base standard mass
 
 		// SPH Input parameters
@@ -87,10 +81,14 @@ inline std::ostream& operator<<(std::ostream& os, ParticlePhysics const& p) {
 		<< p.predPos << ' '
 		<< p.vel << ' '
 		<< p.prevVel << ' '
+		<< p.predVel << ' '
 		<< p.acc << ' '
 		<< p.mass << ' '
 		<< p.press << ' '
+		<< p.pressTmp << ' '
+		<< p.pressF << ' '
 		<< p.dens << ' '
+		<< p.predDens << ' '
 		<< p.sphMass << ' '
 		<< p.restDens << ' '
 		<< p.stiff << ' '
@@ -105,10 +103,14 @@ inline std::istream& operator>>(std::istream& is, ParticlePhysics& p) {
 		>> p.predPos.x >> p.predPos.y
 		>> p.vel.x >> p.vel.y
 		>> p.prevVel.x >> p.prevVel.y
+		>> p.predVel.x >> p.predVel.y
 		>> p.acc.x >> p.acc.y
 		>> p.mass
 		>> p.press
+		>> p.pressTmp
+		>> p.pressF
 		>> p.dens
+		>> p.predDens
 		>> p.sphMass
 		>> p.restDens
 		>> p.stiff
@@ -176,8 +178,7 @@ struct ParticleRendering {
 		isSelected(false), isGrabbed(false), previousSize(1.0f),
 		neighbors(0), totalRadius(0.0f), lifeSpan(0.0f),
 		PRGBA{ 1,1,1,1 }, SRGBA{ 1,1,1,1 }
-	{
-	}
+	{}
 
 	// Parameterized constructor
 	ParticleRendering(Color color, float size, bool uniqueColor, bool isSelected,

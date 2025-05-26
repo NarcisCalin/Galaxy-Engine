@@ -41,7 +41,7 @@ struct ColorVisuals {
 	float maxColorAcc = 40.0f;
 	float minColorAcc = 0.0f;
 
-	float deltaVMaxAccel = 5.0f;
+	float deltaVMaxAccel = 1.0f;
 	float deltaVMinAccel = 0.0f;
 
 	float maxVel = 100.0f;
@@ -53,7 +53,7 @@ struct ColorVisuals {
 	Vector2 prevVel = { 0.0f, 0.0f };
 
 	void particlesColorVisuals(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, 
-		float& particleSizeMultiplier, float& particleTextureHalfSize) {
+		float& particleSizeMultiplier, float& particleTextureHalfSize, float& pressureDelta) {
 
 		if (solidColor) {
 			for (size_t i = 0; i < pParticles.size(); i++) {
@@ -182,7 +182,9 @@ struct ColorVisuals {
 #pragma omp parallel for schedule(dynamic)
 			for (size_t i = 0; i < pParticles.size(); i++) {
 
-				float clampedPress = std::clamp(pParticles[i].press, minPress, maxPress);
+				ParticlePhysics& p = pParticles[i];
+
+				float clampedPress = std::clamp(p.press, minPress, maxPress);
 				float normalizedPress = clampedPress / maxPress;
 
 				hue = (1.0f - normalizedPress) * 240.0f;

@@ -184,6 +184,12 @@ static void updateScene() {
 
 	myParam.brush.eraseBrush(myParam);
 
+	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+		if (myParam.rParticles[i].isSelected) {
+			std::cout << "Press: " << myParam.pParticles[i].press << std::endl;
+		}
+	}
+
 	if (grid != nullptr) {
 		delete grid;
 	}
@@ -200,7 +206,7 @@ static void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture) 
 
 		// Texture size is set to 16 because that is the particle texture half size in pixels
 		DrawTextureEx(particleBlurTex, { static_cast<float>(pParticle.pos.x - rParticle.size * myVar.particleTextureHalfSize),
-			static_cast<float>(pParticle.pos.y - rParticle.size * myVar.particleTextureHalfSize) }, 0, rParticle.size, rParticle.color);
+			static_cast<float>(pParticle.pos.y - rParticle.size * myVar.particleTextureHalfSize) }, 0.0f, rParticle.size, rParticle.color);
 
 
 		if (!myVar.isDensitySizeEnabled) {
@@ -215,7 +221,7 @@ static void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture) 
 	}
 
 
-	myParam.colorVisuals.particlesColorVisuals(myParam.pParticles, myParam.rParticles, myVar.particleSizeMultiplier, myVar.particleTextureHalfSize);
+	myParam.colorVisuals.particlesColorVisuals(myParam.pParticles, myParam.rParticles, myVar.particleSizeMultiplier, myVar.particleTextureHalfSize, sph.delta);
 
 	myParam.trails.drawTrail(myParam.rParticles, particleBlurTex);
 
@@ -366,14 +372,14 @@ int main() {
 	config.PixelSnapH = false;        // Disable pixel snapping for smoother text
 	config.RasterizerMultiply = 0.9f; // Slightly boosts brightness
 
-	myVar.specialFont = io.Fonts->AddFontFromFileTTF(
+	myVar.robotoMediumFont = io.Fonts->AddFontFromFileTTF(
 		"fonts/Roboto-Medium.ttf",
 		config.SizePixels,
 		&config,
 		io.Fonts->GetGlyphRangesDefault()
 	);
 
-	if (!myVar.specialFont) {
+	if (!myVar.robotoMediumFont) {
 		std::cerr << "Failed to load special font!\n";
 	}
 	else {
