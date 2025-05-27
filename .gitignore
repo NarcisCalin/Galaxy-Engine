@@ -15,3 +15,6 @@ GalaxyEngine/Screenshots/
 GalaxyEngine/compilerCommand.txt
 GalaxyEngine/x64/
 x64/
+
+# Misc
+*.diff

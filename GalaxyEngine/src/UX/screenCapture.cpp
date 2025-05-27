@@ -6,8 +6,18 @@
 #include <algorithm>
 #include <regex>
 #include <sstream>
-#include <cstring>         
+#include <cstring>
+#include <chrono>
+#include <cmath>
+
+// Prevent Windows macro conflicts with std::min/max and raylib
 #ifdef _WIN32
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
+#define NOGDI       // Excludes GDI defines like Rectangle
+#define NOUSER      // Excludes USER defines like ShowCursor
+#include <windows.h>
+#include <psapi.h>
 #include <io.h>          
 #include <fcntl.h>    
 #define popen  _popen
@@ -80,19 +90,37 @@ void ScreenCapture::cleanupFFmpeg() {
 	frameIndex = 0;
 }
 
-void ScreenCapture::exportFrameToFile(const Image& frame, const std::string& framesFolder, int frameNumber) {
-	Image frameCopy = frame;
+void ScreenCapture::exportFrameToFile(const Image& frame, const std::string& videoFolder, const std::string& videoName, int frameNumber) {
+	// Check if the video folder exists before attempting export
+	if (!std::filesystem::exists(videoFolder)) {
+		printf("Warning: Frame export folder does not exist: %s\n", videoFolder.c_str());
+		return;
+	}
+	
+	// Create a proper deep copy of the image to avoid double-free issues
+	Image frameCopy = ImageCopy(frame);
 	ImageFlipVertical(&frameCopy);
 	
-	std::string filename = framesFolder + "/Frame_" + std::to_string(frameNumber) + ".png";
-	ExportImage(frameCopy, filename.c_str());
+	std::string filename = videoFolder + "/" + videoName + "_" + std::to_string(frameNumber) + ".png";
 	
+	// Try to export the frame with error handling
+	try {
+		ExportImage(frameCopy, filename.c_str());
+	} catch (...) {
+		printf("Error: Failed to export frame to: %s\n", filename.c_str());
+	}
+	
+	// Clean up the copy we created
 	UnloadImage(frameCopy);
 }
 
 void ScreenCapture::createFramesFolder(const std::string& folderPath) {
 	if (!std::filesystem::exists(folderPath)) {
-		std::filesystem::create_directory(folderPath);
+		try {
+			std::filesystem::create_directories(folderPath);
+		} catch (const std::exception& e) {
+			printf("Error creating folder %s: %s\n", folderPath.c_str(), e.what());
+		}
 	}
 }
 
@@ -106,26 +134,68 @@ void ScreenCapture::popButtonStyle() {
 	ImGui::PopStyleColor(3);
 }
 
+std::string ScreenCapture::createTempFramesFolder() {
+	// Create unique temporary folder using timestamp
+	auto now = std::chrono::system_clock::now();
+	auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+	
+	std::string tempFolder = "Videos/temp_recording_" + std::to_string(timestamp);
+	createFramesFolder(tempFolder);
+	
+	return tempFolder;
+}
+
+void ScreenCapture::moveTempFramesToFinalFolder(const std::string& finalFolder, const std::string& videoName) {
+	if (tempFramesFolder.empty() || !std::filesystem::exists(tempFramesFolder)) {
+		return;
+	}
+	
+	// Ensure final folder exists
+	createFramesFolder(finalFolder);
+	
+	try {
+		// Move all frame files from temp folder to final folder, renaming them
+		int frameIndex = 0;
+		for (const auto& entry : std::filesystem::directory_iterator(tempFramesFolder)) {
+			if (entry.is_regular_file() && entry.path().extension() == ".png") {
+				std::string finalFramePath = finalFolder + "/" + videoName + "_" + std::to_string(frameIndex) + ".png";
+				std::filesystem::rename(entry.path(), finalFramePath);
+				frameIndex++;
+			}
+		}
+		
+		// Remove temporary folder
+		std::filesystem::remove_all(tempFramesFolder);
+		tempFramesFolder.clear();
+		
+		printf("Moved %d frames to final folder: %s\n", frameIndex, finalFolder.c_str());
+	} catch (const std::exception& e) {
+		printf("Error moving temp frames: %s\n", e.what());
+	}
+}
+
 std::string ScreenCapture::generateVideoFilename() {
-	// Always use default Video_X pattern, custom naming happens at save time
+	// Generate folder and filename pattern: Videos/Video_X/Video_X.mp4
 	int maxNumberFound = 0;
-	std::regex videoFileRegex(R"(Video_(\d+)\.mp4)");
+	std::regex videoFolderRegex(R"(Video_(\d+))");
 
 	if (std::filesystem::exists("Videos")) {
 		for (const auto& entry : std::filesystem::directory_iterator("Videos")) {
-			if (entry.is_regular_file()) {
-				std::string fileName = entry.path().filename().string();
-				std::smatch match;
-				if (std::regex_match(fileName, match, videoFileRegex)) {
+			if (entry.is_directory()) {
+				std::string folderName = entry.path().filename().string();
+				std::smatch match;				if (std::regex_match(folderName, match, videoFolderRegex)) {
 					int number = std::stoi(match[1].str());
-					maxNumberFound = std::max(maxNumberFound, number);
+					if (number > maxNumberFound) {
+						maxNumberFound = number;
+					}
 				}
 			}
 		}
 	}
 
 	int nextAvailableNumber = maxNumberFound + 1;
-	return "Videos/Video_" + std::to_string(nextAvailableNumber) + ".mp4";
+	std::string videoName = "Video_" + std::to_string(nextAvailableNumber);
+	return "Videos/" + videoName + "/" + videoName + ".mp4";
 }
 
 bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariables& myVar) {
@@ -173,7 +243,6 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 			myFrames.clear();
 			std::vector<Image>().swap(myFrames);
 		}
-
 		if (!isFunctionRecording && (isSafeFramesEnabled || isVideoExportEnabled)) {
 
 			diskModeFrameIdx = 0;
@@ -186,11 +255,17 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 			// Generate filename based on custom name or default pattern
 			outFileName = generateVideoFilename();
 			
-			// Extract folder name for frame exports
+			// Create the video folder structure: Videos/Video_X/
 			size_t lastSlash = outFileName.find_last_of('/');
-			size_t lastDot = outFileName.find_last_of('.');
-			if (lastSlash != std::string::npos && lastDot != std::string::npos) {
-				folderName = outFileName.substr(lastSlash + 1, lastDot - lastSlash - 1);
+			std::string videoFolder = outFileName.substr(0, lastSlash);
+			if (!std::filesystem::exists(videoFolder)) {
+				std::filesystem::create_directories(videoFolder);
+			}
+			
+			// Extract folder name for frame exports (just the Video_X part)
+			size_t secondToLastSlash = outFileName.find_last_of('/', lastSlash - 1);
+			if (secondToLastSlash != std::string::npos) {
+				folderName = outFileName.substr(secondToLastSlash + 1, lastSlash - secondToLastSlash - 1);
 			} else {
 				folderName = "Video_1"; // fallback
 			}
@@ -252,11 +327,21 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 				w, h, AV_PIX_FMT_RGBA,
 				w, h, AV_PIX_FMT_YUV420P,
 				SWS_BILINEAR, nullptr, nullptr, nullptr
-			);
-
+			);			
 			printf("Started recording to '%s'\n", outFileName.c_str());
 			isFunctionRecording = true;
 			frameIndex = 0;
+
+			// Reset frame export availability for new recording
+			videoHasBeenSaved = false;
+			actualSavedVideoFolder.clear();
+			actualSavedVideoName.clear();
+
+			// Create temporary folder for safe frames export during recording
+			if (isSafeFramesEnabled && isExportFramesEnabled) {
+				tempFramesFolder = createTempFramesFolder();
+				printf("Created temporary frames folder: %s\n", tempFramesFolder.c_str());
+			}
 
 			return true;
 		}
@@ -272,30 +357,61 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 			printf("Stopped recording. File saved as '%s'\\n", outFileName.c_str());
 		}
 	}
-
 	// Handle cancel recording request
 	if (cancelRecording && isFunctionRecording) {
 		cleanupFFmpeg();
 		isFunctionRecording = false;
 
 		if (std::filesystem::exists(outFileName)) {
-			std::filesystem::remove(outFileName);
-			printf("Recording cancelled and file deleted: %s\n", outFileName.c_str());
+			try {
+				std::filesystem::remove(outFileName);
+				printf("Recording cancelled and file deleted: %s\n", outFileName.c_str());
+			} catch (const std::exception& e) {
+				printf("Warning: Failed to delete cancelled recording: %s\n", e.what());
+			}
 		}
-
 		for (Image& frameImg : myFrames) {
 			UnloadImage(frameImg);
 		}
 		myFrames.clear();
 		std::vector<Image>().swap(myFrames);
 		diskModeFrameIdx = 0;
+		// Clean up temporary frames folder if it exists
+		if (!tempFramesFolder.empty() && std::filesystem::exists(tempFramesFolder)) {
+			try {
+				std::filesystem::remove_all(tempFramesFolder);
+				printf("Temporary frames folder cleaned up: %s\n", tempFramesFolder.c_str());
+			} catch (const std::exception& e) {
+				printf("Warning: Failed to clean up temporary frames: %s\n", e.what());
+			}
+			tempFramesFolder.clear();
+		}
+
+		// Reset frame export availability since recording was cancelled
+		videoHasBeenSaved = false;
+		actualSavedVideoFolder.clear();
+		actualSavedVideoName.clear();
 
 		cancelRecording = false;
-	}
-
-	if (isFunctionRecording) {
+	}	if (isFunctionRecording) {
+		// Validate FFmpeg contexts before use
+		if (!pCodecCtx || !pFormatCtx || !swsCtx || !frame) {
+			printf("Error: FFmpeg contexts not properly initialized\n");
+			return false;
+		}
+		
+		// Single texture access point - prevents race conditions
 		Image img = LoadImageFromTexture(myParticlesTexture.texture);
+		
+		// Validate image data
+		if (!img.data) {
+			printf("Error: Failed to load image from texture\n");
+			return isFunctionRecording;
+		}
+		
 		ImageFlipVertical(&img);
+		
+		// Handle video recording
 		int w = img.width;
 		int h = img.height;
 		const uint8_t* srcSlices[1] = {
@@ -303,7 +419,12 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 		};
 		int srcStride[1] = { 4 * w };
 
-		sws_scale(swsCtx, srcSlices, srcStride, 0, h, frame->data, frame->linesize);
+		int result = sws_scale(swsCtx, srcSlices, srcStride, 0, h, frame->data, frame->linesize);
+		if (result < 0) {
+			printf("Error: sws_scale failed\n");
+			UnloadImage(img);
+			return false;
+		}
 		
 		if (frame) {
 			if (pStream) {
@@ -313,40 +434,67 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 			}
 		}
 
-		avcodec_send_frame(pCodecCtx, frame);
+		int sendResult = avcodec_send_frame(pCodecCtx, frame);
+		if (sendResult < 0) {
+			printf("Warning: avcodec_send_frame failed with error %d\n", sendResult);
+		}
 
 		AVPacket* pkt = av_packet_alloc();
 		if (!pkt) {
 			printf("Could not allocate packet\n");
+			UnloadImage(img);
 			return false;
 		}
 
 		while (avcodec_receive_packet(pCodecCtx, pkt) == 0) {
 			if (pStream) {
 				pkt->stream_index = pStream->index;
-				av_interleaved_write_frame(pFormatCtx, pkt);
+				int writeResult = av_interleaved_write_frame(pFormatCtx, pkt);
+				if (writeResult < 0) {
+					printf("Warning: av_interleaved_write_frame failed with error %d\n", writeResult);
+				}
 			}
 			av_packet_unref(pkt);
 		}
 
 		av_packet_free(&pkt);
-
+		
+		// Handle frame export operations using the same image data
+		if (!isSafeFramesEnabled && isExportFramesEnabled) {
+			// Memory mode: store a copy of the image
+			Image frameCopy = ImageCopy(img);
+			ImageFlipVertical(&frameCopy); // Flip back for proper storage
+			myFrames.push_back(frameCopy);
+		}
+				if (isSafeFramesEnabled && isExportFramesEnabled) {
+			// Safe frames mode: export to temporary folder during recording
+			if (!tempFramesFolder.empty()) {
+				Image frameForExport = ImageCopy(img);
+				ImageFlipVertical(&frameForExport); // Flip back for proper export
+				
+				// Export to temporary folder with simple numbering
+				std::string tempFramePath = tempFramesFolder + "/frame_" + std::to_string(diskModeFrameIdx) + ".png";
+				ExportImage(frameForExport, tempFramePath.c_str());
+				UnloadImage(frameForExport);
+			}
+		}
+		
+		// Increment frame counter for disk mode
+		if (isSafeFramesEnabled || isVideoExportEnabled) {
+			diskModeFrameIdx++;
+		}
+		
 		UnloadImage(img);
 	}
-
-	if (isFunctionRecording && !isSafeFramesEnabled && isExportFramesEnabled) {
-		myFrames.push_back(LoadImageFromTexture(myParticlesTexture.texture));
-	}
-
 	float screenW = GetScreenWidth();
 	float screenH = GetScreenHeight();
-
 	ImVec2 framesMenuSize = { 400.0f, 200.0f };
 	if (myFrames.size() > 0 || diskModeFrameIdx > 0 || isFunctionRecording) {
 		ImGui::SetNextWindowSize(framesMenuSize, ImGuiCond_Once);
-		ImGui::SetNextWindowPos(ImVec2(screenW - framesMenuSize.x - 10.0f, 10.0f), ImGuiCond_Appearing);
+		// Position in bottom-left to avoid overlapping with other UI elements
+		ImGui::SetNextWindowPos(ImVec2(20.0f, screenH - framesMenuSize.y - 20.0f), ImGuiCond_Appearing);
 
-		ImGui::Begin("Recording Menu", nullptr, ImGuiWindowFlags_NoCollapse);
+		ImGui::Begin("Recording Menu", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
 
 		ImGui::PushFont(myVar.robotoMediumFont);
 
@@ -378,10 +526,7 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 			}
 		}
 
-
-
-
-		if (myFrames.size() > 0 && !isFunctionRecording && !isSafeFramesEnabled) {
+		if (myFrames.size() > 0 && !isFunctionRecording && !isSafeFramesEnabled && videoHasBeenSaved) {
 
 			ImVec4& exportCol = exportMemoryFrames ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
 			applyButtonStyle(exportCol);
@@ -411,15 +556,17 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 		}
 		ImGui::PopFont();
 		ImGui::End();
-	}
-
-	// Save confirmation dialog
+	}	// Save confirmation dialog
 	if (showSaveConfirmationDialog) {
 		ImGui::SetNextWindowSize(ImVec2(400, 200), ImGuiCond_Always);
-		ImGui::SetNextWindowPos(ImVec2(screenW * 0.5f - 200, screenH * 0.5f - 90), ImGuiCond_Appearing);
-		ImGui::Begin("Save Recording?", &showSaveConfirmationDialog, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
+		ImGui::SetNextWindowPos(ImVec2(screenW * 0.5f - 200, screenH * 0.5f - 90), ImGuiCond_Appearing);		
+		ImGui::Begin("Save Recording?", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar);
 		ImGui::PushFont(myVar.robotoMediumFont);
 		ImGui::SetWindowFontScale(1.5f);
+
+		// Add title since we removed the title bar
+		ImGui::TextColored(ImVec4(1.0f, 1.0f, 1.0f, 1.0f), "Save Recording?");
+		ImGui::Separator();
 
 		ImGui::Text("Do you want to save the recording?");
 		ImGui::Text("Current: %s", lastVideoPath.c_str());
@@ -436,51 +583,180 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 		}
 		
 		ImGui::Separator();
-		
 		if (ImGui::Button("Save", ImVec2(100, 30))) {
-			// Check if user entered a custom name
-			std::string customName = std::string(nameBuffer);
-			if (!customName.empty()) {
-				// Clean the custom name
-				customName.erase(std::remove_if(customName.begin(), customName.end(), 
-					[](char c) { return c == '<' || c == '>' || c == ':' || c == '"' || 
-								 c == '|' || c == '?' || c == '*' || c == '/'; }), customName.end());
+			// Ensure no recording is active before performing file operations
+			if (isFunctionRecording) {			printf("Warning: Cannot rename video while recording is active\n");
+			} else {
+				// Check if user entered a custom name and process all operations
+				std::string customName = std::string(nameBuffer);
+				std::string finalVideoPath = lastVideoPath;
+				std::string newFolderPath;
+				std::string newVideoPath;
 				
 				if (!customName.empty()) {
-					// Add .mp4 extension if not present
-					if (customName.length() < 4 || customName.substr(customName.length() - 4) != ".mp4") {
-						customName += ".mp4";
-					}
+					// Clean the custom name
+					customName.erase(std::remove_if(customName.begin(), customName.end(), 
+						[](char c) { return c == '<' || c == '>' || c == ':' || c == '"' || 
+									 c == '|' || c == '?' || c == '*' || c == '/'; }), customName.end());
 					
-					std::string newPath = "Videos/" + customName;
-					
-					// Rename the file if the new name is different
-					if (newPath != lastVideoPath && std::filesystem::exists(lastVideoPath)) {
-						try {
-							std::filesystem::rename(lastVideoPath, newPath);
-							printf("Video renamed to: %s\n", newPath.c_str());
-						} catch (const std::exception& e) {
-							printf("Failed to rename video: %s\n", e.what());
+					if (!customName.empty()) {
+						// Remove .mp4 extension if present to get clean name
+						if (customName.length() >= 4 && customName.substr(customName.length() - 4) == ".mp4") {
+							customName = customName.substr(0, customName.length() - 4);
+						}
+						
+						// Create new folder structure: Videos/customName/customName.mp4
+						newFolderPath = "Videos/" + customName;
+						newVideoPath = newFolderPath + "/" + customName + ".mp4";
+						finalVideoPath = newVideoPath;
+						
+						// Create the new folder if it doesn't exist
+						if (!std::filesystem::exists(newFolderPath)) {
+							try {
+								std::filesystem::create_directories(newFolderPath);
+							} catch (const std::exception& e) {
+								printf("Error creating folder %s: %s\n", newFolderPath.c_str(), e.what());
+								// Clear buffer and close dialog on error
+								memset(nameBuffer, 0, sizeof(nameBuffer));
+								showSaveConfirmationDialog = false;
+								return isFunctionRecording;
+							}
+						}
+						
+						// Move the video file to the new location with error handling
+						if (newVideoPath != lastVideoPath && std::filesystem::exists(lastVideoPath)) {
+							try {
+								// Check if target file already exists
+								if (std::filesystem::exists(newVideoPath)) {
+									printf("Warning: Target file already exists: %s\n", newVideoPath.c_str());
+								} else {
+									std::filesystem::rename(lastVideoPath, newVideoPath);
+									printf("Video renamed to: %s\n", newVideoPath.c_str());
+									
+									// Move any existing frame files as well
+									size_t lastSlash = lastVideoPath.find_last_of('/');
+									if (lastSlash != std::string::npos) {
+										std::string oldFolder = lastVideoPath.substr(0, lastSlash);
+										std::string oldVideoName = lastVideoPath.substr(lastSlash + 1);
+										// Remove .mp4 extension to get the base name
+										if (oldVideoName.length() >= 4 && oldVideoName.substr(oldVideoName.length() - 4) == ".mp4") {
+											oldVideoName = oldVideoName.substr(0, oldVideoName.length() - 4);
+										}
+										
+										// Move frame files if they exist
+										try {
+											for (const auto& entry : std::filesystem::directory_iterator(oldFolder)) {
+												if (entry.is_regular_file()) {
+													std::string filename = entry.path().filename().string();
+													if (filename.find(oldVideoName + "_") == 0 && filename.find(".png") != std::string::npos) {
+														// This is a frame file, move it
+														std::string newFramePath = newFolderPath + "/" + filename;
+														// Update the filename to use new video name
+														size_t underscorePos = filename.find('_');
+														if (underscorePos != std::string::npos) {
+															std::string frameNumber = filename.substr(underscorePos);
+															std::string newFrameFilename = customName + frameNumber;
+															newFramePath = newFolderPath + "/" + newFrameFilename;
+														}
+														std::filesystem::rename(entry.path(), newFramePath);
+													}
+												}
+											}
+											
+											// Remove old folder if it's now empty (and different from new folder)
+											if (oldFolder != newFolderPath && std::filesystem::exists(oldFolder) && std::filesystem::is_empty(oldFolder)) {
+												std::filesystem::remove(oldFolder);
+											}
+										} catch (const std::exception& e) {
+											printf("Warning: Error moving frame files: %s\n", e.what());
+										}
+									}
+								}
+							} catch (const std::exception& e) {
+								printf("Failed to rename video: %s\n", e.what());
+							}
 						}
 					}
 				}
+				
+				// Handle moving temporary frames to final folder
+				if (!tempFramesFolder.empty()) {
+					// Extract folder and video name from final path
+					size_t lastSlash = finalVideoPath.find_last_of('/');
+					if (lastSlash != std::string::npos) {
+						std::string finalFolder = finalVideoPath.substr(0, lastSlash);
+						std::string videoFileName = finalVideoPath.substr(lastSlash + 1);
+						// Remove .mp4 extension to get video name
+						if (videoFileName.length() >= 4 && videoFileName.substr(videoFileName.length() - 4) == ".mp4") {
+							videoFileName = videoFileName.substr(0, videoFileName.length() - 4);
+						}
+						
+						// Move temp frames to final folder
+						moveTempFramesToFinalFolder(finalFolder, videoFileName);
+					}
+				}				// Set the actual saved video information for frame export
+				size_t finalLastSlash = finalVideoPath.find_last_of('/');
+				if (finalLastSlash != std::string::npos) {
+					actualSavedVideoFolder = finalVideoPath.substr(0, finalLastSlash);
+					actualSavedVideoName = finalVideoPath.substr(finalLastSlash + 1);
+					// Remove .mp4 extension to get video name
+					if (actualSavedVideoName.length() >= 4 && actualSavedVideoName.substr(actualSavedVideoName.length() - 4) == ".mp4") {
+						actualSavedVideoName = actualSavedVideoName.substr(0, actualSavedVideoName.length() - 4);
+					}
+				}
+				
+				// Mark that video has been saved (enables frame export dialog)
+				videoHasBeenSaved = true;
+				
+				// Clear the buffer for next time
+				memset(nameBuffer, 0, sizeof(nameBuffer));
+				showSaveConfirmationDialog = false;
 			}
-			
-			// Clear the buffer for next time
-			memset(nameBuffer, 0, sizeof(nameBuffer));
-			showSaveConfirmationDialog = false;
 		}
 		
 		ImGui::SameLine();
-		
-		if (ImGui::Button("Discard", ImVec2(100, 30))) {
-			if (std::filesystem::exists(lastVideoPath)) {
-				std::filesystem::remove(lastVideoPath);
-				printf("Recording discarded: %s\n", lastVideoPath.c_str());
+				if (ImGui::Button("Discard", ImVec2(100, 30))) {
+			// Ensure no recording is active before performing file operations
+			if (isFunctionRecording) {
+				printf("Warning: Cannot discard video while recording is active\n");
+			} else {
+				if (std::filesystem::exists(lastVideoPath)) {
+					try {
+						// Remove the entire folder containing the video and any frames
+						size_t lastSlash = lastVideoPath.find_last_of('/');
+						if (lastSlash != std::string::npos) {
+							std::string videoFolder = lastVideoPath.substr(0, lastSlash);
+							if (std::filesystem::exists(videoFolder)) {
+								std::filesystem::remove_all(videoFolder);
+								printf("Recording and associated files discarded: %s\n", videoFolder.c_str());
+							}
+						} else {
+							// Fallback to just removing the video file
+							std::filesystem::remove(lastVideoPath);
+							printf("Recording discarded: %s\n", lastVideoPath.c_str());
+						}
+					} catch (const std::exception& e) {
+						printf("Error discarding video: %s\n", e.what());
+					}				}
+						// Clean up temporary frames folder if it exists
+				if (!tempFramesFolder.empty() && std::filesystem::exists(tempFramesFolder)) {
+					try {
+						std::filesystem::remove_all(tempFramesFolder);
+						printf("Temporary frames folder discarded: %s\n", tempFramesFolder.c_str());
+						tempFramesFolder.clear();
+					} catch (const std::exception& e) {
+						printf("Error discarding temporary frames: %s\n", e.what());
+					}
+				}
+				
+				// Reset frame export availability since video was discarded
+				videoHasBeenSaved = false;
+				actualSavedVideoFolder.clear();
+				actualSavedVideoName.clear();
+				
+				memset(nameBuffer, 0, sizeof(nameBuffer));
+				showSaveConfirmationDialog = false;
 			}
-			
-			memset(nameBuffer, 0, sizeof(nameBuffer));
-			showSaveConfirmationDialog = false;
 		}
 
 		ImGui::PopFont();
@@ -491,7 +767,6 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 	if (!isFunctionRecording && diskModeFrameIdx > 0 && (isSafeFramesEnabled || isVideoExportEnabled)) {
 		diskModeFrameIdx = 0;
 	}
-
 	if (deleteFrames) {
 		for (Image& frame : myFrames) {
 			UnloadImage(frame);
@@ -499,56 +774,84 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture, UpdateVariab
 		myFrames.clear();
 		std::vector<Image>().swap(myFrames);
 		deleteFrames = false;
+		
+		// Reset frame export availability since frames were discarded
+		videoHasBeenSaved = false;
+		actualSavedVideoFolder.clear();
+		actualSavedVideoName.clear();
 	}
-
 	if (exportMemoryFrames && !isSafeFramesEnabled) {
-		isFunctionRecording = false;
+		// Prevent recording from being active during export to avoid race conditions
+		if (isFunctionRecording) {
+			printf("Warning: Cannot export frames while recording is active\n");
+			exportMemoryFrames = false;
+			return isFunctionRecording;
+		}
 
 		int numFrames = static_cast<int>(myFrames.size());
+		
+		// Check if we have frames to export
+		if (numFrames == 0) {
+			printf("Warning: No frames to export\n");
+			exportMemoryFrames = false;
+			return isFunctionRecording;
+		}
 
 		if (!std::filesystem::exists("Videos")) {
-			std::filesystem::create_directory("Videos");
-		}
+			std::filesystem::create_directory("Videos");		}
 
-		std::string filename = generateVideoFilename();
-		
-		size_t lastSlash = filename.find_last_of('/');
-		size_t lastDot = filename.find_last_of('.');
-		std::string baseName;
-		if (lastSlash != std::string::npos && lastDot != std::string::npos) {
-			baseName = filename.substr(lastSlash + 1, lastDot - lastSlash - 1);
-		} else {
-			baseName = "Video_1";
-		}
+		// Use the actual saved video folder and name instead of generating new ones
+		std::string framesFolder = actualSavedVideoFolder;
+		std::string baseName = actualSavedVideoName;
 
-		std::string framesFolder = "Videos/" + baseName + "_frames";
-
+		// Ensure folder exists before export
 		createFramesFolder(framesFolder);
-
-#pragma omp parallel for
+				// Validate folder creation succeeded
+		if (!std::filesystem::exists(framesFolder)) {
+			printf("Error: Failed to create frames folder: %s\n", framesFolder.c_str());
+			exportMemoryFrames = false;
+			return isFunctionRecording;
+		}		// Export frames using deep copy (safe method)
+		printf("Exporting %d frames to: %s\n", numFrames, framesFolder.c_str());
+		
+		// Start timing
+		auto startTime = std::chrono::high_resolution_clock::now();
+		
+		#pragma omp parallel for
 		for (int i = 0; i < numFrames; ++i) {
-			exportFrameToFile(myFrames[i], framesFolder, i);
+			// Validate frame before export
+			if (myFrames[i].data != nullptr) {
+				exportFrameToFile(myFrames[i], framesFolder, baseName, i);
+			} else {
+				printf("Warning: Skipping invalid frame at index %d\n", i);
+			}
 		}
-
+		
+		// End timing and calculate results
+		auto endTime = std::chrono::high_resolution_clock::now();
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+		auto durationSeconds = std::chrono::duration_cast<std::chrono::duration<double>>(endTime - startTime);
+		
+		// Display timing results
+		printf("Frame export completed successfully!\n");
+		printf("Export Duration: %.3f seconds (%.0f ms)\n", durationSeconds.count(), static_cast<double>(duration.count()));
+		printf("Average Time per Frame: %.3f ms\n", static_cast<double>(duration.count()) / numFrames);
+		printf("Frames per Second: %.2f FPS\n", numFrames / durationSeconds.count());
+		// Clean up frames after export
+		for (Image& frame : myFrames) {
+			if (frame.data != nullptr) {
+				UnloadImage(frame);
+			}	
+		}
 		myFrames.clear();
 		std::vector<Image>().swap(myFrames);
 		exportMemoryFrames = false;
 		diskModeFrameIdx++;
-	}
-
-	if (isFunctionRecording && (isSafeFramesEnabled || isVideoExportEnabled)) {
-
-		if (isSafeFramesEnabled && isExportFramesEnabled) {
-			Image frame = LoadImageFromTexture(myParticlesTexture.texture);
-
-			std::string framesFolder = "Videos/" + folderName + "_frames";
-			createFramesFolder(framesFolder);
-
-			exportFrameToFile(frame, framesFolder, diskModeFrameIdx);
-			UnloadImage(frame);
-		}
-
-		diskModeFrameIdx++;
+		
+		// Reset frame export availability after successful export
+		videoHasBeenSaved = false;
+		actualSavedVideoFolder.clear();
+		actualSavedVideoName.clear();
 	}
 
 	return isFunctionRecording;
