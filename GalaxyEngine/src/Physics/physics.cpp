@@ -44,6 +44,8 @@ void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vecto
 		for (size_t i = 0; i < pParticles.size(); i++) {
 			ParticlePhysics& pParticle = pParticles[i];
 
+			pParticle.prevVel = pParticle.vel;
+
 			pParticle.vel.x += myVar.timeFactor * 1.5f * pParticle.acc.x;
 			pParticle.vel.y += myVar.timeFactor * 1.5f * pParticle.acc.y;
 
@@ -77,6 +79,8 @@ void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vecto
 	else {
 		for (size_t i = 0; i < pParticles.size(); i++) {
 			ParticlePhysics& pParticle = pParticles[i];
+
+			pParticle.prevVel = pParticle.vel;
 
 			pParticle.vel.x += myVar.timeFactor * 1.5f * pParticle.acc.x;
 			pParticle.vel.y += myVar.timeFactor * 1.5f * pParticle.acc.y;

@@ -159,6 +159,12 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			else if (label == "Force Size") {
 				toggleExclusive("Force Size", "Density Size");
 			}
+			else if (label == "Global Trails") {
+				toggleExclusive("Global Trails", "Selected Trails");
+			}
+			else if (label == "Selected Trails") {
+				toggleExclusive("Selected Trails", "Global Trails");
+			}
 			else if (label == "Visual Settings") {
 				toggleExclusive("Visual Settings", "Physics Settings");
 			}
@@ -259,51 +265,51 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 	if (bVisualsSliders) {
 		Color primaryColors = {
-			static_cast<unsigned char>(myParam.colorVisuals.primaryR),
-			static_cast<unsigned char>(myParam.colorVisuals.primaryG),
-			static_cast<unsigned char>(myParam.colorVisuals.primaryB),
-			static_cast<unsigned char>(myParam.colorVisuals.primaryA) };
+			static_cast<unsigned char>(myParam.colorVisuals.pColor.r),
+			static_cast<unsigned char>(myParam.colorVisuals.pColor.g),
+			static_cast<unsigned char>(myParam.colorVisuals.pColor.b),
+			static_cast<unsigned char>(myParam.colorVisuals.pColor.a) };
 
 		ImVec4 imguiPColor = rlImGuiColors::Convert(primaryColors);
 		static Color originalPColor = primaryColors;
 
 		if (ImGui::Button("Reset Primary Colors", ImVec2(240.0f, 30.0f))) {
-			myParam.colorVisuals.primaryR = originalPColor.r;
-			myParam.colorVisuals.primaryG = originalPColor.g;
-			myParam.colorVisuals.primaryB = originalPColor.b;
-			myParam.colorVisuals.primaryA = originalPColor.a;
+			myParam.colorVisuals.pColor.r = originalPColor.r;
+			myParam.colorVisuals.pColor.g = originalPColor.g;
+			myParam.colorVisuals.pColor.b = originalPColor.b;
+			myParam.colorVisuals.pColor.a = originalPColor.a;
 		}
 
 		if (ImGui::ColorPicker4("Primary Colors", (float*)&imguiPColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
 			primaryColors = rlImGuiColors::Convert(imguiPColor);
-			myParam.colorVisuals.primaryR = primaryColors.r;
-			myParam.colorVisuals.primaryG = primaryColors.g;
-			myParam.colorVisuals.primaryB = primaryColors.b;
-			myParam.colorVisuals.primaryA = primaryColors.a;
+			myParam.colorVisuals.pColor.r = primaryColors.r;
+			myParam.colorVisuals.pColor.g = primaryColors.g;
+			myParam.colorVisuals.pColor.b = primaryColors.b;
+			myParam.colorVisuals.pColor.a = primaryColors.a;
 		}
 
 		Color secondaryColors = {
-			static_cast<unsigned char>(myParam.colorVisuals.secondaryR),
-			static_cast<unsigned char>(myParam.colorVisuals.secondaryG),
-			static_cast<unsigned char>(myParam.colorVisuals.secondaryB),
-			static_cast<unsigned char>(myParam.colorVisuals.secondaryA) };
+			static_cast<unsigned char>(myParam.colorVisuals.sColor.r),
+			static_cast<unsigned char>(myParam.colorVisuals.sColor.g),
+			static_cast<unsigned char>(myParam.colorVisuals.sColor.b),
+			static_cast<unsigned char>(myParam.colorVisuals.sColor.a) };
 
 		ImVec4 imguiSColor = rlImGuiColors::Convert(secondaryColors);
 		static Color originalSColor = secondaryColors;
 
 		if (ImGui::Button("Reset Secondary Colors", ImVec2(240.0f, 30.0f))) {
-			myParam.colorVisuals.secondaryR = originalSColor.r;
-			myParam.colorVisuals.secondaryG = originalSColor.g;
-			myParam.colorVisuals.secondaryB = originalSColor.b;
-			myParam.colorVisuals.secondaryA = originalSColor.a;
+			myParam.colorVisuals.sColor.r = originalSColor.r;
+			myParam.colorVisuals.sColor.g = originalSColor.g;
+			myParam.colorVisuals.sColor.b = originalSColor.b;
+			myParam.colorVisuals.sColor.a = originalSColor.a;
 		}
 
 		if (ImGui::ColorPicker4("Secondary Colors", (float*)&imguiSColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
 			secondaryColors = rlImGuiColors::Convert(imguiSColor);
-			myParam.colorVisuals.secondaryR = secondaryColors.r;
-			myParam.colorVisuals.secondaryG = secondaryColors.g;
-			myParam.colorVisuals.secondaryB = secondaryColors.b;
-			myParam.colorVisuals.secondaryA = secondaryColors.a;
+			myParam.colorVisuals.sColor.r = secondaryColors.r;
+			myParam.colorVisuals.sColor.g = secondaryColors.g;
+			myParam.colorVisuals.sColor.b = secondaryColors.b;
+			myParam.colorVisuals.sColor.a = secondaryColors.a;
 		}
 
 		for (size_t i = 0; i < visualSliders.size(); i++) {
@@ -413,10 +419,12 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 		}
 
-		static std::array<sphParams, 4> sphButtonsParams = {
+		static std::array<sphParams, 6> sphButtonsParams = {
 		sphParams("SPH Water", myParam.brush.SPHWater),
 		sphParams("SPH Rock", myParam.brush.SPHRock),
 		sphParams("SPH Sand", myParam.brush.SPHSand),
+		sphParams("SPH Soil", myParam.brush.SPHSoil),
+		sphParams("SPH Ice", myParam.brush.SPHIce),
 		sphParams("SPH Mud", myParam.brush.SPHMud)
 
 		};

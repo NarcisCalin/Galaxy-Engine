@@ -16,21 +16,13 @@ struct ColorVisuals {
 	bool SPHColor = false;
 
 	bool showDarkMatterEnabled = false;
-	bool previousDarkMatterState = false;
 
 	bool selectedColor = true;
 
 	int blendMode = 1;
 
-	int primaryR = 0;
-	int primaryG = 40;
-	int primaryB = 68;
-	int primaryA = 100;
-
-	int secondaryR = 155;
-	int secondaryG = 80;
-	int secondaryB = 40;
-	int secondaryA = 75;
+	Color pColor = { 0, 40, 68, 100 };
+	Color sColor = { 155, 80, 40, 75 };
 
 	float hue = 180.0f;
 	float saturation = 0.8f;
@@ -52,44 +44,40 @@ struct ColorVisuals {
 
 	Vector2 prevVel = { 0.0f, 0.0f };
 
-	void particlesColorVisuals(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, 
+	void particlesColorVisuals(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles,
 		float& particleSizeMultiplier, float& particleTextureHalfSize, float& pressureDelta) {
 
 		if (solidColor) {
 			for (size_t i = 0; i < pParticles.size(); i++) {
 				if (!rParticles[i].uniqueColor) {
-					rParticles[i].color.r = static_cast<unsigned char>(primaryR * rParticles[i].PRGBA.r);
-					rParticles[i].color.g = static_cast<unsigned char>(primaryG * rParticles[i].PRGBA.g);
-					rParticles[i].color.b = static_cast<unsigned char>(primaryB * rParticles[i].PRGBA.b);
-					rParticles[i].color.a = static_cast<unsigned char>(primaryA * rParticles[i].PRGBA.a);
+					rParticles[i].pColor = pColor;
+					rParticles[i].color = rParticles[i].pColor;
+				}
+				else {
+					rParticles[i].color = rParticles[i].pColor;
 				}
 			}
 			blendMode = 1;
 		}
-		
+
 		if (densityColor) {
 
 			const float invMaxNeighbors = 1.0f / maxNeighbors;
 
 #pragma omp parallel for schedule(dynamic)
 			for (size_t i = 0; i < pParticles.size(); i++) {
-				if (rParticles[i].isDarkMatter || rParticles[i].uniqueColor) {
+				if (rParticles[i].isDarkMatter) {
 					continue;
 				}
 
-				Color lowDensityColor = {
-				static_cast<unsigned char>(primaryR * rParticles[i].PRGBA.r),
-				static_cast<unsigned char>(primaryG * rParticles[i].PRGBA.g),
-				static_cast<unsigned char>(primaryB * rParticles[i].PRGBA.b),
-				static_cast<unsigned char>(primaryA * rParticles[i].PRGBA.a)
-				};
+				if (!rParticles[i].uniqueColor) {
+					rParticles[i].pColor = pColor;
+					rParticles[i].sColor = sColor;
+				}
 
-				Color highDensityColor = {
-					static_cast<unsigned char>(secondaryR * rParticles[i].SRGBA.r),
-					static_cast<unsigned char>(secondaryG * rParticles[i].SRGBA.g),
-					static_cast<unsigned char>(secondaryB * rParticles[i].SRGBA.b),
-					static_cast<unsigned char>(secondaryA * rParticles[i].SRGBA.a)
-				};
+				Color lowDensityColor = rParticles[i].pColor;
+
+				Color highDensityColor = rParticles[i].sColor;
 
 				const ParticlePhysics pParticle = pParticles[i];
 				float normalDensity = std::min(static_cast<float>(rParticles[i].neighbors) * invMaxNeighbors, 1.0f);
@@ -98,7 +86,7 @@ struct ColorVisuals {
 
 			blendMode = 1;
 		}
-		
+
 		if (velocityColor) {
 #pragma omp parallel for schedule(dynamic)
 			for (size_t i = 0; i < pParticles.size(); i++) {
@@ -113,18 +101,16 @@ struct ColorVisuals {
 				saturation = 1.0f;
 				value = 1.0f;
 
-				if (!rParticles[i].uniqueColor) {
-					rParticles[i].color = ColorFromHSV(hue, saturation, value);
-				}
+				rParticles[i].color = ColorFromHSV(hue, saturation, value);
 			}
 
 			blendMode = 0;
 		}
-		
+
 		if (forceColor) {
 			for (size_t i = 0; i < pParticles.size(); i++) {
 
-				if (rParticles[i].uniqueColor) {
+				if (rParticles[i].isDarkMatter) {
 					continue;
 				}
 
@@ -134,29 +120,24 @@ struct ColorVisuals {
 				float clampedAcc = std::clamp(sqrt(particleAccSq), minColorAcc, maxColorAcc);
 				float normalizedAcc = clampedAcc / maxColorAcc;
 
-				Color lowDensityColor = {
-				static_cast<unsigned char>(primaryR * rParticles[i].PRGBA.r),
-				static_cast<unsigned char>(primaryG * rParticles[i].PRGBA.g),
-				static_cast<unsigned char>(primaryB * rParticles[i].PRGBA.b),
-				static_cast<unsigned char>(primaryA * rParticles[i].PRGBA.a)
-				};
+				if (!rParticles[i].uniqueColor) {
+					rParticles[i].pColor = pColor;
+					rParticles[i].sColor = sColor;
+				}
 
-				Color highDensityColor = {
-					static_cast<unsigned char>(secondaryR * rParticles[i].SRGBA.r),
-					static_cast<unsigned char>(secondaryG * rParticles[i].SRGBA.g),
-					static_cast<unsigned char>(secondaryB * rParticles[i].SRGBA.b),
-					static_cast<unsigned char>(secondaryA * rParticles[i].SRGBA.a)
-				};
+				Color lowDensityColor = rParticles[i].pColor;
+
+				Color highDensityColor = rParticles[i].sColor;
 
 				rParticles[i].color = ColorLerp(lowDensityColor, highDensityColor, normalizedAcc);
 
 			}
 			blendMode = 1;
 		}
-		
+
 		if (deltaVColor) {
 			for (size_t i = 0; i < pParticles.size(); i++) {
-				
+
 				Vector2 delta = pParticles[i].vel - pParticles[i].prevVel;
 
 				float deltaMag = std::sqrt(delta.x * delta.x + delta.y * delta.y);
@@ -168,14 +149,9 @@ struct ColorVisuals {
 				saturation = 1.0f;
 				value = 1.0f;
 
-				if (!rParticles[i].uniqueColor) {
-					rParticles[i].color = ColorFromHSV(hue, saturation, value);
-				}
-
-				pParticles[i].prevVel = pParticles[i].vel;
-
+				rParticles[i].color = ColorFromHSV(hue, saturation, value);
 			}
-				blendMode = 0;
+			blendMode = 0;
 		}
 
 		if (pressureColor) {
@@ -191,9 +167,7 @@ struct ColorVisuals {
 				saturation = 1.0f;
 				value = 1.0f;
 
-				if (!rParticles[i].uniqueColor) {
-					rParticles[i].color = ColorFromHSV(hue, saturation, value);
-				}
+				rParticles[i].color = ColorFromHSV(hue, saturation, value);
 			}
 
 			blendMode = 0;
@@ -201,18 +175,23 @@ struct ColorVisuals {
 
 		if (SPHColor) {
 			for (size_t i = 0; i < rParticles.size(); i++) {
-				rParticles[i].color = rParticles[i].originalColor;
+				if (!rParticles[i].uniqueColor) {
+					rParticles[i].color = rParticles[i].sphColor;
+				}
+				else {
+					rParticles[i].color = rParticles[i].pColor;
+				}
 			}
 
 			blendMode = 0;
 		}
-		
-		
+
+
 
 
 		if (selectedColor) {
 			for (size_t i = 0; i < rParticles.size(); i++) {
-				if (rParticles[i].isSelected && !rParticles[i].uniqueColor) {
+				if (rParticles[i].isSelected) {
 					rParticles[i].color = { 255, 20,20, 255 };
 				}
 			}
@@ -225,16 +204,10 @@ struct ColorVisuals {
 				}
 			}
 		}
-
-		if (showDarkMatterEnabled != previousDarkMatterState) {
-			previousDarkMatterState = showDarkMatterEnabled;
-
+		else {
 			for (size_t i = 0; i < rParticles.size(); i++) {
 				if (rParticles[i].isDarkMatter) {
-					if (!showDarkMatterEnabled) {
-
-						rParticles[i].color = { 0, 0, 0, 0 };
-					}
+					rParticles[i].color = { 0, 0, 0, 0 };
 				}
 			}
 		}

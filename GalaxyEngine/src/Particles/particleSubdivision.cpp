@@ -107,9 +107,9 @@ void ParticleSubdivision::subdivideParticles(UpdateVariables& myVar, UpdateParam
 					}
 
 					for (int j = 0; j < 4; ++j) {
-
-						myParam.rParticles[firstNewParticleIndex + j].PRGBA = myParam.rParticles[i].PRGBA;
-						myParam.rParticles[firstNewParticleIndex + j].SRGBA = myParam.rParticles[i].SRGBA;
+						myParam.rParticles[firstNewParticleIndex + j].pColor = myParam.rParticles[i].pColor;
+						myParam.rParticles[firstNewParticleIndex + j].sColor = myParam.rParticles[i].sColor;
+						myParam.rParticles[firstNewParticleIndex + j].sphColor = myParam.rParticles[i].sphColor;
 					}
 
 					myParam.pParticles[i] = std::move(myParam.pParticles.back());

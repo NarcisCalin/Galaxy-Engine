@@ -30,7 +30,7 @@ void RightClickSettings::rightClickMenuSpawnLogic(bool& isMouseNotHoveringUI,
 		!IsKeyDown(KEY_LEFT_ALT) &&
 		!isMouseMoving &&
 		isMouseNotHoveringUI &&
-		!IsMouseButtonDown(0)){
+		!IsMouseButtonDown(0)) {
 		isMenuActive = true;
 		spawnBlocked = false;
 		selectedColorOriginal = selectedColor;
@@ -49,10 +49,10 @@ void RightClickSettings::rightClickMenuSpawnLogic(bool& isMouseNotHoveringUI,
 		selectedColorChanged = false;
 	}
 
-	else if (IsMouseButtonPressed(0) && 
-		isMouseNotHoveringUI && 
-		!isMenuActive && 
-		spawnBlocked){
+	else if (IsMouseButtonPressed(0) &&
+		isMouseNotHoveringUI &&
+		!isMenuActive &&
+		spawnBlocked) {
 		isSpawningAllowed = true;
 		spawnBlocked = false;
 	}
@@ -79,7 +79,7 @@ void RightClickSettings::rightClickMenu(UpdateVariables& myVar, UpdateParameters
 		rightClickParams("Draw Quadtree", "Display Barnes-Hut algorithm quadtree", myVar.drawQuadtree),
 		rightClickParams("Enable Frames Export", "Exports recorded frames to disk", myParam.screenCapture.isExportFramesEnabled),
 		rightClickParams("Safe Frames Export", "Store frames directly to the disk. Disabling it will make recording faster, but might crash if you run out of memory", myParam.screenCapture.isSafeFramesEnabled),
-		
+
 		};
 
 		ImGui::SetNextWindowSize(ImVec2(200.0f, 425.0f), ImGuiCond_Once);
@@ -121,27 +121,42 @@ void RightClickSettings::rightClickMenu(UpdateVariables& myVar, UpdateParameters
 			ImGui::PopStyleColor(3);
 		}
 
+		bool pColChanged = false;
+		bool sColChanged = false;
+
 		ImGui::Text("Primary Color");
-		if (ImGui::ColorEdit4("##pCol", (float*)&pCol)) {
+		if (ImGui::ColorEdit4("##pCol", (float*)&pCol, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
 			myParam.colorVisuals.selectedColor = false;
+			pColChanged = true;
+			for (size_t i = 0; i < myParam.rParticles.size(); i++) {
+				if (myParam.rParticles[i].isSelected) {
+					myParam.rParticles[i].uniqueColor = true;
+				}
+			}
 		}
-
 		ImGui::Text("Secondary Color");
-		if (ImGui::ColorEdit4("##sCol", (float*)&sCol)) {
+		if (ImGui::ColorEdit4("##sCol", (float*)&sCol, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
 			myParam.colorVisuals.selectedColor = false;
+			sColChanged = true;
+			for (size_t i = 0; i < myParam.rParticles.size(); i++) {
+				if (myParam.rParticles[i].isSelected) {
+					myParam.rParticles[i].uniqueColor = true;
+				}
+			}
 		}
-
 		ImGui::End();
 
 		if (resetParticleColors) {
 			for (size_t i = 0; i < myParam.rParticles.size(); i++) {
-				myParam.rParticles[i].PRGBA = { 1.0f, 1.0f, 1.0f, 1.0f };
-				myParam.rParticles[i].SRGBA = { 1.0f, 1.0f, 1.0f, 1.0f };
+				myParam.rParticles[i].pColor = { 255, 255, 255, 255 };
+				myParam.rParticles[i].sColor = { 255, 255, 255, 255 };
+				myParam.rParticles[i].uniqueColor = false;
 			}
 			resetParticleColors = false;
 		}
 
-		if (myParam.rParticlesSelected.size() > 0 && !IsMouseButtonDown(0)) {
+		if (myParam.rParticlesSelected.size() > 0 && !pColChanged && !sColChanged &&
+			!ImGui::IsItemActive()) {
 
 			pCol.x = 0.0f;
 			pCol.y = 0.0f;
@@ -156,55 +171,60 @@ void RightClickSettings::rightClickMenu(UpdateVariables& myVar, UpdateParameters
 			int visibleSelectedAmount = 0;
 
 			for (size_t i = 0; i < myParam.rParticles.size(); i++) {
-
 				ParticleRendering& rP = myParam.rParticles[i];
 
-				if (rP.isSelected && (!rP.isDarkMatter || !rP.uniqueColor)) {
+				if (rP.isSelected && !rP.isDarkMatter) {
 
+					ImVec4 rToVecPColor = rlImGuiColors::Convert(rP.pColor);
+					ImVec4 rToVecSColor = rlImGuiColors::Convert(rP.sColor);
 
-					pCol.x += rP.PRGBA.r;
-					pCol.y += rP.PRGBA.g;
-					pCol.z += rP.PRGBA.b;
-					pCol.w += rP.PRGBA.a;
+					pCol.x += rToVecPColor.x;
+					pCol.y += rToVecPColor.y;
+					pCol.z += rToVecPColor.z;
+					pCol.w += rToVecPColor.w;
 
-					sCol.x += rP.SRGBA.r;
-					sCol.y += rP.SRGBA.g;
-					sCol.z += rP.SRGBA.b;
-					sCol.w += rP.SRGBA.a;
+					sCol.x += rToVecSColor.x;
+					sCol.y += rToVecSColor.y;
+					sCol.z += rToVecSColor.z;
+					sCol.w += rToVecSColor.w;
 
 					visibleSelectedAmount++;
 				}
 			}
 
-			pCol.x /= visibleSelectedAmount;
-			pCol.y /= visibleSelectedAmount;
-			pCol.z /= visibleSelectedAmount;
-			pCol.w /= visibleSelectedAmount;
+			if (visibleSelectedAmount > 0) {
+				pCol.x /= visibleSelectedAmount;
+				pCol.y /= visibleSelectedAmount;
+				pCol.z /= visibleSelectedAmount;
+				pCol.w /= visibleSelectedAmount;
 
-			sCol.x /= visibleSelectedAmount;
-			sCol.y /= visibleSelectedAmount;
-			sCol.z /= visibleSelectedAmount;
-			sCol.w /= visibleSelectedAmount;
+				sCol.x /= visibleSelectedAmount;
+				sCol.y /= visibleSelectedAmount;
+				sCol.z /= visibleSelectedAmount;
+				sCol.w /= visibleSelectedAmount;
+			}
 		}
 
-		if (IsMouseButtonDown(0) && myParam.rParticlesSelected.size() > 0 && isMenuActive) {
+		if ((pColChanged || sColChanged) && myParam.rParticlesSelected.size() > 0 && isMenuActive) {
+			vecToRPColor = rlImGuiColors::Convert(pCol);
+			vecToRSColor = rlImGuiColors::Convert(sCol);
+
 			for (size_t i = 0; i < myParam.rParticles.size(); i++) {
-
 				ParticleRendering& rP = myParam.rParticles[i];
-				if (rP.isSelected && (!rP.isDarkMatter || !rP.uniqueColor)) {
+				if (rP.isSelected && !rP.isDarkMatter) {
 
-					rP.PRGBA.r = pCol.x;
-					rP.PRGBA.g = pCol.y;
-					rP.PRGBA.b = pCol.z;
-					rP.PRGBA.a = pCol.w;
+					rP.uniqueColor = true;
+					rP.pColor.r = vecToRPColor.r;
+					rP.pColor.g = vecToRPColor.g;
+					rP.pColor.b = vecToRPColor.b;
+					rP.pColor.a = vecToRPColor.a;
 
-					rP.SRGBA.r = sCol.x;
-					rP.SRGBA.g = sCol.y;
-					rP.SRGBA.b = sCol.z;
-					rP.SRGBA.a = sCol.w;
+					rP.sColor.r = vecToRSColor.r;
+					rP.sColor.g = vecToRSColor.g;
+					rP.sColor.b = vecToRSColor.b;
+					rP.sColor.a = vecToRSColor.a;
 				}
 			}
-
 		}
 	}
 }

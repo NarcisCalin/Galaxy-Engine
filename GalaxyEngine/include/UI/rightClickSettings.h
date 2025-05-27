@@ -52,18 +52,11 @@ private:
 	bool selectedColorChanged = false;
 	bool selectedColorOriginal = false;
 
-	float pR = 1.0f;
-	float pG = 1.0f;
-	float pB = 1.0f;
-	float pA = 1.0f;
-
 	ImVec4 pCol = { 1.0f, 1.0f, 1.0f, 1.0f };
 	ImVec4 sCol = { 1.0f, 1.0f, 1.0f, 1.0f };
 
-	float sR = 1.0f;
-	float sG = 1.0f;
-	float sB = 1.0f;
-	float sA = 1.0f;
+	Color vecToRPColor = { 255,255,255,255 };
+	Color vecToRSColor = { 255,255,255,255 };
 
 	bool resetParticleColors = false;
 };
