@@ -62,6 +62,7 @@ public:
 
 	bool bVisualsSliders = true;
 	bool bPhysicsSliders = false;
+	bool bRecordingSettings = false;
 	bool statsWindow = false;
 
 	void uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, SaveSystem& save);

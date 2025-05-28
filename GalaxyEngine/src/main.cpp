@@ -437,7 +437,8 @@ int main() {
 
 		EndBlendMode();
 
-		myVar.isRecording = myParam.screenCapture.screenGrab(myParticlesTexture, myVar);
+		// Detects if the user is recording the screen
+		myVar.isRecording = myParam.screenCapture.screenGrab(myParticlesTexture, myVar, myParam);
 
 		if (myVar.isRecording) {
 			DrawRectangleLinesEx({ 0,0, static_cast<float>(GetScreenWidth()), static_cast<float>(GetScreenHeight()) }, 3, RED);

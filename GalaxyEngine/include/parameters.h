@@ -137,7 +137,10 @@ struct UpdateVariables{
 	float particleBounciness = 0.75f;
 
 	int threadsAmount = 16;
-
 	bool longExposure = false;
 	ImFont* robotoMediumFont = nullptr;
+
+	bool pauseAfterRecording = false;
+	bool cleanSceneAfterRecording = false;
+	float recordingTimeLimit = 0.0f; 
 };
