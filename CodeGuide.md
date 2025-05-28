@@ -7,7 +7,7 @@ This is a quick guide for modding or contributing to the development of Galaxy E
 - Various classes for different purposes can be added to the **"UpdateParameters"** struct in **"parameters.h"**. This is not necessary for important or complex classes like **"SPH"**, **"Physics"**, or **"UI"**.
 - Global variables go to the "UpdateVariables" struct in **"parameters.h"**.
 - When you pass the "UpdateParameters" or "UpdateVariables" structs to a function, **ALWAYS** name them **"myParam"** and **"myVar"**.
-- All added and removed parameters that are intended to be saved when clicking the **"Save Scene"** button must be added to the **"saveSystem.h"** save and load functions.
+- saveSystem.h is meant for parameters that change how the simulation looks or behaves. For example, threads amount is not saved because it doesn't affect the physics or the visuals of the simulation, while trails length is saved because it affects how the simulation might look like with trails enabled.
 - Keep physics and similar features inside **"updateScene();"**.
 - Keep visual features (like UI, particle visuals, etc.) inside **"drawScene();"**.
 - For now, the current vector struct used in Galaxy Engine is Raylib's **"Vector2"**.
