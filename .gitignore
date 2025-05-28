@@ -20,3 +20,4 @@ x64/
 # Misc
 *.diff
 .clang-format
+GalaxyEngine/include/Memory/
