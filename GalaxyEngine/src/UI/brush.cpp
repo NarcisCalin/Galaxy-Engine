@@ -76,6 +76,8 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 				myParam.rParticles.emplace_back(water.color, 0.125f, false, false, false, true, true, false, true, -1.0f);
 
 				myParam.rParticles.back().sphColor = water.color;
+
+				myParam.rParticles.back().sphLabel = water.sphLabel;
 			}
 		}
 
@@ -132,6 +134,8 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 						addRandom(rock.color.b),
 						rock.color.a
 				};
+
+				myParam.rParticles.back().sphLabel = rock.sphLabel;
 
 			}
 		}
@@ -190,6 +194,8 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 						sand.color.a
 				};
 
+				myParam.rParticles.back().sphLabel = sand.sphLabel;
+
 			}
 		}
 
@@ -247,6 +253,8 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 						soil.color.a
 				};
 
+				myParam.rParticles.back().sphLabel = soil.sphLabel;
+
 			}
 		}
 
@@ -303,6 +311,8 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 						addRandom(ice.color.b),
 						ice.color.a
 				};
+
+				myParam.rParticles.back().sphLabel = ice.sphLabel;
 			}
 		}
 
@@ -359,6 +369,8 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 						addRandom(mud.color.b),
 						mud.color.a
 				};
+
+				myParam.rParticles.back().sphLabel = mud.sphLabel;
 
 			}
 		}

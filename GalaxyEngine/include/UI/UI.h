@@ -8,6 +8,8 @@
 #include "../Physics/SPH.h"
 #include "../UX/saveSystem.h"
 #include "../../external/imgui/imgui.h"
+#include"../../external/imgui/implot.h"
+#include"../../external/imgui/implot_internal.h"
 #include "../../external/imgui/rlImGui.h"
 #include "../../external/imgui/rlImGuiColors.h"
 
@@ -78,5 +80,11 @@ private:
 	bool loadSettings = true;
 
 	std::unordered_map<std::string, PlotData> plotDataMap;
+
+	ImVec4 statsNamesCol = { 0.6f, 0.6f, 0.8f, 1.0f };
+
+	ImVec2 graphDefaultSize = { 340.0f, 250.0f };
+
+	int graphHistoryLimit = 1000;
 
 };

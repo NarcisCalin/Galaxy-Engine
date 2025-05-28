@@ -53,7 +53,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		settingsParams("Density Color", "Maps particle neighbor amount to the primary and secondary colors", myParam.colorVisuals.densityColor),
 		settingsParams("Force Color", "Maps particle acceleration to the primary and secondary colors",myParam.colorVisuals.forceColor),
 		settingsParams("Velocity Color", "Maps particle velocity to color", myParam.colorVisuals.velocityColor),
-		settingsParams("DeltaV Color", "Maps particle change in speed to color", myParam.colorVisuals.deltaVColor),
+		settingsParams("Shockwave Color", "Maps particle acceleration to color", myParam.colorVisuals.deltaVColor),
 		settingsParams("Pressure Color", "Maps particle pressure to color", myParam.colorVisuals.pressureColor),
 		settingsParams("SPH Color", "Uses the SPH materials colors", myParam.colorVisuals.SPHColor),
 		settingsParams("Selected Color", "Highlight selected particles", myParam.colorVisuals.selectedColor),
@@ -82,7 +82,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		visualSlidersParams<int>("Max Neighbors", "Controls the maximum neighbor count range", myParam.colorVisuals.maxNeighbors, 1, 500),
 		visualSlidersParams<float>("Max Color Force", "Controls the acceleration threshold to use the secondary color", myParam.colorVisuals.maxColorAcc, 1.0f, 400.0f),
 		visualSlidersParams<float>("Max Size Force", "Controls the acceleration threshold to map the particle size", myParam.densitySize.sizeAcc, 1.0f, 400.0f),
-		visualSlidersParams<float>("Max DeltaV Accel", "Controls the change in speed threshold to map the particle color in DeltaV color mode", myParam.colorVisuals.deltaVMaxAccel, 0.1f, 40.0f),
+		visualSlidersParams<float>("Max Shockwave Accel", "Controls the acceleration threshold to map the particle color in Shockwave color mode", myParam.colorVisuals.ShockwaveMaxAcc, 1.0f, 120.0f),
 		visualSlidersParams<float>("Max Velocity Color", "Controls the max velocity used to map the colors in the velocity color mode", myParam.colorVisuals.maxVel, 10.0f, 10000.0f),
 		visualSlidersParams<float>("Max Pressure Color", "Controls the max pressure used to map the colors in the pressure color mode", myParam.colorVisuals.maxPress, 100.0f, 100000.0f),
 		visualSlidersParams<int>("Trails Length", "Controls how long should the trails be. This feature is computationally expensive", myVar.trailMaxLength, 0, 1500),
@@ -270,7 +270,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(colStats.x + 0.1f, colStats.y + 0.1f, colStats.z + 0.1f, colStats.w));
 	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(colStats.x - 0.1f, colStats.y - 0.1f, colStats.z - 0.1f, colStats.w));
 
-	if (ImGui::Button("Advanced Statistics", ImVec2(halfButtonWidth, settingsButtonY))) {
+	if (ImGui::Button("Advanced Stats", ImVec2(halfButtonWidth, settingsButtonY))) {
 		bPhysicsSliders = false;
 		bVisualsSliders = false;
 		statsWindow = true;
@@ -528,27 +528,27 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 
+	ImGui::Spacing();
 	ImGui::Separator();
 	ImGui::Spacing();
 
-	//------ Frame Rate ------//
-	const int fpsHistorySize = 100;
-	static float fpsValues[fpsHistorySize] = { 0.0f };
-	static int fpsValuesOffset = 0;
+	//------ Performance ------//
 
-	float ImGuiFPS = ImGui::GetIO().Framerate;
+	ImGui::TextColored(statsNamesCol, "Performance");
+	ImGui::Spacing();
 
-	fpsValues[fpsValuesOffset] = ImGuiFPS;
-	fpsValuesOffset = (fpsValuesOffset + 1) % fpsHistorySize;
+	plotLinesHelper("Framerate: ", graphHistoryLimit, ImGui::GetIO().Framerate, 0.0f, 144.0f, { 340.0f, 200.0f });
+	ImGui::Spacing();
+	plotLinesHelper("Frame Time: ", graphHistoryLimit, GetFrameTime(), 0.0f, 1.0f, {340.0f, 200.0f});
 
-	float fps = ImGui::GetIO().Framerate;
-	std::string fpsOverlay = "FPS: " + std::to_string(fps);
-
-	ImGui::PlotLines("##FrameRate", fpsValues, fpsHistorySize, fpsValuesOffset, fpsOverlay.c_str(), 0.0f, 144.0f, ImVec2(0, 100));
-
+	ImGui::Spacing();
 	ImGui::Separator();
+	ImGui::Spacing();
 
 	//------ Particle Count ------//
+
+	ImGui::TextColored(statsNamesCol, "Particle Count");
+	ImGui::Spacing();
 
 	int particlesAmout = static_cast<int>(myParam.pParticles.size());
 	int selecParticlesAmout = static_cast<int>(myParam.pParticlesSelected.size());
@@ -557,9 +557,98 @@ void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 
 	ImGui::Text("%s%d", "Selected Particles: ", selecParticlesAmout);
 
+	ImGui::Spacing();
 	ImGui::Separator();
+	ImGui::Spacing();
 
-	//------ Particle Mass ------//
+	//------ Composition ------//
+
+	ImGui::TextColored(statsNamesCol, "Composition");
+	ImGui::Spacing();
+
+	float waterAmount = 0.0f;
+	float rockAmount = 0.0f;
+	float sandAmount = 0.0f;
+	float soilAmount = 0.0f;
+	float iceAmount = 0.0f;
+	float mudAmount = 0.0f;
+
+	// This is not the ideal way to do it, but I'm using this for now because there are not many materials
+	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+		ParticleRendering& r = myParam.rParticles[i];
+		if (myParam.pParticlesSelected.size() == 0) {
+			if (r.sphLabel == "water") {
+				waterAmount++;
+			}
+			else if (r.sphLabel == "rock") {
+				rockAmount++;
+			}
+			else if (r.sphLabel == "sand") {
+				sandAmount++;
+			}
+			else if (r.sphLabel == "soil") {
+				soilAmount++;
+			}
+			else if (r.sphLabel == "ice") {
+				iceAmount++;
+			}
+			else if (r.sphLabel == "mud") {
+				mudAmount++;
+			}
+		}
+		else {
+			if (r.sphLabel == "water" && r.isSelected) {
+				waterAmount++;
+			}
+			else if (r.sphLabel == "rock" && r.isSelected) {
+				rockAmount++;
+			}
+			else if (r.sphLabel == "sand" && r.isSelected) {
+				sandAmount++;
+			}
+			else if (r.sphLabel == "soil" && r.isSelected) {
+				soilAmount++;
+			}
+			else if (r.sphLabel == "ice" && r.isSelected) {
+				iceAmount++;
+			}
+			else if (r.sphLabel == "mud" && r.isSelected) {
+				mudAmount++;
+			}
+		}
+	}
+
+	std::vector<const char*> labels;
+	std::vector<float> values;
+
+	if (waterAmount > 0) { labels.push_back("Water"); values.push_back(waterAmount); }
+	if (rockAmount > 0) { labels.push_back("Rock"); values.push_back(rockAmount); }
+	if (sandAmount > 0) { labels.push_back("Sand"); values.push_back(sandAmount); }
+	if (soilAmount > 0) { labels.push_back("Soil"); values.push_back(soilAmount); }
+	if (iceAmount > 0) { labels.push_back("Ice"); values.push_back(iceAmount); }
+	if (mudAmount > 0) { labels.push_back("Mud"); values.push_back(mudAmount); }
+
+	if (!values.empty() && ImPlot::BeginPlot("Material Distribution", ImVec2(300, 300), ImPlotFlags_Equal)) {
+
+		ImPlot::SetupAxes(nullptr, nullptr,
+			ImPlotAxisFlags_NoDecorations | ImPlotAxisFlags_Lock,
+			ImPlotAxisFlags_NoDecorations | ImPlotAxisFlags_Lock);
+
+		ImPlot::SetupAxesLimits(-1, 1, -1, 1, ImGuiCond_Always);
+
+		ImPlot::PlotPieChart(labels.data(), values.data(), static_cast<int>(values.size()), 0.0, 0.0, 0.8);
+
+		ImPlot::EndPlot();
+	}
+
+	ImGui::Spacing();
+	ImGui::Separator();
+	ImGui::Spacing();
+
+	//------ Mass ------//
+
+	ImGui::TextColored(statsNamesCol, "Mass");
+	ImGui::Spacing();
 
 	double totalMass = 0.0f;
 
@@ -579,9 +668,14 @@ void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 
 	ImGui::Text("Selected Mass: %.2f", selectedMas);
 
+	ImGui::Spacing();
 	ImGui::Separator();
+	ImGui::Spacing();
 
-	//------ Particle Velocity ------//
+	//------ Velocity ------//
+
+	ImGui::TextColored(statsNamesCol, "Selected Velocity");
+	ImGui::Spacing();
 
 	Vector2 selectedVel = { 0.0f, 0.0f };
 	float totalVel = 0.0f;
@@ -598,19 +692,70 @@ void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 
 	totalVel = sqrt(selectedVel.x * selectedVel.x + selectedVel.y * selectedVel.y);
 
-	plotLinesHelper("Velocity X: ", 1000, selectedVel.x, -500.0f, 500.0f, { 0.0f, 100.0f });
+	plotLinesHelper("Velocity X: ", graphHistoryLimit, selectedVel.x, -300.0f, 300.0f, graphDefaultSize);
 	ImGui::Spacing();
-	plotLinesHelper("Velocity Y: ", 1000, selectedVel.y, -500.0f, 500.0f, { 0.0f, 100.0f });
+	plotLinesHelper("Velocity Y: ", graphHistoryLimit, selectedVel.y, -300.0f, 300.0f, graphDefaultSize);
 	ImGui::Spacing();
-	plotLinesHelper("Total Velocity: ", 1000, totalVel, -500.0f, 500.0f, { 0.0f, 100.0f });
+	plotLinesHelper("Total Velocity: ", graphHistoryLimit, totalVel, -300.0f, 300.0f, graphDefaultSize);
+
+	ImGui::Spacing();
+	ImGui::Separator();
+	ImGui::Spacing();
+
+	//------ Acceleration ------//
+
+	ImGui::TextColored(statsNamesCol, "Selected Acceleration");
+	ImGui::Spacing();
+
+	Vector2 selectedAcc = { 0.0f, 0.0f };
+	float totalAcc = 0.0f;
+
+	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+		if (myParam.rParticles[i].isSelected) {
+			selectedAcc.x += myParam.pParticles[i].acc.x;
+			selectedAcc.y += myParam.pParticles[i].acc.y;
+		}
+	}
+
+	selectedAcc.x /= myParam.pParticlesSelected.size();
+	selectedAcc.y /= myParam.pParticlesSelected.size();
+
+	totalAcc = sqrt(selectedAcc.x * selectedAcc.x + selectedAcc.y * selectedAcc.y);
+
+	plotLinesHelper("Acceleration X: ", graphHistoryLimit, selectedAcc.x, -300.0f, 300.0f, graphDefaultSize);
+	ImGui::Spacing();
+	plotLinesHelper("Acceleration Y: ", graphHistoryLimit, selectedAcc.y, -300.0f, 300.0f, graphDefaultSize);
+	ImGui::Spacing();
+	plotLinesHelper("Total Acceleration: ", graphHistoryLimit, totalAcc, -300.0f, 300.0f, graphDefaultSize);
+
+	ImGui::Spacing();
+	ImGui::Separator();
+	ImGui::Spacing();
+
+	//------ Pressure ------//
+
+	ImGui::TextColored(statsNamesCol, "Selected Pressure");
+	ImGui::Spacing();
+
+	float totalPress = 0.0f;
+
+	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+		if (myParam.rParticles[i].isSelected) {
+			totalPress += myParam.pParticles[i].press;
+		}
+	}
+
+	totalPress /= myParam.pParticlesSelected.size();
+
+	plotLinesHelper("Pressure: ", graphHistoryLimit, totalPress, 0.0f, 100.0f, graphDefaultSize);
 }
+
 
 void UI::plotLinesHelper(std::string label,
 	const int length,
 	float value, const float minValue, const float maxValue, ImVec2 size) {
 
 	auto& plotData = plotDataMap[label];
-
 	if (plotData.values.size() != length) {
 		plotData.values.resize(length, 0.0f);
 		plotData.offset = 0;
@@ -619,7 +764,24 @@ void UI::plotLinesHelper(std::string label,
 	plotData.values[plotData.offset] = value;
 	plotData.offset = (plotData.offset + 1) % length;
 
-	std::string valueOverlay = label + std::to_string(value);
+	std::vector<float> ordered_values(length);
+	std::vector<float> ordered_x(length);
 
-	ImGui::PlotLines(("##" + label).c_str(), plotData.values.data(), length, plotData.offset, valueOverlay.c_str(), minValue, maxValue, size);
+	for (int i = 0; i < length; ++i) {
+		int idx = (plotData.offset + i) % length;
+		ordered_values[i] = plotData.values[idx];
+		ordered_x[i] = static_cast<float>(i);
+	}
+
+	if (ImPlot::BeginPlot(label.c_str(), size, ImPlotFlags_NoInputs)) {
+
+		
+
+		ImPlot::SetupAxis(ImAxis_Y1, nullptr, ImPlotAxisFlags_AutoFit);
+		
+
+		ImPlot::PlotLine(label.c_str(), ordered_x.data(), ordered_values.data(), length);
+
+		ImPlot::EndPlot();
+	}
 }

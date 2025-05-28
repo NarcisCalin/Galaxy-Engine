@@ -56,7 +56,7 @@ public:
 		WRITE(MaxNeighbors, myParam.colorVisuals.maxNeighbors);
 		WRITE(MaxColorForce, myParam.colorVisuals.maxColorAcc);
 		WRITE(MaxSizeForce, myParam.densitySize.sizeAcc);
-		WRITE(DeltaVMaxAcc, myParam.colorVisuals.deltaVMaxAccel);
+		WRITE(DeltaVMaxAcc, myParam.colorVisuals.ShockwaveMaxAcc);
 		WRITE(TrailsMaxLength, myVar.trailMaxLength);
 		WRITE(TrailsThickness, myParam.trails.trailThickness);
 		WRITE(ParticleSizeMult, myVar.particleSizeMultiplier);
@@ -139,7 +139,7 @@ public:
 			READ(MaxNeighbors, myParam.colorVisuals.maxNeighbors);
 			READ(MaxColorForce, myParam.colorVisuals.maxColorAcc);
 			READ(MaxSizeForce, myParam.densitySize.sizeAcc);
-			READ(DeltaVMaxAcc, myParam.colorVisuals.deltaVMaxAccel);
+			READ(DeltaVMaxAcc, myParam.colorVisuals.ShockwaveMaxAcc);
 			READ(TrailsMaxLength, myVar.trailMaxLength);
 			READ(TrailsThickness, myParam.trails.trailThickness);
 			READ(ParticleSizeMult, myVar.particleSizeMultiplier);
