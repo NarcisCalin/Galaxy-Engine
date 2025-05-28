@@ -131,13 +131,11 @@ void ScreenCapture::exportMemoryFramesToDisk() {
            "export.\n");
     return;
   }
-  // Create frames folder if it doesn't exist
   createFramesFolder(actualSavedVideoFolder);
   printf("Exporting %d frames to %s with base name %s...\n",
          static_cast<int>(myFrames.size()), actualSavedVideoFolder.c_str(),
          actualSavedVideoName.c_str());
 
-  // Start timing the export process
   auto startTime = std::chrono::high_resolution_clock::now();
 
   int exportedCount = 0;
@@ -146,13 +144,10 @@ void ScreenCapture::exportMemoryFramesToDisk() {
 #pragma omp parallel for reduction(+ : exportedCount) schedule(static)
   for (int i = 0; i < totalFrames; ++i) {
     try {
-      // Use the actual saved video name as the base name for
-      // frames
       exportFrameToFile(myFrames[i], actualSavedVideoFolder,
                         actualSavedVideoName, i);
       exportedCount++;
 
-      // Show progress every 100 frames (thread-safe)
       if (i % 100 == 0) {
 #pragma omp critical
         {
@@ -168,7 +163,6 @@ void ScreenCapture::exportMemoryFramesToDisk() {
     }
   }
 
-  // End timing and calculate duration
   auto endTime = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
       endTime - startTime);
@@ -634,8 +628,6 @@ bool ScreenCapture::screenGrab(RenderTexture2D &myParticlesTexture,
     if (myFrames.size() > 0 && !isFunctionRecording && !isSafeFramesEnabled &&
         videoHasBeenSaved) {
 
-      // Determine button color and state based on export
-      // status
       ImVec4 exportCol;
       bool exportButtonEnabled = !isExportingFrames;
 
@@ -649,6 +641,7 @@ bool ScreenCapture::screenGrab(RenderTexture2D &myParticlesTexture,
       applyButtonStyle(exportCol);
 
       // Show different text based on export status
+      // Note: Not Working, the exporting blocks the UI
       std::string buttonText =
           isExportingFrames ? "Exporting..." : "Export Frames";
 
