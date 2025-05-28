@@ -1103,10 +1103,15 @@ bool ScreenCapture::screenGrab(RenderTexture2D &myParticlesTexture,
         if (videoNamePath.has_extension() &&
             videoNamePath.extension() == ".mp4") {
           actualSavedVideoName = videoNamePath.stem().string();
-        }
-        videoHasBeenSaved = true;
+        }        videoHasBeenSaved = true;
         showSaveConfirmationDialog = false;
         nameBuffer[0] = '\0';
+
+        // Clear recording state to close the recording menu
+        if (!myFrames.empty()) {
+          discardMemoryFrames();
+        }
+        diskModeFrameIdx = 0;
 
         if (isExportFramesEnabled && isSafeFramesEnabled) {
 

@@ -49,12 +49,12 @@ private:
     void applyButtonStyle(const ImVec4 &baseColor);
     void popButtonStyle();
 
-    int screenshotIndex = 0;
-    std::vector<Image> myFrames;
-    int diskModeFrameIdx = 0;
-    std::string folderName;
-    std::string outFileName;
-    std::string videoFolder;
+    int screenshotIndex = 0; // Used for screenshot naming
+    std::vector<Image> myFrames; // Used for storing captured frames
+    int diskModeFrameIdx = 0; // Used for tracking frames in disk mode
+    std::string folderName; // Used for storing the folder name
+    std::string outFileName; // Used for storing the output file name
+    std::string videoFolder; // Used for storing the video folder path
 
     AVFormatContext *pFormatCtx = nullptr;
     AVCodecContext *pCodecCtx = nullptr;
