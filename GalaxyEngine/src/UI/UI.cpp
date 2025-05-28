@@ -159,6 +159,12 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			else if (label == "Force Size") {
 				toggleExclusive("Force Size", "Density Size");
 			}
+			else if (label == "Global Trails") {
+				toggleExclusive("Global Trails", "Selected Trails");
+			}
+			else if (label == "Selected Trails") {
+				toggleExclusive("Selected Trails", "Global Trails");
+			}
 			else if (label == "Visual Settings") {
 				toggleExclusive("Visual Settings", "Physics Settings");
 			}
@@ -241,6 +247,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	if (ImGui::Button("Visual Sliders", ImVec2(halfButtonWidth, settingsButtonY))) {
 		bVisualsSliders = true;
 		bPhysicsSliders = false;
+		statsWindow = false;
 	}
 	ImGui::PopStyleColor(3);
 
@@ -254,56 +261,69 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	if (ImGui::Button("Physics Sliders", ImVec2(halfButtonWidth, settingsButtonY))) {
 		bPhysicsSliders = true;
 		bVisualsSliders = false;
+		statsWindow = false;
+	}
+	ImGui::PopStyleColor(3);
+
+	ImVec4& colStats = statsWindow ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
+	ImGui::PushStyleColor(ImGuiCol_Button, colStats);
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(colStats.x + 0.1f, colStats.y + 0.1f, colStats.z + 0.1f, colStats.w));
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(colStats.x - 0.1f, colStats.y - 0.1f, colStats.z - 0.1f, colStats.w));
+
+	if (ImGui::Button("Advanced Statistics", ImVec2(halfButtonWidth, settingsButtonY))) {
+		bPhysicsSliders = false;
+		bVisualsSliders = false;
+		statsWindow = true;
 	}
 	ImGui::PopStyleColor(3);
 
 	if (bVisualsSliders) {
 		Color primaryColors = {
-			static_cast<unsigned char>(myParam.colorVisuals.primaryR),
-			static_cast<unsigned char>(myParam.colorVisuals.primaryG),
-			static_cast<unsigned char>(myParam.colorVisuals.primaryB),
-			static_cast<unsigned char>(myParam.colorVisuals.primaryA) };
+			static_cast<unsigned char>(myParam.colorVisuals.pColor.r),
+			static_cast<unsigned char>(myParam.colorVisuals.pColor.g),
+			static_cast<unsigned char>(myParam.colorVisuals.pColor.b),
+			static_cast<unsigned char>(myParam.colorVisuals.pColor.a) };
 
 		ImVec4 imguiPColor = rlImGuiColors::Convert(primaryColors);
 		static Color originalPColor = primaryColors;
 
 		if (ImGui::Button("Reset Primary Colors", ImVec2(240.0f, 30.0f))) {
-			myParam.colorVisuals.primaryR = originalPColor.r;
-			myParam.colorVisuals.primaryG = originalPColor.g;
-			myParam.colorVisuals.primaryB = originalPColor.b;
-			myParam.colorVisuals.primaryA = originalPColor.a;
+			myParam.colorVisuals.pColor.r = originalPColor.r;
+			myParam.colorVisuals.pColor.g = originalPColor.g;
+			myParam.colorVisuals.pColor.b = originalPColor.b;
+			myParam.colorVisuals.pColor.a = originalPColor.a;
 		}
 
 		if (ImGui::ColorPicker4("Primary Colors", (float*)&imguiPColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
 			primaryColors = rlImGuiColors::Convert(imguiPColor);
-			myParam.colorVisuals.primaryR = primaryColors.r;
-			myParam.colorVisuals.primaryG = primaryColors.g;
-			myParam.colorVisuals.primaryB = primaryColors.b;
-			myParam.colorVisuals.primaryA = primaryColors.a;
+			myParam.colorVisuals.pColor.r = primaryColors.r;
+			myParam.colorVisuals.pColor.g = primaryColors.g;
+			myParam.colorVisuals.pColor.b = primaryColors.b;
+			myParam.colorVisuals.pColor.a = primaryColors.a;
 		}
 
 		Color secondaryColors = {
-			static_cast<unsigned char>(myParam.colorVisuals.secondaryR),
-			static_cast<unsigned char>(myParam.colorVisuals.secondaryG),
-			static_cast<unsigned char>(myParam.colorVisuals.secondaryB),
-			static_cast<unsigned char>(myParam.colorVisuals.secondaryA) };
+			static_cast<unsigned char>(myParam.colorVisuals.sColor.r),
+			static_cast<unsigned char>(myParam.colorVisuals.sColor.g),
+			static_cast<unsigned char>(myParam.colorVisuals.sColor.b),
+			static_cast<unsigned char>(myParam.colorVisuals.sColor.a) };
 
 		ImVec4 imguiSColor = rlImGuiColors::Convert(secondaryColors);
 		static Color originalSColor = secondaryColors;
 
 		if (ImGui::Button("Reset Secondary Colors", ImVec2(240.0f, 30.0f))) {
-			myParam.colorVisuals.secondaryR = originalSColor.r;
-			myParam.colorVisuals.secondaryG = originalSColor.g;
-			myParam.colorVisuals.secondaryB = originalSColor.b;
-			myParam.colorVisuals.secondaryA = originalSColor.a;
+			myParam.colorVisuals.sColor.r = originalSColor.r;
+			myParam.colorVisuals.sColor.g = originalSColor.g;
+			myParam.colorVisuals.sColor.b = originalSColor.b;
+			myParam.colorVisuals.sColor.a = originalSColor.a;
 		}
 
 		if (ImGui::ColorPicker4("Secondary Colors", (float*)&imguiSColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
 			secondaryColors = rlImGuiColors::Convert(imguiSColor);
-			myParam.colorVisuals.secondaryR = secondaryColors.r;
-			myParam.colorVisuals.secondaryG = secondaryColors.g;
-			myParam.colorVisuals.secondaryB = secondaryColors.b;
-			myParam.colorVisuals.secondaryA = secondaryColors.a;
+			myParam.colorVisuals.sColor.r = secondaryColors.r;
+			myParam.colorVisuals.sColor.g = secondaryColors.g;
+			myParam.colorVisuals.sColor.b = secondaryColors.b;
+			myParam.colorVisuals.sColor.a = secondaryColors.a;
 		}
 
 		for (size_t i = 0; i < visualSliders.size(); i++) {
@@ -413,10 +433,12 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 		}
 
-		static std::array<sphParams, 4> sphButtonsParams = {
+		static std::array<sphParams, 6> sphButtonsParams = {
 		sphParams("SPH Water", myParam.brush.SPHWater),
 		sphParams("SPH Rock", myParam.brush.SPHRock),
 		sphParams("SPH Sand", myParam.brush.SPHSand),
+		sphParams("SPH Soil", myParam.brush.SPHSoil),
+		sphParams("SPH Ice", myParam.brush.SPHIce),
 		sphParams("SPH Mud", myParam.brush.SPHMud)
 
 		};
@@ -460,6 +482,10 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 	}
 
+	if (statsWindow) {
+		statsWindowLogic(myParam, myVar);
+	}
+
 	ImGui::End();
 
 	myParam.rightClickSettings.rightClickMenu(myVar, myParam);
@@ -481,7 +507,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	int particlesAmout = static_cast<int>(myParam.pParticles.size());
 	int selecParticlesAmout = static_cast<int>(myParam.pParticlesSelected.size());
 
-	ImGui::Text("%s%d","Total Particles: ", particlesAmout);
+	ImGui::Text("%s%d", "Total Particles: ", particlesAmout);
 
 	ImGui::Text("%s%d", "Selected Particles: ", selecParticlesAmout);
 
@@ -498,4 +524,102 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	ImGui::PopFont();
 
 	ImGui::End();
+}
+
+void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
+
+	ImGui::Separator();
+	ImGui::Spacing();
+
+	//------ Frame Rate ------//
+	const int fpsHistorySize = 100;
+	static float fpsValues[fpsHistorySize] = { 0.0f };
+	static int fpsValuesOffset = 0;
+
+	float ImGuiFPS = ImGui::GetIO().Framerate;
+
+	fpsValues[fpsValuesOffset] = ImGuiFPS;
+	fpsValuesOffset = (fpsValuesOffset + 1) % fpsHistorySize;
+
+	float fps = ImGui::GetIO().Framerate;
+	std::string fpsOverlay = "FPS: " + std::to_string(fps);
+
+	ImGui::PlotLines("##FrameRate", fpsValues, fpsHistorySize, fpsValuesOffset, fpsOverlay.c_str(), 0.0f, 144.0f, ImVec2(0, 100));
+
+	ImGui::Separator();
+
+	//------ Particle Count ------//
+
+	int particlesAmout = static_cast<int>(myParam.pParticles.size());
+	int selecParticlesAmout = static_cast<int>(myParam.pParticlesSelected.size());
+
+	ImGui::Text("%s%d", "Total Particles: ", particlesAmout);
+
+	ImGui::Text("%s%d", "Selected Particles: ", selecParticlesAmout);
+
+	ImGui::Separator();
+
+	//------ Particle Mass ------//
+
+	double totalMass = 0.0f;
+
+	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+		totalMass += myParam.pParticles[i].mass;
+	}
+
+	ImGui::Text("Total Mass: %.2f", totalMass);
+
+	double selectedMas = 0.0f;
+
+	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+		if (myParam.rParticles[i].isSelected) {
+			selectedMas += myParam.pParticles[i].mass;
+		}
+	}
+
+	ImGui::Text("Selected Mass: %.2f", selectedMas);
+
+	ImGui::Separator();
+
+	//------ Particle Velocity ------//
+
+	Vector2 selectedVel = { 0.0f, 0.0f };
+	float totalVel = 0.0f;
+
+	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+		if (myParam.rParticles[i].isSelected) {
+			selectedVel.x += myParam.pParticles[i].vel.x;
+			selectedVel.y += myParam.pParticles[i].vel.y;
+		}
+	}
+
+	selectedVel.x /= myParam.pParticlesSelected.size();
+	selectedVel.y /= myParam.pParticlesSelected.size();
+
+	totalVel = sqrt(selectedVel.x * selectedVel.x + selectedVel.y * selectedVel.y);
+
+	plotLinesHelper("Velocity X: ", 1000, selectedVel.x, -500.0f, 500.0f, { 0.0f, 100.0f });
+	ImGui::Spacing();
+	plotLinesHelper("Velocity Y: ", 1000, selectedVel.y, -500.0f, 500.0f, { 0.0f, 100.0f });
+	ImGui::Spacing();
+	plotLinesHelper("Total Velocity: ", 1000, totalVel, -500.0f, 500.0f, { 0.0f, 100.0f });
+}
+
+void UI::plotLinesHelper(std::string label,
+	const int length,
+	float value, const float minValue, const float maxValue, ImVec2 size) {
+
+	auto& plotData = plotDataMap[label];
+
+	if (plotData.values.size() != length) {
+		plotData.values.resize(length, 0.0f);
+		plotData.offset = 0;
+	}
+
+	plotData.values[plotData.offset] = value;
+	plotData.offset = (plotData.offset + 1) % length;
+
+	std::string valueOverlay = label + std::to_string(value);
+
+	ImGui::PlotLines(("##" + label).c_str(), plotData.values.data(), length, plotData.offset, valueOverlay.c_str(), minValue, maxValue, size);
 }

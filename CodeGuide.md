@@ -3,6 +3,7 @@ This is a quick guide for modding or contributing to the development of Galaxy E
 
 ## General
 - Galaxy Engine uses ***camelCase***.
+- The code must be compatible with Windows and Linux before being added to the main branch.
 - Various classes for different purposes can be added to the **"UpdateParameters"** struct in **"parameters.h"**. This is not necessary for important or complex classes like **"SPH"**, **"Physics"**, or **"UI"**.
 - Global variables go to the "UpdateVariables" struct in **"parameters.h"**.
 - When you pass the "UpdateParameters" or "UpdateVariables" structs to a function, **ALWAYS** name them **"myParam"** and **"myVar"**.
@@ -20,7 +21,8 @@ This is a quick guide for modding or contributing to the development of Galaxy E
 - Particles are composed of 2 structs.
 - **"ParticlePhysics()"** is used for physics calculations only.
 - **"ParticleRendering()"** is used for particle visuals like **"color"** or **"size"**, and distinctive attributes like **"isDarkMatter"** or **"canBeResized"**.
-- These structs must always be synchronized, meaning that the position of a particle's **ParticleRendering()** at index **N**, inside a vector or array, must be the same number as its **ParticlePhysics()** struct.
+- There is one std::vector for each struct. They are named **"pParticles"** and **"rParticles"**.
+- These std::vectors must always be synchronized, meaning that the position of a particle's **pParticle** at index **N**, must be the same number as its **rParticle**.
 - All particles are sorted spatially with Z-Curves. This means that particles' index inside a vector or array changes constantly between frames.
 - All added or removed variables of a particle's class must be updated in their stream operators as well so that they can be saved by the save system to a file.
 

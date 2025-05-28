@@ -16,6 +16,8 @@ public:
 	bool SPHWater = false;
 	bool SPHRock = false;
 	bool SPHSand = false;
+	bool SPHSoil = false;
+	bool SPHIce = false;
 	bool SPHMud = false;
 
 	Brush(SceneCamera myCamera, float brushRadius);

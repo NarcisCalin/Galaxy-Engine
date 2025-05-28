@@ -5,8 +5,9 @@
 struct SPHWater water;
 struct SPHRock rock;
 struct SPHSand sand;
+struct SPHSoil soil;
+struct SPHIce ice;
 struct SPHMud mud;
-struct SPHAir air;
 
 Brush::Brush(SceneCamera myCamera, float brushRadius) {
 	this->myCamera = myCamera;
@@ -20,10 +21,12 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 		SPHWater = false;
 		SPHRock = false;
 		SPHSand = false;
+		SPHSoil = false;
+		SPHIce = false;
 		SPHMud = false;
 	}
 
-	if (!SPHWater && !SPHRock && !SPHSand && !SPHMud) {
+	if (!SPHWater && !SPHRock && !SPHSand && !SPHSoil && !SPHIce && !SPHMud) {
 		for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
 			float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 			float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
@@ -72,6 +75,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 
 				myParam.rParticles.emplace_back(water.color, 0.125f, false, false, false, true, true, false, true, -1.0f);
 
+				myParam.rParticles.back().sphColor = water.color;
 			}
 		}
 
@@ -108,7 +112,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 						addRandom(rock.color.r),
 						addRandom(rock.color.g),
 						addRandom(rock.color.b),
-						addRandom(rock.color.a)
+						rock.color.a
 					},
 
 					0.125f,
@@ -121,6 +125,13 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 					true, 
 					-1.0f
 				);
+
+				myParam.rParticles.back().sphColor = Color{
+						addRandom(rock.color.r),
+						addRandom(rock.color.g),
+						addRandom(rock.color.b),
+						rock.color.a
+				};
 
 			}
 		}
@@ -158,7 +169,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 						addRandom(sand.color.r),
 						addRandom(sand.color.g),
 						addRandom(sand.color.b),
-						addRandom(sand.color.a)
+						sand.color.a
 					},
 					
 					0.125f,
@@ -172,6 +183,126 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 					-1.0f
 				);
 
+				myParam.rParticles.back().sphColor = Color{
+						addRandom(sand.color.r),
+						addRandom(sand.color.g),
+						addRandom(sand.color.b),
+						sand.color.a
+				};
+
+			}
+		}
+
+		if (SPHSoil) {
+			for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
+				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
+				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
+
+				Vector2 randomOffset = {
+					cos(angle) * distance,
+					sin(angle) * distance
+				};
+
+				Vector2 particlePos = Vector2Add(myParam.myCamera.mouseWorldPos, randomOffset);
+
+				myParam.pParticles.emplace_back(particlePos,
+					Vector2{ 0, 0 },
+					(8500000000.0f * soil.massMult) / myParam.particlesSpawning.particleAmountMultiplier,
+
+					soil.restDens,
+					soil.stiff,
+					soil.visc,
+					soil.cohesion);
+
+				float normalRand = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+				auto addRandom = [&](unsigned char c) -> unsigned char {
+					float value = static_cast<float>(c) + (50.0f * normalRand) - 25.0f;
+					value = std::clamp(value, 0.0f, 255.0f);
+					return static_cast<unsigned char>(value);
+					};
+
+				myParam.rParticles.emplace_back(
+					Color{
+						addRandom(soil.color.r),
+						addRandom(soil.color.g),
+						addRandom(soil.color.b),
+						soil.color.a
+					},
+					
+					0.125f, 
+					false,
+					false,
+					false,
+					true, 
+					true,
+					false, 
+					true, 
+					-1.0f
+				);
+
+				myParam.rParticles.back().sphColor = Color{
+						addRandom(soil.color.r),
+						addRandom(soil.color.g),
+						addRandom(soil.color.b),
+						soil.color.a
+				};
+
+			}
+		}
+
+		if (SPHIce) {
+			for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
+				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
+				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
+
+				Vector2 randomOffset = {
+					cos(angle) * distance,
+					sin(angle) * distance
+				};
+
+				Vector2 particlePos = Vector2Add(myParam.myCamera.mouseWorldPos, randomOffset);
+
+				myParam.pParticles.emplace_back(particlePos,
+					Vector2{ 0, 0 },
+					(8500000000.0f * ice.massMult) / myParam.particlesSpawning.particleAmountMultiplier,
+
+					ice.restDens,
+					ice.stiff,
+					ice.visc,
+					ice.cohesion);
+
+				float normalRand = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+				auto addRandom = [&](unsigned char c) -> unsigned char {
+					float value = static_cast<float>(c) + (24.0f * normalRand) - 12.0f;
+					value = std::clamp(value, 0.0f, 255.0f);
+					return static_cast<unsigned char>(value);
+					};
+
+				myParam.rParticles.emplace_back(
+					Color{
+						addRandom(ice.color.r),
+						addRandom(ice.color.g),
+						addRandom(ice.color.b),
+						ice.color.a
+					},
+
+					0.125f,
+					false,
+					false,
+					false,
+					true,
+					true,
+					false,
+					true,
+					-1.0f
+				);
+
+				myParam.rParticles.back().sphColor = Color{
+						addRandom(ice.color.r),
+						addRandom(ice.color.g),
+						addRandom(ice.color.b),
+						ice.color.a
+				};
 			}
 		}
 
@@ -208,19 +339,26 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 						addRandom(mud.color.r),
 						addRandom(mud.color.g),
 						addRandom(mud.color.b),
-						addRandom(mud.color.a)
+						mud.color.a
 					},
-					
-					0.125f, 
+
+					0.125f,
 					false,
 					false,
 					false,
-					true, 
 					true,
-					false, 
-					true, 
+					true,
+					false,
+					true,
 					-1.0f
 				);
+
+				myParam.rParticles.back().sphColor = Color{
+						addRandom(mud.color.r),
+						addRandom(mud.color.g),
+						addRandom(mud.color.b),
+						mud.color.a
+				};
 
 			}
 		}
@@ -231,7 +369,7 @@ void Brush::brushSize() {
 	float wheel = GetMouseWheelMove();
 	if (IsKeyDown(KEY_LEFT_CONTROL) && wheel != 0) {
 		float scale = 0.2f * wheel;
-		brushRadius = Clamp(expf(logf(brushRadius) + scale), 7.0f, 512.0f);
+		brushRadius = Clamp(expf(logf(brushRadius) + scale), 4.5f, 512.0f);
 	}
 }
 

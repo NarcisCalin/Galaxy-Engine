@@ -119,20 +119,6 @@ inline std::istream& operator>>(std::istream& is, ParticlePhysics& p) {
 		>> p.mortonKey;
 }
 
-// RGBA multiplier
-struct RGBAMultiplier {
-	float r;
-	float g;
-	float b;
-	float a;
-};
-inline std::ostream& operator<<(std::ostream& os, RGBAMultiplier const& m) {
-	return os << m.r << ' ' << m.g << ' ' << m.b << ' ' << m.a;
-}
-inline std::istream& operator>>(std::istream& is, RGBAMultiplier& m) {
-	return is >> m.r >> m.g >> m.b >> m.a;
-}
-
 // Streamable Color
 inline std::ostream& operator<<(std::ostream& os, Color const& c) {
 	return os
@@ -153,7 +139,9 @@ inline std::istream& operator>>(std::istream& is, Color& c) {
 
 struct ParticleRendering {
 	Color color;
-	Color originalColor;
+	Color pColor;
+	Color sColor;
+	Color sphColor;
 	float size;
 	bool uniqueColor;
 	bool isSolid;
@@ -167,17 +155,15 @@ struct ParticleRendering {
 	int neighbors;
 	float totalRadius;
 	float lifeSpan;
-	RGBAMultiplier PRGBA;
-	RGBAMultiplier SRGBA;
 
 	// Default constructor
 	ParticleRendering()
-		: color{ 255,255,255,255 }, originalColor{ 255,255,255,255 }, size(1.0f),
+		: color{ 255,255,255,255 }, pColor{ 255,255,255,255 }, sColor { 255, 255, 255, 255 }, sphColor{ 128,128,128,128 },
+		size(1.0f),
 		uniqueColor(false), isSolid(false), canBeSubdivided(false),
 		canBeResized(false), isDarkMatter(false), isSPH(false),
 		isSelected(false), isGrabbed(false), previousSize(1.0f),
-		neighbors(0), totalRadius(0.0f), lifeSpan(0.0f),
-		PRGBA{ 1,1,1,1 }, SRGBA{ 1,1,1,1 }
+		neighbors(0), totalRadius(0.0f), lifeSpan(0.0f)
 	{}
 
 	// Parameterized constructor
@@ -185,7 +171,9 @@ struct ParticleRendering {
 		bool isSolid, bool canBeSubdivided, bool canBeResized, bool isDarkMatter, bool isSPH, float lifeSpan) {
 		// Initial states
 		this->color = color;
-		this->originalColor = color;
+		this->pColor = { 255, 255, 255, 255 };
+		this->sColor = { 255, 255, 255, 255 };
+		this->sphColor = { 128, 128, 128, 128 };
 		this->size = size;
 		this->uniqueColor = uniqueColor;
 		this->isSolid = isSolid;
@@ -201,10 +189,6 @@ struct ParticleRendering {
 		this->neighbors = 0;
 		this->totalRadius = 0.0f;
 		this->lifeSpan = lifeSpan;
-
-		this->PRGBA = { 1.0f, 1.0f, 1.0f, 1.0f };
-		this->SRGBA = { 1.0f, 1.0f, 1.0f, 1.0f };
-
 	}
 };
 
@@ -212,9 +196,10 @@ struct ParticleRendering {
 inline std::ostream& operator<<(std::ostream& os, ParticleRendering const& r) {
 	return os
 		<< r.color << ' '
-		<< r.originalColor << ' '
+		<< r.pColor << ' '
+		<< r.sColor << ' '
+		<< r.sphColor << ' '
 		<< r.size << ' '
-		<< int(r.uniqueColor) << ' '
 		<< int(r.isSolid) << ' '
 		<< int(r.canBeSubdivided) << ' '
 		<< int(r.canBeResized) << ' '
@@ -225,24 +210,38 @@ inline std::ostream& operator<<(std::ostream& os, ParticleRendering const& r) {
 		<< r.previousSize << ' '
 		<< r.neighbors << ' '
 		<< r.totalRadius << ' '
-		<< r.lifeSpan << ' '
-		<< r.PRGBA << ' '
-		<< r.SRGBA;
+		<< r.lifeSpan;
 }
 
 inline std::istream& operator>>(std::istream& is, ParticleRendering& r) {
 	int cr, cg, cb, ca;
+	int pcr, pcg, pcb, pca;
+	int scr, scg, scb, sca;
+	int sphcr, sphcg, sphcb, sphca;
 	is >> cr >> cg >> cb >> ca;
 	r.color = { static_cast<unsigned char>(cr),
 			   static_cast<unsigned char>(cg),
 			   static_cast<unsigned char>(cb),
 			   static_cast<unsigned char>(ca) };
-	is >> r.originalColor;
+	is >> pcr >> pcg >> pcb >> pca;
+	r.pColor = { static_cast<unsigned char>(pcr),
+			   static_cast<unsigned char>(pcg),
+			   static_cast<unsigned char>(pcb),
+			   static_cast<unsigned char>(pca) };
+	is >> scr >> scg >> scb >> sca;
+	r.sColor = { static_cast<unsigned char>(scr),
+			   static_cast<unsigned char>(scg),
+			   static_cast<unsigned char>(scb),
+			   static_cast<unsigned char>(sca) };
+	is >> sphcr >> sphcg >> sphcb >> sphca;
+	r.sphColor = { static_cast<unsigned char>(sphcr),
+			   static_cast<unsigned char>(sphcg),
+			   static_cast<unsigned char>(sphcb),
+			   static_cast<unsigned char>(sphca) };
 	is >> r.size;
 	int uniq, solid, subdiv, resize, dark, sph, selected, grabbed;
 	is >> uniq >> solid >> subdiv >> resize >> dark >> sph >> selected >> grabbed;
 	is >> r.previousSize >> r.neighbors >> r.totalRadius >> r.lifeSpan;
-	is >> r.PRGBA >> r.SRGBA;
 
 	r.uniqueColor = static_cast<bool>(uniq);
 	r.isSolid = static_cast<bool>(solid);

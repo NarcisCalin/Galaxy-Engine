@@ -37,9 +37,9 @@ struct SPHSand {
 	Color color = { 200, 185, 100, 255 };
 };
 
-struct SPHMud {
+struct SPHSoil {
 
-	float massMult = 2.5f;
+	float massMult = 1.9f;
 
 	float restDens = 0.008f;
 	float stiff = 1.0f;
@@ -49,14 +49,26 @@ struct SPHMud {
 	Color color = { 156, 110, 30, 255 };
 };
 
-struct SPHAir {
+struct SPHIce {
 
 	float massMult = 0.45f;
 
-	float restDens = 0.20f;
-	float stiff = 0.01f;
-	float visc = 0.07f;
-	float cohesion = 1.0f;
+	float restDens = 0.012f;
+	float stiff = 1.0f;
+	float visc = 2.2f;
+	float cohesion = 2500.0f;
 
-	Color color = { 128, 128, 128, 128 };
+	Color color = { 230, 230, 250, 240 };
+};
+
+struct SPHMud {
+
+	float massMult = 2.3f;
+
+	float restDens = 0.0095f;
+	float stiff = 1.0f;
+	float visc = 5.6f;
+	float cohesion = 1000.0f;
+
+	Color color = { 106, 60, 3, 255 };
 };

@@ -184,12 +184,6 @@ static void updateScene() {
 
 	myParam.brush.eraseBrush(myParam);
 
-	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-		if (myParam.rParticles[i].isSelected) {
-			std::cout << "Press: " << myParam.pParticles[i].press << std::endl;
-		}
-	}
-
 	if (grid != nullptr) {
 		delete grid;
 	}
