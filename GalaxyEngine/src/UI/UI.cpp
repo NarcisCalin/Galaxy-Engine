@@ -247,6 +247,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	if (ImGui::Button("Visual Sliders", ImVec2(halfButtonWidth, settingsButtonY))) {
 		bVisualsSliders = true;
 		bPhysicsSliders = false;
+		statsWindow = false;
 	}
 	ImGui::PopStyleColor(3);
 
@@ -260,6 +261,19 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	if (ImGui::Button("Physics Sliders", ImVec2(halfButtonWidth, settingsButtonY))) {
 		bPhysicsSliders = true;
 		bVisualsSliders = false;
+		statsWindow = false;
+	}
+	ImGui::PopStyleColor(3);
+
+	ImVec4& colStats = statsWindow ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
+	ImGui::PushStyleColor(ImGuiCol_Button, colStats);
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(colStats.x + 0.1f, colStats.y + 0.1f, colStats.z + 0.1f, colStats.w));
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(colStats.x - 0.1f, colStats.y - 0.1f, colStats.z - 0.1f, colStats.w));
+
+	if (ImGui::Button("Advanced Statistics", ImVec2(halfButtonWidth, settingsButtonY))) {
+		bPhysicsSliders = false;
+		bVisualsSliders = false;
+		statsWindow = true;
 	}
 	ImGui::PopStyleColor(3);
 
@@ -468,6 +482,10 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 	}
 
+	if (statsWindow) {
+		statsWindowLogic(myParam, myVar);
+	}
+
 	ImGui::End();
 
 	myParam.rightClickSettings.rightClickMenu(myVar, myParam);
@@ -489,7 +507,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	int particlesAmout = static_cast<int>(myParam.pParticles.size());
 	int selecParticlesAmout = static_cast<int>(myParam.pParticlesSelected.size());
 
-	ImGui::Text("%s%d","Total Particles: ", particlesAmout);
+	ImGui::Text("%s%d", "Total Particles: ", particlesAmout);
 
 	ImGui::Text("%s%d", "Selected Particles: ", selecParticlesAmout);
 
@@ -506,4 +524,102 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	ImGui::PopFont();
 
 	ImGui::End();
+}
+
+void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
+
+	ImGui::Separator();
+	ImGui::Spacing();
+
+	//------ Frame Rate ------//
+	const int fpsHistorySize = 100;
+	static float fpsValues[fpsHistorySize] = { 0.0f };
+	static int fpsValuesOffset = 0;
+
+	float ImGuiFPS = ImGui::GetIO().Framerate;
+
+	fpsValues[fpsValuesOffset] = ImGuiFPS;
+	fpsValuesOffset = (fpsValuesOffset + 1) % fpsHistorySize;
+
+	float fps = ImGui::GetIO().Framerate;
+	std::string fpsOverlay = "FPS: " + std::to_string(fps);
+
+	ImGui::PlotLines("##FrameRate", fpsValues, fpsHistorySize, fpsValuesOffset, fpsOverlay.c_str(), 0.0f, 144.0f, ImVec2(0, 100));
+
+	ImGui::Separator();
+
+	//------ Particle Count ------//
+
+	int particlesAmout = static_cast<int>(myParam.pParticles.size());
+	int selecParticlesAmout = static_cast<int>(myParam.pParticlesSelected.size());
+
+	ImGui::Text("%s%d", "Total Particles: ", particlesAmout);
+
+	ImGui::Text("%s%d", "Selected Particles: ", selecParticlesAmout);
+
+	ImGui::Separator();
+
+	//------ Particle Mass ------//
+
+	double totalMass = 0.0f;
+
+	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+		totalMass += myParam.pParticles[i].mass;
+	}
+
+	ImGui::Text("Total Mass: %.2f", totalMass);
+
+	double selectedMas = 0.0f;
+
+	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+		if (myParam.rParticles[i].isSelected) {
+			selectedMas += myParam.pParticles[i].mass;
+		}
+	}
+
+	ImGui::Text("Selected Mass: %.2f", selectedMas);
+
+	ImGui::Separator();
+
+	//------ Particle Velocity ------//
+
+	Vector2 selectedVel = { 0.0f, 0.0f };
+	float totalVel = 0.0f;
+
+	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+		if (myParam.rParticles[i].isSelected) {
+			selectedVel.x += myParam.pParticles[i].vel.x;
+			selectedVel.y += myParam.pParticles[i].vel.y;
+		}
+	}
+
+	selectedVel.x /= myParam.pParticlesSelected.size();
+	selectedVel.y /= myParam.pParticlesSelected.size();
+
+	totalVel = sqrt(selectedVel.x * selectedVel.x + selectedVel.y * selectedVel.y);
+
+	plotLinesHelper("Velocity X: ", 1000, selectedVel.x, -500.0f, 500.0f, { 0.0f, 100.0f });
+	ImGui::Spacing();
+	plotLinesHelper("Velocity Y: ", 1000, selectedVel.y, -500.0f, 500.0f, { 0.0f, 100.0f });
+	ImGui::Spacing();
+	plotLinesHelper("Total Velocity: ", 1000, totalVel, -500.0f, 500.0f, { 0.0f, 100.0f });
+}
+
+void UI::plotLinesHelper(std::string label,
+	const int length,
+	float value, const float minValue, const float maxValue, ImVec2 size) {
+
+	auto& plotData = plotDataMap[label];
+
+	if (plotData.values.size() != length) {
+		plotData.values.resize(length, 0.0f);
+		plotData.offset = 0;
+	}
+
+	plotData.values[plotData.offset] = value;
+	plotData.offset = (plotData.offset + 1) % length;
+
+	std::string valueOverlay = label + std::to_string(value);
+
+	ImGui::PlotLines(("##" + label).c_str(), plotData.values.data(), length, plotData.offset, valueOverlay.c_str(), minValue, maxValue, size);
 }
