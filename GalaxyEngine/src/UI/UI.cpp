@@ -287,7 +287,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(colRecording.x + 0.1f, colRecording.y + 0.1f, colRecording.z + 0.1f, colRecording.w));
 	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(colRecording.x - 0.1f, colRecording.y - 0.1f, colRecording.z - 0.1f, colRecording.w));
 
-	if (ImGui::Button("Recording Settings", ImVec2(halfButtonWidth, settingsButtonY))) {
+	if (ImGui::Button("Recording", ImVec2(halfButtonWidth, settingsButtonY))) {
 		bPhysicsSliders = false;
 		bVisualsSliders = false;
 		bRecordingSettings = true;
