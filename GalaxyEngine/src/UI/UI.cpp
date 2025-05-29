@@ -85,9 +85,9 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		visualSlidersParams<float>("Max Shockwave Accel", "Controls the acceleration threshold to map the particle color in Shockwave color mode", myParam.colorVisuals.ShockwaveMaxAcc, 1.0f, 120.0f),
 		visualSlidersParams<float>("Max Velocity Color", "Controls the max velocity used to map the colors in the velocity color mode", myParam.colorVisuals.maxVel, 10.0f, 10000.0f),
 		visualSlidersParams<float>("Max Pressure Color", "Controls the max pressure used to map the colors in the pressure color mode", myParam.colorVisuals.maxPress, 100.0f, 100000.0f),
+		visualSlidersParams<float>("Particles Size", "Controls the size of all particles", myVar.particleSizeMultiplier, 0.1f, 5.0f),
 		visualSlidersParams<int>("Trails Length", "Controls how long should the trails be. This feature is computationally expensive", myVar.trailMaxLength, 0, 1500),
 		visualSlidersParams<float>("Trails Thickness", "Controls the trails thickness", myParam.trails.trailThickness, 0.007f, 0.5f),
-		visualSlidersParams<float>("Particles Size", "Controls the size of all particles", myVar.particleSizeMultiplier, 0.1f, 5.0f),
 		visualSlidersParams<int>("Path Prediction Lenght", "Controls how long is the predicted path", myParam.particlesSpawning.predictPathLength, 100, 2000),
 		visualSlidersParams<float>("Visible P. Amount Multiplier", "Controls the spawn amount of visible particles", myParam.particlesSpawning.particleAmountMultiplier, 0.1f, 100.0f),
 		visualSlidersParams<float>("DM P. Amount Multiplier", "Controls the spawn amount of dark matter particles", myParam.particlesSpawning.DMAmountMultiplier, 0.1f, 100.0f)
@@ -238,326 +238,320 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	float totalWidth = ImGui::GetContentRegionAvail().x;
 	float halfButtonWidth = totalWidth * 0.4f;
 
-	// Top row: Visual Sliders | Physics Sliders
-	ImVec4& colVisual = bVisualsSliders ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
-	ImGui::PushStyleColor(ImGuiCol_Button, colVisual);
-	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(colVisual.x + 0.1f, colVisual.y + 0.1f, colVisual.z + 0.1f, colVisual.w));
-	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(colVisual.x - 0.1f, colVisual.y - 0.1f, colVisual.z - 0.1f, colVisual.w));
+	if (ImGui::BeginTabBar("##MainTabBar", ImGuiTabBarFlags_NoTabListScrollingButtons)) {
+	
+	
+		if (ImGui::BeginTabItem("Visuals")){
 
-	if (ImGui::Button("Visual Sliders", ImVec2(halfButtonWidth, settingsButtonY))) {
-		bVisualsSliders = true;
-		bPhysicsSliders = false;
-		bRecordingSettings = false;
-		statsWindow = false;
-	}
-	ImGui::PopStyleColor(3);
+			bVisualsSliders = true;
+			bPhysicsSliders = false;
+			bStatsWindow = false;
+			bRecordingSettings = false;
 
-	ImGui::SameLine();
-
-	ImVec4& colPhysics = bPhysicsSliders ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
-	ImGui::PushStyleColor(ImGuiCol_Button, colPhysics);
-	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(colPhysics.x + 0.1f, colPhysics.y + 0.1f, colPhysics.z + 0.1f, colPhysics.w));
-	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(colPhysics.x - 0.1f, colPhysics.y - 0.1f, colPhysics.z - 0.1f, colPhysics.w));
-
-	if (ImGui::Button("Physics Sliders", ImVec2(halfButtonWidth, settingsButtonY))) {
-		bPhysicsSliders = true;
-		bVisualsSliders = false;
-		bRecordingSettings = false;
-		statsWindow = false;
-	}
-	ImGui::PopStyleColor(3);
-	// Bottom row: Advanced Statistics | Recording Settings
-	ImVec4& colStats = statsWindow ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
-	ImGui::PushStyleColor(ImGuiCol_Button, colStats);
-	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(colStats.x + 0.1f, colStats.y + 0.1f, colStats.z + 0.1f, colStats.w));
-	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(colStats.x - 0.1f, colStats.y - 0.1f, colStats.z - 0.1f, colStats.w));
-
-	if (ImGui::Button("Advanced Stats", ImVec2(halfButtonWidth, settingsButtonY))) {
-		bPhysicsSliders = false;
-		bVisualsSliders = false;
-		bRecordingSettings = false;
-		statsWindow = true;
-	}
-	ImGui::PopStyleColor(3);
-
-	ImGui::SameLine();
-
-	ImVec4& colRecording = bRecordingSettings ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
-	ImGui::PushStyleColor(ImGuiCol_Button, colRecording);
-	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(colRecording.x + 0.1f, colRecording.y + 0.1f, colRecording.z + 0.1f, colRecording.w));
-	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(colRecording.x - 0.1f, colRecording.y - 0.1f, colRecording.z - 0.1f, colRecording.w));
-
-	if (ImGui::Button("Recording", ImVec2(halfButtonWidth, settingsButtonY))) {
-		bPhysicsSliders = false;
-		bVisualsSliders = false;
-		bRecordingSettings = true;
-		statsWindow = false;
-	}
-	ImGui::PopStyleColor(3);
-
-	if (bVisualsSliders) {
-		Color primaryColors = {
-			static_cast<unsigned char>(myParam.colorVisuals.pColor.r),
-			static_cast<unsigned char>(myParam.colorVisuals.pColor.g),
-			static_cast<unsigned char>(myParam.colorVisuals.pColor.b),
-			static_cast<unsigned char>(myParam.colorVisuals.pColor.a) };
-
-		ImVec4 imguiPColor = rlImGuiColors::Convert(primaryColors);
-		static Color originalPColor = primaryColors;
-
-		if (ImGui::Button("Reset Primary Colors", ImVec2(240.0f, 30.0f))) {
-			myParam.colorVisuals.pColor.r = originalPColor.r;
-			myParam.colorVisuals.pColor.g = originalPColor.g;
-			myParam.colorVisuals.pColor.b = originalPColor.b;
-			myParam.colorVisuals.pColor.a = originalPColor.a;
+			ImGui::EndTabItem();
 		}
 
-		if (ImGui::ColorPicker4("Primary Colors", (float*)&imguiPColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
-			primaryColors = rlImGuiColors::Convert(imguiPColor);
-			myParam.colorVisuals.pColor.r = primaryColors.r;
-			myParam.colorVisuals.pColor.g = primaryColors.g;
-			myParam.colorVisuals.pColor.b = primaryColors.b;
-			myParam.colorVisuals.pColor.a = primaryColors.a;
+		if (ImGui::BeginTabItem("Physics")){
+
+			bVisualsSliders = false;
+			bPhysicsSliders = true;
+			bStatsWindow = false;
+			bRecordingSettings = false;
+
+			ImGui::EndTabItem();
 		}
 
-		Color secondaryColors = {
-			static_cast<unsigned char>(myParam.colorVisuals.sColor.r),
-			static_cast<unsigned char>(myParam.colorVisuals.sColor.g),
-			static_cast<unsigned char>(myParam.colorVisuals.sColor.b),
-			static_cast<unsigned char>(myParam.colorVisuals.sColor.a) };
+		if (ImGui::BeginTabItem("Advanced Stats")){
 
-		ImVec4 imguiSColor = rlImGuiColors::Convert(secondaryColors);
-		static Color originalSColor = secondaryColors;
+			bVisualsSliders = false;
+			bPhysicsSliders = false;
+			bStatsWindow = true;
+			bRecordingSettings = false;
 
-		if (ImGui::Button("Reset Secondary Colors", ImVec2(240.0f, 30.0f))) {
-			myParam.colorVisuals.sColor.r = originalSColor.r;
-			myParam.colorVisuals.sColor.g = originalSColor.g;
-			myParam.colorVisuals.sColor.b = originalSColor.b;
-			myParam.colorVisuals.sColor.a = originalSColor.a;
+			ImGui::EndTabItem();
 		}
 
-		if (ImGui::ColorPicker4("Secondary Colors", (float*)&imguiSColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
-			secondaryColors = rlImGuiColors::Convert(imguiSColor);
-			myParam.colorVisuals.sColor.r = secondaryColors.r;
-			myParam.colorVisuals.sColor.g = secondaryColors.g;
-			myParam.colorVisuals.sColor.b = secondaryColors.b;
-			myParam.colorVisuals.sColor.a = secondaryColors.a;
+		if (ImGui::BeginTabItem("Recording")) {
+
+			bVisualsSliders = false;
+			bPhysicsSliders = false;
+			bStatsWindow = false;
+			bRecordingSettings = true;
+
+			ImGui::EndTabItem();
 		}
 
-		for (size_t i = 0; i < visualSliders.size(); i++) {
+		ImGui::EndTabBar();
+	}
 
-			std::visit([&](auto& s) {
-				using T = std::decay_t<decltype(s)>;
-				if constexpr (std::is_same_v<T, visualSlidersParams<float>>) {
-					ImGui::Text("%s", s.text.c_str());
+	ImGui::BeginChild("##ContentRegion", ImVec2(0, 0), true); {
 
-					if (s.min > 0.0f) {
-						ImGui::SliderFloat(
+		if (bVisualsSliders) {
+			Color primaryColors = {
+				static_cast<unsigned char>(myParam.colorVisuals.pColor.r),
+				static_cast<unsigned char>(myParam.colorVisuals.pColor.g),
+				static_cast<unsigned char>(myParam.colorVisuals.pColor.b),
+				static_cast<unsigned char>(myParam.colorVisuals.pColor.a) };
+
+			ImVec4 imguiPColor = rlImGuiColors::Convert(primaryColors);
+			static Color originalPColor = primaryColors;
+
+			if (ImGui::Button("Reset Primary Colors", ImVec2(240.0f, 30.0f))) {
+				myParam.colorVisuals.pColor.r = originalPColor.r;
+				myParam.colorVisuals.pColor.g = originalPColor.g;
+				myParam.colorVisuals.pColor.b = originalPColor.b;
+				myParam.colorVisuals.pColor.a = originalPColor.a;
+			}
+
+			if (ImGui::ColorPicker4("Primary Colors", (float*)&imguiPColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
+				primaryColors = rlImGuiColors::Convert(imguiPColor);
+				myParam.colorVisuals.pColor.r = primaryColors.r;
+				myParam.colorVisuals.pColor.g = primaryColors.g;
+				myParam.colorVisuals.pColor.b = primaryColors.b;
+				myParam.colorVisuals.pColor.a = primaryColors.a;
+			}
+
+			Color secondaryColors = {
+				static_cast<unsigned char>(myParam.colorVisuals.sColor.r),
+				static_cast<unsigned char>(myParam.colorVisuals.sColor.g),
+				static_cast<unsigned char>(myParam.colorVisuals.sColor.b),
+				static_cast<unsigned char>(myParam.colorVisuals.sColor.a) };
+
+			ImVec4 imguiSColor = rlImGuiColors::Convert(secondaryColors);
+			static Color originalSColor = secondaryColors;
+
+			if (ImGui::Button("Reset Secondary Colors", ImVec2(240.0f, 30.0f))) {
+				myParam.colorVisuals.sColor.r = originalSColor.r;
+				myParam.colorVisuals.sColor.g = originalSColor.g;
+				myParam.colorVisuals.sColor.b = originalSColor.b;
+				myParam.colorVisuals.sColor.a = originalSColor.a;
+			}
+
+			if (ImGui::ColorPicker4("Secondary Colors", (float*)&imguiSColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
+				secondaryColors = rlImGuiColors::Convert(imguiSColor);
+				myParam.colorVisuals.sColor.r = secondaryColors.r;
+				myParam.colorVisuals.sColor.g = secondaryColors.g;
+				myParam.colorVisuals.sColor.b = secondaryColors.b;
+				myParam.colorVisuals.sColor.a = secondaryColors.a;
+			}
+
+			for (size_t i = 0; i < visualSliders.size(); i++) {
+
+				std::visit([&](auto& s) {
+					using T = std::decay_t<decltype(s)>;
+					if constexpr (std::is_same_v<T, visualSlidersParams<float>>) {
+						ImGui::Text("%s", s.text.c_str());
+
+						if (s.min > 0.0f) {
+							ImGui::SliderFloat(
+								("##" + s.text).c_str(),
+								&s.parameter,
+								s.min,
+								s.max,
+								"%.3f", ImGuiSliderFlags_Logarithmic
+							);
+						}
+						else {
+							ImGui::SliderFloat(
+								("##" + s.text).c_str(),
+								&s.parameter,
+								s.min,
+								s.max
+							);
+						}
+
+						if (ImGui::IsItemHovered()) {
+							ImGui::SetTooltip("%s", s.tooltip.c_str());
+						}
+
+						if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+							s.parameter = s.defaultVal;
+						}
+					}
+					else if constexpr (std::is_same_v<T, visualSlidersParams<int>>) {
+						ImGui::Text("%s", s.text.c_str());
+
+						ImGui::SliderInt(
 							("##" + s.text).c_str(),
 							&s.parameter,
 							s.min,
-							s.max,
-							"%.3f", ImGuiSliderFlags_Logarithmic
+							s.max
 						);
+
+						if (ImGui::IsItemHovered()) {
+							ImGui::SetTooltip("%s", s.tooltip.c_str());
+						}
+
+						if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+							s.parameter = s.defaultVal;
+						}
 					}
-					else {
+					}, visualSliders[i]);
+
+			}
+		}
+
+		if (bPhysicsSliders) {
+
+			for (size_t i = 0; i < physicsSliders.size(); i++) {
+
+				std::visit([&](auto& s) {
+					using T = std::decay_t<decltype(s)>;
+					if constexpr (std::is_same_v<T, physicsSlidersParams<float>>) {
+						ImGui::Text("%s", s.text.c_str());
+
 						ImGui::SliderFloat(
 							("##" + s.text).c_str(),
 							&s.parameter,
 							s.min,
 							s.max
 						);
-					}
 
-					if (ImGui::IsItemHovered()) {
-						ImGui::SetTooltip("%s", s.tooltip.c_str());
-					}
-
-					if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-						s.parameter = s.defaultVal;
-					}
-				}
-				else if constexpr (std::is_same_v<T, visualSlidersParams<int>>) {
-					ImGui::Text("%s", s.text.c_str());
-
-					ImGui::SliderInt(
-						("##" + s.text).c_str(),
-						&s.parameter,
-						s.min,
-						s.max
-					);
-
-					if (ImGui::IsItemHovered()) {
-						ImGui::SetTooltip("%s", s.tooltip.c_str());
-					}
-
-					if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-						s.parameter = s.defaultVal;
-					}
-				}
-				}, visualSliders[i]);
-
-		}
-	}
-
-	if (bPhysicsSliders) {
-
-		for (size_t i = 0; i < physicsSliders.size(); i++) {
-
-			std::visit([&](auto& s) {
-				using T = std::decay_t<decltype(s)>;
-				if constexpr (std::is_same_v<T, physicsSlidersParams<float>>) {
-					ImGui::Text("%s", s.text.c_str());
-
-					ImGui::SliderFloat(
-						("##" + s.text).c_str(),
-						&s.parameter,
-						s.min,
-						s.max
-					);
-
-					if (ImGui::IsItemHovered()) {
-						ImGui::SetTooltip("%s", s.tooltip.c_str());
-					}
-
-					if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-						s.parameter = s.defaultVal;
-					}
-				}
-				else if constexpr (std::is_same_v<T, physicsSlidersParams<int>>) {
-					ImGui::Text("%s", s.text.c_str());
-
-					ImGui::SliderInt(
-						("##" + s.text).c_str(),
-						&s.parameter,
-						s.min,
-						s.max
-					);
-
-					if (ImGui::IsItemHovered()) {
-						ImGui::SetTooltip("%s", s.tooltip.c_str());
-					}
-
-					if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-						s.parameter = s.defaultVal;
-					}
-				}
-				}, physicsSliders[i]);
-
-
-			/*if (ImGui::IsItemHovered()) {
-				ImGui::SetTooltip("Right-click to reset");
-			}*/
-
-		}
-
-		static std::array<sphParams, 6> sphButtonsParams = {
-		sphParams("SPH Water", myParam.brush.SPHWater),
-		sphParams("SPH Rock", myParam.brush.SPHRock),
-		sphParams("SPH Sand", myParam.brush.SPHSand),
-		sphParams("SPH Soil", myParam.brush.SPHSoil),
-		sphParams("SPH Ice", myParam.brush.SPHIce),
-		sphParams("SPH Mud", myParam.brush.SPHMud)
-
-		};
-
-		float oldSpacingY = ImGui::GetStyle().ItemSpacing.y;
-		ImGui::GetStyle().ItemSpacing.y = 5.0f; // Set the spacing only for the settings buttons
-
-
-		for (size_t i = 0; i < sphButtonsParams.size(); i++) {
-			ImGui::SetCursorPosX(ImGui::GetWindowContentRegionMin().x);
-
-			auto& entry = sphButtonsParams[i];
-			bool& current = sphButtonsParams[i].parameter;
-			const std::string& label = sphButtonsParams[i].text;
-
-			ImVec4& col = current ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
-			ImGui::PushStyleColor(ImGuiCol_Button, col);
-			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(col.x + 0.1f, col.y + 0.1f, col.z + 0.1f, col.w));
-			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(col.x - 0.1f, col.y - 0.1f, col.z - 0.1f, col.w));
-
-			if (ImGui::Button(label.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, settingsButtonY))) {
-
-				if (!current) {
-					current = true;
-
-					for (sphParams& other : sphButtonsParams) {
-						if (&other != &entry) {
-							other.parameter = false;
+						if (ImGui::IsItemHovered()) {
+							ImGui::SetTooltip("%s", s.tooltip.c_str());
 						}
-						else {
-							current = true;
+
+						if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+							s.parameter = s.defaultVal;
+						}
+					}
+					else if constexpr (std::is_same_v<T, physicsSlidersParams<int>>) {
+						ImGui::Text("%s", s.text.c_str());
+
+						ImGui::SliderInt(
+							("##" + s.text).c_str(),
+							&s.parameter,
+							s.min,
+							s.max
+						);
+
+						if (ImGui::IsItemHovered()) {
+							ImGui::SetTooltip("%s", s.tooltip.c_str());
+						}
+
+						if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+							s.parameter = s.defaultVal;
+						}
+					}
+					}, physicsSliders[i]);
+
+
+				/*if (ImGui::IsItemHovered()) {
+					ImGui::SetTooltip("Right-click to reset");
+				}*/
+
+			}
+
+			static std::array<sphParams, 6> sphButtonsParams = {
+			sphParams("SPH Water", myParam.brush.SPHWater),
+			sphParams("SPH Rock", myParam.brush.SPHRock),
+			sphParams("SPH Sand", myParam.brush.SPHSand),
+			sphParams("SPH Soil", myParam.brush.SPHSoil),
+			sphParams("SPH Ice", myParam.brush.SPHIce),
+			sphParams("SPH Mud", myParam.brush.SPHMud)
+
+			};
+
+			float oldSpacingY = ImGui::GetStyle().ItemSpacing.y;
+			ImGui::GetStyle().ItemSpacing.y = 5.0f; // Set the spacing only for the settings buttons
+
+
+			for (size_t i = 0; i < sphButtonsParams.size(); i++) {
+				ImGui::SetCursorPosX(ImGui::GetWindowContentRegionMin().x);
+
+				auto& entry = sphButtonsParams[i];
+				bool& current = sphButtonsParams[i].parameter;
+				const std::string& label = sphButtonsParams[i].text;
+
+				ImVec4& col = current ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
+				ImGui::PushStyleColor(ImGuiCol_Button, col);
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(col.x + 0.1f, col.y + 0.1f, col.z + 0.1f, col.w));
+				ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(col.x - 0.1f, col.y - 0.1f, col.z - 0.1f, col.w));
+
+				if (ImGui::Button(label.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, settingsButtonY))) {
+
+					if (!current) {
+						current = true;
+
+						for (sphParams& other : sphButtonsParams) {
+							if (&other != &entry) {
+								other.parameter = false;
+							}
+							else {
+								current = true;
+							}
 						}
 					}
 				}
+
+				ImGui::PopStyleColor(3);
 			}
 
-			ImGui::PopStyleColor(3);
+			ImGui::GetStyle().ItemSpacing.y = oldSpacingY;
+
 		}
 
-		ImGui::GetStyle().ItemSpacing.y = oldSpacingY;
+		if (bRecordingSettings) {
+			static std::array<settingsParams, 2> recordingButtonsParams = {
+				settingsParams("Pause After Recording", "Pauses the simulation after recording is finished", myVar.pauseAfterRecording),
+				settingsParams("Clean Scene After Recording", "Clears all particles from the scene after recording is finished", myVar.cleanSceneAfterRecording)
+			};
 
-	}
+			float oldSpacingY = ImGui::GetStyle().ItemSpacing.y;
+			ImGui::GetStyle().ItemSpacing.y = 5.0f; // Set the spacing only for the recording settings buttons
 
-	if (bRecordingSettings) {
-		static std::array<settingsParams, 2> recordingButtonsParams = {
-			settingsParams("Pause After Recording", "Pauses the simulation after recording is finished", myVar.pauseAfterRecording),
-			settingsParams("Clean Scene After Recording", "Clears all particles from the scene after recording is finished", myVar.cleanSceneAfterRecording)
-		};
+			for (size_t i = 0; i < recordingButtonsParams.size(); i++) {
+				ImGui::SetCursorPosX(ImGui::GetWindowContentRegionMin().x);
 
-		float oldSpacingY = ImGui::GetStyle().ItemSpacing.y;
-		ImGui::GetStyle().ItemSpacing.y = 5.0f; // Set the spacing only for the recording settings buttons
+				bool& current = recordingButtonsParams[i].parameter;
+				const std::string& label = recordingButtonsParams[i].text;
+				const std::string& tooltip = recordingButtonsParams[i].tooltip;
 
-		for (size_t i = 0; i < recordingButtonsParams.size(); i++) {
-			ImGui::SetCursorPosX(ImGui::GetWindowContentRegionMin().x);
+				ImVec4& col = current ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
+				ImGui::PushStyleColor(ImGuiCol_Button, col);
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(col.x + 0.1f, col.y + 0.1f, col.z + 0.1f, col.w));
+				ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(col.x - 0.1f, col.y - 0.1f, col.z - 0.1f, col.w));
 
-			bool& current = recordingButtonsParams[i].parameter;
-			const std::string& label = recordingButtonsParams[i].text;
-			const std::string& tooltip = recordingButtonsParams[i].tooltip;
+				if (ImGui::Button(label.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, settingsButtonY))) {
+					current = !current;
+				}
 
-			ImVec4& col = current ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
-			ImGui::PushStyleColor(ImGuiCol_Button, col);
-			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(col.x + 0.1f, col.y + 0.1f, col.z + 0.1f, col.w));
-			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(col.x - 0.1f, col.y - 0.1f, col.z - 0.1f, col.w));
+				if (ImGui::IsItemHovered()) {
+					ImGui::SetTooltip("%s", tooltip.c_str());
+				}
 
-			if (ImGui::Button(label.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, settingsButtonY))) {
-				current = !current;
+				ImGui::PopStyleColor(3);
 			}
 
+			ImGui::Separator(); // Add a separator
+
+			// Recording Timer Slider
+			ImGui::Text("Recording Timer (seconds)");
 			if (ImGui::IsItemHovered()) {
-				ImGui::SetTooltip("%s", tooltip.c_str());
+				ImGui::SetTooltip("Set a time limit for the recording. 0 means no limit.");
+			}
+			if (myVar.isRecording) { // Check if recording is active
+				ImGui::BeginDisabled(true); // Disable the slider
+			}
+			ImGui::SliderFloat("##RecordingTimeLimit", &myVar.recordingTimeLimit, 0.0f, 60.0f, "%.1f s");
+			if (myVar.isRecording) { // If recording was active
+				ImGui::EndDisabled(); // Re-enable the slider
+			}
+			if (ImGui::IsItemEdited() && myVar.recordingTimeLimit < 0) {
+				myVar.recordingTimeLimit = 0; // Ensure it doesn't go below 0
 			}
 
-			ImGui::PopStyleColor(3);
+
+			ImGui::GetStyle().ItemSpacing.y =
+				oldSpacingY; // End the recording settings buttons spacing
 		}
 
-		ImGui::Separator(); // Add a separator
-
-		// Recording Timer Slider
-		ImGui::Text("Recording Timer (seconds)");
-		if (ImGui::IsItemHovered()) {
-			ImGui::SetTooltip("Set a time limit for the recording. 0 means no limit.");
+		if (bStatsWindow) {
+			statsWindowLogic(myParam, myVar);
 		}
-		if (myVar.isRecording) { // Check if recording is active
-			ImGui::BeginDisabled(true); // Disable the slider
-		}
-		ImGui::SliderFloat("##RecordingTimeLimit", &myVar.recordingTimeLimit, 0.0f, 60.0f, "%.1f s");
-		if (myVar.isRecording) { // If recording was active
-			ImGui::EndDisabled(); // Re-enable the slider
-		}
-		if (ImGui::IsItemEdited() && myVar.recordingTimeLimit < 0) {
-			myVar.recordingTimeLimit = 0; // Ensure it doesn't go below 0
-		}
-
-
-		ImGui::GetStyle().ItemSpacing.y =
-			oldSpacingY; // End the recording settings buttons spacing
 	}
 
-	if (statsWindow) {
-		statsWindowLogic(myParam, myVar);
-	}
+	ImGui::EndChild();
 
 	ImGui::End();
 
