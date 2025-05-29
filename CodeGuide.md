@@ -10,6 +10,7 @@ If you want to contribute or mod Galaxy Engine and have any questions, consider 
 
 - Galaxy Engine uses ***camelCase***.
 - The code must be compatible with Windows and Linux before being added to the main branch.
+- The code must be compatible with the MIT license.
 - Various classes for different purposes can be added to the **"UpdateParameters"** struct in **"parameters.h"**. This is not necessary for important or complex classes like **"SPH"**, **"Physics"**, or **"UI"**.
 - Global variables go to the "UpdateVariables" struct in **"parameters.h"**.
 - When you pass the "UpdateParameters" or "UpdateVariables" structs to a function, **ALWAYS** name them **"myParam"** and **"myVar"**.
