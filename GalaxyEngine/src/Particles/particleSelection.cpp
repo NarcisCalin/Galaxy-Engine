@@ -180,7 +180,7 @@ void ParticleSelection::manyClustersSelection(UpdateVariables& myVar, UpdatePara
 void ParticleSelection::boxSelection(UpdateParameters& myParam) {
 
 	if ((IsKeyDown(KEY_LEFT_CONTROL) && IsMouseButtonDown(2)) || (IsKeyDown(KEY_LEFT_ALT) && IsMouseButtonDown(2))) {
-		if (IsKeyPressed(KEY_LEFT_CONTROL) || IsMouseButtonPressed(2)) {
+		if (IO::handleShortcut(KEY_LEFT_CONTROL) || IsMouseButtonPressed(2)) {
 			boxInitialPos = { myParam.myCamera.mouseWorldPos.x, myParam.myCamera.mouseWorldPos.y };
 			isBoxSelecting = true;
 		}
@@ -233,7 +233,7 @@ void ParticleSelection::boxSelection(UpdateParameters& myParam) {
 }
 
 void ParticleSelection::invertSelection(std::vector<ParticleRendering>& rParticles){
-	if (IsKeyPressed(KEY_I)) {
+	if (IO::handleShortcut(KEY_I)) {
 		invertParticleSelection = true;
 	}
 
@@ -249,7 +249,7 @@ void ParticleSelection::invertSelection(std::vector<ParticleRendering>& rParticl
 
 void ParticleSelection::deselection(std::vector<ParticleRendering>& rParticles){
 
-	if (deselectParticles || IsKeyPressed(KEY_D)) {
+	if (deselectParticles || IO::handleShortcut(KEY_D)) {
 		for (auto& rParticle : rParticles) {
 			rParticle.isSelected = false;
 		}

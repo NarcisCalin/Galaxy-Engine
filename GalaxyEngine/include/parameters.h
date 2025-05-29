@@ -118,9 +118,9 @@ struct UpdateVariables{
 	float particleTextureHalfSize = 16.0f;
 
 	int trailMaxLength = 48;
-
 	ImVec4 buttonEnabledColor = { 0.2f,0.5f, 0.2f, 1.0f };
 	ImVec4 buttonDisabledColor = { 0.3f,0.3f, 0.3f, 1.0f };
+	ImVec4 buttonCancelColor = { 0.8f, 0.2f, 0.2f, 1.0f };
 
 	bool isRecording = false;
 
@@ -139,8 +139,10 @@ struct UpdateVariables{
 	float particleBounciness = 0.75f;
 
 	int threadsAmount = 16;
-
 	bool longExposure = false;
-
 	ImFont* robotoMediumFont = nullptr;
+
+	bool pauseAfterRecording = false;
+	bool cleanSceneAfterRecording = false;
+	float recordingTimeLimit = 0.0f; 
 };

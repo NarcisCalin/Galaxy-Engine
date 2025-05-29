@@ -3,12 +3,12 @@
 
 void ParticleTrails::trailLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 
-	if (IsKeyPressed(KEY_T) && !IsKeyDown(KEY_LEFT_CONTROL)) {
+	if (IO::handleShortcut(KEY_T) && !IsKeyDown(KEY_LEFT_CONTROL)) {
 		myVar.isGlobalTrailsEnabled = !myVar.isGlobalTrailsEnabled;
 		myVar.isSelectedTrailsEnabled = false;
 		trailDots.clear();
 	}
-	if (IsKeyPressed(KEY_T) && IsKeyDown(KEY_LEFT_CONTROL)) {
+	if (IO::handleShortcut(KEY_T) && IsKeyDown(KEY_LEFT_CONTROL)) {
 		myVar.isSelectedTrailsEnabled = !myVar.isSelectedTrailsEnabled;
 		myVar.isGlobalTrailsEnabled = false;
 		trailDots.clear();
@@ -109,7 +109,7 @@ void ParticleTrails::trailLogic(UpdateVariables& myVar, UpdateParameters& myPara
 		trailDots.clear();
 	}
 
-	if (IsKeyPressed(KEY_C)) {
+	if (IO::handleShortcut(KEY_C)) {
 		myParam.pParticles.clear();
 		myParam.rParticles.clear();
 		trailDots.clear();

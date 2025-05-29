@@ -485,7 +485,7 @@ void Brush::particlesGrabber(UpdateParameters& myParam) {
 
 	lastMouseVelocity = scaledDelta;
 
-	if (IsKeyPressed(KEY_M)) {
+	if (IO::handleShortcut(KEY_M)) {
 		dragging = true;
 
 		for (size_t i = 0; i < myParam.pParticles.size(); i++) {

@@ -1,5 +1,6 @@
 #include "../../include/Physics/slingshot.h"
 #include "../../include/raylib/raylib.h"
+#include "../../include/IO/io.h"
 #include <cmath>
 
 glm::vec2 slingshotPos = { 0, 0 };
@@ -21,11 +22,11 @@ Slingshot Slingshot::particleSlingshot(bool &isDragging, SceneCamera myCamera) {
 
 	if (IsMouseButtonPressed(0) && !IsKeyDown(KEY_LEFT_CONTROL) && 
 		!IsKeyDown(KEY_LEFT_ALT) || 
-		IsKeyPressed(KEY_ONE) ||
-		IsKeyPressed(KEY_TWO) || 
-		IsKeyPressed(KEY_THREE) ||
-		IsKeyPressed(KEY_J)
-		)
+		IO::handleShortcut(KEY_ONE) ||
+		IO::handleShortcut(KEY_TWO) || 
+		IO::handleShortcut(KEY_THREE) ||
+		IO::handleShortcut(KEY_J)
+	)
 	{   
 		isDragging = true;
 		slingshotPos = mouseWorldPos;

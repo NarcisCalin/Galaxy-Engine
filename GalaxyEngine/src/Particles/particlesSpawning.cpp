@@ -306,7 +306,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 			myVar.isDragging = false;
 		}
 
-		if (IsKeyPressed(KEY_FOUR)) {
+		if (IO::handleShortcut(KEY_FOUR)) {
 
 			// VISIBLE MATTER
 
@@ -423,7 +423,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 void ParticlesSpawning::copyPaste(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles,
 	bool& isDragging, SceneCamera& myCamera, std::vector<ParticlePhysics>& pParticlesSelected) {
 
-	if (IsKeyPressed(KEY_H) && pParticlesSelected.size() > 0) {
+	if (IO::handleShortcut(KEY_H) && pParticlesSelected.size() > 0) {
 
 		pParticlesCopied.clear();
 		rParticlesCopied.clear();

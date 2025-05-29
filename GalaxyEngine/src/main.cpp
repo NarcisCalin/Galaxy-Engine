@@ -76,7 +76,7 @@ static void updateScene() {
 
 	myVar.G = 6.674e-11 * myVar.gravityMultiplier;
 
-	if (IsKeyPressed(KEY_SPACE)) {
+	if (IO::handleShortcut(KEY_SPACE)) {
 		myVar.isTimePlaying = !myVar.isTimePlaying;
 	}
 
@@ -284,7 +284,7 @@ static void enableMultiThreading() {
 void fullscreenToggle(int& lastScreenWidth, int& lastScreenHeight,
 	bool& wasFullscreen, bool& lastScreenState,
 	RenderTexture2D& myParticlesTexture, RenderTexture2D& myUITexture) {
-	if (IsKeyPressed(KEY_TAB)) {
+	if (IO::handleShortcut(KEY_TAB)) {
 		myVar.fullscreenState = !myVar.fullscreenState;
 	}
 
@@ -446,7 +446,8 @@ int main() {
 
 		EndBlendMode();
 
-		myVar.isRecording = myParam.screenCapture.screenGrab(myParticlesTexture, myVar);
+		// Detects if the user is recording the screen
+		myVar.isRecording = myParam.screenCapture.screenGrab(myParticlesTexture, myVar, myParam);
 
 		if (myVar.isRecording) {
 			DrawRectangleLinesEx({ 0,0, static_cast<float>(GetScreenWidth()), static_cast<float>(GetScreenHeight()) }, 3, RED);

@@ -5,7 +5,7 @@
 void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, SaveSystem& save) {
 
 
-	if (IsKeyPressed(KEY_U)) {
+	if (IO::handleShortcut(KEY_U)) {
 		showSettings = !showSettings;
 	}
 
@@ -235,10 +235,10 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	ImGui::SetNextWindowSizeConstraints(ImVec2(parametersWindowSizeX, parametersWindowSizeY), ImVec2(parametersWindowSizeX, parametersWindowSizeY));
 	ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f), ImGuiCond_Always);
 	ImGui::Begin("Parameters", nullptr, ImGuiWindowFlags_NoResize);
-
 	float totalWidth = ImGui::GetContentRegionAvail().x;
 	float halfButtonWidth = totalWidth * 0.4f;
 
+	// Top row: Visual Sliders | Physics Sliders
 	ImVec4& colVisual = bVisualsSliders ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
 	ImGui::PushStyleColor(ImGuiCol_Button, colVisual);
 	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(colVisual.x + 0.1f, colVisual.y + 0.1f, colVisual.z + 0.1f, colVisual.w));
@@ -247,6 +247,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	if (ImGui::Button("Visual Sliders", ImVec2(halfButtonWidth, settingsButtonY))) {
 		bVisualsSliders = true;
 		bPhysicsSliders = false;
+		bRecordingSettings = false;
 		statsWindow = false;
 	}
 	ImGui::PopStyleColor(3);
@@ -261,10 +262,11 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	if (ImGui::Button("Physics Sliders", ImVec2(halfButtonWidth, settingsButtonY))) {
 		bPhysicsSliders = true;
 		bVisualsSliders = false;
+		bRecordingSettings = false;
 		statsWindow = false;
 	}
 	ImGui::PopStyleColor(3);
-
+	// Bottom row: Advanced Statistics | Recording Settings
 	ImVec4& colStats = statsWindow ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
 	ImGui::PushStyleColor(ImGuiCol_Button, colStats);
 	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(colStats.x + 0.1f, colStats.y + 0.1f, colStats.z + 0.1f, colStats.w));
@@ -273,7 +275,23 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	if (ImGui::Button("Advanced Stats", ImVec2(halfButtonWidth, settingsButtonY))) {
 		bPhysicsSliders = false;
 		bVisualsSliders = false;
+		bRecordingSettings = false;
 		statsWindow = true;
+	}
+	ImGui::PopStyleColor(3);
+
+	ImGui::SameLine();
+
+	ImVec4& colRecording = bRecordingSettings ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
+	ImGui::PushStyleColor(ImGuiCol_Button, colRecording);
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(colRecording.x + 0.1f, colRecording.y + 0.1f, colRecording.z + 0.1f, colRecording.w));
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(colRecording.x - 0.1f, colRecording.y - 0.1f, colRecording.z - 0.1f, colRecording.w));
+
+	if (ImGui::Button("Recording", ImVec2(halfButtonWidth, settingsButtonY))) {
+		bPhysicsSliders = false;
+		bVisualsSliders = false;
+		bRecordingSettings = true;
+		statsWindow = false;
 	}
 	ImGui::PopStyleColor(3);
 
@@ -480,6 +498,61 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 		ImGui::GetStyle().ItemSpacing.y = oldSpacingY;
 
+	}
+
+	if (bRecordingSettings) {
+		static std::array<settingsParams, 2> recordingButtonsParams = {
+			settingsParams("Pause After Recording", "Pauses the simulation after recording is finished", myVar.pauseAfterRecording),
+			settingsParams("Clean Scene After Recording", "Clears all particles from the scene after recording is finished", myVar.cleanSceneAfterRecording)
+		};
+
+		float oldSpacingY = ImGui::GetStyle().ItemSpacing.y;
+		ImGui::GetStyle().ItemSpacing.y = 5.0f; // Set the spacing only for the recording settings buttons
+
+		for (size_t i = 0; i < recordingButtonsParams.size(); i++) {
+			ImGui::SetCursorPosX(ImGui::GetWindowContentRegionMin().x);
+
+			bool& current = recordingButtonsParams[i].parameter;
+			const std::string& label = recordingButtonsParams[i].text;
+			const std::string& tooltip = recordingButtonsParams[i].tooltip;
+
+			ImVec4& col = current ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
+			ImGui::PushStyleColor(ImGuiCol_Button, col);
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(col.x + 0.1f, col.y + 0.1f, col.z + 0.1f, col.w));
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(col.x - 0.1f, col.y - 0.1f, col.z - 0.1f, col.w));
+
+			if (ImGui::Button(label.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, settingsButtonY))) {
+				current = !current;
+			}
+
+			if (ImGui::IsItemHovered()) {
+				ImGui::SetTooltip("%s", tooltip.c_str());
+			}
+
+			ImGui::PopStyleColor(3);
+		}
+
+		ImGui::Separator(); // Add a separator
+
+		// Recording Timer Slider
+		ImGui::Text("Recording Timer (seconds)");
+		if (ImGui::IsItemHovered()) {
+			ImGui::SetTooltip("Set a time limit for the recording. 0 means no limit.");
+		}
+		if (myVar.isRecording) { // Check if recording is active
+			ImGui::BeginDisabled(true); // Disable the slider
+		}
+		ImGui::SliderFloat("##RecordingTimeLimit", &myVar.recordingTimeLimit, 0.0f, 60.0f, "%.1f s");
+		if (myVar.isRecording) { // If recording was active
+			ImGui::EndDisabled(); // Re-enable the slider
+		}
+		if (ImGui::IsItemEdited() && myVar.recordingTimeLimit < 0) {
+			myVar.recordingTimeLimit = 0; // Ensure it doesn't go below 0
+		}
+
+
+		ImGui::GetStyle().ItemSpacing.y =
+			oldSpacingY; // End the recording settings buttons spacing
 	}
 
 	if (statsWindow) {
