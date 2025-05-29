@@ -14,6 +14,7 @@ GalaxyEngine/Saves
 GalaxyEngine/Screenshot_*
 GalaxyEngine/Screenshots/
 GalaxyEngine/compilerCommand.txt
+GalaxyEngine/include/Memory/
 GalaxyEngine/x64/
 x64/
 
@@ -21,4 +22,4 @@ x64/
 *.diff
 .clang-format
 .scripts/
-GalaxyEngine/include/Memory/
+.github/
