@@ -1,12 +1,13 @@
 #pragma once
+
+#include "../../external/glm/glm/glm.hpp"
 #include "../UX/camera.h"
 
 class Slingshot {
 public:
-	float normalizedX;
-	float normalizedY;
+	glm::vec2 norm;
 	float length;
-	Slingshot(float normalizedX, float normalizedY, float length);
+	Slingshot(glm::vec2 norm, float length);
 
 	
 	static Slingshot particleSlingshot(bool &isDragging, SceneCamera myCamera);

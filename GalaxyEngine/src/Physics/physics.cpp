@@ -1,21 +1,20 @@
 #include "../../include/Physics/physics.h"
 #include "omp.h"
 
-Vector2 Physics::calculateForceFromGrid(const Quadtree& grid, std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar, ParticlePhysics& pParticle) {
-	Vector2 totalForce = { 0.0f, 0.0f };
+glm::vec2 Physics::calculateForceFromGrid(const Quadtree& grid, std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar, ParticlePhysics& pParticle) {
+	glm::vec2 totalForce = { 0.0f, 0.0f };
 
 	if (grid.gridMass <= 0)
 		return totalForce;
 
-	float dx = grid.centerOfMass.x - pParticle.pos.x;
-	float dy = grid.centerOfMass.y - pParticle.pos.y;
+	glm::vec2 d = grid.centerOfMass - pParticle.pos;
 
 	if (myVar.isPeriodicBoundaryEnabled) {
-		dx -= myVar.domainSize.x * ((dx > myVar.halfDomainWidth) - (dx < -myVar.halfDomainWidth));
-		dy -= myVar.domainSize.y * ((dy > myVar.halfDomainHeight) - (dy < -myVar.halfDomainHeight));
+		d.x -= myVar.domainSize.x * ((d.x > myVar.halfDomainWidth) - (d.x < -myVar.halfDomainWidth));
+		d.y -= myVar.domainSize.y * ((d.y > myVar.halfDomainHeight) - (d.y < -myVar.halfDomainHeight));
 	}
 
-	float distanceSq = dx * dx + dy * dy + myVar.softening * myVar.softening;
+	float distanceSq = d.x * d.x + d.y * d.y + myVar.softening * myVar.softening;
 
 	if ((grid.size * grid.size < (myVar.theta * myVar.theta) * distanceSq) || grid.subGrids.empty()) {
 		if ((grid.endIndex - grid.startIndex) == 1 &&
@@ -26,14 +25,12 @@ Vector2 Physics::calculateForceFromGrid(const Quadtree& grid, std::vector<Partic
 
 		float invDistance = 1.0f / sqrt(distanceSq);
 		float forceMagnitude = static_cast<float>(myVar.G) * pParticle.mass * grid.gridMass * invDistance * invDistance * invDistance;
-		totalForce.x = dx * forceMagnitude;
-		totalForce.y = dy * forceMagnitude;
+		totalForce = d * forceMagnitude;
 	}
 	else {
 		for (const auto& subGridPtr : grid.subGrids) {
-			Vector2 childForce = calculateForceFromGrid(*subGridPtr, pParticles, myVar, pParticle);
-			totalForce.x += childForce.x;
-			totalForce.y += childForce.y;
+			glm::vec2 childForce = calculateForceFromGrid(*subGridPtr, pParticles, myVar, pParticle);
+			totalForce += childForce;
 		}
 	}
 	return totalForce;
@@ -44,8 +41,7 @@ void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vecto
 		for (size_t i = 0; i < pParticles.size(); i++) {
 			ParticlePhysics& pParticle = pParticles[i];
 
-			pParticle.vel.x += myVar.timeFactor * 1.5f * pParticle.acc.x;
-			pParticle.vel.y += myVar.timeFactor * 1.5f * pParticle.acc.y;
+			pParticle.vel += myVar.timeFactor * 1.5f * pParticle.acc;
 
 			// Max velocity for SPH
 			if (myVar.isSPHEnabled) {
@@ -53,13 +49,11 @@ void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vecto
 				float vSq = pParticle.vel.x * pParticle.vel.x + pParticle.vel.y * pParticle.vel.y;
 				if (vSq > sphMaxVelSq) {
 					float invLen = myVar.sphMaxVel / sqrtf(vSq);
-					pParticle.vel.x *= invLen;
-					pParticle.vel.y *= invLen;
+					pParticle.vel *= invLen;
 				}
 			}
 
-			pParticle.pos.x += pParticle.vel.x * myVar.timeFactor;
-			pParticle.pos.y += pParticle.vel.y * myVar.timeFactor;
+			pParticle.pos += pParticle.vel * myVar.timeFactor;
 
 			if (!sphGround) {
 				if (pParticle.pos.x < 0)
@@ -78,11 +72,9 @@ void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vecto
 		for (size_t i = 0; i < pParticles.size(); i++) {
 			ParticlePhysics& pParticle = pParticles[i];
 
-			pParticle.vel.x += myVar.timeFactor * 1.5f * pParticle.acc.x;
-			pParticle.vel.y += myVar.timeFactor * 1.5f * pParticle.acc.y;
+			pParticle.vel += myVar.timeFactor * 1.5f * pParticle.acc;
 
-			pParticle.pos.x += pParticle.vel.x * myVar.timeFactor;
-			pParticle.pos.y += pParticle.vel.y * myVar.timeFactor;
+			pParticle.pos += pParticle.vel * myVar.timeFactor;
 
 			if (!sphGround) {
 				if (pParticles[i].pos.x < 0 || pParticles[i].pos.x >= myVar.domainSize.x || pParticles[i].pos.y < 0 || pParticles[i].pos.y >= myVar.domainSize.y) {
@@ -104,10 +96,10 @@ void Physics::collisions(ParticlePhysics& pParticleA, ParticlePhysics& pParticle
 	ParticlePhysics& pA = pParticleA;
 	ParticlePhysics& pB = pParticleB;
 
-	Vector2 posA = pA.pos;
-	Vector2 posB = pB.pos;
+	glm::vec2 posA = pA.pos;
+	glm::vec2 posB = pB.pos;
 
-	Vector2 d = posB - posA;
+	glm::vec2 d = posB - posA;
 	float distanceSq = d.x * d.x + d.y * d.y;
 
 	float radiiSum = rParticleA.size * myVar.particleTextureHalfSize + rParticleB.size * myVar.particleTextureHalfSize;
@@ -118,11 +110,11 @@ void Physics::collisions(ParticlePhysics& pParticleA, ParticlePhysics& pParticle
 		return;
 	}
 
-	Vector2 velA = pA.vel;
-	Vector2 velB = pB.vel;
-	Vector2 relativeVel = velB - velA;
+	glm::vec2 velA = pA.vel;
+	glm::vec2 velB = pB.vel;
+	glm::vec2 relativeVel = velB - velA;
 
-	float velocityNormal = Vector2DotProduct(d, relativeVel);
+	float velocityNormal = glm::dot(d, relativeVel);
 
 	float weightA = pB.mass / (pA.mass + pB.mass);
 	float weightB = pA.mass / (pA.mass + pB.mass);
@@ -134,14 +126,12 @@ void Physics::collisions(ParticlePhysics& pParticleA, ParticlePhysics& pParticle
 	const float slop = 0.01f;
 	float correctionMag = std::max(penetration - slop, 0.0f) * percent;
 
-	Vector2 normal = d / distance;
-	Vector2 correction = normal * correctionMag;
+	glm::vec2 normal = d / distance;
+	glm::vec2 correction = normal * correctionMag;
 
-	pA.pos.x -= weightA * correction.x;
-	pA.pos.y -= weightA * correction.y;
+	pA.pos -= weightA * correction;
 
-	pB.pos.x += weightB * correction.x;
-	pB.pos.y += weightB * correction.y;
+	pB.pos += weightB * correction;
 
 
 	if (velocityNormal >= 0.0f) {
@@ -171,11 +161,11 @@ void Physics::collisions(ParticlePhysics& pParticleA, ParticlePhysics& pParticle
 	distanceSq = d.x * d.x + d.y * d.y;
 	normal = d / sqrt(distanceSq);
 
-	float impulseNumerator = -(1.0f + myVar.particleBounciness) * Vector2DotProduct(relativeVel, normal);
+	float impulseNumerator = -(1.0f + myVar.particleBounciness) * glm::dot(relativeVel, normal);
 	float impulseDenominator = (1.0f / pA.mass + 1.0f / pB.mass);
 	float j = impulseNumerator / impulseDenominator;
 
-	Vector2 impulse = normal * j;
+	glm::vec2 impulse = normal * j;
 
 	pA.vel = velA - impulse / pA.mass;
 	pB.vel = velB + impulse / pB.mass;

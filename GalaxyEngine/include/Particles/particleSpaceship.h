@@ -1,6 +1,9 @@
 #pragma once
+
+#include "../../external/glm/glm/glm.hpp"
 #include "../raylib/raylib.h"
 #include "particle.h"
+#include "../../include/Physics/materialsSPH.h"
 #include <vector>
 
 class ParticleSpaceship {
@@ -48,12 +51,10 @@ public:
 			}
 			else {
 
-				// I set it to the mass of the stone
+				// I set it to rock's mass
 
-				float sphMass = 4.0f;
-
-				pParticles[i].mass = 8500000000.0f * 4.0f;
-				pParticles[i].sphMass = 4.0f;
+				pParticles[i].mass = 8500000000.0f * rock.massMult;
+				pParticles[i].sphMass = rock.massMult;
 			}
 
 
@@ -65,28 +66,31 @@ public:
 						float normalRand = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 
 						pParticles.emplace_back(ParticlePhysics(
-							Vector2{ pParticles[i].pos.x + (4.0f * normalRand - 2.0f), pParticles[i].pos.y + 3.3f },
-							Vector2{ pParticles[i].vel.x + (4.0f * normalRand - 2.0f), pParticles[i].vel.y + 10.0f },
-							8500000000.0f * 0.6f,
+							glm::vec2{ pParticles[i].pos.x + (4.0f * normalRand - 2.0f), pParticles[i].pos.y + 3.3f },
+							glm::vec2{ pParticles[i].vel.x + (4.0f * normalRand - 2.0f), pParticles[i].vel.y + 10.0f },
+							8500000000.0f * gas.massMult,
 
-							0.25f,
-							0.015f,
-							0.09f,
-							1.0f
+							gas.restDens,
+							gas.stiff,
+							gas.visc,
+							gas.cohesion
 						));
 
 						rParticles.emplace_back(ParticleRendering(
-							Color{ 128,128,128,100 },
+							gas.color,
 							rParticles[i].size * 0.7f,
-							true,
 							false,
 							false,
+							false,
 							true,
 							true,
 							false,
 							true,
-							3.0f
+							3.0f,
+							gas.sphLabel
 						));
+
+						rParticles.back().sphColor = gas.color;
 					}
 				}
 			}
@@ -98,28 +102,31 @@ public:
 						float normalRand = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 
 						pParticles.emplace_back(ParticlePhysics(
-							Vector2{ pParticles[i].pos.x - 3.3f, pParticles[i].pos.y + (4.0f * normalRand - 2.0f) },
-							Vector2{ pParticles[i].vel.x - 10.0f, pParticles[i].vel.y + (4.0f * normalRand - 2.0f) },
-							8500000000.0f * 0.6f,
+							glm::vec2{ pParticles[i].pos.x - 3.3f, pParticles[i].pos.y + (4.0f * normalRand - 2.0f) },
+							glm::vec2{ pParticles[i].vel.x - 10.0f, pParticles[i].vel.y + (4.0f * normalRand - 2.0f) },
+							8500000000.0f * gas.massMult,
 
-							0.25f,
-							0.015f,
-							0.09f,
-							1.0f
+							gas.restDens,
+							gas.stiff,
+							gas.visc,
+							gas.cohesion
 						));
 
 						rParticles.emplace_back(ParticleRendering(
-							Color{ 128,128,128,100 },
+							gas.color,
 							rParticles[i].size * 0.7f,
-							true,
 							false,
 							false,
+							false,
 							true,
 							true,
 							false,
 							true,
-							3.0f
+							3.0f,
+							gas.sphLabel
 						));
+
+						rParticles.back().sphColor = gas.color;
 					}
 				}
 			}
@@ -131,28 +138,31 @@ public:
 						float normalRand = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 
 						pParticles.emplace_back(ParticlePhysics(
-							Vector2{ pParticles[i].pos.x + (4.0f * normalRand - 2.0f), pParticles[i].pos.y - 3.3f },
-							Vector2{ pParticles[i].vel.x + (4.0f * normalRand - 2.0f), pParticles[i].vel.y - 10.0f },
-							8500000000.0f * 0.6f,
+							glm::vec2{ pParticles[i].pos.x + (4.0f * normalRand - 2.0f), pParticles[i].pos.y - 3.3f },
+							glm::vec2{ pParticles[i].vel.x + (4.0f * normalRand - 2.0f), pParticles[i].vel.y - 10.0f },
+							8500000000.0f * gas.massMult,
 
-							0.25f,
-							0.015f,
-							0.09f,
-							1.0f
+							gas.restDens,
+							gas.stiff,
+							gas.visc,
+							gas.cohesion
 						));
 
 						rParticles.emplace_back(ParticleRendering(
-							Color{ 128,128,128,100 },
+							gas.color,
 							rParticles[i].size * 0.7f,
-							true,
 							false,
 							false,
+							false,
 							true,
 							true,
 							false,
 							true,
-							3.0f
+							3.0f,
+							gas.sphLabel
 						));
+
+						rParticles.back().sphColor = gas.color;
 					}
 				}
 			}
@@ -164,29 +174,31 @@ public:
 						float normalRand = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 
 						pParticles.emplace_back(ParticlePhysics(
-							Vector2{ pParticles[i].pos.x + 3.3f, pParticles[i].pos.y + (4.0f * normalRand - 2.0f) },
-							Vector2{ pParticles[i].vel.x + 10.0f, pParticles[i].vel.y + (4.0f * normalRand - 2.0f) },
-							8500000000.0f * 0.6f,
+							glm::vec2{ pParticles[i].pos.x + 3.3f, pParticles[i].pos.y + (4.0f * normalRand - 2.0f) },
+							glm::vec2{ pParticles[i].vel.x + 10.0f, pParticles[i].vel.y + (4.0f * normalRand - 2.0f) },
+							8500000000.0f * gas.massMult,
 
-							0.25f,
-							0.015f,
-							0.09f,
-							1.0f
+							gas.restDens,
+							gas.stiff,
+							gas.visc,
+							gas.cohesion
 						));
 
 						rParticles.emplace_back(ParticleRendering(
-							Color{ 128,128,128,100 },
+							gas.color,
 							rParticles[i].size * 0.7f,
-							true,
 							false,
 							false,
+							false,
 							true,
 							true,
 							false,
 							true,
-							3.0f
-
+							3.0f,
+							gas.sphLabel
 						));
+
+						rParticles.back().sphColor = gas.color;
 					}
 				}
 			}
@@ -194,6 +206,10 @@ public:
 	}
 
 private:
+
+	SPHGas gas;
+	SPHRock rock;
+
 	bool isShipEnabled = false;
 	float acceleration = 8.0f;
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../../external/glm/glm/glm.hpp"
 #include <vector>
 #include <array>
 #include "../raylib/raylib.h"
@@ -26,8 +27,8 @@ struct rightClickParams {
 
 class RightClickSettings {
 public:
-	Vector2 menuPos = { 0.0f, 0.0f };
-	Vector2 menuSize = { 0.0f, 0.0f };
+	glm::vec2 menuPos = { 0.0f, 0.0f };
+	glm::vec2 menuSize = { 0.0f, 0.0f };
 
 	void rightClickMenuSpawnLogic(bool& isMouseNotHoveringUI, bool& isSpawningAlone, bool& isDragging, bool& selectedColor);
 

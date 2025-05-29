@@ -4,7 +4,7 @@
 #include <mutex>
 
 void CollisionGrid::buildGrid(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles,
-	Physics& physics, UpdateVariables& myVar, Vector2& gridSize, float& dt) {
+	Physics& physics, UpdateVariables& myVar, glm::vec2& gridSize, float& dt) {
 
 	for (size_t i = 0; i < pParticles.size(); i++) {
         // I multiply by 4 for performance. 2 is the diameter of the particle
@@ -48,7 +48,7 @@ void CollisionGrid::buildGrid(std::vector<ParticlePhysics>& pParticles, std::vec
             * myVar.particleSizeMultiplier
             * myVar.particleTextureHalfSize;
 
-        Vector2 delta = pParticles[a].pos - pParticles[b].pos;
+        glm::vec2 delta = pParticles[a].pos - pParticles[b].pos;
         float distSq = delta.x * delta.x + delta.y * delta.y;
         float sumR = rA + rB;
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../../external/glm/glm/glm.hpp"
 #include "../raylib/raylib.h"
 #include <vector>
 #include "../Particles/particle.h"
@@ -13,6 +14,6 @@ struct CollisionGrid {
 	float cellSize = 0.0f;
 
 	void buildGrid(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles,
-		Physics& physics, UpdateVariables& myVar, Vector2& gridSize, float& dt);
+		Physics& physics, UpdateVariables& myVar, glm::vec2& gridSize, float& dt);
 
 };

@@ -1,4 +1,6 @@
 #pragma once
+
+#include "../../external/glm/glm/glm.hpp"
 #include <iostream>
 #include <array>
 #include "../raylib/raylib.h"

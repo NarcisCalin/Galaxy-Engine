@@ -1,4 +1,6 @@
 #pragma once
+
+#include "../../external/glm/glm/glm.hpp"
 #include "../raylib/raylib.h"
 #include "../Particles/particle.h"
 #include "quadtree.h"
@@ -9,7 +11,7 @@
 
 struct Physics {
 
-	Vector2 calculateForceFromGrid(const Quadtree& grid, std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar, ParticlePhysics& pParticle);
+	glm::vec2 calculateForceFromGrid(const Quadtree& grid, std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar, ParticlePhysics& pParticle);
 
 	void physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar, bool& sphGround);
 

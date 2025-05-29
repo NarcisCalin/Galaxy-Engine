@@ -31,15 +31,15 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 			float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 			float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
-			Vector2 randomOffset = {
+			glm::vec2 randomOffset = {
 				cos(angle) * distance,
 				sin(angle) * distance
 			};
 
-			Vector2 particlePos = Vector2Add(myParam.myCamera.mouseWorldPos, randomOffset);
+			glm::vec2 particlePos = myParam.myCamera.mouseWorldPos + randomOffset;
 
 			myParam.pParticles.emplace_back(particlePos,
-				Vector2{ 0, 0 },
+				glm::vec2{ 0, 0 },
 				8500000000.0f / myParam.particlesSpawning.particleAmountMultiplier,
 
 				0.008f,
@@ -47,7 +47,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 				1.0f,
 				1.0f);
 
-			myParam.rParticles.emplace_back(Color{ 128, 128, 128, 100 }, 0.125f, false, false, false, true, true, false, true, -1.0f);
+			myParam.rParticles.emplace_back(Color{ 128, 128, 128, 100 }, 0.125f, false, false, false, true, true, false, true, -1.0f, "nonSPH");
 		}
 	}
 
@@ -57,15 +57,15 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
-				Vector2 randomOffset = {
+				glm::vec2 randomOffset = {
 					cos(angle) * distance,
 					sin(angle) * distance
 				};
 
-				Vector2 particlePos = Vector2Add(myParam.myCamera.mouseWorldPos, randomOffset);
+				glm::vec2 particlePos = myParam.myCamera.mouseWorldPos + randomOffset;
 
 				myParam.pParticles.emplace_back(particlePos,
-					Vector2{ 0, 0 },
+					glm::vec2{ 0, 0 },
 					(8500000000.0f * water.massMult) / myParam.particlesSpawning.particleAmountMultiplier,
 
 					water.restDens,
@@ -73,11 +73,9 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 					water.visc,
 					water.cohesion);
 
-				myParam.rParticles.emplace_back(water.color, 0.125f, false, false, false, true, true, false, true, -1.0f);
+				myParam.rParticles.emplace_back(water.color, 0.125f, false, false, false, true, true, false, true, -1.0f, water.sphLabel);
 
 				myParam.rParticles.back().sphColor = water.color;
-
-				myParam.rParticles.back().sphLabel = water.sphLabel;
 			}
 		}
 
@@ -86,15 +84,15 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
-				Vector2 randomOffset = {
+				glm::vec2 randomOffset = {
 					cos(angle) * distance,
 					sin(angle) * distance
 				};
 
-				Vector2 particlePos = Vector2Add(myParam.myCamera.mouseWorldPos, randomOffset);
+				glm::vec2 particlePos = myParam.myCamera.mouseWorldPos + randomOffset;
 
 				myParam.pParticles.emplace_back(particlePos,
-					Vector2{ 0, 0 },
+					glm::vec2{ 0, 0 },
 					(8500000000.0f * rock.massMult) / myParam.particlesSpawning.particleAmountMultiplier,
 
 					rock.restDens,
@@ -125,7 +123,8 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 					true, 
 					false,
 					true, 
-					-1.0f
+					-1.0f,
+					rock.sphLabel
 				);
 
 				myParam.rParticles.back().sphColor = Color{
@@ -135,8 +134,6 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 						rock.color.a
 				};
 
-				myParam.rParticles.back().sphLabel = rock.sphLabel;
-
 			}
 		}
 
@@ -145,15 +142,15 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
-				Vector2 randomOffset = {
+				glm::vec2 randomOffset = {
 					cos(angle) * distance,
 					sin(angle) * distance
 				};
 
-				Vector2 particlePos = Vector2Add(myParam.myCamera.mouseWorldPos, randomOffset);
+				glm::vec2 particlePos = myParam.myCamera.mouseWorldPos + randomOffset;
 
 				myParam.pParticles.emplace_back(particlePos,
-					Vector2{ 0, 0 },
+					glm::vec2{ 0, 0 },
 					(8500000000.0f * sand.massMult) / myParam.particlesSpawning.particleAmountMultiplier,
 
 					sand.restDens,
@@ -184,7 +181,8 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 					true,
 					false, 
 					true,
-					-1.0f
+					-1.0f,
+					sand.sphLabel
 				);
 
 				myParam.rParticles.back().sphColor = Color{
@@ -193,9 +191,6 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 						addRandom(sand.color.b),
 						sand.color.a
 				};
-
-				myParam.rParticles.back().sphLabel = sand.sphLabel;
-
 			}
 		}
 
@@ -204,15 +199,15 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
-				Vector2 randomOffset = {
+				glm::vec2 randomOffset = {
 					cos(angle) * distance,
 					sin(angle) * distance
 				};
 
-				Vector2 particlePos = Vector2Add(myParam.myCamera.mouseWorldPos, randomOffset);
+				glm::vec2 particlePos = myParam.myCamera.mouseWorldPos + randomOffset;
 
 				myParam.pParticles.emplace_back(particlePos,
-					Vector2{ 0, 0 },
+					glm::vec2{ 0, 0 },
 					(8500000000.0f * soil.massMult) / myParam.particlesSpawning.particleAmountMultiplier,
 
 					soil.restDens,
@@ -243,7 +238,8 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 					true,
 					false, 
 					true, 
-					-1.0f
+					-1.0f,
+					soil.sphLabel
 				);
 
 				myParam.rParticles.back().sphColor = Color{
@@ -252,9 +248,6 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 						addRandom(soil.color.b),
 						soil.color.a
 				};
-
-				myParam.rParticles.back().sphLabel = soil.sphLabel;
-
 			}
 		}
 
@@ -263,15 +256,15 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
-				Vector2 randomOffset = {
+				glm::vec2 randomOffset = {
 					cos(angle) * distance,
 					sin(angle) * distance
 				};
 
-				Vector2 particlePos = Vector2Add(myParam.myCamera.mouseWorldPos, randomOffset);
+				glm::vec2 particlePos = myParam.myCamera.mouseWorldPos + randomOffset;
 
 				myParam.pParticles.emplace_back(particlePos,
-					Vector2{ 0, 0 },
+					glm::vec2{ 0, 0 },
 					(8500000000.0f * ice.massMult) / myParam.particlesSpawning.particleAmountMultiplier,
 
 					ice.restDens,
@@ -302,7 +295,8 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 					true,
 					false,
 					true,
-					-1.0f
+					-1.0f,
+					ice.sphLabel
 				);
 
 				myParam.rParticles.back().sphColor = Color{
@@ -311,8 +305,6 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 						addRandom(ice.color.b),
 						ice.color.a
 				};
-
-				myParam.rParticles.back().sphLabel = ice.sphLabel;
 			}
 		}
 
@@ -321,15 +313,15 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
-				Vector2 randomOffset = {
+				glm::vec2 randomOffset = {
 					cos(angle) * distance,
 					sin(angle) * distance
 				};
 
-				Vector2 particlePos = Vector2Add(myParam.myCamera.mouseWorldPos, randomOffset);
+				glm::vec2 particlePos = myParam.myCamera.mouseWorldPos + randomOffset;
 
 				myParam.pParticles.emplace_back(particlePos,
-					Vector2{ 0, 0 },
+					glm::vec2{ 0, 0 },
 					(8500000000.0f * mud.massMult) / myParam.particlesSpawning.particleAmountMultiplier,
 
 					mud.restDens,
@@ -360,7 +352,8 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 					true,
 					false,
 					true,
-					-1.0f
+					-1.0f,
+					mud.sphLabel
 				);
 
 				myParam.rParticles.back().sphColor = Color{
@@ -369,9 +362,6 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 						addRandom(mud.color.b),
 						mud.color.a
 				};
-
-				myParam.rParticles.back().sphLabel = mud.sphLabel;
-
 			}
 		}
 	}
@@ -385,7 +375,7 @@ void Brush::brushSize() {
 	}
 }
 
-void Brush::drawBrush(Vector2 mouseWorldPos) {
+void Brush::drawBrush(glm::vec2 mouseWorldPos) {
 	DrawCircleLinesV({ mouseWorldPos.x, mouseWorldPos.y }, brushRadius, WHITE);
 }
 
@@ -393,7 +383,7 @@ void Brush::eraseBrush(UpdateParameters& myParam) {
 
 	if (IsKeyDown(KEY_X) && IsMouseButtonDown(2)) {
 		for (size_t i = 0; i < myParam.pParticles.size();) {
-			Vector2 distanceFromBrush = {
+			glm::vec2 distanceFromBrush = {
 				myParam.pParticles[i].pos.x - myParam.myCamera.mouseWorldPos.x,
 				myParam.pParticles[i].pos.y - myParam.myCamera.mouseWorldPos.y
 			};
@@ -465,7 +455,7 @@ void Brush::particlesSpinner(UpdateVariables& myVar, UpdateParameters& myParam) 
 
 	if (IsKeyDown(KEY_N)) {
 		for (auto& pParticle : myParam.pParticles) {
-			Vector2 distanceFromBrush = { pParticle.pos.x - myParam.myCamera.mouseWorldPos.x, pParticle.pos.y - myParam.myCamera.mouseWorldPos.y };
+			glm::vec2 distanceFromBrush = { pParticle.pos.x - myParam.myCamera.mouseWorldPos.x, pParticle.pos.y - myParam.myCamera.mouseWorldPos.y };
 			float distance = sqrt(distanceFromBrush.x * distanceFromBrush.x + distanceFromBrush.y * distanceFromBrush.y);
 			if (distance < brushRadius) {
 
@@ -473,8 +463,8 @@ void Brush::particlesSpinner(UpdateVariables& myVar, UpdateParameters& myParam) 
 				falloff = powf(falloff, 2.0f);
 
 				float inverseDistance = 1.0f / (distance + myVar.softening);
-				Vector2 radialDirection = { distanceFromBrush.x * inverseDistance, distanceFromBrush.y * inverseDistance };
-				Vector2 spinDirection = { -radialDirection.y, radialDirection.x };
+				glm::vec2 radialDirection = { distanceFromBrush.x * inverseDistance, distanceFromBrush.y * inverseDistance };
+				glm::vec2 spinDirection = { -radialDirection.y, radialDirection.x };
 
 				if (IsKeyDown(KEY_LEFT_CONTROL)) {
 					spinDirection = { -spinDirection.x, -spinDirection.y };
@@ -490,8 +480,8 @@ void Brush::particlesSpinner(UpdateVariables& myVar, UpdateParameters& myParam) 
 
 void Brush::particlesGrabber(UpdateParameters& myParam) {
 
-	Vector2 mouseDelta = GetMouseDelta();
-	Vector2 scaledDelta = Vector2Scale(mouseDelta, 1.0f / myParam.myCamera.camera.zoom);
+	glm::vec2 mouseDelta = glm::vec2(GetMouseDelta().x, GetMouseDelta().y);
+	glm::vec2 scaledDelta = mouseDelta * (1.0f / myParam.myCamera.camera.zoom);
 
 	lastMouseVelocity = scaledDelta;
 
@@ -499,7 +489,7 @@ void Brush::particlesGrabber(UpdateParameters& myParam) {
 		dragging = true;
 
 		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-			Vector2 distanceFromBrush = {
+			glm::vec2 distanceFromBrush = {
 				myParam.pParticles[i].pos.x - myParam.myCamera.mouseWorldPos.x,
 				myParam.pParticles[i].pos.y - myParam.myCamera.mouseWorldPos.y
 			};

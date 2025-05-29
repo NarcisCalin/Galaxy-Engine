@@ -1,4 +1,5 @@
 #pragma once
+#include "../../external/glm/glm/glm.hpp"
 #include "../raylib/raylib.h"
 #include "../Particles/particle.h"
 #include "../parameters.h"
@@ -11,6 +12,14 @@
 #include <iostream>
 #include <string>
 #include <filesystem>
+
+inline std::ostream& operator<<(std::ostream& os, const Vector2& vec) {
+	return os << vec.x << " " << vec.y;
+}
+
+inline std::istream& operator>>(std::istream& is, Vector2& vec) {
+	return is >> vec.x >> vec.y;
+}
 
 class SaveSystem {
 
@@ -33,7 +42,7 @@ public:
 		WRITE(DensityColor, myParam.colorVisuals.densityColor);
 		WRITE(ForceColor, myParam.colorVisuals.forceColor);
 		WRITE(VelocityColor, myParam.colorVisuals.velocityColor);
-		WRITE(DeltaVColor, myParam.colorVisuals.deltaVColor);
+		WRITE(DeltaVColor, myParam.colorVisuals.shockwaveColor);
 		WRITE(PressureColor, myParam.colorVisuals.pressureColor);
 		WRITE(SPHColor, myParam.colorVisuals.SPHColor);
 		WRITE(SelectedColor, myParam.colorVisuals.selectedColor);
@@ -116,7 +125,7 @@ public:
 			READ(DensityColor, myParam.colorVisuals.densityColor);
 			READ(ForceColor, myParam.colorVisuals.forceColor);
 			READ(VelocityColor, myParam.colorVisuals.velocityColor);
-			READ(DeltaVColor, myParam.colorVisuals.deltaVColor);
+			READ(DeltaVColor, myParam.colorVisuals.shockwaveColor);
 			READ(PressureColor, myParam.colorVisuals.pressureColor);
 			READ(SPHColor, myParam.colorVisuals.SPHColor);
 			READ(SelectedColor, myParam.colorVisuals.selectedColor);

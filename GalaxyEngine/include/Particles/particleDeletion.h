@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../../external/glm/glm/glm.hpp"
 #include "../raylib/raylib.h"
 #include "particle.h"
 #include "vector"
@@ -38,9 +39,9 @@ struct ParticleDeletion {
 			std::vector<int> neighborCounts(pParticles.size(), 0);
 
 			for (size_t i = 0; i < pParticles.size(); i++) {
-				const Vector2& pos1 = pParticles[i].pos;
+				const glm::vec2& pos1 = pParticles[i].pos;
 				for (size_t j = i + 1; j < pParticles.size(); j++) {
-					const Vector2& pos2 = pParticles[j].pos;
+					const glm::vec2& pos2 = pParticles[j].pos;
 					if (std::abs(pos2.x - pos1.x) > xBreakThreshold * collisionRMultiplier)
 						break;
 					float dx = pos1.x - pos2.x;

@@ -21,8 +21,8 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 
 		if (IsMouseButtonReleased(0) && !IsKeyDown(KEY_LEFT_CONTROL) && !IsKeyDown(KEY_LEFT_ALT) && myVar.isDragging) {
 			myParam.pParticles.emplace_back(
-				Vector2{ static_cast<float>(myParam.myCamera.mouseWorldPos.x), static_cast<float>(myParam.myCamera.mouseWorldPos.y) },
-				Vector2{ slingshot.normalizedX * slingshot.length, slingshot.normalizedY * slingshot.length },
+				myParam.myCamera.mouseWorldPos,
+				slingshot.norm * slingshot.length,
 				heavyParticleInitMass * heavyParticleWeightMultiplier,
 
 				0.008f,
@@ -40,7 +40,8 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 				false,
 				false,
 				false,
-				-1.0f
+				-1.0f,
+				"nonSPH"
 			);
 			myVar.isDragging = false;
 		}
@@ -53,8 +54,8 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 			// VISIBLE MATTER
 
 			for (int i = 0; i < static_cast<int>(40000 * particleAmountMultiplier); i++) {
-				float galaxyCenterX = static_cast<float>(myParam.myCamera.mouseWorldPos.x);
-				float galaxyCenterY = static_cast<float>(myParam.myCamera.mouseWorldPos.y);
+
+				glm::vec2 galaxyCenter = myParam.myCamera.mouseWorldPos;
 
 				float outerRadius = 200.0f;
 
@@ -64,37 +65,29 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 
 				float angle = static_cast<float>(rand()) / RAND_MAX * 2 * PI;
 
-				//float curveSteepness = -0.023f;
-				//float finalRadius = innerRadius + (outerRadius - innerRadius) / (1.0f + exp(-curveSteepness * (randRadius)));
-
 				float finalRadius = -scaleLength * log(1.0f - normalizedRand);
 
 				finalRadius = std::min(finalRadius, outerRadius + 600.0f);
 
 				finalRadius = std::max(finalRadius, 0.01f);
 
-				float posX = galaxyCenterX + finalRadius * cos(angle);
-				float posY = galaxyCenterY + finalRadius * sin(angle);
+				glm::vec2 pos = glm::vec2(galaxyCenter.x + finalRadius * cos(angle), galaxyCenter.y + finalRadius * sin(angle));
 
-				float dx = posX - galaxyCenterX;
-				float dy = posY - galaxyCenterY;
+				glm::vec2 d = pos - galaxyCenter;
 
-				float tangentX = dy;
-				float tangentY = -dx;
+				glm::vec2 tangent = glm::vec2(d.y, -d.x);
 
-				float length = sqrt(tangentX * tangentX + tangentY * tangentY);
-				tangentX /= length;
-				tangentY /= length;
+				float length = sqrt(tangent.x * tangent.x + tangent.y * tangent.y);
+
+				tangent /= length;
 
 				float speed = 10.5f * sqrt(1758.0f / (finalRadius + 54.7f));
 
-				float velocityX = tangentX * speed;
-				float velocityY = tangentY * speed;
+				glm::vec2 vel = tangent * speed;
 
 				myParam.pParticles.emplace_back(
-					Vector2{ posX, posY },
-					Vector2{ velocityX + (slingshot.normalizedX * slingshot.length * 0.3f),
-						velocityY + (slingshot.normalizedY * slingshot.length * 0.3f) },
+					pos,
+					vel + slingshot.norm * slingshot.length * 0.3f,
 					8500000000.0f / particleAmountMultiplier,
 
 					0.008f,
@@ -112,7 +105,8 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 					true,
 					false,
 					true,
-					-1.0f
+					-1.0f,
+					"nonSPH"
 				);
 			}
 
@@ -120,8 +114,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 
 			if (myVar.isDarkMatterEnabled) {
 				for (int i = 0; i < static_cast<int>(12000 * DMAmountMultiplier); i++) {
-					float galaxyCenterX = static_cast<float>(myParam.myCamera.mouseWorldPos.x);
-					float galaxyCenterY = static_cast<float>(myParam.myCamera.mouseWorldPos.y);
+					glm::vec2 galaxyCenter = myParam.myCamera.mouseWorldPos;
 
 					float outerRadius = 2000.0f;
 					float radiusCore = 3.5f;
@@ -132,18 +125,13 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 
 					float angle = static_cast<float>(rand()) / RAND_MAX * 2 * PI;
 
-					float posX = galaxyCenterX + radiusMultiplier * cos(angle);
-					float posY = galaxyCenterY + radiusMultiplier * sin(angle);
+					glm::vec2 pos = glm::vec2(galaxyCenter.x + radiusMultiplier * cos(angle), galaxyCenter.y + radiusMultiplier * sin(angle));
 
-					float velocityX = static_cast<float>(rand() % 60 - 30);
-					float velocityY = static_cast<float>(rand() % 60 - 30);
+					glm::vec2 vel = glm::vec2(static_cast<float>(rand() % 60 - 30), static_cast<float>(rand() % 60 - 30));
 
 					myParam.pParticles.emplace_back(
-						Vector2{ posX, posY },
-						Vector2{
-							velocityX + (slingshot.normalizedX * slingshot.length * 0.3f),
-							velocityY + (slingshot.normalizedY * slingshot.length * 0.3f)
-						},
+						pos,
+						vel + slingshot.norm * slingshot.length * 0.3f,
 						141600000000.0f / DMAmountMultiplier,
 
 						0.008f,
@@ -161,7 +149,8 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 						true,
 						true,
 						false,
-						-1.0f
+						-1.0f,
+						"nonSPH"
 					);
 				}
 			}
@@ -174,8 +163,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 			// VISIBLE MATTER
 
 			for (int i = 0; i < static_cast<int>(12000 * particleAmountMultiplier); i++) {
-				float galaxyCenterX = static_cast<float>(myParam.myCamera.mouseWorldPos.x);
-				float galaxyCenterY = static_cast<float>(myParam.myCamera.mouseWorldPos.y);
+				glm::vec2 galaxyCenter = myParam.myCamera.mouseWorldPos;
 
 				float outerRadius = 100.0f;
 
@@ -185,39 +173,29 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 
 				float angle = static_cast<float>(rand()) / RAND_MAX * 2 * PI;
 
-				//float curveSteepness = -0.023f;
-				//float finalRadius = innerRadius + (outerRadius - innerRadius) / (1.0f + exp(-curveSteepness * (randRadius)));
-
 				float finalRadius = -scaleLength * log(1.0f - normalizedRand);
 
 				finalRadius = std::min(finalRadius, outerRadius + 300.0f);
 
 				finalRadius = std::max(finalRadius, 0.01f);
 
-				float posX = galaxyCenterX + finalRadius * cos(angle);
-				float posY = galaxyCenterY + finalRadius * sin(angle);
+				glm::vec2 pos = glm::vec2(galaxyCenter.x + finalRadius * cos(angle), galaxyCenter.y + finalRadius * sin(angle));
 
-				float dx = posX - galaxyCenterX;
-				float dy = posY - galaxyCenterY;
+				glm::vec2 d = pos - galaxyCenter;
 
-				float tangentX = dy;
-				float tangentY = -dx;
+				glm::vec2 tangent = glm::vec2(d.y, -d.x);
 
-				float length = sqrt(tangentX * tangentX + tangentY * tangentY);
-				tangentX /= length;
-				tangentY /= length;
+				float length = sqrt(tangent.x * tangent.x + tangent.y * tangent.y);
+
+				tangent /= length;
 
 				float speed = 10.5f * sqrt(505.0f / (finalRadius + 54.7f));
 
-				float velocityX = tangentX * speed;
-				float velocityY = tangentY * speed;
+				glm::vec2 vel = tangent * speed;
 
 				myParam.pParticles.emplace_back(
-					Vector2{ posX, posY },
-					Vector2{
-						velocityX + (slingshot.normalizedX * slingshot.length * 0.3f),
-						velocityY + (slingshot.normalizedY * slingshot.length * 0.3f)
-					},
+					pos,
+					vel + slingshot.norm * slingshot.length * 0.3f,
 					8500000000.0f / particleAmountMultiplier,
 
 					0.008f,
@@ -235,15 +213,15 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 					true,
 					false,
 					true,
-					-1.0f
+					-1.0f,
+					"nonSPH"
 				);
 			}
 
 			// DARK MATTER
 			if (myVar.isDarkMatterEnabled) {
 				for (int i = 0; i < static_cast<int>(3600 * DMAmountMultiplier); i++) {
-					float galaxyCenterX = static_cast<float>(myParam.myCamera.mouseWorldPos.x);
-					float galaxyCenterY = static_cast<float>(myParam.myCamera.mouseWorldPos.y);
+					glm::vec2 galaxyCenter = myParam.myCamera.mouseWorldPos;
 
 					float outerRadius = 2000.0f;
 					float radiusCore = 3.5f;
@@ -254,18 +232,13 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 
 					float angle = static_cast<float>(rand()) / RAND_MAX * 2 * PI;
 
-					float posX = galaxyCenterX + radiusMultiplier * cos(angle);
-					float posY = galaxyCenterY + radiusMultiplier * sin(angle);
+					glm::vec2 pos = glm::vec2(galaxyCenter.x + radiusMultiplier * cos(angle), galaxyCenter.y + radiusMultiplier * sin(angle));
 
-					float velocityX = static_cast<float>(rand() % 60 - 30);
-					float velocityY = static_cast<float>(rand() % 60 - 30);
+					glm::vec2 vel = glm::vec2(static_cast<float>(rand() % 60 - 30), static_cast<float>(rand() % 60 - 30));
 
 					myParam.pParticles.emplace_back(
-						Vector2{ posX, posY },
-						Vector2{
-							velocityX + (slingshot.normalizedX * slingshot.length * 0.3f),
-							velocityY + (slingshot.normalizedY * slingshot.length * 0.3f)
-						},
+						pos,
+						vel + slingshot.norm * slingshot.length * 0.3f,
 						141600000000.0f / DMAmountMultiplier,
 
 						0.008f,
@@ -283,7 +256,8 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 						true,
 						true,
 						false,
-						-1.0f
+						-1.0f,
+						"nonSPH"
 					);
 				}
 			}
@@ -297,16 +271,16 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = (sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * 5.0f) + 0.1f;
 
-				Vector2 randomOffset = {
+				glm::vec2 randomOffset = {
 					cos(angle) * distance,
 					sin(angle) * distance
 				};
 
-				Vector2 particlePos = Vector2Add(myParam.myCamera.mouseWorldPos, randomOffset);
+				glm::vec2 particlePos = myParam.myCamera.mouseWorldPos + randomOffset;
 
 				myParam.pParticles.emplace_back(
-					Vector2{ particlePos.x, particlePos.y },
-					Vector2{ (slingshot.normalizedX * slingshot.length * 0.3f),  +(slingshot.normalizedY * slingshot.length * 0.3f) },
+					glm::vec2{ particlePos.x, particlePos.y },
+					slingshot.norm * slingshot.length * 0.3f,
 					8500000000.0f / particleAmountMultiplier,
 
 					0.008f,
@@ -324,7 +298,8 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 					true,
 					false,
 					true,
-					-1.0f
+					-1.0f,
+					"nonSPH"
 				);
 			}
 
@@ -339,28 +314,26 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = (sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * 20.0f) + 1.0f;
 
-				Vector2 randomOffset = {
+				glm::vec2 randomOffset = {
 					cos(angle) * distance + static_cast<float>(GetRandomValue(-15, 15)),
 					sin(angle) * distance + static_cast<float>(GetRandomValue(-15, 15))
 				};
 
-				Vector2 particlePos = Vector2Add(myParam.myCamera.mouseWorldPos, randomOffset);
+				glm::vec2 particlePos = myParam.myCamera.mouseWorldPos + randomOffset;
 
-				float dx = particlePos.x - myParam.myCamera.mouseWorldPos.x;
-				float dy = particlePos.y - myParam.myCamera.mouseWorldPos.y;
+				glm::vec2 d = particlePos - myParam.myCamera.mouseWorldPos;
 
-				float normalX = dx / distance;
-				float normalY = dy / distance;
+				glm::vec2 norm = d / distance;
 
 				float speed = 300.0f;
 
 				float adjustedSpeed = speed * (distance / 35.0f);
 
-				Vector2 vel = { adjustedSpeed * normalX, adjustedSpeed * normalY };
+				glm::vec2 vel = adjustedSpeed * norm;
 
 				myParam.pParticles.emplace_back(
-					Vector2{ particlePos.x, particlePos.y },
-					Vector2{ vel.x, vel.y },
+					particlePos,
+					vel,
 					8500000000.0f / particleAmountMultiplier,
 
 					0.008f,
@@ -378,7 +351,8 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 					true,
 					false,
 					true,
-					-1.0f
+					-1.0f,
+					"nonSPH"
 				);
 			}
 
@@ -390,28 +364,26 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 					float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 					float distance = (sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * 20.0f) + 1.0f;
 
-					Vector2 randomOffset = {
+					glm::vec2 randomOffset = {
 						cos(angle) * distance + static_cast<float>(GetRandomValue(-15, 15)),
 						sin(angle) * distance + static_cast<float>(GetRandomValue(-15, 15))
 					};
 
-					Vector2 particlePos = Vector2Add(myParam.myCamera.mouseWorldPos, randomOffset);
+					glm::vec2 particlePos = myParam.myCamera.mouseWorldPos + randomOffset;
 
-					float dx = particlePos.x - myParam.myCamera.mouseWorldPos.x;
-					float dy = particlePos.y - myParam.myCamera.mouseWorldPos.y;
+					glm::vec2 d = particlePos - myParam.myCamera.mouseWorldPos;
 
-					float normalX = dx / distance;
-					float normalY = dy / distance;
+					glm::vec2 norm = d / distance;
 
 					float speed = 300.0f;
 
 					float adjustedSpeed = speed * (distance / 35.0f);
 
-					Vector2 vel = { adjustedSpeed * normalX, adjustedSpeed * normalY };
+					glm::vec2 vel = adjustedSpeed * norm;
 
 					myParam.pParticles.emplace_back(
-						Vector2{ particlePos.x, particlePos.y },
-						Vector2{ vel.x, vel.y },
+						particlePos,
+						vel,
 						141600000000.0f / DMAmountMultiplier,
 
 						0.008f,
@@ -429,7 +401,8 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 						true,
 						true,
 						false,
-						-1.0f
+						-1.0f,
+						"nonSPH"
 					);
 				}
 			}
@@ -479,12 +452,11 @@ void ParticlesSpawning::copyPaste(std::vector<ParticlePhysics>& pParticles, std:
 
 		for (ParticlePhysics pCopy : pParticlesCopied) {
 
-			Vector2 copyRelPos = pCopy.pos - avgPos;
+			glm::vec2 copyRelPos = pCopy.pos - avgPos;
 
 			pCopy.pos = myCamera.mouseWorldPos + copyRelPos;
 
-			pCopy.vel.x += slingshot.length * slingshot.normalizedX * 0.3f;
-			pCopy.vel.y += slingshot.length * slingshot.normalizedY * 0.3f;
+			pCopy.vel += slingshot.length * slingshot.norm * 0.3f;
 
 			pParticles.push_back(ParticlePhysics(pCopy));
 		}
@@ -511,8 +483,8 @@ void ParticlesSpawning::predictTrajectory(const std::vector<ParticlePhysics>& pP
 	std::vector<ParticlePhysics> currentParticles = pParticles;
 
 	ParticlePhysics predictedParticle(
-		Vector2{ static_cast<float>(myCamera.mouseWorldPos.x), static_cast<float>(myCamera.mouseWorldPos.y) },
-		Vector2{ slingshot.normalizedX * slingshot.length, slingshot.normalizedY * slingshot.length },
+		glm::vec2(myCamera.mouseWorldPos),
+		glm::vec2{ slingshot.norm * slingshot.length },
 		heavyParticleInitMass * heavyParticleWeightMultiplier,
 
 		1.0f,
@@ -525,27 +497,24 @@ void ParticlesSpawning::predictTrajectory(const std::vector<ParticlePhysics>& pP
 
 	int predictedIndex = static_cast<int>(currentParticles.size()) - 1;
 
-	std::vector<Vector2> predictedPath;
+	std::vector<glm::vec2> predictedPath;
 
 	for (int step = 0; step < predictPathLength; ++step) {
 		ParticlePhysics& p = currentParticles[predictedIndex];
 
-		Vector2 netForce = physics.calculateForceFromGrid(*quadtree, currentParticles, myVar, p);
+		glm::vec2 netForce = physics.calculateForceFromGrid(*quadtree, currentParticles, myVar, p);
 
-		Vector2 acc;
-		acc.x = netForce.x / p.mass;
-		acc.y = netForce.y / p.mass;
+		glm::vec2 acc;
+		acc = netForce / p.mass;
 
-		p.vel.x += myVar.timeFactor * (1.5f * acc.x);
-		p.vel.y += myVar.timeFactor * (1.5f * acc.y);
+		p.vel += myVar.timeFactor * (1.5f * acc);
 
-		p.pos.x += p.vel.x * myVar.timeFactor;
-		p.pos.y += p.vel.y * myVar.timeFactor;
+		p.pos += p.vel * myVar.timeFactor;
 
 		predictedPath.push_back(p.pos);
 	}
 
 	for (size_t i = 1; i < predictedPath.size(); ++i) {
-		DrawLineV(predictedPath[i - 1], predictedPath[i], WHITE);
+		DrawLineV({ predictedPath[i - 1].x,  predictedPath[i - 1].y }, { predictedPath[i].x,  predictedPath[i].y}, WHITE);
 	}
 }

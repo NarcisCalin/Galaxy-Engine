@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include "../../external/glm/glm/glm.hpp"
 #include "../raylib/raylib.h"
 #include "particle.h"
 #include "../UX/camera.h"
@@ -37,7 +38,7 @@ public:
 private:
 	float selectionThresholdSq = 100.0f;
 
-	Vector2 boxInitialPos = { 0.0f, 0.0f };
+	glm::vec2 boxInitialPos = { 0.0f, 0.0f };
 
 	bool isBoxSelecting = false;
 	bool isBoxDeselecting = false;

@@ -85,3 +85,17 @@ struct SPHMud {
 
 	std::string sphLabel = "mud";
 };
+
+struct SPHGas {
+
+	float massMult = 0.45f;
+
+	float restDens = 0.095f;
+	float stiff = 1.0f;
+	float visc = 0.075f;
+	float cohesion = 0.05f;
+
+	Color color = { 240, 240, 240, 80 };
+
+	std::string sphLabel = "gas";
+};

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include "../../external/glm/glm/glm.hpp"
 #include "../raylib/raylib.h"
 #include "../Particles/particle.h"
 #include "../UX/camera.h"
@@ -11,7 +12,7 @@ struct UpdateParameters;
 
 class Brush {
 public:
-	Vector2 mouseWorldPos;
+	glm::vec2 mouseWorldPos;
 
 	bool SPHWater = false;
 	bool SPHRock = false;
@@ -26,7 +27,7 @@ public:
 
 	void brushSize();
 
-	void drawBrush(Vector2 mouseWorldPos);
+	void drawBrush(glm::vec2 mouseWorldPos);
 
 	void eraseBrush(UpdateParameters& myParam);
 
@@ -42,10 +43,10 @@ private:
 
 	float spinForce = 140.0f;
 
-	Vector2 attractorForce = { 0.0f, 0.0f };
+	glm::vec2 attractorForce = { 0.0f, 0.0f };
 
 	bool dragging = false;
-	Vector2 lastMouseVelocity = { 0.0f, 0.0f };
+	glm::vec2 lastMouseVelocity = { 0.0f, 0.0f };
 
 	std::vector<ParticlePhysics*> grabbedParticles;
 };

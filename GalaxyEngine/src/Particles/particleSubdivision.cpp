@@ -77,7 +77,7 @@ void ParticleSubdivision::subdivideParticles(UpdateVariables& myVar, UpdateParam
 						float offsetX = multipliers[j][0] * halfOffset + (rand() % 3 - 1);
 						float offsetY = multipliers[j][1] * halfOffset + (rand() % 3 - 1);
 
-						Vector2 newPos{
+						glm::vec2 newPos{
 							myParam.pParticles[i].pos.x + offsetX,
 							myParam.pParticles[i].pos.y + offsetY
 						};
@@ -102,7 +102,8 @@ void ParticleSubdivision::subdivideParticles(UpdateVariables& myVar, UpdateParam
 							myParam.rParticles[i].canBeResized, 
 							myParam.rParticles[i].isDarkMatter, 
 							myParam.rParticles[i].isSPH,
-							myParam.rParticles[i].lifeSpan
+							myParam.rParticles[i].lifeSpan,
+							myParam.rParticles[i].sphLabel
 						);
 					}
 

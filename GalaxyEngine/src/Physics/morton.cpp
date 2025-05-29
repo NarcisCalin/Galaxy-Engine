@@ -22,7 +22,7 @@ uint32_t Morton::morton2D(uint32_t x, uint32_t y) {
     return spreadBits(x) | (spreadBits(y) << 1);
 }
 
-void Morton::computeMortonKeys(std::vector<ParticlePhysics>& pParticles, Vector2& minPosition, float& size){
+void Morton::computeMortonKeys(std::vector<ParticlePhysics>& pParticles, glm::vec2& minPosition, float& size){
     const float maxX = minPosition.x + std::max(size, 1e-6f);
     const float maxY = minPosition.y + std::max(size, 1e-6f);
 

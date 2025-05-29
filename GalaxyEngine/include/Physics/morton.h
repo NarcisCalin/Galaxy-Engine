@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <vector>
+#include "../../external/glm/glm/glm.hpp"
 #include "../Particles/particle.h"
 
 struct Morton {
@@ -10,7 +11,7 @@ struct Morton {
 
 	uint32_t morton2D(uint32_t x, uint32_t y);
 
-	void computeMortonKeys(std::vector<ParticlePhysics>& pParticles, Vector2& minPosition, float& size);
+	void computeMortonKeys(std::vector<ParticlePhysics>& pParticles, glm::vec2& minPosition, float& size);
 
 	static void sortParticlesByMortonKey(std::vector<ParticlePhysics>& pParticles,
 		std::vector<ParticleRendering>& rParticles);

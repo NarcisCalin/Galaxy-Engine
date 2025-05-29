@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <bitset>
 
+#include "../external/glm/glm/glm.hpp"
 #include "../include/Particles/particle.h"
 #include "../include/Physics/quadtree.h"
 #include "../include/Physics/slingshot.h"
@@ -125,10 +126,9 @@ static void updateScene() {
 
 			ParticlePhysics& pParticle = myParam.pParticles[i];
 
-			Vector2 netForce = physics.calculateForceFromGrid(*grid, myParam.pParticles, myVar, pParticle);
+			glm::vec2 netForce = physics.calculateForceFromGrid(*grid, myParam.pParticles, myVar, pParticle);
 
-			pParticle.acc.x = netForce.x / pParticle.mass;
-			pParticle.acc.y = netForce.y / pParticle.mass;
+			pParticle.acc = netForce / pParticle.mass;
 		}
 
 		if (myVar.isSPHEnabled) {
@@ -136,6 +136,12 @@ static void updateScene() {
 		}
 
 		ship.spaceshipLogic(myParam.pParticles, myParam.rParticles, myVar.isShipGasEnabled);
+
+		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+			if (myParam.rParticles[i].isSelected) {
+				std::cout << "sphcolor: " << myParam.rParticles[i].color << std::endl;
+			}
+		}
 
 		if (myVar.isCollisionsEnabled) {
 			float dt = myVar.timeFactor / myVar.substeps;
@@ -236,14 +242,15 @@ static void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture) 
 
 	BeginMode2D(myParam.myCamera.camera);
 
-	myVar.mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), myParam.myCamera.camera);
+	myVar.mouseWorldPos = glm::vec2(GetScreenToWorld2D(GetMousePosition(), myParam.myCamera.camera).x, 
+		GetScreenToWorld2D(GetMousePosition(), myParam.myCamera.camera).y);
 	myParam.brush.drawBrush(myVar.mouseWorldPos);
 	DrawRectangleLinesEx({ 0,0, static_cast<float>(myVar.domainSize.x), static_cast<float>(myVar.domainSize.y) }, 3, GRAY);
 
 	// Z-Curves debug toggle
 	if (myParam.pParticles.size() > 1 && myVar.drawZCurves) {
 		for (size_t i = 0; i < myParam.pParticles.size() - 1; i++) {
-			DrawLineV(myParam.pParticles[i].pos, myParam.pParticles[i + 1].pos, WHITE);
+			DrawLineV({ myParam.pParticles[i].pos.x, myParam.pParticles[i].pos.y }, { myParam.pParticles[i + 1].pos.x,myParam.pParticles[i + 1].pos.y }, WHITE);
 
 			DrawText(TextFormat("%i", i), static_cast<int>(myParam.pParticles[i].pos.x), static_cast<int>(myParam.pParticles[i].pos.y) - 10, 10, { 128,128,128,128 });
 		}

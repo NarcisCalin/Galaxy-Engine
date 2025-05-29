@@ -23,28 +23,33 @@ Camera2D SceneCamera::cameraLogic(bool& loadFlag, bool& isMouseNotHoveringUI) {
 
 	if (IsMouseButtonDown(1))
 	{
-		delta = GetMouseDelta();
-		delta = Vector2Scale(delta, -1.0f / camera.zoom);
-		camera.target = Vector2Add(camera.target, delta);
-		panFollowingOffset = Vector2Add(panFollowingOffset, delta);
+		delta = glm::vec2(GetMouseDelta().x, GetMouseDelta().y);
+		delta = delta * (-1.0f / camera.zoom);
+		camera.target.x = camera.target.x + delta.x;
+		camera.target.y = camera.target.y + delta.y;
+		panFollowingOffset = panFollowingOffset + delta;
 
 	}
 
 	float wheel = GetMouseWheelMove();
 	if (wheel != 0 && !IsKeyDown(KEY_LEFT_CONTROL) && !loadFlag && isMouseNotHoveringUI) {
-		mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), camera);
+		mouseWorldPos = glm::vec2(GetScreenToWorld2D(GetMousePosition(), camera).x,
+			GetScreenToWorld2D(GetMousePosition(), camera).y);
 
 		if (isFollowing) {
-			Vector2 screenCenter = { GetScreenWidth() / 2.0f, GetScreenHeight() / 2.0f };
-			mouseWorldPos = GetScreenToWorld2D(screenCenter, camera);
-			camera.offset = screenCenter;
-			camera.target = mouseWorldPos;
+			glm::vec2 screenCenter = { GetScreenWidth() * 0.5f, GetScreenHeight() * 0.5f };
+
+			mouseWorldPos = glm::vec2(GetScreenToWorld2D({ screenCenter.x,   screenCenter.y}, camera).x, 
+				GetScreenToWorld2D({ screenCenter.x,   screenCenter.y }, camera).y);
+
+			camera.offset = { screenCenter.x, screenCenter.y };
+			camera.target = { mouseWorldPos.x, mouseWorldPos.y };
 		}
 		else {
 
-			mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), camera);
+			mouseWorldPos = glm::vec2(GetScreenToWorld2D(GetMousePosition(), camera).x, GetScreenToWorld2D(GetMousePosition(), camera).y);
 			camera.offset = GetMousePosition();
-			camera.target = mouseWorldPos;
+			camera.target = { mouseWorldPos.x, mouseWorldPos.y };
 		}
 
 		float scale = 0.2f * wheel;
@@ -63,25 +68,25 @@ Camera2D SceneCamera::cameraLogic(bool& loadFlag, bool& isMouseNotHoveringUI) {
 
 void SceneCamera::cameraFollowObject(UpdateVariables& myVar, UpdateParameters& myParam) {
 
-	mouseWorldPos = GetScreenToWorld2D(GetMousePosition(), camera);
+	mouseWorldPos = glm::vec2(GetScreenToWorld2D(GetMousePosition(), camera).x, GetScreenToWorld2D(GetMousePosition(), camera).y);
 
 	static bool isDragging = false;
-	static Vector2 dragStartPos = { 0.0f, 0.0f };
+	static glm::vec2 dragStartPos = { 0.0f, 0.0f };
 
 	if ((IsMouseButtonPressed(1) && IsKeyDown(KEY_LEFT_CONTROL) && myVar.isMouseNotHoveringUI) || 
 		(IsMouseButtonPressed(1) && IsKeyDown(KEY_LEFT_ALT) && myVar.isMouseNotHoveringUI)) {
-		dragStartPos = GetMousePosition();
+		dragStartPos = glm::vec2(GetMousePosition().x, GetMousePosition().y);
 		isDragging = false;
 	}
 
 	if ((IsMouseButtonDown(1) && IsKeyDown(KEY_LEFT_CONTROL) && myVar.isMouseNotHoveringUI) ||
 		(IsMouseButtonDown(1) && IsKeyDown(KEY_LEFT_ALT) && myVar.isMouseNotHoveringUI)) {
-		Vector2 currentPos = GetMousePosition();
+		glm::vec2 currentPos = glm::vec2(GetMousePosition().x, GetMousePosition().y);
 		float dragThreshold = 5.0f;
-		float dx = currentPos.x - dragStartPos.x;
-		float dy = currentPos.y - dragStartPos.y;
 
-		if (dx * dx + dy * dy > dragThreshold * dragThreshold) {
+		glm::vec2 d = currentPos - dragStartPos;
+
+		if (d.x * d.x + d.y * d.y > dragThreshold * dragThreshold) {
 			isDragging = true;
 		}
 	}
@@ -93,9 +98,10 @@ void SceneCamera::cameraFollowObject(UpdateVariables& myVar, UpdateParameters& m
 			const auto& pParticle = myParam.pParticles[i];
 			for (size_t j = i + 1; j < myParam.pParticles.size(); j++) {
 				if (std::abs(myParam.pParticles[j].pos.x - pParticle.pos.x) > 2.4f) break;
-				float dx = pParticle.pos.x - myParam.pParticles[j].pos.x;
-				float dy = pParticle.pos.y - myParam.pParticles[j].pos.y;
-				if (dx * dx + dy * dy < distanceThreshold * distanceThreshold) {
+
+				glm::vec2 d = pParticle.pos - myParam.pParticles[j].pos;
+
+				if (d.x * d.x + d.y * d.y < distanceThreshold * distanceThreshold) {
 					neighborCountsSelect[i]++;
 					neighborCountsSelect[j]++;
 				}
@@ -107,9 +113,10 @@ void SceneCamera::cameraFollowObject(UpdateVariables& myVar, UpdateParameters& m
 
 		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 			myParam.rParticles[i].isSelected = false;
-			float dx = myParam.pParticles[i].pos.x - mouseWorldPos.x;
-			float dy = myParam.pParticles[i].pos.y - mouseWorldPos.y;
-			float distanceSq = dx * dx + dy * dy;
+
+			glm::vec2 d = myParam.pParticles[i].pos - mouseWorldPos;
+
+			float distanceSq = d.x * d.x + d.y * d.y;
 			if (distanceSq < selectionThresholdSq && neighborCountsSelect[i] > 3) {
 				myParam.rParticles[i].isSelected = true;
 			}
@@ -127,9 +134,10 @@ void SceneCamera::cameraFollowObject(UpdateVariables& myVar, UpdateParameters& m
 
 		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 			myParam.rParticles[i].isSelected = false;
-			float dx = myParam.pParticles[i].pos.x - mouseWorldPos.x;
-			float dy = myParam.pParticles[i].pos.y - mouseWorldPos.y;
-			float currentDistanceSq = dx * dx + dy * dy;
+
+			glm::vec2 d = myParam.pParticles[i].pos - mouseWorldPos;
+
+			float currentDistanceSq = d.x * d.x + d.y * d.y;
 			if (currentDistanceSq < minDistanceSq) {
 				minDistanceSq = currentDistanceSq;
 				closestIndex = i;
@@ -154,23 +162,23 @@ void SceneCamera::cameraFollowObject(UpdateVariables& myVar, UpdateParameters& m
 	}
 
 	if (isFollowing) {
-		float sumX = 0.0f;
-		float sumY = 0.0f;
-		int count = 0;
+
+		glm::vec2 sum = glm::vec2(0.0f, 0.0f);
+
+		float count = 0.0f;
 		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 			if (myParam.rParticles[i].isSelected) {
-				sumX += myParam.pParticles[i].pos.x;
-				sumY += myParam.pParticles[i].pos.y;
+				sum += myParam.pParticles[i].pos;
 				count++;
 			}
 		}
 
-		followPosition.x = sumX / count;
-		followPosition.y = sumY / count;
+		followPosition = sum / count;
 
-		followPosition = Vector2Add(followPosition, panFollowingOffset);
+		followPosition = followPosition + panFollowingOffset;
 
-		camera.target = followPosition;
+		camera.target = { followPosition.x, followPosition.y };
+
 		camera.offset = { GetScreenWidth() / 2.0f, GetScreenHeight() / 2.0f };
 
 		if (IsKeyPressed(KEY_F) || count == 0 || myParam.pParticles.size() == 0) {

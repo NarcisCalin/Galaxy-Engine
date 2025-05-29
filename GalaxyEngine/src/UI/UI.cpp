@@ -53,7 +53,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		settingsParams("Density Color", "Maps particle neighbor amount to the primary and secondary colors", myParam.colorVisuals.densityColor),
 		settingsParams("Force Color", "Maps particle acceleration to the primary and secondary colors",myParam.colorVisuals.forceColor),
 		settingsParams("Velocity Color", "Maps particle velocity to color", myParam.colorVisuals.velocityColor),
-		settingsParams("Shockwave Color", "Maps particle acceleration to color", myParam.colorVisuals.deltaVColor),
+		settingsParams("Shockwave Color", "Maps particle acceleration to color", myParam.colorVisuals.shockwaveColor),
 		settingsParams("Pressure Color", "Maps particle pressure to color", myParam.colorVisuals.pressureColor),
 		settingsParams("SPH Color", "Uses the SPH materials colors", myParam.colorVisuals.SPHColor),
 		settingsParams("Selected Color", "Highlight selected particles", myParam.colorVisuals.selectedColor),
@@ -679,18 +679,16 @@ void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 	ImGui::TextColored(statsNamesCol, "Selected Velocity");
 	ImGui::Spacing();
 
-	Vector2 selectedVel = { 0.0f, 0.0f };
+	glm::vec2 selectedVel = { 0.0f, 0.0f };
 	float totalVel = 0.0f;
 
 	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 		if (myParam.rParticles[i].isSelected) {
-			selectedVel.x += myParam.pParticles[i].vel.x;
-			selectedVel.y += myParam.pParticles[i].vel.y;
+			selectedVel += myParam.pParticles[i].vel;
 		}
 	}
 
-	selectedVel.x /= myParam.pParticlesSelected.size();
-	selectedVel.y /= myParam.pParticlesSelected.size();
+	selectedVel /= myParam.pParticlesSelected.size();
 
 	totalVel = sqrt(selectedVel.x * selectedVel.x + selectedVel.y * selectedVel.y);
 
@@ -709,18 +707,16 @@ void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 	ImGui::TextColored(statsNamesCol, "Selected Acceleration");
 	ImGui::Spacing();
 
-	Vector2 selectedAcc = { 0.0f, 0.0f };
+	glm::vec2 selectedAcc = { 0.0f, 0.0f };
 	float totalAcc = 0.0f;
 
 	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 		if (myParam.rParticles[i].isSelected) {
-			selectedAcc.x += myParam.pParticles[i].acc.x;
-			selectedAcc.y += myParam.pParticles[i].acc.y;
+			selectedAcc += myParam.pParticles[i].acc;
 		}
 	}
 
-	selectedAcc.x /= myParam.pParticlesSelected.size();
-	selectedAcc.y /= myParam.pParticlesSelected.size();
+	selectedAcc /= myParam.pParticlesSelected.size();
 
 	totalAcc = sqrt(selectedAcc.x * selectedAcc.x + selectedAcc.y * selectedAcc.y);
 

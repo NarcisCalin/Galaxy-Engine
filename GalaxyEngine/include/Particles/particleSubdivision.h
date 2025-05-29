@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../../external/glm/glm/glm.hpp"
 #include <vector>
 #include "../raylib/raylib.h"
 #include "particle.h"
@@ -24,5 +25,5 @@ private:
 	float textSize = 25.0f;
 	float textSpacing = 6.0f;
 
-	Vector2 buttonSize = { 200.0f, 50.0f };
+	glm::vec2 buttonSize = { 200.0f, 50.0f };
 };

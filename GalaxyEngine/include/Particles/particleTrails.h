@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../../external/glm/glm/glm.hpp"
 #include <iostream>
 #include <vector>
 #include "../raylib/raylib.h"
@@ -14,8 +15,8 @@ public:
 	float size = 5;
 
 	struct TrailDot {
-		Vector2 pos;
-		Vector2 offset;
+		glm::vec2 pos;
+		glm::vec2 offset;
 		Color color;
 	};
 
@@ -25,7 +26,7 @@ public:
 
 	std::vector<TrailDot> trailDots;
 
-	Vector2 selectedParticlesAveragePos = { 0.0f, 0.0f };
+	glm::vec2 selectedParticlesAveragePos = { 0.0f, 0.0f };
 
 	void trailLogic(UpdateVariables& myVar, UpdateParameters& myParam);
 

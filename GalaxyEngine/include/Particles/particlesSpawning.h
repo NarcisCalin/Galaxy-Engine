@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../../external/glm/glm/glm.hpp"
 #include "../raylib/raylib.h"
 #include "particle.h"
 #include "../UX/camera.h"
@@ -34,7 +35,7 @@ public:
 		Quadtree* quadtree, UpdateVariables& myVar, Slingshot& slingshot);
 
 private:
-	Vector2 avgPos = { 0.0f, 0.0f };
+	glm::vec2 avgPos = { 0.0f, 0.0f };
 	std::vector<ParticlePhysics> pParticlesCopied;
 	std::vector<ParticleRendering> rParticlesCopied;
 

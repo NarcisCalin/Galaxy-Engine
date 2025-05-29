@@ -4,28 +4,29 @@
 #include <ostream>
 #include <istream>
 #include <string>
+#include "../../external/glm/glm/glm.hpp"
 #include "../raylib/raylib.h"
 
-// Streamable Vector2
-inline std::ostream& operator<<(std::ostream& os, Vector2 const& v) {
+// Streamable Vec2
+inline std::ostream& operator<<(std::ostream& os, glm::vec2 const& v) {
 	return os << v.x << ' ' << v.y;
 }
-inline std::istream& operator>>(std::istream& is, Vector2& v) {
+inline std::istream& operator>>(std::istream& is, glm::vec2& v) {
 	return is >> v.x >> v.y;
 }
 
 struct ParticlePhysics {
-	Vector2 pos;
-	Vector2 predPos;
-	Vector2 vel;
-	Vector2 predVel;
-	Vector2 acc;
+	glm::vec2 pos;
+	glm::vec2 predPos;
+	glm::vec2 vel;
+	glm::vec2 predVel;
+	glm::vec2 acc;
 	float mass;
 
 	// SPH Parameters
 	float press;
 	float pressTmp;
-	Vector2 pressF;
+	glm::vec2 pressF;
 	float dens;
 	float predDens;
 	float sphMass;
@@ -39,14 +40,14 @@ struct ParticlePhysics {
 
 	// Default constructor
 	ParticlePhysics()
-		: pos{ 0,0 }, predPos{ 0,0 }, vel{ 0,0 }, predVel{0.0f, 0.0f}, acc{ 0,0 },
+		: pos(0.0f, 0.0f) , predPos{ 0,0 }, vel{ 0,0 }, predVel{0.0f, 0.0f}, acc{ 0,0 },
 		mass(1.0f), press(0.0f), pressTmp(0.0f), pressF{ 0.0f,0.0f }, dens(0.0f), predDens(0.0f), sphMass(0.0f),
 		restDens(0.0f), stiff(0.0f), visc(0.0f), cohesion(0.0f),
 		mortonKey(0)
 	{}
 
 	// Parameterized constructor
-	ParticlePhysics(Vector2 pos, Vector2 vel, float mass, float restDens, float stiff, float visc, float cohesion) {
+	ParticlePhysics(glm::vec2 pos, glm::vec2 vel, float mass, float restDens, float stiff, float visc, float cohesion) {
 		this->pos = pos;
 		this->predPos = { 0.0f, 0.0f };
 		this->vel = vel;
@@ -166,7 +167,7 @@ struct ParticleRendering {
 
 	// Parameterized constructor
 	ParticleRendering(Color color, float size, bool uniqueColor, bool isSelected,
-		bool isSolid, bool canBeSubdivided, bool canBeResized, bool isDarkMatter, bool isSPH, float lifeSpan) {
+		bool isSolid, bool canBeSubdivided, bool canBeResized, bool isDarkMatter, bool isSPH, float lifeSpan, std::string sphLabel) {
 		// Initial states
 		this->color = color;
 		this->pColor = { 255, 255, 255, 255 };
@@ -187,7 +188,7 @@ struct ParticleRendering {
 		this->neighbors = 0;
 		this->totalRadius = 0.0f;
 		this->lifeSpan = lifeSpan;
-		this->sphLabel = "nonSPH";
+		this->sphLabel = sphLabel;
 	}
 };
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../../external/glm/glm/glm.hpp"
 #include "../raylib/raylib.h"
 #include "particle.h"
 #include "omp.h"

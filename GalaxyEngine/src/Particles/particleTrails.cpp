@@ -19,7 +19,7 @@ void ParticleTrails::trailLogic(UpdateVariables& myVar, UpdateParameters& myPara
 		if (myVar.isGlobalTrailsEnabled) {
 			for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 
-				Vector2 offset = {
+				glm::vec2 offset = {
 			myParam.pParticles[i].pos.x - selectedParticlesAveragePos.x,
 			myParam.pParticles[i].pos.y - selectedParticlesAveragePos.y
 				};
@@ -64,7 +64,7 @@ void ParticleTrails::trailLogic(UpdateVariables& myVar, UpdateParameters& myPara
 		else if (myVar.isSelectedTrailsEnabled) {
 			for (size_t i = 0; i < myParam.pParticlesSelected.size(); i++) {
 
-				Vector2 offset = {
+				glm::vec2 offset = {
 			myParam.pParticlesSelected[i].pos.x - selectedParticlesAveragePos.x,
 			myParam.pParticlesSelected[i].pos.y - selectedParticlesAveragePos.y
 				};

@@ -6,15 +6,15 @@ ParticleSelection::ParticleSelection() {
 
 void ParticleSelection::clusterSelection(UpdateVariables& myVar, UpdateParameters& myParam) {
 	static bool isMouseMoving = false;
-	static Vector2 dragStartPos = { 0.0f, 0.0f };
+	static glm::vec2 dragStartPos = { 0.0f, 0.0f };
 
 	if (IsMouseButtonPressed(0) && IsKeyDown(KEY_LEFT_CONTROL) && myVar.isMouseNotHoveringUI) {
-		dragStartPos = GetMousePosition();
+		dragStartPos = glm::vec2(GetMousePosition().x, GetMousePosition().y);
 		isMouseMoving = false;
 	}
 
 	if (IsMouseButtonDown(0) && IsKeyDown(KEY_LEFT_CONTROL) && myVar.isMouseNotHoveringUI) {
-		Vector2 currentPos = GetMousePosition();
+		glm::vec2 currentPos = glm::vec2(GetMousePosition().x, GetMousePosition().y);
 		float dragThreshold = 5.0f;
 		float dx = currentPos.x - dragStartPos.x;
 		float dy = currentPos.y - dragStartPos.y;
@@ -77,15 +77,15 @@ void ParticleSelection::clusterSelection(UpdateVariables& myVar, UpdateParameter
 
 void ParticleSelection::particleSelection(UpdateVariables& myVar, UpdateParameters& myParam) {
 	static bool isMouseMoving = false;
-	static Vector2 dragStartPos = { 0.0f, 0.0f };
+	static glm::vec2 dragStartPos = { 0.0f, 0.0f };
 
 	if (IsMouseButtonPressed(0) && IsKeyDown(KEY_LEFT_ALT) && myVar.isMouseNotHoveringUI) {
-		dragStartPos = GetMousePosition();
+		dragStartPos = glm::vec2(GetMousePosition().x, GetMousePosition().y);
 		isMouseMoving = false;
 	}
 
 	if (IsMouseButtonDown(0) && IsKeyDown(KEY_LEFT_ALT) && myVar.isMouseNotHoveringUI) {
-		Vector2 currentPos = GetMousePosition();
+		glm::vec2 currentPos = glm::vec2(GetMousePosition().x, GetMousePosition().y);
 		float dragThreshold = 5.0f;
 		float dx = currentPos.x - dragStartPos.x;
 		float dy = currentPos.y - dragStartPos.y;
@@ -185,7 +185,7 @@ void ParticleSelection::boxSelection(UpdateParameters& myParam) {
 			isBoxSelecting = true;
 		}
 
-		Vector2 currentMousePos = { myParam.myCamera.mouseWorldPos.x, myParam.myCamera.mouseWorldPos.y };
+		glm::vec2 currentMousePos = { myParam.myCamera.mouseWorldPos.x, myParam.myCamera.mouseWorldPos.y };
 		float boxX = fmin(boxInitialPos.x, currentMousePos.x);
 		float boxY = fmin(boxInitialPos.y, currentMousePos.y);
 		float boxWidth = fabs(currentMousePos.x - boxInitialPos.x);
@@ -200,7 +200,7 @@ void ParticleSelection::boxSelection(UpdateParameters& myParam) {
 	}
 
 	if ((IsKeyReleased(KEY_LEFT_CONTROL) || IsMouseButtonReleased(2)) && isBoxSelecting) {
-		Vector2 mousePos = { myParam.myCamera.mouseWorldPos.x, myParam.myCamera.mouseWorldPos.y };
+		glm::vec2 mousePos = { myParam.myCamera.mouseWorldPos.x, myParam.myCamera.mouseWorldPos.y };
 		float boxX1 = fmin(boxInitialPos.x, mousePos.x);
 		float boxX2 = fmax(boxInitialPos.x, mousePos.x);
 		float boxY1 = fmin(boxInitialPos.y, mousePos.y);

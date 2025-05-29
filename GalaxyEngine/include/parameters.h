@@ -1,4 +1,6 @@
 #pragma once
+
+#include "../external/glm/glm/glm.hpp"
 #include "raylib/raylib.h"
 #include <vector>
 #include "Particles/particle.h"
@@ -68,7 +70,7 @@ struct UpdateVariables{
 	float screenRatioX = 0.0f;
 	float screenRatioY = 0.0f;
 
-	Vector2 domainSize = { 3840.0f, 2160.0f };
+	glm::vec2 domainSize = { 3840.0f, 2160.0f };
 
 	float halfDomainWidth = domainSize.x * 0.5f;
 	float halfDomainHeight = domainSize.y * 0.5f;
@@ -132,7 +134,7 @@ struct UpdateVariables{
 
 	bool isGlowEnabled = false;
 
-	Vector2 mouseWorldPos = { 0.0f, 0.0f };
+	glm::vec2 mouseWorldPos = { 0.0f, 0.0f };
 
 	float particleBounciness = 0.75f;
 

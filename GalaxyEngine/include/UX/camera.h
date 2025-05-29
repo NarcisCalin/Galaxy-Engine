@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <vector>
+#include "../../external/glm/glm/glm.hpp"
 #include "../raylib/raylib.h"
 #include "../raylib/rlgl.h"
 #include "../raylib/raymath.h"
@@ -12,11 +13,11 @@
 class SceneCamera {
 public:
 	Camera2D camera;
-	Vector2 mouseWorldPos;
-	Vector2 followPosition;
+	glm::vec2 mouseWorldPos;
+	glm::vec2 followPosition;
 	bool isFollowing;
 
-	Vector2 delta;
+	glm::vec2 delta;
 
 	bool centerCamera;
 
@@ -28,7 +29,7 @@ public:
 
 private:
 	Color previousColor;
-	Vector2 panFollowingOffset;
+	glm::vec2 panFollowingOffset;
 	float selectionThresholdSq = 100.0f;
 	float defaultCamZoom = 0.5f;
 };

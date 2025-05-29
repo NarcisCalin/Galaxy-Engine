@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../../external/glm/glm/glm.hpp"
 #include "../raylib/raylib.h"
 #include "particle.h"
 #include <vector>
@@ -10,7 +11,7 @@ struct ColorVisuals {
 	bool solidColor = false;
 	bool densityColor = true;
 	bool velocityColor = false;
-	bool deltaVColor = false;
+	bool shockwaveColor = false;
 	bool forceColor = false;
 	bool pressureColor = false;
 	bool SPHColor = false;
@@ -42,7 +43,7 @@ struct ColorVisuals {
 	float maxPress = 1000.0f;
 	float minPress = 0.0f;
 
-	Vector2 prevVel = { 0.0f, 0.0f };
+	glm::vec2 prevVel = { 0.0f, 0.0f };
 
 	void particlesColorVisuals(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles,
 		float& particleSizeMultiplier, float& particleTextureHalfSize, float& pressureDelta) {
@@ -135,10 +136,10 @@ struct ColorVisuals {
 			blendMode = 1;
 		}
 
-		if (deltaVColor) {
+		if (shockwaveColor) {
 			for (size_t i = 0; i < pParticles.size(); i++) {
 
-				Vector2 shockwave = pParticles[i].acc;
+				glm::vec2 shockwave = pParticles[i].acc;
 
 				float shockMag = std::sqrt(shockwave.x * shockwave.x + shockwave.y * shockwave.y);
 

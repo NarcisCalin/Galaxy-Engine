@@ -1,4 +1,5 @@
 #pragma once
+#include "../../external/glm/glm/glm.hpp"
 #include "../raylib/raylib.h"
 #include "../Particles/particle.h"
 #include "../parameters.h"
@@ -64,7 +65,7 @@ public:
 		return (1.0f - q) * (0.5f - q) * (0.5f - q) * 30.0f / (PI * h * h);
 	}
 
-	size_t getGridIndex(const Vector2& pos) const {
+	size_t getGridIndex(const glm::vec2& pos) const {
 		size_t cellX = static_cast<size_t>(floor(pos.x / cellSize));
 		size_t cellY = static_cast<size_t>(floor(pos.y / cellSize));
 		return cellX * 10000 + cellY;
@@ -97,13 +98,13 @@ public:
 	}
 
 	// Currently unused
-	float computeDelta(const std::vector<Vector2>& kernelGradients, float dt, float mass, float restDensity) {
+	float computeDelta(const std::vector<glm::vec2>& kernelGradients, float dt, float mass, float restDensity) {
 		float beta = (dt * dt * mass * mass) / (restDensity * restDensity);
 
-		Vector2 sumGradW = { 0.0f, 0.0f };
+		glm::vec2 sumGradW = { 0.0f, 0.0f };
 		float sumGradW_dot = 0.0f;
 
-		for (const Vector2& gradW : kernelGradients) {
+		for (const glm::vec2& gradW : kernelGradients) {
 			sumGradW.x += gradW.x;
 			sumGradW.y += gradW.y;
 
@@ -118,14 +119,14 @@ public:
 	}
 
 	void computeViscCohesionForces(std::vector<ParticlePhysics>& pParticles,
-		std::vector<ParticleRendering>& rParticles, std::vector<Vector2>& sphForce, size_t& N);
+		std::vector<ParticleRendering>& rParticles, std::vector<glm::vec2>& sphForce, size_t& N);
 
 	void groundModeBoundary(std::vector<ParticlePhysics>& pParticles,
-		std::vector<ParticleRendering>& rParticles, Vector2 domainSize);
+		std::vector<ParticleRendering>& rParticles, glm::vec2 domainSize);
 
 	void PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, float& dt);
 
-	void pcisphSolver(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, float& dt, Vector2& domainSize, bool& sphGround) {
+	void pcisphSolver(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, float& dt, glm::vec2& domainSize, bool& sphGround) {
 
 		updateGrid(pParticles, rParticles);
 		PCISPH(pParticles, rParticles, dt);

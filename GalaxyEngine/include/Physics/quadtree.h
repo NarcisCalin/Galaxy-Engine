@@ -1,4 +1,6 @@
 #pragma once
+
+#include "../../external/glm/glm/glm.hpp"
 #include "../raylib/raylib.h"
 #include <vector>
 #include <iostream>
@@ -7,12 +9,12 @@
 #include "omp.h"
 
 struct Quadtree {
-	Vector2 pos;
+	glm::vec2 pos;
 	float size;
 	size_t startIndex;
 	size_t endIndex;
 	float gridMass;
-	Vector2 centerOfMass;
+    glm::vec2 centerOfMass;
 	Quadtree* parent;
 	std::vector<std::unique_ptr<Quadtree>> subGrids;
 
@@ -21,7 +23,7 @@ struct Quadtree {
     int maxLeafParticles = 1;
     float minLeafSize = 1.0f;
 
-	Quadtree(float posX, float posY, float size,
+	Quadtree(glm::vec2 pos, float size,
         size_t startIndex, size_t endIndex,
 		const std::vector<ParticlePhysics>& pParticles, const std::vector<ParticleRendering>& rParticles,
 		Quadtree* parent, size_t nodeIdx);
@@ -30,7 +32,7 @@ struct Quadtree {
 
 
 
-	static Vector2 boundingBoxPos;
+	static glm::vec2 boundingBoxPos;
 	static float boundingBoxSize;
 
 	static Quadtree* boundingBox(const std::vector<ParticlePhysics>& pParticles,
@@ -45,13 +47,11 @@ private:
 
         for (size_t i = startIndex; i < endIndex; ++i) {
             gridMass += pParticles[i].mass;
-            centerOfMass.x += pParticles[i].pos.x * pParticles[i].mass;
-            centerOfMass.y += pParticles[i].pos.y * pParticles[i].mass;
+            centerOfMass += pParticles[i].pos * pParticles[i].mass;
         }
 
         if (gridMass > 0) {
-            centerOfMass.x /= gridMass;
-            centerOfMass.y /= gridMass;
+            centerOfMass /= gridMass;
         }
     }
 
@@ -61,13 +61,11 @@ private:
 
         for (std::unique_ptr<Quadtree>& child : subGrids) {
             gridMass += child->gridMass;
-            centerOfMass.x += child->centerOfMass.x * child->gridMass;
-            centerOfMass.y += child->centerOfMass.y * child->gridMass;
+            centerOfMass += child->centerOfMass * child->gridMass;
         }
 
         if (gridMass > 0) {
-            centerOfMass.x /= gridMass;
-            centerOfMass.y /= gridMass;
+            centerOfMass /= gridMass;
         }
     }
 };

@@ -5,19 +5,18 @@ void RightClickSettings::rightClickMenuSpawnLogic(bool& isMouseNotHoveringUI,
 	bool& isSpawningAllowed, bool& isDragging, bool& selectedColor)
 {
 	static bool     isMouseMoving = false;
-	static Vector2  dragStartPos = { 0.0f, 0.0f };
+	static glm::vec2  dragStartPos = { 0.0f, 0.0f };
 	static bool     spawnBlocked = false;
 
 	if (IsMouseButtonPressed(1) && isMouseNotHoveringUI) {
-		dragStartPos = GetMousePosition();
+		dragStartPos = glm::vec2(GetMousePosition().x, GetMousePosition().y);
 		isMouseMoving = false;
 	}
 
 	if (IsMouseButtonDown(1) && isMouseNotHoveringUI) {
-		Vector2 cur = GetMousePosition();
-		float dx = cur.x - dragStartPos.x,
-			dy = cur.y - dragStartPos.y;
-		if (dx * dx + dy * dy > 5.0f * 5.0f)
+		glm::vec2 cur = glm::vec2(GetMousePosition().x, GetMousePosition().y);
+		glm::vec2 d = cur - dragStartPos;
+		if (d.x * d.x + d.y * d.y > 5.0f * 5.0f)
 			isMouseMoving = true;
 	}
 
