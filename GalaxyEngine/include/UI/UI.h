@@ -102,17 +102,12 @@ struct SimilarTypeButton {
 		bool* flag;
 	};
 
-	std::vector<Mode> params;
-
-	SimilarTypeButton(std::vector<Mode> modes_) : params(std::move(modes_)) {}
-
-	void buttonIterator(float sizeX, float sizeY, bool canDeactivateSelf, bool& isEnabled) {
-		for (size_t i = 0; i < params.size(); ++i) {
-			if (UI::buttonHelper(params[i].label, params[i].tooltip, *params[i].flag, sizeX, sizeY, canDeactivateSelf, isEnabled)) {
-
-				for (size_t j = 0; j < params.size(); ++j) {
+	static void buttonIterator(std::vector<Mode>& modes, float sizeX, float sizeY, bool canDeactivateSelf, bool& isEnabled) {
+		for (size_t i = 0; i < modes.size(); ++i) {
+			if (UI::buttonHelper(modes[i].label, modes[i].tooltip, *modes[i].flag, sizeX, sizeY, canDeactivateSelf, isEnabled)) {
+				for (size_t j = 0; j < modes.size(); ++j) {
 					if (j != i) {
-						*params[j].flag = false;
+						*modes[j].flag = false;
 					}
 				}
 			}

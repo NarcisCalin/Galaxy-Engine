@@ -89,7 +89,17 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 	bool enabled = true;
 
-	SimilarTypeButton color({
+	std::vector<SimilarTypeButton::Mode> controlsAndInfo{
+{ "Controls", "Open controls panel", &myParam.controls.isShowControlsEnabled },
+{ "Information", "Open information panel", &myParam.controls.isInformationEnabled }
+	};
+
+	std::vector<SimilarTypeButton::Mode> trails{
+{ "Global Trails", "Enables trails for all particles", &myVar.isGlobalTrailsEnabled },
+{ "Selected Trails", "Enables trails for selected particles", &myVar.isSelectedTrailsEnabled }
+	};
+
+	std::vector<SimilarTypeButton::Mode> color{
 	{ "Solid Color",     "Particles will only use the primary color",           &myParam.colorVisuals.solidColor },
 	{ "Density Color",   "Maps particle neighbor amount to colors",            &myParam.colorVisuals.densityColor },
 	{ "Force Color",     "Maps particle acceleration to colors",               &myParam.colorVisuals.forceColor },
@@ -97,28 +107,18 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	{ "Shockwave Color", "Maps particle acceleration to color",                &myParam.colorVisuals.shockwaveColor },
 	{ "Pressure Color",  "Maps particle pressure to color",                    &myParam.colorVisuals.pressureColor },
 	{ "SPH Color",       "Uses the SPH materials colors",                      &myParam.colorVisuals.SPHColor }
-		});
-
-	SimilarTypeButton controlsAndInfo({
-{ "Controls", "Open controls panel", &myParam.controls.isShowControlsEnabled },
-{ "Information", "Open information panel", &myParam.controls.isInformationEnabled }
-		});
-
-	SimilarTypeButton trails({
-{ "Global Trails", "Enables trails for all particles", &myVar.isGlobalTrailsEnabled },
-{ "Selected Trails", "Enables trails for selected particles", &myVar.isSelectedTrailsEnabled }
-		});
+	};
 
 	buttonHelper("Fullscreen", "Toggles fulscreen", myVar.fullscreenState, -1.0f, settingsButtonY, true, enabled);
 
-	controlsAndInfo.buttonIterator(-1.0f, settingsButtonY, true, enabled);
+	SimilarTypeButton::buttonIterator(controlsAndInfo, -1.0f, settingsButtonY, true, enabled);
 
-	trails.buttonIterator(-1.0f, settingsButtonY, true, enabled);
+	SimilarTypeButton::buttonIterator(trails, -1.0f, settingsButtonY, true, enabled);
 
 	buttonHelper("Local Trails", "Enables trails moving relative to particles average position", myVar.isLocalTrailsEnabled, -1.0f, settingsButtonY, true, enabled);
 	buttonHelper("White Trails", "Makes all trails white", myParam.trails.whiteTrails, -1.0f, settingsButtonY, true, enabled);
 
-	color.buttonIterator(-1.0f, settingsButtonY, false, enabled);
+	SimilarTypeButton::buttonIterator(color, -1.0f, settingsButtonY, false, enabled);
 
 	buttonHelper("Selected Color", "Highlight selected particles", myParam.colorVisuals.selectedColor, -1.0f, settingsButtonY, true, enabled);
 	buttonHelper("Dark Matter", "Enables dark matter particles. This works for galaxies and Big Bang", myVar.isDarkMatterEnabled, -1.0f, settingsButtonY, true, enabled);
@@ -131,16 +131,19 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 	if (buttonHelper("SPH", "Enables SPH fluids", myVar.isSPHEnabled, -1.0f, settingsButtonY, true, enabled)) {
 		if (!wasEnabled && myVar.isSPHEnabled) {
-			for (size_t i = 0; i < color.params.size(); i++) {
-				if (color.params[i].flag == &myParam.colorVisuals.SPHColor) {
+			for (size_t i = 0; i < color.size(); i++) {
+				if (color[i].flag == &myParam.colorVisuals.SPHColor) {
 
-					*color.params[i].flag = true;
+					*color[i].flag = true;
 				}
 				else {
-					*color.params[i].flag = false;
+					*color[i].flag = false;
 				}
 			}
 		}
+	}
+
+	if (myVar.isSPHEnabled) {
 		sphGroundButtonEnabled = true;
 	}
 	else {
@@ -375,19 +378,19 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 					}, physicsSliders[i]);
 			}
 
-			SimilarTypeButton sphMats({
+			std::vector<SimilarTypeButton::Mode> sphMats{
 { "SPH Water", "Water", &myParam.brush.SPHWater},
 { "SPH Rock", "Rock", &myParam.brush.SPHRock},
 				{"SPH Sand", "Sand", &myParam.brush.SPHSand},
 				{"SPH Soil", "Soil", &myParam.brush.SPHSoil},
 				{"SPH Ice", "Ice", &myParam.brush.SPHIce},
 				{"SPH Mud", "Mud", &myParam.brush.SPHMud},
-				});
+			};
 
 			float oldSpacingY = ImGui::GetStyle().ItemSpacing.y;
 			ImGui::GetStyle().ItemSpacing.y = 5.0f; // Set the spacing only for the settings buttons
 
-			sphMats.buttonIterator(-1.0f, settingsButtonY, true, enabled);
+			SimilarTypeButton::buttonIterator(sphMats, -1.0f, settingsButtonY, true, enabled);
 
 			ImGui::GetStyle().ItemSpacing.y = oldSpacingY;
 
@@ -650,9 +653,10 @@ void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 		}
 	}
 
-	selectedVel /= myParam.pParticlesSelected.size();
-
-	totalVel = sqrt(selectedVel.x * selectedVel.x + selectedVel.y * selectedVel.y);
+	if (myParam.pParticlesSelected.size() > 0) {
+		selectedVel /= myParam.pParticlesSelected.size();
+		totalVel = sqrt(selectedVel.x * selectedVel.x + selectedVel.y * selectedVel.y);
+	}
 
 	plotLinesHelper(myVar.timeFactor, "Velocity X: ", graphHistoryLimit, selectedVel.x, -300.0f, 300.0f, graphDefaultSize);
 	ImGui::Spacing();
@@ -678,9 +682,10 @@ void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 		}
 	}
 
-	selectedAcc /= myParam.pParticlesSelected.size();
-
-	totalAcc = sqrt(selectedAcc.x * selectedAcc.x + selectedAcc.y * selectedAcc.y);
+	if (myParam.pParticlesSelected.size() > 0) {
+		selectedAcc /= myParam.pParticlesSelected.size();
+		totalAcc = sqrt(selectedAcc.x * selectedAcc.x + selectedAcc.y * selectedAcc.y);
+	}
 
 	plotLinesHelper(myVar.timeFactor, "Acceleration X: ", graphHistoryLimit, selectedAcc.x, -300.0f, 300.0f, graphDefaultSize);
 	ImGui::Spacing();
@@ -705,7 +710,9 @@ void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 		}
 	}
 
-	totalPress /= myParam.pParticlesSelected.size();
+	if (myParam.pParticlesSelected.size() > 0) {
+		totalPress /= myParam.pParticlesSelected.size();
+	}
 
 	plotLinesHelper(myVar.timeFactor, "Pressure: ", graphHistoryLimit, totalPress, 0.0f, 100.0f, graphDefaultSize);
 }
@@ -717,12 +724,13 @@ void UI::plotLinesHelper(const float& timeFactor, std::string label,
 	float value, const float minValue, const float maxValue, ImVec2 size) {
 
 	auto& plotData = plotDataMap[label];
-	if (timeFactor > 0.0f) {
-		if (plotData.values.size() != length) {
-			plotData.values.resize(length, 0.0f);
-			plotData.offset = 0;
-		}
 
+	if (plotData.values.size() != length) {
+		plotData.values.resize(length, 0.0f);
+		plotData.offset = 0;
+	}
+
+	if (timeFactor > 0.0f) {
 		plotData.values[plotData.offset] = value;
 		plotData.offset = (plotData.offset + 1) % length;
 	}
@@ -760,15 +768,19 @@ bool UI::buttonHelper(std::string label, std::string tooltip, bool& parameter, f
 		ImGui::BeginDisabled();
 	}
 
+	bool test = false;
+
 	// Set the passed value to -1.0f if you want the button size to be as big as the window
 	if (sizeX > 0.0f && sizeY > 0.0f) {
 		if (ImGui::Button(label.c_str(), ImVec2(sizeX, sizeY))) {
 			if (canSelfDeactivate) {
 				parameter = !parameter;
+				test = true;
 			}
 			else {
 				if (!parameter) {
 					parameter = true;
+					test = true;
 				}
 			}
 		}
@@ -777,10 +789,12 @@ bool UI::buttonHelper(std::string label, std::string tooltip, bool& parameter, f
 		if (ImGui::Button(label.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, sizeY))) {
 			if (canSelfDeactivate) {
 				parameter = !parameter;
+				test = true;
 			}
 			else {
 				if (!parameter) {
 					parameter = true;
+					test = true;
 				}
 			}
 		}
@@ -789,10 +803,12 @@ bool UI::buttonHelper(std::string label, std::string tooltip, bool& parameter, f
 		if (ImGui::Button(label.c_str(), ImVec2(sizeX, ImGui::GetContentRegionAvail().y))) {
 			if (canSelfDeactivate) {
 				parameter = !parameter;
+				test = true;
 			}
 			else {
 				if (!parameter) {
 					parameter = true;
+					test = true;
 				}
 			}
 		}
@@ -801,10 +817,12 @@ bool UI::buttonHelper(std::string label, std::string tooltip, bool& parameter, f
 		if (ImGui::Button(label.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y))) {
 			if (canSelfDeactivate) {
 				parameter = !parameter;
+				test = true;
 			}
 			else {
 				if (!parameter) {
 					parameter = true;
+					test = true;
 				}
 			}
 		}
@@ -823,5 +841,5 @@ bool UI::buttonHelper(std::string label, std::string tooltip, bool& parameter, f
 	}
 
 
-	return parameter;
+	return test;
 }

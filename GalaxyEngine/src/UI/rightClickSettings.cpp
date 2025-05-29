@@ -1,5 +1,6 @@
 #include "../../include/UI/rightClickSettings.h"
 #include "../../include/parameters.h"
+#include "../../include/UI/UI.h"
 
 void RightClickSettings::rightClickMenuSpawnLogic(bool& isMouseNotHoveringUI,
 	bool& isSpawningAllowed, bool& isDragging, bool& selectedColor)
@@ -64,23 +65,6 @@ void RightClickSettings::rightClickMenu(UpdateVariables& myVar, UpdateParameters
 
 	if (isMenuActive) {
 
-		static std::array<rightClickParams, 13> rightClickButtons = {
-		rightClickParams("Subdivide All", "Subdivide all normal particles", myParam.subdivision.subdivideAll),
-		rightClickParams("Subdivide Selected", "Subdivide all selected normal particles", myParam.subdivision.subdivideSelected),
-		rightClickParams("Invert Particle Selec.", "Invert the particle selection", myParam.particleSelection.invertParticleSelection),
-		rightClickParams("Deselect All", "Deselects all particles", myParam.particleSelection.deselectParticles),
-		rightClickParams("Follow selection", "Make the camera follow the selected particles", myParam.myCamera.centerCamera),
-		rightClickParams("Select Clusters", "Selects multiple clusters of particles", myParam.particleSelection.selectManyClusters),
-		rightClickParams("Delete Selection", "Deletes selected particles", myParam.particleDeletion.deleteSelection),
-		rightClickParams("Delete Stray Particles", "Deletes all particles that are not in groups", myParam.particleDeletion.deleteNonImportant),
-		rightClickParams("Reset Custom Colors", "Resets custom colors changed in the right click menu", resetParticleColors),
-		rightClickParams("Draw Z-Curves", "Display the particles indices, sorted by Z-Curves", myVar.drawZCurves),
-		rightClickParams("Draw Quadtree", "Display Barnes-Hut algorithm quadtree", myVar.drawQuadtree),
-		rightClickParams("Enable Frames Export", "Exports recorded frames to disk", myParam.screenCapture.isExportFramesEnabled),
-		rightClickParams("Safe Frames Export", "Store frames directly to the disk. Disabling it will make recording faster, but might crash if you run out of memory", myParam.screenCapture.isSafeFramesEnabled),
-
-		};
-
 		ImGui::SetNextWindowSize(ImVec2(200.0f, 425.0f), ImGuiCond_Once);
 		ImGui::SetNextWindowPos(ImVec2(GetMousePosition().x, GetMousePosition().y), ImGuiCond_Appearing);
 
@@ -98,20 +82,64 @@ void RightClickSettings::rightClickMenu(UpdateVariables& myVar, UpdateParameters
 			ImGuiHoveredFlags_AllowWhenBlockedByActiveItem
 		);
 
-		for (size_t i = 0; i < rightClickButtons.size(); i++) {
+		bool enabled = true;
 
-			bool& param = rightClickButtons[i].parameter;
-
-			if (ImGui::Button(rightClickButtons[i].text.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 20.0f))) {
-				param = !param;
-
-				isMenuActive = false;
-			}
-
-			if (ImGui::IsItemHovered()) {
-				ImGui::SetTooltip("%s", rightClickButtons[i].tooltip.c_str());
-			}
+		if (UI::buttonHelper("Subdivide All", "Subdivide all normal particles", myParam.subdivision.subdivideAll, -1.0f, buttonSizeY, enabled, enabled)) {
+			isMenuActive = false;
 		}
+		if (UI::buttonHelper("Subdivide Selected", "Subdivide all selected normal particles", myParam.subdivision.subdivideSelected, -1.0f, buttonSizeY, enabled, enabled)) {
+			isMenuActive = false;
+		}
+		if (UI::buttonHelper("Invert Particle Selec.", "Invert the particle selection", myParam.particleSelection.invertParticleSelection, -1.0f, buttonSizeY, enabled, enabled)) {
+			isMenuActive = false;
+		}
+		if (UI::buttonHelper("Deselect All", "Deselects all particles", myParam.particleSelection.deselectParticles, -1.0f, buttonSizeY, enabled, enabled)) {
+			isMenuActive = false;
+		}
+		if (UI::buttonHelper("Follow selection", "Make the camera follow the selected particles", myParam.myCamera.centerCamera, -1.0f, buttonSizeY, enabled, enabled)) {
+			isMenuActive = false;
+		}
+		if (UI::buttonHelper("Select Clusters", "Selects multiple clusters of particles", myParam.particleSelection.selectManyClusters, -1.0f, buttonSizeY, enabled, enabled)) {
+			isMenuActive = false;
+		}
+		if (UI::buttonHelper("Delete Selection", "Deletes selected particles", myParam.particleDeletion.deleteSelection, -1.0f, buttonSizeY, enabled, enabled)) {
+			isMenuActive = false;
+		}
+		if (UI::buttonHelper("Delete Stray Particles", "Deletes all particles that are not in groups", myParam.particleDeletion.deleteNonImportant, -1.0f, buttonSizeY, enabled, enabled)) {
+			isMenuActive = false;
+		}
+		if (UI::buttonHelper("Draw Z-Curves", "Display the particles indices, sorted by Z-Curves", myVar.drawZCurves, -1.0f, buttonSizeY, enabled, enabled)) {
+			isMenuActive = false;
+		}
+		if (UI::buttonHelper("Draw Quadtree", "Display Barnes-Hut algorithm quadtree", myVar.drawQuadtree, -1.0f, buttonSizeY, enabled, enabled)) {
+			isMenuActive = false;
+		}
+
+		bool framesExportButtonEnabled = true;
+		bool safeModeButtonEnabled = false;
+
+		if (myVar.isRecording) {
+			framesExportButtonEnabled = false;
+			safeModeButtonEnabled = false;
+		}
+
+		if (!myParam.screenCapture.isExportFramesEnabled) {
+			safeModeButtonEnabled = false;
+		}
+		else if(myParam.screenCapture.isExportFramesEnabled && !myVar.isRecording) {
+			safeModeButtonEnabled = true;
+		}
+
+		if (UI::buttonHelper("Enable Frames Export", "Exports recorded frames to disk", myParam.screenCapture.isExportFramesEnabled, -1.0f, buttonSizeY, enabled, framesExportButtonEnabled)) {
+			isMenuActive = false;
+		}
+		if (UI::buttonHelper("Safe Frames Export", "Store frames directly to the disk. Disabling it will make recording faster, but might crash if you run out of memory", myParam.screenCapture.isSafeFramesEnabled, -1.0f, buttonSizeY, enabled, safeModeButtonEnabled)) {
+			isMenuActive = false;
+		}
+		if (UI::buttonHelper("Reset Custom Colors", "Resets custom colors changed in the right click menu", resetParticleColors, -1.0f, buttonSizeY, enabled, enabled)) {
+			isMenuActive = false;
+		}
+
 
 		bool pColChanged = false;
 		bool sColChanged = false;

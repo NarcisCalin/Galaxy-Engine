@@ -39,16 +39,7 @@ private:
 
 	bool isMouseOnMenu = false;
 
-	Color menuColor = { 30,30,30,255 };
-
-	float buttonSizeX = 195.0f;
-	float buttonSizeY = 15.0f;
-
-	float sliderSizeX = 175.0f;
-	float sliderSizeY = 7.0f;
-
-	float menuButtonGap = 2.0f;
-	float menuSliderGap = 28.0f;
+	float buttonSizeY = 20.0f;
 
 	bool selectedColorChanged = false;
 	bool selectedColorOriginal = false;
