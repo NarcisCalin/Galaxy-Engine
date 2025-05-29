@@ -632,11 +632,10 @@ bool ScreenCapture::screenGrab(RenderTexture2D &myParticlesTexture,
       float recordedSeconds = static_cast<float>(myFrames.size()) / 60.0f;
       ImGui::TextColored(ImVec4(0.8f, 0.0f, 0.0f, 1.0f), "Frames: %d (%.2f s)",
                          static_cast<int>(myFrames.size()), recordedSeconds);
-    }
-    if (isFunctionRecording) {
+    }    if (isFunctionRecording) {
       ImGui::Separator();
 
-      applyButtonStyle(ImVec4(0.2f, 0.6f, 0.8f, 1.0f));
+      applyButtonStyle(myVar.buttonEnabledColor);
 
       if (ImGui::Button("End Recording",
                         ImVec2(ImGui::GetContentRegionAvail().x, 40.0f))) {
@@ -666,8 +665,7 @@ bool ScreenCapture::screenGrab(RenderTexture2D &myParticlesTexture,
       if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("Stop recording and save the video file");
       }
-
-      applyButtonStyle(ImVec4(0.8f, 0.2f, 0.2f, 1.0f));
+      applyButtonStyle(myVar.buttonCancelColor);
 
       if (ImGui::Button("Cancel Recording",
                         ImVec2(ImGui::GetContentRegionAvail().x, 40.0f))) {
@@ -687,16 +685,15 @@ bool ScreenCapture::screenGrab(RenderTexture2D &myParticlesTexture,
       bool exportButtonEnabled = !isExportingFrames;
 
       if (isExportingFrames) {
-        exportCol = ImVec4(0.5f, 0.5f, 0.5f,
-                           1.0f); // Gray when disabled
+        exportCol = myVar.buttonDisabledColor; // Gray when disabled
       } else {
-        exportCol = exportMemoryFrames ? myVar.buttonEnabledColor
-                                       : myVar.buttonDisabledColor;
+        exportCol = myVar.buttonEnabledColor;
       }
       applyButtonStyle(exportCol);
 
       // Show different text based on export status
       // Note: Not Working, the exporting blocks the UI
+      // TODO: if we manage to unblock the UI, we can use this
       std::string buttonText =
           isExportingFrames ? "Exporting..." : "Export Frames";
 
@@ -732,11 +729,9 @@ bool ScreenCapture::screenGrab(RenderTexture2D &myParticlesTexture,
       // Discard button - also disable during export
       ImVec4 discardCol;
       if (isExportingFrames) {
-        discardCol = ImVec4(0.5f, 0.5f, 0.5f,
-                            1.0f); // Gray when disabled
+        discardCol = myVar.buttonDisabledColor; // Gray when disabled
       } else {
-        discardCol =
-            deleteFrames ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
+        discardCol = myVar.buttonCancelColor;
       }
       applyButtonStyle(discardCol);
 
@@ -836,9 +831,8 @@ bool ScreenCapture::screenGrab(RenderTexture2D &myParticlesTexture,
 
     if (ImGui::IsItemHovered()) {
       ImGui::SetTooltip("Leave empty to keep current name");
-    }
-
-    ImGui::Separator();
+    }    ImGui::Separator();
+    applyButtonStyle(myVar.buttonEnabledColor);
     if (ImGui::Button("Save", ImVec2(100, 30))) {
 
       if (isFunctionRecording) {
@@ -1173,11 +1167,13 @@ bool ScreenCapture::screenGrab(RenderTexture2D &myParticlesTexture,
 
           printf("Frames are in: %s with base "
                  "name: %s\\n",
-                 this->videoFolder.c_str(), this->folderName.c_str());
-        }
+                 this->videoFolder.c_str(), this->folderName.c_str());        }
       }
     }
-    ImGui::SameLine();    if (ImGui::Button("Discard", ImVec2(100, 30))) {
+    popButtonStyle();
+    ImGui::SameLine();
+    applyButtonStyle(myVar.buttonCancelColor);
+    if (ImGui::Button("Discard", ImVec2(100, 30))) {
       if (!isFunctionRecording) {
         // Use the centralized discard function for comprehensive cleanup
         discardRecording();
@@ -1209,10 +1205,10 @@ bool ScreenCapture::screenGrab(RenderTexture2D &myParticlesTexture,
       diskModeFrameIdx = 0;      
       lastVideoPath.clear();
       this->videoFolder.clear();
-      this->folderName.clear();
-      videoHasBeenSaved = false;
+      this->folderName.clear();      videoHasBeenSaved = false;
       isFunctionRecording = false;
         }
+        popButtonStyle();
         ImGui::PopFont();
         ImGui::End();
     }
