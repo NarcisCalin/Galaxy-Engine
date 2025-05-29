@@ -1,5 +1,6 @@
 #pragma once
 #include "../raylib/raylib.h"
+#include <string>
 
 struct SPHWater {
 
@@ -11,6 +12,8 @@ struct SPHWater {
 	float cohesion = 0.05f;
 
 	Color color = { 30, 65, 230, 150 };
+
+	std::string sphLabel = "water";
 };
 
 struct SPHRock {
@@ -23,6 +26,8 @@ struct SPHRock {
 	float cohesion = 1750.0f;
 
 	Color color = { 150, 155, 160, 255 };
+
+	std::string sphLabel = "rock";
 };
 
 struct SPHSand {
@@ -35,6 +40,8 @@ struct SPHSand {
 	float cohesion = 1.0f;
 
 	Color color = { 200, 185, 100, 255 };
+
+	std::string sphLabel = "sand";
 };
 
 struct SPHSoil {
@@ -47,6 +54,8 @@ struct SPHSoil {
 	float cohesion = 3000.0f;
 
 	Color color = { 156, 110, 30, 255 };
+
+	std::string sphLabel = "soil";
 };
 
 struct SPHIce {
@@ -59,6 +68,8 @@ struct SPHIce {
 	float cohesion = 2500.0f;
 
 	Color color = { 230, 230, 250, 240 };
+
+	std::string sphLabel = "ice";
 };
 
 struct SPHMud {
@@ -71,4 +82,6 @@ struct SPHMud {
 	float cohesion = 1000.0f;
 
 	Color color = { 106, 60, 3, 255 };
+
+	std::string sphLabel = "mud";
 };

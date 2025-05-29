@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <ostream>
 #include <istream>
+#include <string>
 #include "../raylib/raylib.h"
 
 // Streamable Vector2
@@ -18,7 +19,6 @@ struct ParticlePhysics {
 	Vector2 predPos;
 	Vector2 vel;
 	Vector2 predVel;
-	Vector2 prevVel;
 	Vector2 acc;
 	float mass;
 
@@ -39,7 +39,7 @@ struct ParticlePhysics {
 
 	// Default constructor
 	ParticlePhysics()
-		: pos{ 0,0 }, predPos{ 0,0 }, vel{ 0,0 }, predVel{0.0f, 0.0f}, prevVel{ 0,0 }, acc{ 0,0 },
+		: pos{ 0,0 }, predPos{ 0,0 }, vel{ 0,0 }, predVel{0.0f, 0.0f}, acc{ 0,0 },
 		mass(1.0f), press(0.0f), pressTmp(0.0f), pressF{ 0.0f,0.0f }, dens(0.0f), predDens(0.0f), sphMass(0.0f),
 		restDens(0.0f), stiff(0.0f), visc(0.0f), cohesion(0.0f),
 		mortonKey(0)
@@ -51,7 +51,6 @@ struct ParticlePhysics {
 		this->predPos = { 0.0f, 0.0f };
 		this->vel = vel;
 		this->predVel = { 0.0f, 0.0f };
-		this->prevVel = vel;
 		this->acc = { 0.0f, 0.0f };
 		this->mass = mass;
 
@@ -80,7 +79,6 @@ inline std::ostream& operator<<(std::ostream& os, ParticlePhysics const& p) {
 		<< p.pos << ' '
 		<< p.predPos << ' '
 		<< p.vel << ' '
-		<< p.prevVel << ' '
 		<< p.predVel << ' '
 		<< p.acc << ' '
 		<< p.mass << ' '
@@ -102,7 +100,6 @@ inline std::istream& operator>>(std::istream& is, ParticlePhysics& p) {
 		>> p.pos.x >> p.pos.y
 		>> p.predPos.x >> p.predPos.y
 		>> p.vel.x >> p.vel.y
-		>> p.prevVel.x >> p.prevVel.y
 		>> p.predVel.x >> p.predVel.y
 		>> p.acc.x >> p.acc.y
 		>> p.mass
@@ -155,15 +152,16 @@ struct ParticleRendering {
 	int neighbors;
 	float totalRadius;
 	float lifeSpan;
+	std::string sphLabel;
 
 	// Default constructor
 	ParticleRendering()
-		: color{ 255,255,255,255 }, pColor{ 255,255,255,255 }, sColor { 255, 255, 255, 255 }, sphColor{ 128,128,128,128 },
+		: color{ 255,255,255,255 }, pColor{ 255,255,255,255 }, sColor{ 255, 255, 255, 255 }, sphColor{ 128,128,128,128 },
 		size(1.0f),
 		uniqueColor(false), isSolid(false), canBeSubdivided(false),
 		canBeResized(false), isDarkMatter(false), isSPH(false),
 		isSelected(false), isGrabbed(false), previousSize(1.0f),
-		neighbors(0), totalRadius(0.0f), lifeSpan(0.0f)
+		neighbors(0), totalRadius(0.0f), lifeSpan(0.0f), sphLabel("nonSPH")
 	{}
 
 	// Parameterized constructor
@@ -189,6 +187,7 @@ struct ParticleRendering {
 		this->neighbors = 0;
 		this->totalRadius = 0.0f;
 		this->lifeSpan = lifeSpan;
+		this->sphLabel = "nonSPH";
 	}
 };
 
@@ -210,7 +209,8 @@ inline std::ostream& operator<<(std::ostream& os, ParticleRendering const& r) {
 		<< r.previousSize << ' '
 		<< r.neighbors << ' '
 		<< r.totalRadius << ' '
-		<< r.lifeSpan;
+		<< r.lifeSpan << ' '
+		<< r.sphLabel;
 }
 
 inline std::istream& operator>>(std::istream& is, ParticleRendering& r) {
@@ -242,6 +242,7 @@ inline std::istream& operator>>(std::istream& is, ParticleRendering& r) {
 	int uniq, solid, subdiv, resize, dark, sph, selected, grabbed;
 	is >> uniq >> solid >> subdiv >> resize >> dark >> sph >> selected >> grabbed;
 	is >> r.previousSize >> r.neighbors >> r.totalRadius >> r.lifeSpan;
+	is >> r.sphLabel;
 
 	r.uniqueColor = static_cast<bool>(uniq);
 	r.isSolid = static_cast<bool>(solid);
@@ -251,5 +252,7 @@ inline std::istream& operator>>(std::istream& is, ParticleRendering& r) {
 	r.isSPH = static_cast<bool>(sph);
 	r.isSelected = static_cast<bool>(selected);
 	r.isGrabbed = static_cast<bool>(grabbed);
+	is >> std::ws;
+	std::getline(is, r.sphLabel);
 	return is;
 }

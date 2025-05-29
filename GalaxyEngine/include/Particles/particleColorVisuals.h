@@ -33,8 +33,8 @@ struct ColorVisuals {
 	float maxColorAcc = 40.0f;
 	float minColorAcc = 0.0f;
 
-	float deltaVMaxAccel = 1.0f;
-	float deltaVMinAccel = 0.0f;
+	float ShockwaveMaxAcc = 18.0f;
+	float ShockwaveMinAcc = 0.0f;
 
 	float maxVel = 100.0f;
 	float minVel = 0.0f;
@@ -138,14 +138,14 @@ struct ColorVisuals {
 		if (deltaVColor) {
 			for (size_t i = 0; i < pParticles.size(); i++) {
 
-				Vector2 delta = pParticles[i].vel - pParticles[i].prevVel;
+				Vector2 shockwave = pParticles[i].acc;
 
-				float deltaMag = std::sqrt(delta.x * delta.x + delta.y * delta.y);
+				float shockMag = std::sqrt(shockwave.x * shockwave.x + shockwave.y * shockwave.y);
 
-				float clampedDelta = std::clamp(deltaMag, deltaVMinAccel, deltaVMaxAccel);
-				float normalizedVel = clampedDelta / deltaVMaxAccel;
+				float clampedShock = std::clamp(shockMag, ShockwaveMinAcc, ShockwaveMaxAcc);
+				float normalizedShock = clampedShock / ShockwaveMaxAcc;
 
-				hue = (1.0f - normalizedVel) * 240.0f;
+				hue = (1.0f - normalizedShock) * 240.0f;
 				saturation = 1.0f;
 				value = 1.0f;
 

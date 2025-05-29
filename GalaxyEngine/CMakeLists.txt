@@ -174,6 +174,7 @@ set(
 )
 
 set(IMGUI_DIR "${CMAKE_CURRENT_LIST_DIR}/external/imgui")
+set(IMPLOT_DIR "${CMAKE_CURRENT_LIST_DIR}/external/implot")
 
 set(IMGUI_SOURCES
     ${IMGUI_DIR}/imgui.cpp
@@ -181,6 +182,8 @@ set(IMGUI_SOURCES
     ${IMGUI_DIR}/imgui_tables.cpp
     ${IMGUI_DIR}/imgui_widgets.cpp
     ${IMGUI_DIR}/rlImGui.cpp
+    ${IMGUI_DIR}/implot.cpp
+    ${IMGUI_DIR}/implot_items.cpp
 )
 
 # Prepend the source directory to each source file path

@@ -19,7 +19,7 @@ public:
 		Color color;
 	};
 
-	float trailThickness = 0.04f;
+	float trailThickness = 0.07f;
 
 	bool whiteTrails = false;
 

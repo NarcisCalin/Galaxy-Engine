@@ -34,6 +34,7 @@
 #include "../include/Physics/SPH.h"
 #include "../include/UX/saveSystem.h"
 #include "../external/imgui/imgui.h"
+#include "../external/imgui/implot.h"
 #include "../external/imgui/rlImGui.h"
 
 
@@ -273,8 +274,8 @@ static void enableMultiThreading() {
 	}
 }
 
-void fullscreenToggle(int& lastScreenWidth, int& lastScreenHeight, 
-	bool& wasFullscreen, bool& lastScreenState, 
+void fullscreenToggle(int& lastScreenWidth, int& lastScreenHeight,
+	bool& wasFullscreen, bool& lastScreenState,
 	RenderTexture2D& myParticlesTexture, RenderTexture2D& myUITexture) {
 	if (IO::handleShortcut(KEY_TAB)) {
 		myVar.fullscreenState = !myVar.fullscreenState;
@@ -382,6 +383,7 @@ int main() {
 
 	io.Fonts->Build();
 	rlImGuiReloadFonts();
+	ImPlot::CreateContext();
 
 
 	while (!WindowShouldClose()) {
@@ -453,7 +455,7 @@ int main() {
 	}
 
 	rlImGuiShutdown();
-
+	ImPlot::DestroyContext();
 
 	UnloadShader(myBloom);
 	UnloadTexture(particleBlurTex);

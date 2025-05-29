@@ -1,23 +1,31 @@
 # Code Quick Guide
-This is a quick guide for modding or contributing to the development of Galaxy Engine. Please try to follow this guide as much as possible. Before starting to mod or contribute to Galaxy Engine, please check the [roadmap](https://github.com/users/NarcisCalin/projects/1/views/1).
+
+This is a quick guide for modding or contributing to the development of Galaxy Engine. Please try to follow this guide as much as possible. 
+
+Before starting to mod or contribute to Galaxy Engine, please check the [roadmap](https://github.com/users/NarcisCalin/projects/1/views/1).
+
+If you want to contribute or mod Galaxy Engine and have any questions, consider joining our [Discord Community](https://discord.gg/Xd5JUqNFPM).
 
 ## General
+
 - Galaxy Engine uses ***camelCase***.
 - The code must be compatible with Windows and Linux before being added to the main branch.
+- The code must be compatible with the MIT license.
 - Various classes for different purposes can be added to the **"UpdateParameters"** struct in **"parameters.h"**. This is not necessary for important or complex classes like **"SPH"**, **"Physics"**, or **"UI"**.
 - Global variables go to the "UpdateVariables" struct in **"parameters.h"**.
 - When you pass the "UpdateParameters" or "UpdateVariables" structs to a function, **ALWAYS** name them **"myParam"** and **"myVar"**.
-- All added and removed parameters that are intended to be saved when clicking the **"Save Scene"** button must be added to the **"saveSystem.h"** save and load functions.
+- saveSystem.h is meant for parameters that change how the simulation looks or behaves. For example, threads amount is not saved because it doesn't affect the physics or the visuals of the simulation, while trails length is saved because it affects how the simulation might look like with trails enabled.
 - Keep physics and similar features inside **"updateScene();"**.
 - Keep visual features (like UI, particle visuals, etc.) inside **"drawScene();"**.
 - For now, the current vector struct used in Galaxy Engine is Raylib's **"Vector2"**.
 - Colors currently use Raylib's **"Color"** struct.
 - The current physics are built on top of a base framerate of 144 FPS.
-- Try to use float instead of double. Only exception is the **"G"** constant.
-- Things from files like images, fonts, etc., that are loaded into memory must be unloaded when the program closes.
-- Before doing a pull request, you must check that your code runs. Please try to solve any warnings you might have before doing a pull request too.
+- Try to use float instead of double. There can be exceptions if needed like the **"G"** constant.
+- Stuff from files like images, fonts, etc., that are loaded into memory must be unloaded when the program closes.
+- Before doing a pull request, you must check that your code runs both on Windows and Linux first. Please try to solve any warnings you might have before doing a pull request too.
 
 ## Particles
+
 - Particles are composed of 2 structs.
 - **"ParticlePhysics()"** is used for physics calculations only.
 - **"ParticleRendering()"** is used for particle visuals like **"color"** or **"size"**, and distinctive attributes like **"isDarkMatter"** or **"canBeResized"**.
@@ -27,6 +35,7 @@ This is a quick guide for modding or contributing to the development of Galaxy E
 - All added or removed variables of a particle's class must be updated in their stream operators as well so that they can be saved by the save system to a file.
 
 ## UI
+
 - The Galaxy Engine UI is made entirely using the [Dear ImGui](https://github.com/ocornut/imgui) library. Please check their documentation.
 - All ImGui UI elements must go after **"rlImGuiBegin();"** and before **"rlImGuiEnd();"**, which can be found in the main while loop.
 - Please try to keep all UI elements inside the **"uiLogic()"** function. There can be exceptions for certain features.
