@@ -680,7 +680,6 @@ bool ScreenCapture::screenGrab(RenderTexture2D &myParticlesTexture,
         isExportFramesEnabled && videoHasBeenSaved) {
 
       ImVec4 exportCol;
-      bool exportButtonEnabled = !isExportingFrames;
 
       if (isExportingFrames) {
         exportCol = myVar.buttonDisabledColor; // Gray when disabled
