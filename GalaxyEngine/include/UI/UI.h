@@ -70,7 +70,7 @@ public:
 
 	void statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar);
 
-	void plotLinesHelper(std::string label,
+	void plotLinesHelper(const float& timeFactor, std::string label,
 		const int length,
 		float value, const float minValue, const float maxValue, ImVec2 size);
 

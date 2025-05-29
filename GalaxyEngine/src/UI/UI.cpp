@@ -537,9 +537,11 @@ void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 	ImGui::TextColored(statsNamesCol, "Performance");
 	ImGui::Spacing();
 
-	plotLinesHelper("Framerate: ", graphHistoryLimit, ImGui::GetIO().Framerate, 0.0f, 144.0f, { 340.0f, 200.0f });
+	float enablePausedPlot = 1.0f;
+
+	plotLinesHelper(enablePausedPlot, "Framerate: ", graphHistoryLimit, ImGui::GetIO().Framerate, 0.0f, 144.0f, { 340.0f, 200.0f });
 	ImGui::Spacing();
-	plotLinesHelper("Frame Time: ", graphHistoryLimit, GetFrameTime(), 0.0f, 1.0f, {340.0f, 200.0f});
+	plotLinesHelper(enablePausedPlot, "Frame Time: ", graphHistoryLimit, GetFrameTime(), 0.0f, 1.0f, { 340.0f, 200.0f });
 
 	ImGui::Spacing();
 	ImGui::Separator();
@@ -692,11 +694,11 @@ void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 
 	totalVel = sqrt(selectedVel.x * selectedVel.x + selectedVel.y * selectedVel.y);
 
-	plotLinesHelper("Velocity X: ", graphHistoryLimit, selectedVel.x, -300.0f, 300.0f, graphDefaultSize);
+	plotLinesHelper(myVar.timeFactor, "Velocity X: ", graphHistoryLimit, selectedVel.x, -300.0f, 300.0f, graphDefaultSize);
 	ImGui::Spacing();
-	plotLinesHelper("Velocity Y: ", graphHistoryLimit, selectedVel.y, -300.0f, 300.0f, graphDefaultSize);
+	plotLinesHelper(myVar.timeFactor, "Velocity Y: ", graphHistoryLimit, selectedVel.y, -300.0f, 300.0f, graphDefaultSize);
 	ImGui::Spacing();
-	plotLinesHelper("Total Velocity: ", graphHistoryLimit, totalVel, -300.0f, 300.0f, graphDefaultSize);
+	plotLinesHelper(myVar.timeFactor, "Total Velocity: ", graphHistoryLimit, totalVel, -300.0f, 300.0f, graphDefaultSize);
 
 	ImGui::Spacing();
 	ImGui::Separator();
@@ -722,11 +724,11 @@ void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 
 	totalAcc = sqrt(selectedAcc.x * selectedAcc.x + selectedAcc.y * selectedAcc.y);
 
-	plotLinesHelper("Acceleration X: ", graphHistoryLimit, selectedAcc.x, -300.0f, 300.0f, graphDefaultSize);
+	plotLinesHelper(myVar.timeFactor, "Acceleration X: ", graphHistoryLimit, selectedAcc.x, -300.0f, 300.0f, graphDefaultSize);
 	ImGui::Spacing();
-	plotLinesHelper("Acceleration Y: ", graphHistoryLimit, selectedAcc.y, -300.0f, 300.0f, graphDefaultSize);
+	plotLinesHelper(myVar.timeFactor, "Acceleration Y: ", graphHistoryLimit, selectedAcc.y, -300.0f, 300.0f, graphDefaultSize);
 	ImGui::Spacing();
-	plotLinesHelper("Total Acceleration: ", graphHistoryLimit, totalAcc, -300.0f, 300.0f, graphDefaultSize);
+	plotLinesHelper(myVar.timeFactor, "Total Acceleration: ", graphHistoryLimit, totalAcc, -300.0f, 300.0f, graphDefaultSize);
 
 	ImGui::Spacing();
 	ImGui::Separator();
@@ -747,22 +749,24 @@ void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 
 	totalPress /= myParam.pParticlesSelected.size();
 
-	plotLinesHelper("Pressure: ", graphHistoryLimit, totalPress, 0.0f, 100.0f, graphDefaultSize);
+	plotLinesHelper(myVar.timeFactor, "Pressure: ", graphHistoryLimit, totalPress, 0.0f, 100.0f, graphDefaultSize);
 }
 
 
-void UI::plotLinesHelper(std::string label,
+void UI::plotLinesHelper(const float& timeFactor, std::string label,
 	const int length,
 	float value, const float minValue, const float maxValue, ImVec2 size) {
 
 	auto& plotData = plotDataMap[label];
-	if (plotData.values.size() != length) {
-		plotData.values.resize(length, 0.0f);
-		plotData.offset = 0;
-	}
+	if (timeFactor > 0.0f) {
+		if (plotData.values.size() != length) {
+			plotData.values.resize(length, 0.0f);
+			plotData.offset = 0;
+		}
 
-	plotData.values[plotData.offset] = value;
-	plotData.offset = (plotData.offset + 1) % length;
+		plotData.values[plotData.offset] = value;
+		plotData.offset = (plotData.offset + 1) % length;
+	}
 
 	std::vector<float> ordered_values(length);
 	std::vector<float> ordered_x(length);
@@ -775,10 +779,7 @@ void UI::plotLinesHelper(std::string label,
 
 	if (ImPlot::BeginPlot(label.c_str(), size, ImPlotFlags_NoInputs)) {
 
-		
-
 		ImPlot::SetupAxis(ImAxis_Y1, nullptr, ImPlotAxisFlags_AutoFit);
-		
 
 		ImPlot::PlotLine(label.c_str(), ordered_x.data(), ordered_values.data(), length);
 
