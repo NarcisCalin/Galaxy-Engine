@@ -4,13 +4,13 @@
 
 Join Galaxy Engine's [Discord community!](https://discord.gg/Xd5JUqNFPM)
 
-Galaxy Engine is a project made for learning purposes by [NarcisCalin](https://github.com/NarcisCalin). It is made with C++ and it uses the [Raylib](https://github.com/raysan5/raylib) library.
+Check out the official [Steam page!](https://store.steampowered.com/app/3762210/Galaxy_Engine/)
+
+Galaxy Engine is a free and open source project made for learning purposes by [NarcisCalin](https://github.com/NarcisCalin). It is made with C++ and it is built on top of the [Raylib](https://github.com/raysan5/raylib) library.
 
 Galaxy Engine uses libraries from the [FFmpeg](https://github.com/FFmpeg/FFmpeg) project under the LGPLv2.1
 
 The entire UI is made with the help of the [Dear ImGui](https://github.com/ocornut/imgui) library.
-
-Galaxy Engine is available for free and its code is open source.
 
 Special thanks to [Crisosphinx](https://github.com/crisosphinx) for helping me improve my code.
 
