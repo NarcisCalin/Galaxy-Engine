@@ -201,46 +201,51 @@ void ScreenCapture::createFramesFolder(const std::string &folderPath) {
 }
 
 void ScreenCapture::discardRecording() {
-  // Delete individual frame files if safe frames mode was enabled
-  if (isSafeFramesEnabled && isExportFramesEnabled && !this->videoFolder.empty() && !this->folderName.empty()) {
+  // Clean up video folder and any files if it was created
+  if (!this->videoFolder.empty()) {
     try {
-      std::string framePrefix = this->folderName + "_frame_";
-      int deletedFrameCount = 0;
-      
-      for (const auto &entry : std::filesystem::directory_iterator(this->videoFolder)) {
-        if (entry.is_regular_file()) {
-          std::string frameFileName = entry.path().filename().string();
-          if (frameFileName.rfind(framePrefix, 0) == 0 && 
-              frameFileName.length() > framePrefix.length() &&
-              frameFileName.substr(frameFileName.length() - 4) == ".png") {
-            try {
-              std::filesystem::remove(entry.path());
-              deletedFrameCount++;
-            } catch (const std::filesystem::filesystem_error &e_frame) {
-              printf("Warning: Failed to delete frame %s: %s\n", 
-                     entry.path().string().c_str(), e_frame.what());
+      // Delete individual frame files if safe frames mode was enabled
+      if (isSafeFramesEnabled && isExportFramesEnabled && !this->folderName.empty()) {
+        std::string framePrefix = this->folderName + "_frame_";
+        int deletedFrameCount = 0;
+        
+        if (std::filesystem::exists(this->videoFolder)) {
+          for (const auto &entry : std::filesystem::directory_iterator(this->videoFolder)) {
+            if (entry.is_regular_file()) {
+              std::string frameFileName = entry.path().filename().string();
+              if (frameFileName.rfind(framePrefix, 0) == 0 && 
+                  frameFileName.length() > framePrefix.length() &&
+                  frameFileName.substr(frameFileName.length() - 4) == ".png") {
+                try {
+                  std::filesystem::remove(entry.path());
+                  deletedFrameCount++;
+                } catch (const std::filesystem::filesystem_error &e_frame) {
+                  printf("Warning: Failed to delete frame %s: %s\n", 
+                         entry.path().string().c_str(), e_frame.what());
+                }
+              }
             }
+          }
+          
+          if (deletedFrameCount > 0) {
+            printf("Deleted %d frame files from cancelled recording\n", deletedFrameCount);
           }
         }
       }
       
-      if (deletedFrameCount > 0) {
-        printf("Deleted %d frame files from cancelled recording\n", deletedFrameCount);
-      }
-      
       // Remove the entire video folder since recording was cancelled
-      try {
-        if (std::filesystem::exists(this->videoFolder)) {
+      if (std::filesystem::exists(this->videoFolder)) {
+        try {
           std::filesystem::remove_all(this->videoFolder);
           printf("Removed video folder: %s\n", this->videoFolder.c_str());
+        } catch (const std::filesystem::filesystem_error &e_folder) {
+          printf("Warning: Failed to remove video folder %s: %s\n", 
+                 this->videoFolder.c_str(), e_folder.what());
         }
-      } catch (const std::filesystem::filesystem_error &e_folder) {
-        printf("Warning: Failed to remove video folder %s: %s\n", 
-               this->videoFolder.c_str(), e_folder.what());
       }
       
     } catch (const std::filesystem::filesystem_error &e_dir) {
-      printf("Warning: Failed to iterate video folder for frame cleanup: %s\n", e_dir.what());
+      printf("Warning: Failed to access video folder for cleanup: %s\n", e_dir.what());
     }
   }
 }
@@ -467,6 +472,11 @@ bool ScreenCapture::screenGrab(RenderTexture2D &myParticlesTexture,
     videoHasBeenSaved = false;
     actualSavedVideoFolder.clear();
     actualSavedVideoName.clear();
+    
+    // Clear recording state variables
+    lastVideoPath.clear();
+    this->videoFolder.clear();
+    this->folderName.clear();
 
     cancelRecording = false;
   }
