@@ -42,10 +42,10 @@ private:
     std::string generateVideoFilename();
     void cleanupFFmpeg();
     void exportFrameToFile(const Image &frame, const std::string &videoFolder,
-                           const std::string &videoName, int frameNumber);
-    void exportMemoryFramesToDisk();
+                           const std::string &videoName, int frameNumber);    void exportMemoryFramesToDisk();
     void discardMemoryFrames();
     void createFramesFolder(const std::string &folderPath);
+    void discardRecording();
     void applyButtonStyle(const ImVec4 &baseColor);
     void popButtonStyle();
 

@@ -200,6 +200,51 @@ void ScreenCapture::createFramesFolder(const std::string &folderPath) {
   }
 }
 
+void ScreenCapture::discardRecording() {
+  // Delete individual frame files if safe frames mode was enabled
+  if (isSafeFramesEnabled && isExportFramesEnabled && !this->videoFolder.empty() && !this->folderName.empty()) {
+    try {
+      std::string framePrefix = this->folderName + "_frame_";
+      int deletedFrameCount = 0;
+      
+      for (const auto &entry : std::filesystem::directory_iterator(this->videoFolder)) {
+        if (entry.is_regular_file()) {
+          std::string frameFileName = entry.path().filename().string();
+          if (frameFileName.rfind(framePrefix, 0) == 0 && 
+              frameFileName.length() > framePrefix.length() &&
+              frameFileName.substr(frameFileName.length() - 4) == ".png") {
+            try {
+              std::filesystem::remove(entry.path());
+              deletedFrameCount++;
+            } catch (const std::filesystem::filesystem_error &e_frame) {
+              printf("Warning: Failed to delete frame %s: %s\n", 
+                     entry.path().string().c_str(), e_frame.what());
+            }
+          }
+        }
+      }
+      
+      if (deletedFrameCount > 0) {
+        printf("Deleted %d frame files from cancelled recording\n", deletedFrameCount);
+      }
+      
+      // Remove the entire video folder since recording was cancelled
+      try {
+        if (std::filesystem::exists(this->videoFolder)) {
+          std::filesystem::remove_all(this->videoFolder);
+          printf("Removed video folder: %s\n", this->videoFolder.c_str());
+        }
+      } catch (const std::filesystem::filesystem_error &e_folder) {
+        printf("Warning: Failed to remove video folder %s: %s\n", 
+               this->videoFolder.c_str(), e_folder.what());
+      }
+      
+    } catch (const std::filesystem::filesystem_error &e_dir) {
+      printf("Warning: Failed to iterate video folder for frame cleanup: %s\n", e_dir.what());
+    }
+  }
+}
+
 void ScreenCapture::applyButtonStyle(const ImVec4 &baseColor) {
   ImGui::PushStyleColor(ImGuiCol_Button, baseColor);
   ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
@@ -391,9 +436,7 @@ bool ScreenCapture::screenGrab(RenderTexture2D &myParticlesTexture,
 
       printf("Stopped recording. File saved as '%s'\\n", outFileName.c_str());
     }
-  }
-
-  if (cancelRecording && isFunctionRecording) {
+  }  if (cancelRecording && isFunctionRecording) {
     cleanupFFmpeg();
     isFunctionRecording = false;
 
@@ -409,6 +452,10 @@ bool ScreenCapture::screenGrab(RenderTexture2D &myParticlesTexture,
                e.what());
       }
     }
+
+    // Clean up frame files and folder if safe frames mode was enabled
+    discardRecording();
+
     for (Image &frameImg : myFrames) {
       UnloadImage(frameImg);
     }
@@ -1121,49 +1168,42 @@ bool ScreenCapture::screenGrab(RenderTexture2D &myParticlesTexture,
         }
       }
     }
-    ImGui::SameLine();
-    if (ImGui::Button("Discard", ImVec2(100, 30))) {
+    ImGui::SameLine();    if (ImGui::Button("Discard", ImVec2(100, 30))) {
       if (!isFunctionRecording) {
+        // Use the centralized discard function for comprehensive cleanup
+        discardRecording();
+        
+        // Handle video file cleanup if it exists outside the video folder
         try {
-          if (std::filesystem::exists(this->videoFolder)) {
-            std::filesystem::remove_all(this->videoFolder);
-            printf("Discarded folder: %s\\n", this->videoFolder.c_str());
-          }
-
           if (std::filesystem::exists(lastVideoPath) &&
               lastVideoPath != this->videoFolder) {
             if (std::filesystem::is_regular_file(lastVideoPath)) {
               std::filesystem::remove(lastVideoPath);
-              printf("Discarded video "
-                     "file: %s\\n",
-                     lastVideoPath.c_str());
+              printf("Discarded video file: %s\\n", lastVideoPath.c_str());
             } else if (std::filesystem::is_directory(lastVideoPath)) {
-
               std::filesystem::remove_all(lastVideoPath);
-              printf("Discarded "
-                     "(unexpected) "
-                     "directory at "
-                     "lastVideoPath: "
-                     "%s\\n",
+              printf("Discarded (unexpected) directory at lastVideoPath: %s\\n",
                      lastVideoPath.c_str());
             }
           }
         } catch (const std::filesystem::filesystem_error &e) {
-          printf("Error discarding video/folder: "
-                 "%s\\n",
-                 e.what());
+          printf("Error discarding video/folder: %s\\n", e.what());
         }
-      }
+      }      
       showSaveConfirmationDialog = false;
       nameBuffer[0] = '\0';
 
+      // Clear recording state to close the recording menu
+      if (!myFrames.empty()) {
+        discardMemoryFrames();
+      }
+      diskModeFrameIdx = 0;      
       lastVideoPath.clear();
       this->videoFolder.clear();
       this->folderName.clear();
       videoHasBeenSaved = false;
       isFunctionRecording = false;
-      isSafeFramesEnabled = false;
-      isExportFramesEnabled = false;        }
+        }
         ImGui::PopFont();
         ImGui::End();
     }
