@@ -579,14 +579,12 @@ bool ScreenCapture::screenGrab(RenderTexture2D &myParticlesTexture,
     if (!isSafeFramesEnabled && isExportFramesEnabled) {
 
       Image frameCopy = ImageCopy(img);
-      ImageFlipVertical(&frameCopy);
       myFrames.push_back(frameCopy);
     }
     if (isSafeFramesEnabled && isExportFramesEnabled) {
 
       if (!this->videoFolder.empty() && !this->folderName.empty()) {
         Image frameForExport = ImageCopy(img);
-        ImageFlipVertical(&frameForExport);
 
         std::string safeFramePath = this->videoFolder + "/" + this->folderName +
                                     "_frame_" +
