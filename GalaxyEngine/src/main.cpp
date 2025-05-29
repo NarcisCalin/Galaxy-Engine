@@ -48,6 +48,17 @@ ParticleSpaceship ship;
 SPH sph;
 SaveSystem save;
 
+ImVec4 UpdateVariables::colWindowBg = ImVec4(0.05f, 0.043f, 0.071f, 0.9f);
+
+ImVec4 UpdateVariables::colButton = ImVec4(0.22f, 0.23f, 0.36f, 1.0f);
+ImVec4 UpdateVariables::colButtonHover = ImVec4(0.3f, 0.4f, 0.8f, 1.0f);
+ImVec4 UpdateVariables::colButtonPress = ImVec4(0.5f, 0.6f, 0.9f, 1.0f);
+
+ImVec4 UpdateVariables::colButtonActive = ImVec4(0.25f, 0.6f, 0.2f, 1.0f);
+ImVec4 UpdateVariables::colButtonActiveHover = ImVec4(0.35f, 0.7f, 0.3f, 1.0f);
+ImVec4 UpdateVariables::colButtonActivePress = ImVec4(0.45f, 0.8f, 0.4f, 1.0f);
+
+
 
 static Quadtree* gridFunction(std::vector<ParticlePhysics>& pParticles,
 	std::vector<ParticleRendering>& rParticles) {
@@ -136,12 +147,6 @@ static void updateScene() {
 		}
 
 		ship.spaceshipLogic(myParam.pParticles, myParam.rParticles, myVar.isShipGasEnabled);
-
-		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-			if (myParam.rParticles[i].isSelected) {
-				std::cout << "sphcolor: " << myParam.rParticles[i].color << std::endl;
-			}
-		}
 
 		if (myVar.isCollisionsEnabled) {
 			float dt = myVar.timeFactor / myVar.substeps;
@@ -364,6 +369,14 @@ int main() {
 	}
 	save.saveSimulation("Saves/DefaultSettings.galaxsim", myVar, myParam, sph);
 
+	ImGuiStyle& style = ImGui::GetStyle();
+	ImVec4* colors = style.Colors;
+
+	colors[ImGuiCol_WindowBg] = myVar.colWindowBg;
+	colors[ImGuiCol_Button] = myVar.colButton;
+	colors[ImGuiCol_ButtonHovered] = myVar.colButtonHover;
+	colors[ImGuiCol_ButtonActive] = myVar.colButtonPress;
+
 	ImGuiIO& io = ImGui::GetIO();
 
 	ImFontConfig config;
@@ -406,6 +419,8 @@ int main() {
 		BeginMode2D(myParam.myCamera.cameraLogic(save.loadFlag, myVar.isMouseNotHoveringUI));
 
 		rlImGuiBegin();
+
+		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 2.0f);
 
 		updateScene();
 
@@ -453,10 +468,12 @@ int main() {
 			DrawRectangleLinesEx({ 0,0, static_cast<float>(GetScreenWidth()), static_cast<float>(GetScreenHeight()) }, 3, RED);
 		}
 
+		ImGui::PopStyleVar();
+
 		rlImGuiEnd();
 
-		EndDrawing();
 
+		EndDrawing();
 
 		enableMultiThreading();
 	}

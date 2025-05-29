@@ -41,39 +41,6 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	float contentRegionWidth = ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x;
 	float buttonX = (contentRegionWidth - settingsButtonX) * 0.5f;
 
-	static std::array<settingsParams, 29> settingsButtonsParams = {
-		settingsParams("Fullscreen", "Toggles fulscreen", myVar.fullscreenState),
-		settingsParams("Controls", "Open controls panel", myParam.controls.isShowControlsEnabled),
-		settingsParams("Information", "Open information panel", myParam.controls.isInformationEnabled),
-		settingsParams("Global Trails", "Enables trails for all particles", myVar.isGlobalTrailsEnabled),
-		settingsParams("Selected Trails", "Enables trails for selected particles", myVar.isSelectedTrailsEnabled),
-		settingsParams("Local Trails", "Enables trails moving relative to particles average position", myVar.isLocalTrailsEnabled),
-		settingsParams("White Trails", "Makes all trails white", myParam.trails.whiteTrails),
-		settingsParams("Solid Color", "Particles will only use the primary color", myParam.colorVisuals.solidColor),
-		settingsParams("Density Color", "Maps particle neighbor amount to the primary and secondary colors", myParam.colorVisuals.densityColor),
-		settingsParams("Force Color", "Maps particle acceleration to the primary and secondary colors",myParam.colorVisuals.forceColor),
-		settingsParams("Velocity Color", "Maps particle velocity to color", myParam.colorVisuals.velocityColor),
-		settingsParams("Shockwave Color", "Maps particle acceleration to color", myParam.colorVisuals.shockwaveColor),
-		settingsParams("Pressure Color", "Maps particle pressure to color", myParam.colorVisuals.pressureColor),
-		settingsParams("SPH Color", "Uses the SPH materials colors", myParam.colorVisuals.SPHColor),
-		settingsParams("Selected Color", "Highlight selected particles", myParam.colorVisuals.selectedColor),
-		settingsParams("Dark Matter", "Enables dark matter particles. This works for galaxies and Big Bang", myVar.isDarkMatterEnabled),
-		settingsParams("Show Dark Matter", "Unhides dark matter particles", myParam.colorVisuals.showDarkMatterEnabled),
-		settingsParams("Looping Space", "Particles disappearing on one side will appear on the other side", myVar.isPeriodicBoundaryEnabled),
-		settingsParams("Multi-Threading", "Distributes the simulation across multiple threads", myVar.isMultiThreadingEnabled),
-		settingsParams("SPH", "Enables SPH fluids", myVar.isSPHEnabled),
-		settingsParams("SPH Ground Mode", "Adds vertical gravity and makes particles collide with the domain walls", myVar.sphGround),
-		settingsParams("Collisions (!!!)", "Enables elastic collisions", myVar.isCollisionsEnabled),
-		settingsParams("Density Size", "Maps particle neighbor amount to size", myVar.isDensitySizeEnabled),
-		settingsParams("Force Size", "Maps particle acceleration to size", myVar.isForceSizeEnabled),
-		settingsParams("Glow", "Enables glow shader", myVar.isGlowEnabled),
-		settingsParams("Predict Path", "Predicts the trajectory of heavy particles before launching them", myParam.particlesSpawning.enablePathPrediction),
-		settingsParams("Ship Gas", "Enables gas particles coming from the ship when controlling particles", myVar.isShipGasEnabled),
-		settingsParams("Save Scene", "Save current scene to disk", save.saveFlag),
-		settingsParams("Load Scene", "Load a scene from disk", save.loadFlag)
-
-	};
-
 	static std::array<std::variant<
 		visualSlidersParams<float>,
 		visualSlidersParams<int>>,
@@ -120,104 +87,76 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	float oldSpacingY = ImGui::GetStyle().ItemSpacing.y;
 	ImGui::GetStyle().ItemSpacing.y = 5.0f; // Set the spacing only for the settings buttons
 
+	bool enabled = true;
 
-	for (size_t i = 0; i < settingsButtonsParams.size(); i++) {
-		ImGui::SetCursorPosX(ImGui::GetWindowContentRegionMin().x);
+	SimilarTypeButton color({
+	{ "Solid Color",     "Particles will only use the primary color",           &myParam.colorVisuals.solidColor },
+	{ "Density Color",   "Maps particle neighbor amount to colors",            &myParam.colorVisuals.densityColor },
+	{ "Force Color",     "Maps particle acceleration to colors",               &myParam.colorVisuals.forceColor },
+	{ "Velocity Color",  "Maps particle velocity to color",                    &myParam.colorVisuals.velocityColor },
+	{ "Shockwave Color", "Maps particle acceleration to color",                &myParam.colorVisuals.shockwaveColor },
+	{ "Pressure Color",  "Maps particle pressure to color",                    &myParam.colorVisuals.pressureColor },
+	{ "SPH Color",       "Uses the SPH materials colors",                      &myParam.colorVisuals.SPHColor }
+		});
 
-		bool isColor = settingsButtonsParams[i].text.find("Color") != std::string::npos;
-		bool& current = settingsButtonsParams[i].parameter;
-		const std::string& label = settingsButtonsParams[i].text;
-		const std::string& tooltip = settingsButtonsParams[i].tooltip;
+	SimilarTypeButton controlsAndInfo({
+{ "Controls", "Open controls panel", &myParam.controls.isShowControlsEnabled },
+{ "Information", "Open information panel", &myParam.controls.isInformationEnabled }
+		});
 
-		ImVec4& col = current ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
-		ImGui::PushStyleColor(ImGuiCol_Button, col);
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(col.x + 0.1f, col.y + 0.1f, col.z + 0.1f, col.w));
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(col.x - 0.1f, col.y - 0.1f, col.z - 0.1f, col.w));
+	SimilarTypeButton trails({
+{ "Global Trails", "Enables trails for all particles", &myVar.isGlobalTrailsEnabled },
+{ "Selected Trails", "Enables trails for selected particles", &myVar.isSelectedTrailsEnabled }
+		});
 
-		auto toggleExclusive = [&](const std::string& self, const std::string& other) {
-			if (!current) {
-				current = true;
-				for (auto& p : settingsButtonsParams) {
-					if (p.text == other) p.parameter = false;
+	buttonHelper("Fullscreen", "Toggles fulscreen", myVar.fullscreenState, -1.0f, settingsButtonY, true, enabled);
+
+	controlsAndInfo.buttonIterator(-1.0f, settingsButtonY, true, enabled);
+
+	trails.buttonIterator(-1.0f, settingsButtonY, true, enabled);
+
+	buttonHelper("Local Trails", "Enables trails moving relative to particles average position", myVar.isLocalTrailsEnabled, -1.0f, settingsButtonY, true, enabled);
+	buttonHelper("White Trails", "Makes all trails white", myParam.trails.whiteTrails, -1.0f, settingsButtonY, true, enabled);
+
+	color.buttonIterator(-1.0f, settingsButtonY, false, enabled);
+
+	buttonHelper("Selected Color", "Highlight selected particles", myParam.colorVisuals.selectedColor, -1.0f, settingsButtonY, true, enabled);
+	buttonHelper("Dark Matter", "Enables dark matter particles. This works for galaxies and Big Bang", myVar.isDarkMatterEnabled, -1.0f, settingsButtonY, true, enabled);
+	buttonHelper("Show Dark Matter", "Unhides dark matter particles", myParam.colorVisuals.showDarkMatterEnabled, -1.0f, settingsButtonY, true, enabled);
+	buttonHelper("Looping Space", "Particles disappearing on one side will appear on the other side", myVar.isPeriodicBoundaryEnabled, -1.0f, settingsButtonY, true, enabled);
+	buttonHelper("Multi-Threading", "Distributes the simulation across multiple threads", myVar.isMultiThreadingEnabled, -1.0f, settingsButtonY, true, enabled);
+
+	bool wasEnabled = myVar.isSPHEnabled;
+	bool sphGroundButtonEnabled = false;
+
+	if (buttonHelper("SPH", "Enables SPH fluids", myVar.isSPHEnabled, -1.0f, settingsButtonY, true, enabled)) {
+		if (!wasEnabled && myVar.isSPHEnabled) {
+			for (size_t i = 0; i < color.params.size(); i++) {
+				if (color.params[i].flag == &myParam.colorVisuals.SPHColor) {
+
+					*color.params[i].flag = true;
 				}
-			}
-			else {
-				current = false;
-			}
-			};
-
-		if (ImGui::Button(label.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, settingsButtonY))) {
-			if (label == "Information") {
-				toggleExclusive("Information", "Controls");
-			}
-			else if (label == "Controls") {
-				toggleExclusive("Controls", "Information");
-			}
-			else if (label == "Density Size") {
-				toggleExclusive("Density Size", "Force Size");
-			}
-			else if (label == "Force Size") {
-				toggleExclusive("Force Size", "Density Size");
-			}
-			else if (label == "Global Trails") {
-				toggleExclusive("Global Trails", "Selected Trails");
-			}
-			else if (label == "Selected Trails") {
-				toggleExclusive("Selected Trails", "Global Trails");
-			}
-			else if (label == "Visual Settings") {
-				toggleExclusive("Visual Settings", "Physics Settings");
-			}
-			else if (label == "Physics Settings") {
-				toggleExclusive("Physics Settings", "Visual Settings");
-			}
-			else if (label == "SPH") {
-				current = !current;
-
-				// When SPH is turned ON, enable SPH Color and disable others (except "Selected Color")
-				if (current) {
-					for (auto& p : settingsButtonsParams) {
-						if (p.text.find("Color") != std::string::npos &&
-							p.text != "SPH Color" &&
-							p.text != "Selected Color") {
-							p.parameter = false;
-						}
-						if (p.text == "SPH Color") {
-							p.parameter = true;
-						}
-					}
+				else {
+					*color.params[i].flag = false;
 				}
-			}
-			else if (isColor && label != "Selected Color") {
-				// Standard color toggle logic
-				for (auto& p : settingsButtonsParams) {
-					if (p.text.find("Color") != std::string::npos &&
-						p.text != "Selected Color") {
-						p.parameter = false;
-					}
-				}
-				current = true;
-			}
-			else if (isColor && label != "Selected Color") {
-				for (auto& p : settingsButtonsParams) {
-					if (p.text.find("Color") != std::string::npos &&
-						p.text != "Selected Color") {
-						p.parameter = false;
-					}
-				}
-				current = true;
-			}
-			else {
-				current = !current;
 			}
 		}
-
-		if (ImGui::IsItemHovered()) {
-			ImGui::SetTooltip("%s", tooltip.c_str());
-		}
-
-		ImGui::PopStyleColor(3);
+		sphGroundButtonEnabled = true;
 	}
+	else {
+		sphGroundButtonEnabled = false;
+		myVar.sphGround = false;
+	}
+
+	buttonHelper("SPH Ground Mode", "Adds vertical gravity and makes particles collide with the domain walls", myVar.sphGround, -1.0f, settingsButtonY, true, sphGroundButtonEnabled);
+	buttonHelper("Collisions (!!!)", "Enables elastic collisions", myVar.isCollisionsEnabled, -1.0f, settingsButtonY, true, enabled);
+	buttonHelper("Density Size", "Maps particle neighbor amount to size", myVar.isDensitySizeEnabled, -1.0f, settingsButtonY, true, enabled);
+	buttonHelper("Force Size", "Maps particle acceleration to size", myVar.isForceSizeEnabled, -1.0f, settingsButtonY, true, enabled);
+	buttonHelper("Glow", "Enables glow shader", myVar.isGlowEnabled, -1.0f, settingsButtonY, true, enabled);
+	buttonHelper("Predict Path", "Predicts the trajectory of heavy particles before launching them", myParam.particlesSpawning.enablePathPrediction, -1.0f, settingsButtonY, true, enabled);
+	buttonHelper("Ship Gas", "Enables gas particles coming from the ship when controlling particles", myVar.isShipGasEnabled, -1.0f, settingsButtonY, true, enabled);
+	buttonHelper("Save Scene", "Save current scene to disk", save.saveFlag, -1.0f, settingsButtonY, true, enabled);
+	buttonHelper("Load Scene", "Load a scene from disk", save.loadFlag, -1.0f, settingsButtonY, true, enabled);
 
 	ImGui::GetStyle().ItemSpacing.y = oldSpacingY; // End the settings buttons spacing
 
@@ -239,9 +178,9 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	float halfButtonWidth = totalWidth * 0.4f;
 
 	if (ImGui::BeginTabBar("##MainTabBar", ImGuiTabBarFlags_NoTabListScrollingButtons)) {
-	
-	
-		if (ImGui::BeginTabItem("Visuals")){
+
+
+		if (ImGui::BeginTabItem("Visuals")) {
 
 			bVisualsSliders = true;
 			bPhysicsSliders = false;
@@ -251,7 +190,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			ImGui::EndTabItem();
 		}
 
-		if (ImGui::BeginTabItem("Physics")){
+		if (ImGui::BeginTabItem("Physics")) {
 
 			bVisualsSliders = false;
 			bPhysicsSliders = true;
@@ -261,7 +200,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			ImGui::EndTabItem();
 		}
 
-		if (ImGui::BeginTabItem("Advanced Stats")){
+		if (ImGui::BeginTabItem("Advanced Stats")) {
 
 			bVisualsSliders = false;
 			bPhysicsSliders = false;
@@ -434,58 +373,21 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 						}
 					}
 					}, physicsSliders[i]);
-
-
-				/*if (ImGui::IsItemHovered()) {
-					ImGui::SetTooltip("Right-click to reset");
-				}*/
-
 			}
 
-			static std::array<sphParams, 6> sphButtonsParams = {
-			sphParams("SPH Water", myParam.brush.SPHWater),
-			sphParams("SPH Rock", myParam.brush.SPHRock),
-			sphParams("SPH Sand", myParam.brush.SPHSand),
-			sphParams("SPH Soil", myParam.brush.SPHSoil),
-			sphParams("SPH Ice", myParam.brush.SPHIce),
-			sphParams("SPH Mud", myParam.brush.SPHMud)
-
-			};
+			SimilarTypeButton sphMats({
+{ "SPH Water", "Water", &myParam.brush.SPHWater},
+{ "SPH Rock", "Rock", &myParam.brush.SPHRock},
+				{"SPH Sand", "Sand", &myParam.brush.SPHSand},
+				{"SPH Soil", "Soil", &myParam.brush.SPHSoil},
+				{"SPH Ice", "Ice", &myParam.brush.SPHIce},
+				{"SPH Mud", "Mud", &myParam.brush.SPHMud},
+				});
 
 			float oldSpacingY = ImGui::GetStyle().ItemSpacing.y;
 			ImGui::GetStyle().ItemSpacing.y = 5.0f; // Set the spacing only for the settings buttons
 
-
-			for (size_t i = 0; i < sphButtonsParams.size(); i++) {
-				ImGui::SetCursorPosX(ImGui::GetWindowContentRegionMin().x);
-
-				auto& entry = sphButtonsParams[i];
-				bool& current = sphButtonsParams[i].parameter;
-				const std::string& label = sphButtonsParams[i].text;
-
-				ImVec4& col = current ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
-				ImGui::PushStyleColor(ImGuiCol_Button, col);
-				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(col.x + 0.1f, col.y + 0.1f, col.z + 0.1f, col.w));
-				ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(col.x - 0.1f, col.y - 0.1f, col.z - 0.1f, col.w));
-
-				if (ImGui::Button(label.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, settingsButtonY))) {
-
-					if (!current) {
-						current = true;
-
-						for (sphParams& other : sphButtonsParams) {
-							if (&other != &entry) {
-								other.parameter = false;
-							}
-							else {
-								current = true;
-							}
-						}
-					}
-				}
-
-				ImGui::PopStyleColor(3);
-			}
+			sphMats.buttonIterator(-1.0f, settingsButtonY, true, enabled);
 
 			ImGui::GetStyle().ItemSpacing.y = oldSpacingY;
 
@@ -507,11 +409,6 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				const std::string& label = recordingButtonsParams[i].text;
 				const std::string& tooltip = recordingButtonsParams[i].tooltip;
 
-				ImVec4& col = current ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
-				ImGui::PushStyleColor(ImGuiCol_Button, col);
-				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(col.x + 0.1f, col.y + 0.1f, col.z + 0.1f, col.w));
-				ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(col.x - 0.1f, col.y - 0.1f, col.z - 0.1f, col.w));
-
 				if (ImGui::Button(label.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, settingsButtonY))) {
 					current = !current;
 				}
@@ -519,8 +416,6 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				if (ImGui::IsItemHovered()) {
 					ImGui::SetTooltip("%s", tooltip.c_str());
 				}
-
-				ImGui::PopStyleColor(3);
 			}
 
 			ImGui::Separator(); // Add a separator
@@ -815,6 +710,7 @@ void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 	plotLinesHelper(myVar.timeFactor, "Pressure: ", graphHistoryLimit, totalPress, 0.0f, 100.0f, graphDefaultSize);
 }
 
+std::unordered_map<std::string, PlotData> UI::plotDataMap;
 
 void UI::plotLinesHelper(const float& timeFactor, std::string label,
 	const int length,
@@ -848,4 +744,84 @@ void UI::plotLinesHelper(const float& timeFactor, std::string label,
 
 		ImPlot::EndPlot();
 	}
+}
+
+bool UI::buttonHelper(std::string label, std::string tooltip, bool& parameter, float sizeX, float sizeY, bool canSelfDeactivate, bool& isEnabled) {
+
+	bool pushedColor = false;
+	if (parameter) {
+		ImGui::PushStyleColor(ImGuiCol_Button, UpdateVariables::colButtonActive);
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, UpdateVariables::colButtonActiveHover);
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, UpdateVariables::colButtonActivePress);
+		pushedColor = true;
+	}
+
+	if (!isEnabled) {
+		ImGui::BeginDisabled();
+	}
+
+	// Set the passed value to -1.0f if you want the button size to be as big as the window
+	if (sizeX > 0.0f && sizeY > 0.0f) {
+		if (ImGui::Button(label.c_str(), ImVec2(sizeX, sizeY))) {
+			if (canSelfDeactivate) {
+				parameter = !parameter;
+			}
+			else {
+				if (!parameter) {
+					parameter = true;
+				}
+			}
+		}
+	}
+	else if (sizeX < 0.0f && sizeY > 0.0f) {
+		if (ImGui::Button(label.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, sizeY))) {
+			if (canSelfDeactivate) {
+				parameter = !parameter;
+			}
+			else {
+				if (!parameter) {
+					parameter = true;
+				}
+			}
+		}
+	}
+	else if (sizeX > 0.0f && sizeY < 0.0f) {
+		if (ImGui::Button(label.c_str(), ImVec2(sizeX, ImGui::GetContentRegionAvail().y))) {
+			if (canSelfDeactivate) {
+				parameter = !parameter;
+			}
+			else {
+				if (!parameter) {
+					parameter = true;
+				}
+			}
+		}
+	}
+	else if (sizeX < 0.0f && sizeY < 0.0f) {
+		if (ImGui::Button(label.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y))) {
+			if (canSelfDeactivate) {
+				parameter = !parameter;
+			}
+			else {
+				if (!parameter) {
+					parameter = true;
+				}
+			}
+		}
+	}
+
+	if (!isEnabled) {
+		ImGui::EndDisabled();
+	}
+
+	if (pushedColor) {
+		ImGui::PopStyleColor(3);
+	}
+
+	if (ImGui::IsItemHovered()) {
+		ImGui::SetTooltip("%s", tooltip.c_str());
+	}
+
+
+	return parameter;
 }

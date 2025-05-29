@@ -256,18 +256,6 @@ void ScreenCapture::discardRecording() {
 	}
 }
 
-void ScreenCapture::applyButtonStyle(const ImVec4& baseColor) {
-	ImGui::PushStyleColor(ImGuiCol_Button, baseColor);
-	ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
-		ImVec4(baseColor.x + 0.1f, baseColor.y + 0.1f,
-			baseColor.z + 0.1f, baseColor.w));
-	ImGui::PushStyleColor(ImGuiCol_ButtonActive,
-		ImVec4(baseColor.x - 0.1f, baseColor.y - 0.1f,
-			baseColor.z - 0.1f, baseColor.w));
-}
-
-void ScreenCapture::popButtonStyle() { ImGui::PopStyleColor(3); }
-
 std::string ScreenCapture::generateVideoFilename() {
 
 	int maxNumberFound = 0;
@@ -647,8 +635,6 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture,
 		}    if (isFunctionRecording) {
 			ImGui::Separator();
 
-			applyButtonStyle(myVar.buttonEnabledColor);
-
 			if (ImGui::Button("End Recording",
 				ImVec2(ImGui::GetContentRegionAvail().x, 40.0f))) {
 
@@ -672,19 +658,14 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture,
 					outFileName.c_str());
 			}
 
-			popButtonStyle();
-
 			if (ImGui::IsItemHovered()) {
 				ImGui::SetTooltip("Stop recording and save the video file");
 			}
-			applyButtonStyle(myVar.buttonCancelColor);
 
 			if (ImGui::Button("Cancel Recording",
 				ImVec2(ImGui::GetContentRegionAvail().x, 40.0f))) {
 				cancelRecording = true;
 			}
-
-			popButtonStyle();
 
 			if (ImGui::IsItemHovered()) {
 				ImGui::SetTooltip("Stop recording and discard "
@@ -695,14 +676,6 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture,
 			isExportFramesEnabled && videoHasBeenSaved) {
 
 			ImVec4 exportCol;
-
-			if (isExportingFrames) {
-				exportCol = myVar.buttonDisabledColor; // Gray when disabled
-			}
-			else {
-				exportCol = myVar.buttonEnabledColor;
-			}
-			applyButtonStyle(exportCol);
 
 			// Show different text based on export status
 			// Note: Not Working, the exporting blocks the UI
@@ -738,17 +711,6 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture,
 						"as PNG files");
 				}
 			}
-			popButtonStyle();
-
-			// Discard button - also disable during export
-			ImVec4 discardCol;
-			if (isExportingFrames) {
-				discardCol = myVar.buttonDisabledColor; // Gray when disabled
-			}
-			else {
-				discardCol = myVar.buttonCancelColor;
-			}
-			applyButtonStyle(discardCol);
 
 			// Show different text based on export status
 			std::string discardButtonText =
@@ -783,7 +745,6 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture,
 						"without saving");
 				}
 			}
-			popButtonStyle();
 
 			// Show appropriate warning message
 			std::string warning;
@@ -849,7 +810,7 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture,
 		if (ImGui::IsItemHovered()) {
 			ImGui::SetTooltip("Leave empty to keep current name");
 		}    ImGui::Separator();
-		applyButtonStyle(myVar.buttonEnabledColor);
+
 		if (ImGui::Button("Save", ImVec2(100, 30))) {
 
 			if (isFunctionRecording) {
@@ -1200,9 +1161,9 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture,
 				}
 			}
 		}
-		popButtonStyle();
+
 		ImGui::SameLine();
-		applyButtonStyle(myVar.buttonCancelColor);
+
 		if (ImGui::Button("Discard", ImVec2(100, 30))) {
 			if (!isFunctionRecording) {
 				// Use the centralized discard function for comprehensive cleanup
@@ -1240,7 +1201,6 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture,
 			this->folderName.clear();      videoHasBeenSaved = false;
 			isFunctionRecording = false;
 		}
-		popButtonStyle();
 		ImGui::PopFont();
 		ImGui::End();
 	}

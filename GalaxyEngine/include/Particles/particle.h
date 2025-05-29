@@ -106,7 +106,7 @@ inline std::istream& operator>>(std::istream& is, ParticlePhysics& p) {
 		>> p.mass
 		>> p.press
 		>> p.pressTmp
-		>> p.pressF
+		>> p.pressF.x >> p.pressF.y
 		>> p.dens
 		>> p.predDens
 		>> p.sphMass
@@ -200,6 +200,7 @@ inline std::ostream& operator<<(std::ostream& os, ParticleRendering const& r) {
 		<< r.sColor << ' '
 		<< r.sphColor << ' '
 		<< r.size << ' '
+		<< int(r.uniqueColor) << ' '
 		<< int(r.isSolid) << ' '
 		<< int(r.canBeSubdivided) << ' '
 		<< int(r.canBeResized) << ' '
@@ -243,7 +244,6 @@ inline std::istream& operator>>(std::istream& is, ParticleRendering& r) {
 	int uniq, solid, subdiv, resize, dark, sph, selected, grabbed;
 	is >> uniq >> solid >> subdiv >> resize >> dark >> sph >> selected >> grabbed;
 	is >> r.previousSize >> r.neighbors >> r.totalRadius >> r.lifeSpan;
-	is >> r.sphLabel;
 
 	r.uniqueColor = static_cast<bool>(uniq);
 	r.isSolid = static_cast<bool>(solid);

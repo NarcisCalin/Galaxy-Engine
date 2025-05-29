@@ -46,8 +46,6 @@ private:
     void discardMemoryFrames();
     void createFramesFolder(const std::string &folderPath);
     void discardRecording();
-    void applyButtonStyle(const ImVec4 &baseColor);
-    void popButtonStyle();
 
     int screenshotIndex = 0; // Used for screenshot naming
     std::vector<Image> myFrames; // Used for storing captured frames

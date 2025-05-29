@@ -73,16 +73,19 @@ public:
 
 	void statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar);
 
-	void plotLinesHelper(const float& timeFactor, std::string label,
+	static void plotLinesHelper(const float& timeFactor, std::string label,
 		const int length,
 		float value, const float minValue, const float maxValue, ImVec2 size);
+
+
+	static bool buttonHelper(std::string label, std::string tooltip, bool& parameter, float sizeX, float sizeY, bool canDeactivateSelf, bool& isEnabled);
 
 	bool showSettings = true;
 
 private:
 	bool loadSettings = true;
 
-	std::unordered_map<std::string, PlotData> plotDataMap;
+	static std::unordered_map<std::string, PlotData> plotDataMap;
 
 	ImVec4 statsNamesCol = { 0.6f, 0.6f, 0.8f, 1.0f };
 
@@ -90,4 +93,29 @@ private:
 
 	int graphHistoryLimit = 1000;
 
+};
+
+struct SimilarTypeButton {
+	struct Mode {
+		const char* label;
+		const char* tooltip;
+		bool* flag;
+	};
+
+	std::vector<Mode> params;
+
+	SimilarTypeButton(std::vector<Mode> modes_) : params(std::move(modes_)) {}
+
+	void buttonIterator(float sizeX, float sizeY, bool canDeactivateSelf, bool& isEnabled) {
+		for (size_t i = 0; i < params.size(); ++i) {
+			if (UI::buttonHelper(params[i].label, params[i].tooltip, *params[i].flag, sizeX, sizeY, canDeactivateSelf, isEnabled)) {
+
+				for (size_t j = 0; j < params.size(); ++j) {
+					if (j != i) {
+						*params[j].flag = false;
+					}
+				}
+			}
+		}
+	}
 };

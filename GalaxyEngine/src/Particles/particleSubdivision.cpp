@@ -32,27 +32,15 @@ void ParticleSubdivision::subdivideParticles(UpdateVariables& myVar, UpdateParam
 			ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
 			ImGui::TextColored(ImVec4(0.9f, 0.0f, 0.0f, 1.0f), "%s", warning.c_str());
 
-			ImVec4& confirmCol = confirmState ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
-			ImGui::PushStyleColor(ImGuiCol_Button, confirmCol);
-			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(confirmCol.x + 0.1f, confirmCol.y + 0.1f, confirmCol.z + 0.1f, confirmCol.w));
-			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(confirmCol.x - 0.1f, confirmCol.y - 0.1f, confirmCol.z - 0.1f, confirmCol.w));
-
 			if (ImGui::Button("Confirm", ImVec2(ImGui::GetContentRegionAvail().x, 40.0f))) {
 				confirmState = !confirmState;
 			}
-			ImGui::PopStyleColor(3);
-
-			ImVec4& quitCol = quitState ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
-			ImGui::PushStyleColor(ImGuiCol_Button, quitCol);
-			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(quitCol.x + 0.1f, quitCol.y + 0.1f, quitCol.z + 0.1f, quitCol.w));
-			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(quitCol.x - 0.1f, quitCol.y - 0.1f, quitCol.z - 0.1f, quitCol.w));
 
 			if (ImGui::Button("Quit", ImVec2(ImGui::GetContentRegionAvail().x, 40.0f))) {
 				quitState = !quitState;
 			}
 
 			ImGui::PopFont();
-			ImGui::PopStyleColor(3);
 
 			ImGui::End();
 		}

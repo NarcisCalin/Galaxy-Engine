@@ -118,9 +118,16 @@ struct UpdateVariables{
 	float particleTextureHalfSize = 16.0f;
 
 	int trailMaxLength = 48;
-	ImVec4 buttonEnabledColor = { 0.2f,0.5f, 0.2f, 1.0f };
-	ImVec4 buttonDisabledColor = { 0.3f,0.3f, 0.3f, 1.0f };
-	ImVec4 buttonCancelColor = { 0.8f, 0.2f, 0.2f, 1.0f };
+
+	static ImVec4 colWindowBg;
+
+	static ImVec4 colButton;
+	static ImVec4 colButtonHover;
+	static ImVec4 colButtonPress;
+
+	static ImVec4 colButtonActive;
+	static ImVec4 colButtonActiveHover;
+	static ImVec4 colButtonActivePress;
 
 	bool isRecording = false;
 

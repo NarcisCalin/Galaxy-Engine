@@ -102,11 +102,6 @@ void RightClickSettings::rightClickMenu(UpdateVariables& myVar, UpdateParameters
 
 			bool& param = rightClickButtons[i].parameter;
 
-			ImVec4& col = param ? myVar.buttonEnabledColor : myVar.buttonDisabledColor;
-			ImGui::PushStyleColor(ImGuiCol_Button, col);
-			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(col.x + 0.1f, col.y + 0.1f, col.z + 0.1f, col.w));
-			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(col.x - 0.1f, col.y - 0.1f, col.z - 0.1f, col.w));
-
 			if (ImGui::Button(rightClickButtons[i].text.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, 20.0f))) {
 				param = !param;
 
@@ -116,8 +111,6 @@ void RightClickSettings::rightClickMenu(UpdateVariables& myVar, UpdateParameters
 			if (ImGui::IsItemHovered()) {
 				ImGui::SetTooltip("%s", rightClickButtons[i].tooltip.c_str());
 			}
-
-			ImGui::PopStyleColor(3);
 		}
 
 		bool pColChanged = false;
