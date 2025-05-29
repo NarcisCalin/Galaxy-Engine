@@ -324,7 +324,6 @@ bool ScreenCapture::screenGrab(RenderTexture2D &myParticlesTexture,
     UnloadImage(renderImage);
     screenshotIndex++;
   }
-
   if (IO::handleShortcut(KEY_R) && !showSaveConfirmationDialog) {
     if (!isFunctionRecording && !isSafeFramesEnabled) {
       for (Image &frame : myFrames) {
@@ -333,7 +332,7 @@ bool ScreenCapture::screenGrab(RenderTexture2D &myParticlesTexture,
       myFrames.clear();
       std::vector<Image>().swap(myFrames);
     }
-    if (!isFunctionRecording && (isSafeFramesEnabled || isVideoExportEnabled)) {
+    if (!isFunctionRecording && isVideoExportEnabled) {
 
       diskModeFrameIdx = 0;
 
@@ -680,10 +679,9 @@ bool ScreenCapture::screenGrab(RenderTexture2D &myParticlesTexture,
       if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("Stop recording and discard "
                           "the video file");
-      }
-    }
+      }    }
     if (myFrames.size() > 0 && !isFunctionRecording && !isSafeFramesEnabled &&
-        videoHasBeenSaved) {
+        isExportFramesEnabled && videoHasBeenSaved) {
 
       ImVec4 exportCol;
       bool exportButtonEnabled = !isExportingFrames;
@@ -1165,7 +1163,8 @@ bool ScreenCapture::screenGrab(RenderTexture2D &myParticlesTexture,
         nameBuffer[0] = '\0';
 
         // Clear recording state to close the recording menu
-        if (!myFrames.empty()) {
+        // Only discard frames if frame export is disabled
+        if (!myFrames.empty() && !isExportFramesEnabled) {
           discardMemoryFrames();
         }
         diskModeFrameIdx = 0;
