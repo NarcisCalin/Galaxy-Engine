@@ -48,8 +48,10 @@ ParticleSpaceship ship;
 SPH sph;
 SaveSystem save;
 
+// Background color
 ImVec4 UpdateVariables::colWindowBg = ImVec4(0.05f, 0.043f, 0.071f, 0.9f);
 
+// Button colors
 ImVec4 UpdateVariables::colButton = ImVec4(0.22f, 0.23f, 0.36f, 1.0f);
 ImVec4 UpdateVariables::colButtonHover = ImVec4(0.3f, 0.4f, 0.8f, 1.0f);
 ImVec4 UpdateVariables::colButtonPress = ImVec4(0.5f, 0.6f, 0.9f, 1.0f);
@@ -58,7 +60,26 @@ ImVec4 UpdateVariables::colButtonActive = ImVec4(0.25f, 0.6f, 0.2f, 1.0f);
 ImVec4 UpdateVariables::colButtonActiveHover = ImVec4(0.35f, 0.7f, 0.3f, 1.0f);
 ImVec4 UpdateVariables::colButtonActivePress = ImVec4(0.45f, 0.8f, 0.4f, 1.0f);
 
+ImVec4 UpdateVariables::colButtonRedActive = ImVec4(0.65f, 0.2f, 0.2f, 1.0f);
+ImVec4 UpdateVariables::colButtonRedActiveHover = ImVec4(0.75f, 0.3f, 0.3f, 1.0f);
+ImVec4 UpdateVariables::colButtonRedActivePress = ImVec4(0.85f, 0.4f, 0.4f, 1.0f);
 
+// Slider Colors
+ImVec4 UpdateVariables::colSliderGrab = ImVec4(0.32f, 0.33f, 0.46f, 1.0f);
+ImVec4 UpdateVariables::colSliderGrabActive = ImVec4(0.3f, 0.5f, 0.9f, 1.0f);
+ImVec4 UpdateVariables::colSliderBg = ImVec4(0.12f, 0.13f, 0.26f, 1.0f);
+ImVec4 UpdateVariables::colSliderBgHover = ImVec4(0.22f, 0.23f, 0.36f, 1.0f);
+ImVec4 UpdateVariables::colSliderBgActive = ImVec4(0.42f, 0.43f, 0.66f, 1.0f);
+
+// Plotline Colors
+ImVec4 UpdateVariables::colPlotLine = ImVec4(0.68f, 0.7f, 0.9f, 1.0f);
+ImVec4 UpdateVariables::colAxisText = ImVec4(1.0f, 0.8f, 1.0f, 1.0f);
+ImVec4 UpdateVariables::colAxisGrid = ImVec4(0.4f, 0.5f, 0.6f, 1.0f);
+ImVec4 UpdateVariables::colAxisBg = ImVec4(0.1f, 0.1f, 0.2f, 1.0f);
+ImVec4 UpdateVariables::colFrameBg = ImVec4(0.12f, 0.12f, 0.2f, 1.0f);
+ImVec4 UpdateVariables::colPlotBg = ImVec4(0.05f, 0.05f, 0.1f, 1.0f);
+ImVec4 UpdateVariables::colPlotBorder = ImVec4(1.0f, 0.0f, 1.0f, 1.0f);
+ImVec4 UpdateVariables::colLegendBg = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
 
 static Quadtree* gridFunction(std::vector<ParticlePhysics>& pParticles,
 	std::vector<ParticleRendering>& rParticles) {
@@ -227,7 +248,7 @@ static void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture) 
 	}
 
 
-	myParam.colorVisuals.particlesColorVisuals(myParam.pParticles, myParam.rParticles, myVar.particleSizeMultiplier, myVar.particleTextureHalfSize, sph.delta);
+	myParam.colorVisuals.particlesColorVisuals(myParam.pParticles, myParam.rParticles);
 
 	myParam.trails.drawTrail(myParam.rParticles, particleBlurTex);
 
@@ -372,10 +393,24 @@ int main() {
 	ImGuiStyle& style = ImGui::GetStyle();
 	ImVec4* colors = style.Colors;
 
+	// Button and window colors
 	colors[ImGuiCol_WindowBg] = myVar.colWindowBg;
 	colors[ImGuiCol_Button] = myVar.colButton;
 	colors[ImGuiCol_ButtonHovered] = myVar.colButtonHover;
 	colors[ImGuiCol_ButtonActive] = myVar.colButtonPress;
+
+	// Slider colors
+	style.Colors[ImGuiCol_SliderGrab] = myVar.colSliderGrab;        // Bright cyan-ish knob
+	style.Colors[ImGuiCol_SliderGrabActive] = myVar.colSliderGrabActive;  // Darker when dragging
+
+	style.Colors[ImGuiCol_FrameBg] = myVar.colSliderBg;           // Dark track when idle
+	style.Colors[ImGuiCol_FrameBgHovered] = myVar.colSliderBgHover;    // Lighter track on hover
+	style.Colors[ImGuiCol_FrameBgActive] = myVar.colSliderBgActive;     // Even lighter on active
+
+	// Tab colors
+	style.Colors[ImGuiCol_Tab] = myVar.colButton;
+	style.Colors[ImGuiCol_TabHovered] = myVar.colButtonHover;
+	style.Colors[ImGuiCol_TabActive] = myVar.colButtonPress;
 
 	ImGuiIO& io = ImGui::GetIO();
 

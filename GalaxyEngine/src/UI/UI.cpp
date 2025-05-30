@@ -245,7 +245,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				myParam.colorVisuals.pColor.a = originalPColor.a;
 			}
 
-			if (ImGui::ColorPicker4("Primary Colors", (float*)&imguiPColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
+			if (ImGui::ColorPicker4("Primary Col.", (float*)&imguiPColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
 				primaryColors = rlImGuiColors::Convert(imguiPColor);
 				myParam.colorVisuals.pColor.r = primaryColors.r;
 				myParam.colorVisuals.pColor.g = primaryColors.g;
@@ -269,7 +269,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				myParam.colorVisuals.sColor.a = originalSColor.a;
 			}
 
-			if (ImGui::ColorPicker4("Secondary Colors", (float*)&imguiSColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
+			if (ImGui::ColorPicker4("Secondary Col.", (float*)&imguiSColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
 				secondaryColors = rlImGuiColors::Convert(imguiSColor);
 				myParam.colorVisuals.sColor.r = secondaryColors.r;
 				myParam.colorVisuals.sColor.g = secondaryColors.g;
@@ -402,24 +402,12 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				settingsParams("Clean Scene After Recording", "Clears all particles from the scene after recording is finished", myVar.cleanSceneAfterRecording)
 			};
 
+
 			float oldSpacingY = ImGui::GetStyle().ItemSpacing.y;
 			ImGui::GetStyle().ItemSpacing.y = 5.0f; // Set the spacing only for the recording settings buttons
 
-			for (size_t i = 0; i < recordingButtonsParams.size(); i++) {
-				ImGui::SetCursorPosX(ImGui::GetWindowContentRegionMin().x);
-
-				bool& current = recordingButtonsParams[i].parameter;
-				const std::string& label = recordingButtonsParams[i].text;
-				const std::string& tooltip = recordingButtonsParams[i].tooltip;
-
-				if (ImGui::Button(label.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, settingsButtonY))) {
-					current = !current;
-				}
-
-				if (ImGui::IsItemHovered()) {
-					ImGui::SetTooltip("%s", tooltip.c_str());
-				}
-			}
+			buttonHelper("Pause After Recording", "Pauses the simulation after recording is finished", myVar.pauseAfterRecording, -1.0f, settingsButtonY, true, enabled);
+			buttonHelper("Clean Scene After Recording", "Clears all particles from the scene after recording is finished", myVar.cleanSceneAfterRecording, -1.0f, settingsButtonY, true, enabled);
 
 			ImGui::Separator(); // Add a separator
 
@@ -429,7 +417,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				ImGui::SetTooltip("Set a time limit for the recording. 0 means no limit.");
 			}
 			if (myVar.isRecording) { // Check if recording is active
-				ImGui::BeginDisabled(true); // Disable the slider
+				ImGui::BeginDisabled(); // Disable the slider
 			}
 			ImGui::SliderFloat("##RecordingTimeLimit", &myVar.recordingTimeLimit, 0.0f, 60.0f, "%.1f s");
 			if (myVar.isRecording) { // If recording was active
@@ -744,17 +732,34 @@ void UI::plotLinesHelper(const float& timeFactor, std::string label,
 		ordered_x[i] = static_cast<float>(i);
 	}
 
+
+
 	if (ImPlot::BeginPlot(label.c_str(), size, ImPlotFlags_NoInputs)) {
 
 		ImPlot::SetupAxis(ImAxis_Y1, nullptr, ImPlotAxisFlags_AutoFit);
 
+		ImPlot::PushStyleColor(ImPlotCol_Line, UpdateVariables::colPlotLine);
+		ImPlot::PushStyleColor(ImPlotCol_AxisText, UpdateVariables::colAxisText);
+		ImPlot::PushStyleColor(ImPlotCol_AxisGrid, UpdateVariables::colAxisGrid);
+		ImPlot::PushStyleColor(ImPlotCol_AxisBg, UpdateVariables::colAxisBg);
+		ImPlot::PushStyleColor(ImPlotCol_FrameBg, UpdateVariables::colFrameBg);
+		ImPlot::PushStyleColor(ImPlotCol_PlotBg, UpdateVariables::colPlotBg);
+		ImPlot::PushStyleColor(ImPlotCol_PlotBorder, UpdateVariables::colPlotBorder);
+		ImPlot::PushStyleColor(ImPlotCol_LegendBg, UpdateVariables::colLegendBg);
+
 		ImPlot::PlotLine(label.c_str(), ordered_x.data(), ordered_values.data(), length);
+
+		ImPlot::PopStyleColor(8);
 
 		ImPlot::EndPlot();
 	}
 }
 
 bool UI::buttonHelper(std::string label, std::string tooltip, bool& parameter, float sizeX, float sizeY, bool canSelfDeactivate, bool& isEnabled) {
+
+	if (!isEnabled) {
+		ImGui::BeginDisabled();
+	}
 
 	bool pushedColor = false;
 	if (parameter) {
@@ -764,23 +769,19 @@ bool UI::buttonHelper(std::string label, std::string tooltip, bool& parameter, f
 		pushedColor = true;
 	}
 
-	if (!isEnabled) {
-		ImGui::BeginDisabled();
-	}
-
-	bool test = false;
+	bool hasBeenPressed = false;
 
 	// Set the passed value to -1.0f if you want the button size to be as big as the window
 	if (sizeX > 0.0f && sizeY > 0.0f) {
 		if (ImGui::Button(label.c_str(), ImVec2(sizeX, sizeY))) {
 			if (canSelfDeactivate) {
 				parameter = !parameter;
-				test = true;
+				hasBeenPressed = true;
 			}
 			else {
 				if (!parameter) {
 					parameter = true;
-					test = true;
+					hasBeenPressed = true;
 				}
 			}
 		}
@@ -789,12 +790,12 @@ bool UI::buttonHelper(std::string label, std::string tooltip, bool& parameter, f
 		if (ImGui::Button(label.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, sizeY))) {
 			if (canSelfDeactivate) {
 				parameter = !parameter;
-				test = true;
+				hasBeenPressed = true;
 			}
 			else {
 				if (!parameter) {
 					parameter = true;
-					test = true;
+					hasBeenPressed = true;
 				}
 			}
 		}
@@ -803,12 +804,12 @@ bool UI::buttonHelper(std::string label, std::string tooltip, bool& parameter, f
 		if (ImGui::Button(label.c_str(), ImVec2(sizeX, ImGui::GetContentRegionAvail().y))) {
 			if (canSelfDeactivate) {
 				parameter = !parameter;
-				test = true;
+				hasBeenPressed = true;
 			}
 			else {
 				if (!parameter) {
 					parameter = true;
-					test = true;
+					hasBeenPressed = true;
 				}
 			}
 		}
@@ -817,19 +818,15 @@ bool UI::buttonHelper(std::string label, std::string tooltip, bool& parameter, f
 		if (ImGui::Button(label.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y))) {
 			if (canSelfDeactivate) {
 				parameter = !parameter;
-				test = true;
+				hasBeenPressed = true;
 			}
 			else {
 				if (!parameter) {
 					parameter = true;
-					test = true;
+					hasBeenPressed = true;
 				}
 			}
 		}
-	}
-
-	if (!isEnabled) {
-		ImGui::EndDisabled();
 	}
 
 	if (pushedColor) {
@@ -840,6 +837,9 @@ bool UI::buttonHelper(std::string label, std::string tooltip, bool& parameter, f
 		ImGui::SetTooltip("%s", tooltip.c_str());
 	}
 
+	if (!isEnabled) {
+		ImGui::EndDisabled();
+	}
 
-	return test;
+	return hasBeenPressed;
 }

@@ -11,7 +11,7 @@
 Quadtree::Quadtree(glm::vec2 pos, float size,
 	size_t startIndex, size_t endIndex,
 	const std::vector<ParticlePhysics>& pParticles, const std::vector<ParticleRendering>& rParticles,
-	Quadtree* parent = nullptr, size_t nodeIdx = 0) {
+	Quadtree* parent = nullptr) {
 
 	this->pos = pos;
 	this->size = size;
@@ -80,7 +80,7 @@ void Quadtree::subGridMaker(std::vector<ParticlePhysics>& pParticles, std::vecto
 			subGrids.emplace_back(std::make_unique<Quadtree>(
 				newPos, size * 0.5f,
 				boundaries[q], boundaries[q + 1],
-				pParticles, rParticles, this, 0
+				pParticles, rParticles, this
 			));
 		}
 	}

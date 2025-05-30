@@ -45,8 +45,7 @@ struct ColorVisuals {
 
 	glm::vec2 prevVel = { 0.0f, 0.0f };
 
-	void particlesColorVisuals(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles,
-		float& particleSizeMultiplier, float& particleTextureHalfSize, float& pressureDelta) {
+	void particlesColorVisuals(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles) {
 
 		if (solidColor) {
 			for (size_t i = 0; i < pParticles.size(); i++) {
@@ -80,7 +79,6 @@ struct ColorVisuals {
 
 				Color highDensityColor = rParticles[i].sColor;
 
-				const ParticlePhysics pParticle = pParticles[i];
 				float normalDensity = std::min(static_cast<float>(rParticles[i].neighbors) * invMaxNeighbors, 1.0f);
 				rParticles[i].color = ColorLerp(lowDensityColor, highDensityColor, normalDensity);
 			}

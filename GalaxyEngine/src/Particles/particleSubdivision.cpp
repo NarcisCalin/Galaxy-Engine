@@ -10,8 +10,8 @@ void ParticleSubdivision::subdivideParticles(UpdateVariables& myVar, UpdateParam
 		}
 		if (myParam.pParticles.size() >= particlesThreshold) {
 
-			float screenW = GetScreenWidth();
-			float screenH = GetScreenHeight();
+			float screenW = static_cast<float>(GetScreenWidth());
+			float screenH = static_cast<float>(GetScreenHeight());
 
 			ImVec2 subdivisionMenuSize = { 550.0f, 150.0f };
 			
@@ -36,9 +36,13 @@ void ParticleSubdivision::subdivideParticles(UpdateVariables& myVar, UpdateParam
 				confirmState = !confirmState;
 			}
 
+			ImGui::PushStyleColor(ImGuiCol_Button, UpdateVariables::colButtonRedActive);
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, UpdateVariables::colButtonRedActiveHover);
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, UpdateVariables::colButtonRedActivePress);
 			if (ImGui::Button("Quit", ImVec2(ImGui::GetContentRegionAvail().x, 40.0f))) {
 				quitState = !quitState;
 			}
+			ImGui::PopStyleColor(3);
 
 			ImGui::PopFont();
 

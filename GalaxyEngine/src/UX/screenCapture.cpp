@@ -1,5 +1,6 @@
 #include "../../include/UX/screenCapture.h"
 #include "../../include/parameters.h"
+#include "../../include/UI/UI.h"
 #include <algorithm>  // for std::max
 #include <chrono>     // for std::chrono::high_resolution_clock
 #include <cmath>      // for std::round
@@ -662,10 +663,16 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture,
 				ImGui::SetTooltip("Stop recording and save the video file");
 			}
 
+			ImGui::PushStyleColor(ImGuiCol_Button, UpdateVariables::colButtonRedActive);
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, UpdateVariables::colButtonRedActiveHover);
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, UpdateVariables::colButtonRedActivePress);
+
 			if (ImGui::Button("Cancel Recording",
 				ImVec2(ImGui::GetContentRegionAvail().x, 40.0f))) {
 				cancelRecording = true;
 			}
+
+			ImGui::PopStyleColor(3);
 
 			if (ImGui::IsItemHovered()) {
 				ImGui::SetTooltip("Stop recording and discard "
@@ -674,8 +681,6 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture,
 		}
 		if (myFrames.size() > 0 && !isFunctionRecording && !isSafeFramesEnabled &&
 			isExportFramesEnabled && videoHasBeenSaved) {
-
-			ImVec4 exportCol;
 
 			// Show different text based on export status
 			// Note: Not Working, the exporting blocks the UI
@@ -721,10 +726,15 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture,
 					ImGui::GetStyle().Alpha * 0.5f);
 			}
 
+			ImGui::PushStyleColor(ImGuiCol_Button, UpdateVariables::colButtonRedActive);
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, UpdateVariables::colButtonRedActiveHover);
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, UpdateVariables::colButtonRedActivePress);
+
 			bool discardButtonClicked =
 				ImGui::Button(discardButtonText.c_str(),
 					ImVec2(ImGui::GetContentRegionAvail().x, 40.0f));
 
+		ImGui::PopStyleColor(3);
 			if (isExportingFrames) {
 				ImGui::PopStyleVar();
 			}
@@ -1164,6 +1174,9 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture,
 
 		ImGui::SameLine();
 
+		ImGui::PushStyleColor(ImGuiCol_Button, UpdateVariables::colButtonRedActive);
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, UpdateVariables::colButtonRedActiveHover);
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, UpdateVariables::colButtonRedActivePress);
 		if (ImGui::Button("Discard", ImVec2(100, 30))) {
 			if (!isFunctionRecording) {
 				// Use the centralized discard function for comprehensive cleanup
@@ -1201,6 +1214,8 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture,
 			this->folderName.clear();      videoHasBeenSaved = false;
 			isFunctionRecording = false;
 		}
+		ImGui::PopStyleColor(3);
+
 		ImGui::PopFont();
 		ImGui::End();
 	}

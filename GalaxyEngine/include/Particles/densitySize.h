@@ -37,8 +37,6 @@ struct DensitySize {
 
 		if (isDensitySizeEnabled) {
 
-			float densityRadiusSq = 4.5f * 4.5f;
-
 			std::vector<int> neighborCounts(pParticles.size(), 0);
 #pragma omp parallel for schedule(dynamic)
 			for (size_t i = 0; i < pParticles.size(); i++) {

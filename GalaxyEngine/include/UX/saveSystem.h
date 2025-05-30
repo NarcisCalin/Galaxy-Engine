@@ -307,8 +307,6 @@ public:
 				}
 			);
 
-			float filesAmount = static_cast<float>(files.size());
-
 			ImGui::SetNextWindowSize(loadMenuSize, ImGuiCond_Once);
 			ImGui::SetNextWindowPos(ImVec2(static_cast<float>(GetScreenWidth()) * 0.5f - loadMenuSize.x * 0.5f, 450.0f), ImGuiCond_Once);
 			ImGui::Begin("Files");
@@ -332,8 +330,6 @@ private:
 
 	ImVec2 loadMenuSize = { 600.0f, 500.0f };
 	float buttonHeight = 30.0f;
-
-	float buttonsGap = 5.0f;
 
 	std::vector<std::string> filePaths;
 

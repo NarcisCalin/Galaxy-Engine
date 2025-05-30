@@ -20,8 +20,8 @@ Slingshot Slingshot::particleSlingshot(bool &isDragging, SceneCamera myCamera) {
 
 	glm::vec2 mouseWorldPos = glm::vec2(GetScreenToWorld2D(GetMousePosition(), myCamera.camera).x, GetScreenToWorld2D(GetMousePosition(), myCamera.camera).y);
 
-	if (IsMouseButtonPressed(0) && !IsKeyDown(KEY_LEFT_CONTROL) && 
-		!IsKeyDown(KEY_LEFT_ALT) || 
+	if ((IsMouseButtonPressed(0) && !IsKeyDown(KEY_LEFT_CONTROL) && 
+		!IsKeyDown(KEY_LEFT_ALT)) || 
 		IO::handleShortcut(KEY_ONE) ||
 		IO::handleShortcut(KEY_TWO) || 
 		IO::handleShortcut(KEY_THREE) ||

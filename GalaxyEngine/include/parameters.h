@@ -121,6 +121,7 @@ struct UpdateVariables{
 
 	static ImVec4 colWindowBg;
 
+	//ImGui style colors
 	static ImVec4 colButton;
 	static ImVec4 colButtonHover;
 	static ImVec4 colButtonPress;
@@ -128,6 +129,27 @@ struct UpdateVariables{
 	static ImVec4 colButtonActive;
 	static ImVec4 colButtonActiveHover;
 	static ImVec4 colButtonActivePress;
+
+	static ImVec4 colButtonRedActive;
+	static ImVec4 colButtonRedActiveHover;
+	static ImVec4 colButtonRedActivePress;
+
+	// ImGui slider colors
+	static ImVec4 colSliderGrab;
+	static ImVec4 colSliderGrabActive;
+	static ImVec4 colSliderBg;
+	static ImVec4 colSliderBgHover;
+	static ImVec4 colSliderBgActive;
+
+	// ImPlot style colors
+	static ImVec4 colPlotLine;
+	static ImVec4 colAxisText;
+	static ImVec4 colAxisGrid;
+	static ImVec4 colAxisBg;
+	static ImVec4 colFrameBg;
+	static ImVec4 colPlotBg;
+	static ImVec4 colPlotBorder;
+	static ImVec4 colLegendBg;
 
 	bool isRecording = false;
 

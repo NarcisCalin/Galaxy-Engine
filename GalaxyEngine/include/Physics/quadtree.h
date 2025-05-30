@@ -20,13 +20,13 @@ struct Quadtree {
 
     size_t nodeIdx;
 
-    int maxLeafParticles = 1;
+    size_t maxLeafParticles = 1;
     float minLeafSize = 1.0f;
 
 	Quadtree(glm::vec2 pos, float size,
         size_t startIndex, size_t endIndex,
 		const std::vector<ParticlePhysics>& pParticles, const std::vector<ParticleRendering>& rParticles,
-		Quadtree* parent, size_t nodeIdx);
+		Quadtree* parent);
 
 	void subGridMaker(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles);
 
