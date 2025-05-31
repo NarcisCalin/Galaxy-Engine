@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../external/glm/glm/glm.hpp"
-#include "raylib/raylib.h"
+#include <glm/glm.hpp>
+#include <raylib.h>
 #include <vector>
 #include "Particles/particle.h"
 #include "UX/screenCapture.h"
@@ -16,9 +16,9 @@
 #include "UI/controls.h"
 #include "Particles/particlesSpawning.h"
 #include "Particles/neighborSearch.h"
-#include "../external/imgui/imgui.h"
-#include "../external/imgui/rlImGui.h"
-#include "../external/imgui/rlImGuiColors.h"
+#include <imgui.h>
+#include <rlImGui.h>
+#include <rlImGuiColors.h>
 
 
 struct UpdateParameters {

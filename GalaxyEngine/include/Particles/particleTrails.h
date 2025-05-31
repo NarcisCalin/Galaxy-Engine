@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../../external/glm/glm/glm.hpp"
+#include <glm/glm.hpp>
 #include <iostream>
 #include <vector>
-#include "../raylib/raylib.h"
+#include <raylib.h>
 #include "particle.h"
 
 struct UpdateVariables;

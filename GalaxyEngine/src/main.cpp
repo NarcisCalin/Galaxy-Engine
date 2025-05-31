@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <bitset>
 
-#include "../external/glm/glm/glm.hpp"
+#include "glm/glm.hpp"
 #include "../include/Particles/particle.h"
 #include "../include/Physics/quadtree.h"
 #include "../include/Physics/slingshot.h"
@@ -15,9 +15,9 @@
 #include "../include/UX/screenCapture.h"
 #include "../include/Physics/morton.h"
 #include "../include/UX/camera.h"
-#include "../include/raylib/raylib.h"
-#include "../include/raylib/rlgl.h"
-#include "../include/raylib/raymath.h"
+#include <raylib.h>
+#include <rlgl.h>
+#include <raymath.h>
 #include "../include/UI/brush.h"
 #include "../include/Particles/particleSelection.h"
 #include "../include/Particles/particleSubdivision.h"
@@ -34,9 +34,9 @@
 #include "../include/Particles/particleSpaceship.h"
 #include "../include/Physics/SPH.h"
 #include "../include/UX/saveSystem.h"
-#include "../external/imgui/imgui.h"
-#include "../external/imgui/implot.h"
-#include "../external/imgui/rlImGui.h"
+#include <imgui.h>
+#include <implot.h>
+#include <rlImGui.h>
 
 
 UpdateParameters myParam;

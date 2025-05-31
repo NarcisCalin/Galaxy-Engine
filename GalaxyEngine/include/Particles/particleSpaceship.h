@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../../external/glm/glm/glm.hpp"
-#include "../raylib/raylib.h"
+#include <glm/glm.hpp>
+#include <raylib.h>
 #include "particle.h"
 #include "../../include/Physics/materialsSPH.h"
 #include <vector>

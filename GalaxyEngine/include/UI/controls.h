@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../raylib/raylib.h"
-#include "../../external/glm/glm/glm.hpp"
-#include "../../external/imgui/imgui.h"
-#include "../../external/imgui/rlImGui.h"
+#include <raylib.h>
+#include <glm/glm.hpp>
+#include <imgui.h>
+#include <rlImGui.h>
 #include <array>
 #include <string>
 #include <algorithm>

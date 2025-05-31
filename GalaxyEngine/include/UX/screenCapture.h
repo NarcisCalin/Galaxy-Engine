@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../../external/imgui/imgui.h"
-#include "../../external/imgui/rlImGui.h"
-#include "../raylib/raylib.h"
+#include <imgui.h>
+#include <rlImGui.h>
+#include <raylib.h>
 #include <string>
 #include <vector>
 

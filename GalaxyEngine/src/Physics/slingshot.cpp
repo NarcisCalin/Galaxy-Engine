@@ -1,5 +1,5 @@
 #include "../../include/Physics/slingshot.h"
-#include "../../include/raylib/raylib.h"
+#include <raylib.h>
 #include "../../include/IO/io.h"
 #include <cmath>
 

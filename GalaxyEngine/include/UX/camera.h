@@ -2,10 +2,10 @@
 
 #include <iostream>
 #include <vector>
-#include "../../external/glm/glm/glm.hpp"
-#include "../raylib/raylib.h"
-#include "../raylib/rlgl.h"
-#include "../raylib/raymath.h"
+#include <glm/glm.hpp>
+#include <raylib.h>
+#include <rlgl.h>
+#include <raymath.h>
 #include "../Particles/particle.h"
 #include "../Particles/particleTrails.h"
 

@@ -1,11 +1,11 @@
 #pragma once
-#include "../../external/glm/glm/glm.hpp"
-#include "../raylib/raylib.h"
+#include <glm/glm.hpp>
+#include <raylib.h>
 #include "../Particles/particle.h"
 #include "../parameters.h"
 #include "../Physics/SPH.h"
-#include "../../external/imgui/imgui.h"
-#include "../../external/imgui/rlImGui.h"
+#include <imgui.h>
+#include <rlImGui.h>
 #include <vector>
 #include <fstream>
 #include <sstream>

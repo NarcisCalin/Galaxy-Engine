@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <vector>
-#include "../../external/glm/glm/glm.hpp"
+#include <glm/glm.hpp>
 #include "../Particles/particle.h"
 
 struct Morton {
