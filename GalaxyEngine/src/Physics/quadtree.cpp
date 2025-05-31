@@ -1,12 +1,6 @@
-#include "../../include/raylib/raylib.h"
-#include <vector>
-#include <iostream>
-#include <algorithm>
-#include <limits>
-#include "../../include/Physics/quadtree.h"
-#include "../../include/Particles/particle.h"
-#include "omp.h"
+#include "Particles/particle.h"
 
+#include "Physics/quadtree.h"
 
 Quadtree::Quadtree(glm::vec2 pos, float size,
 	size_t startIndex, size_t endIndex,

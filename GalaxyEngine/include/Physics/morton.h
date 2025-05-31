@@ -1,8 +1,6 @@
 #pragma once
-#include <cstdint>
-#include <vector>
-#include "../../external/glm/glm/glm.hpp"
-#include "../Particles/particle.h"
+
+#include "Particles/particle.h"
 
 struct Morton {
 	uint32_t scaleToGrid(float pos, float minVal, float maxVal = 1023);

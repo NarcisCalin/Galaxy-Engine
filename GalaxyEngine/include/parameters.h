@@ -1,25 +1,21 @@
 #pragma once
 
-#include "../external/glm/glm/glm.hpp"
-#include "raylib/raylib.h"
-#include <vector>
 #include "Particles/particle.h"
-#include "UX/screenCapture.h"
-#include "Physics/morton.h"
-#include "Particles/particleTrails.h"
-#include "Particles/particleSelection.h"
-#include "UI/brush.h"
 #include "Particles/particleSubdivision.h"
 #include "Particles/densitySize.h"
 #include "Particles/particleColorVisuals.h"
-#include "UI/rightClickSettings.h"
-#include "UI/controls.h"
+#include "Particles/particleTrails.h"
+#include "Particles/particleSelection.h"
 #include "Particles/particlesSpawning.h"
 #include "Particles/neighborSearch.h"
-#include "../external/imgui/imgui.h"
-#include "../external/imgui/rlImGui.h"
-#include "../external/imgui/rlImGuiColors.h"
 
+#include "Physics/morton.h"
+
+#include "UI/brush.h"
+#include "UI/rightClickSettings.h"
+#include "UI/controls.h"
+
+#include "UX/screenCapture.h"
 
 struct UpdateParameters {
 	std::vector<ParticlePhysics> pParticles;

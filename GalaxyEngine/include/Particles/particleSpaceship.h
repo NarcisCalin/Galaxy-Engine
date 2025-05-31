@@ -1,10 +1,7 @@
 #pragma once
 
-#include "../../external/glm/glm/glm.hpp"
-#include "../raylib/raylib.h"
-#include "particle.h"
-#include "../../include/Physics/materialsSPH.h"
-#include <vector>
+#include "Particles/particle.h"
+#include "Physics/materialsSPH.h"
 
 class ParticleSpaceship {
 public:

@@ -1,43 +1,30 @@
-#include <iostream>
-#include <vector>
-#include <cmath>
-#include <array>
-#include <omp.h>
-#include <thread>
-#include <algorithm>
-#include <bitset>
+#include "Particles/particle.h"
+#include "Particles/particleTrails.h"
+#include "Particles/particleSelection.h"
+#include "Particles/particleSubdivision.h"
+#include "Particles/densitySize.h"
+#include "Particles/particleColorVisuals.h"
+#include "Particles/particleDeletion.h"
+#include "Particles/particlesSpawning.h"
+#include "Particles/particleSpaceship.h"
 
-#include "../external/glm/glm/glm.hpp"
-#include "../include/Particles/particle.h"
-#include "../include/Physics/quadtree.h"
-#include "../include/Physics/slingshot.h"
-#include "../include/Particles/particleTrails.h"
-#include "../include/UX/screenCapture.h"
-#include "../include/Physics/morton.h"
-#include "../include/UX/camera.h"
-#include "../include/raylib/raylib.h"
-#include "../include/raylib/rlgl.h"
-#include "../include/raylib/raymath.h"
-#include "../include/UI/brush.h"
-#include "../include/Particles/particleSelection.h"
-#include "../include/Particles/particleSubdivision.h"
-#include "../include/Particles/densitySize.h"
-#include "../include/Particles/particleColorVisuals.h"
-#include "../include/UI/rightClickSettings.h"
-#include "../include/UI/controls.h"
-#include "../include/Particles/particleDeletion.h"
-#include "../include/Particles/particlesSpawning.h"
-#include "../include/UI/UI.h"
-#include "../include/Physics/physics.h"
-#include "../include/Physics/collisionGrid.h"
-#include "../include/parameters.h"
-#include "../include/Particles/particleSpaceship.h"
-#include "../include/Physics/SPH.h"
-#include "../include/UX/saveSystem.h"
-#include "../external/imgui/imgui.h"
-#include "../external/imgui/implot.h"
-#include "../external/imgui/rlImGui.h"
+#include "Physics/quadtree.h"
+#include "Physics/slingshot.h"
+#include "Physics/morton.h"
+#include "Physics/physics.h"
+#include "Physics/collisionGrid.h"
+#include "Physics/SPH.h"
 
+#include "UI/brush.h"
+#include "UI/rightClickSettings.h"
+#include "UI/controls.h"
+#include "UI/UI.h"
+
+#include "UX/screenCapture.h"
+#include "UX/camera.h"
+#include "UX/saveSystem.h"
+
+#include "parameters.h"
 
 UpdateParameters myParam;
 UpdateVariables myVar;
@@ -353,8 +340,7 @@ void fullscreenToggle(int& lastScreenWidth, int& lastScreenHeight,
 	}
 }
 
-int main() {
-
+int main(int argc, char** argv) {
 	SetConfigFlags(FLAG_MSAA_4X_HINT);
 
 	SetConfigFlags(FLAG_WINDOW_RESIZABLE);

@@ -1,7 +1,6 @@
-#include "../../include/Physics/slingshot.h"
-#include "../../include/raylib/raylib.h"
-#include "../../include/IO/io.h"
-#include <cmath>
+#include "IO/io.h"
+
+#include "Physics/slingshot.h"
 
 glm::vec2 slingshotPos = { 0, 0 };
 
@@ -9,7 +8,6 @@ Slingshot::Slingshot(glm::vec2 norm, float length) {
 	this->norm = norm;
 	this->length = length;
 }
-
 
 
 Slingshot Slingshot::particleSlingshot(bool &isDragging, SceneCamera myCamera) {

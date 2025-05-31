@@ -1,11 +1,5 @@
 #pragma once
 
-#include "../../external/imgui/imgui.h"
-#include "../../external/imgui/rlImGui.h"
-#include "../raylib/raylib.h"
-#include <string>
-#include <vector>
-
 struct AVFormatContext;
 struct AVCodecContext;
 struct AVStream;

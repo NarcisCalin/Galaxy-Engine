@@ -1,5 +1,4 @@
-#include "../../include/Physics/physics.h"
-#include "omp.h"
+#include "Physics/physics.h"
 
 glm::vec2 Physics::calculateForceFromGrid(const Quadtree& grid, std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar, ParticlePhysics& pParticle) {
 	glm::vec2 totalForce = { 0.0f, 0.0f };

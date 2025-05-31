@@ -1,13 +1,5 @@
 #pragma once
 
-#include "../raylib/raylib.h"
-#include "../../external/glm/glm/glm.hpp"
-#include "../../external/imgui/imgui.h"
-#include "../../external/imgui/rlImGui.h"
-#include <array>
-#include <string>
-#include <algorithm>
-
 struct UpdateVariables;
 
 struct Controls {

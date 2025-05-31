@@ -1,59 +1,17 @@
-#include "../../include/UX/screenCapture.h"
-#include "../../include/parameters.h"
-#include "../../include/UI/UI.h"
-#include <algorithm>  // for std::max
-#include <chrono>     // for std::chrono::high_resolution_clock
-#include <cmath>      // for std::round
-#include <cstdio>     // for std::printf
-#include <cstring>    // for std::strlen
-#include <filesystem> // for std::filesystem::exists
-#include <regex>      // for std::regex
-#include <sstream>    // for std::stringstream
-#include <string>     // for std::string
-#include <vector>     // for std::vector
+#include "UI/UI.h"
 
-#ifdef _WIN32
-#define NOMINMAX
-#define WIN32_LEAN_AND_MEAN
-#define NOGDI
-#define NOUSER
-#include <fcntl.h>
-#include <io.h>
+#include "UX/screenCapture.h"
 
-// WINDOWS.H must be included before psapi.h to avoid redefinition errors
-// this is IMPERATIVE for Windows builds and should not be reordered or removed
-#include <windows.h> // for Windows API functions
-#include <psapi.h>   // for GetProcessMemoryInfo
-
-#define popen _popen
-#define pclose _pclose
-#define MODE_BINARY _O_BINARY
-#else
-#include <unistd.h>
-#define MODE_BINARY 0
-#endif
-
-#ifdef _WIN32
-
-extern "C" {
-#include "../../external/ffmpeg/include/libavcodec/avcodec.h"
-#include "../../external/ffmpeg/include/libavformat/avformat.h"
-#include "../../external/ffmpeg/include/libavutil/avutil.h"
-#include "../../external/ffmpeg/include/libavutil/imgutils.h"
-#include "../../external/ffmpeg/include/libavutil/opt.h"
-#include "../../external/ffmpeg/include/libswscale/swscale.h"
-}
-#else
+#include "parameters.h"
 
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
-#include <libavutil/frame.h>
+#include <libavutil/avutil.h>
 #include <libavutil/imgutils.h>
 #include <libavutil/opt.h>
 #include <libswscale/swscale.h>
 }
-#endif
 
 void ScreenCapture::cleanupFFmpeg() {
 	if (pCodecCtx) {
