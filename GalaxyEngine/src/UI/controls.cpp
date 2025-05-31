@@ -1,5 +1,6 @@
-#include "../../include/UI/controls.h"
-#include "../../include/parameters.h"
+#include "UI/controls.h"
+
+#include "parameters.h"
 
 void Controls::showControls() {
     if (isShowControlsEnabled) {

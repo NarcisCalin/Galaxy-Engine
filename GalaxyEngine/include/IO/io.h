@@ -1,8 +1,5 @@
 #pragma once
 
-#include "../raylib/raylib.h"
-#include "../../external/imgui/imgui.h"
-
 // Input/Output utility functions
 namespace IO {
     

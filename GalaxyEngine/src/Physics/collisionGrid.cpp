@@ -1,7 +1,6 @@
-#include "../../include/Physics/collisionGrid.h"
-#include "../../include/parameters.h"
-#include "omp.h"
-#include <mutex>
+#include "Physics/collisionGrid.h"
+
+#include "parameters.h"
 
 void CollisionGrid::buildGrid(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles,
 	Physics& physics, UpdateVariables& myVar, glm::vec2& gridSize, float& dt) {

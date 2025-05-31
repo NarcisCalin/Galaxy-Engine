@@ -1,13 +1,8 @@
 #pragma once
-#include "../../external/glm/glm/glm.hpp"
-#include "../raylib/raylib.h"
-#include "../Particles/particle.h"
-#include "../parameters.h"
-#include "raymath.h"
-#include <vector>
-#include <cmath>
-#include <unordered_map>
-#include <algorithm>
+
+#include "Particles/particle.h"
+
+#include "parameters.h"
 
 struct UpdateVariables;
 struct UpdateVariables;

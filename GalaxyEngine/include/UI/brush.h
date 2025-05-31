@@ -1,11 +1,10 @@
 #pragma once
 
-#include <vector>
-#include "../../external/glm/glm/glm.hpp"
-#include "../raylib/raylib.h"
-#include "../Particles/particle.h"
-#include "../UX/camera.h"
-#include "../../include/Physics/materialsSPH.h"
+#include "Particles/particle.h"
+
+#include "Physics/materialsSPH.h"
+
+#include "UX/camera.h"
 
 struct UpdateVariables;
 struct UpdateParameters;

@@ -1,4 +1,4 @@
-#include "../../include/Physics/SPH.h"
+#include "Physics/SPH.h"
 
 void SPH::computeViscCohesionForces(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles,
 	std::vector<glm::vec2>& sphForce, size_t& N) {

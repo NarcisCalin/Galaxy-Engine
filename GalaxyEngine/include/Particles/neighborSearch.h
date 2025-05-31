@@ -1,13 +1,6 @@
 #pragma once
 
-#include "../../external/glm/glm/glm.hpp"
-#include "../raylib/raylib.h"
-#include "particle.h"
-#include "omp.h"
-#include <vector>
-#include <algorithm>
-#include <limits> 
-
+#include "Particles/particle.h"
 
 struct NeighborSearch {
 
@@ -62,7 +55,7 @@ struct NeighborSearch {
 		float maxY = std::numeric_limits<float>::lowest();
 
 #pragma omp parallel for reduction(min:minX,minY) reduction(max:maxX,maxY) schedule(static)
-		for (size_t idx = 0; idx < particlesToProcess.size(); idx++) {
+		for (int64_t idx = 0; idx < particlesToProcess.size(); idx++) {
 			const auto& pos = pParticles[particlesToProcess[idx]].pos;
 			minX = std::min(minX, pos.x);
 			minY = std::min(minY, pos.y);
@@ -95,7 +88,7 @@ struct NeighborSearch {
 		}
 
 #pragma omp parallel for schedule(dynamic)
-		for (size_t idx = 0; idx < particlesToProcess.size(); idx++) {
+		for (int64_t idx = 0; idx < particlesToProcess.size(); idx++) {
 			const size_t i = particlesToProcess[idx];
 			const auto& particle = pParticles[i];
 

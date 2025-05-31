@@ -3,6 +3,7 @@
 
 # Visual Studio settings
 .vs/
+CMakeSettings.json
 
 # Build directory
 build/
@@ -23,3 +24,5 @@ x64/
 .clang-format
 .scripts/
 .github/
+Saves/
+

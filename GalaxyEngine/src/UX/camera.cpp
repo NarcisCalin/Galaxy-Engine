@@ -1,9 +1,6 @@
-#include "../../include/UX/camera.h"
-#include <iostream>
-#include <algorithm>
-#include <limits>
-#include "../../include/parameters.h"
+#include "UX/camera.h"
 
+#include "parameters.h"
 
 SceneCamera::SceneCamera() {
 	camera.offset = { 0.0f, 0.0f };

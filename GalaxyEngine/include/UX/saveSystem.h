@@ -1,17 +1,10 @@
 #pragma once
-#include "../../external/glm/glm/glm.hpp"
-#include "../raylib/raylib.h"
-#include "../Particles/particle.h"
-#include "../parameters.h"
-#include "../Physics/SPH.h"
-#include "../../external/imgui/imgui.h"
-#include "../../external/imgui/rlImGui.h"
-#include <vector>
-#include <fstream>
-#include <sstream>
-#include <iostream>
-#include <string>
-#include <filesystem>
+
+#include "Particles/particle.h"
+
+#include "Physics/SPH.h"
+
+#include "parameters.h"
 
 inline std::ostream& operator<<(std::ostream& os, const Vector2& vec) {
 	return os << vec.x << " " << vec.y;

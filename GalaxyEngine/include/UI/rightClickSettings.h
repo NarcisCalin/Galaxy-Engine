@@ -1,18 +1,11 @@
 #pragma once
 
-#include "../../external/glm/glm/glm.hpp"
-#include <vector>
-#include <array>
-#include "../raylib/raylib.h"
-#include "../Particles/particle.h"
-#include "../Particles/particleSubdivision.h"
-#include "../Particles/particleSelection.h"
-#include "../UX/camera.h"
-#include "../Particles/particleDeletion.h"
-#include "../../external/imgui/imgui.h"
-#include "../../external/imgui/rlImGui.h"
-#include "../../external/imgui/rlImGuiColors.h"
-#include <algorithm>
+#include "Particles/particle.h"
+#include "Particles/particleSubdivision.h"
+#include "Particles/particleSelection.h"
+#include "Particles/particleDeletion.h"
+
+#include "UX/camera.h"
 
 struct UpdateVariables;
 struct UpdateParameters;

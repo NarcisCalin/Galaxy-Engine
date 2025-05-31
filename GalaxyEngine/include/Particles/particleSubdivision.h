@@ -1,9 +1,6 @@
 #pragma once
 
-#include "../../external/glm/glm/glm.hpp"
-#include <vector>
-#include "../raylib/raylib.h"
-#include "particle.h"
+#include "Particles/particle.h"
 
 struct UpdateVariables;
 struct UpdateParameters;

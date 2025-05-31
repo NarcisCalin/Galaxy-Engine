@@ -1,5 +1,6 @@
-#include "../../include/Particles/particleSelection.h"
-#include "../../include/parameters.h"
+#include "Particles/particleSelection.h"
+
+#include "parameters.h"
 
 ParticleSelection::ParticleSelection() {
 }

@@ -1,9 +1,9 @@
-#include "../../include/Particles/particlesSpawning.h"
-#include "../../include/Physics/physics.h"
-#include "../../include/Physics/quadtree.h"
-#include "../../include/parameters.h"
-#include <cmath>
+#include "Particles/particlesSpawning.h"
 
+#include "Physics/physics.h"
+#include "Physics/quadtree.h"
+
+#include "parameters.h"
 
 void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& physics, UpdateVariables& myVar, UpdateParameters& myParam) {
 

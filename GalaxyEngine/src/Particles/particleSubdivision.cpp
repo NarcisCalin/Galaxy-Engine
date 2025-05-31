@@ -1,5 +1,6 @@
-#include "../../include/Particles/particleSubdivision.h"
-#include "../../include/parameters.h"
+#include "Particles/particleSubdivision.h"
+
+#include "parameters.h"
 
 void ParticleSubdivision::subdivideParticles(UpdateVariables& myVar, UpdateParameters& myParam) {
 

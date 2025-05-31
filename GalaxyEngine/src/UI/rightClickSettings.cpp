@@ -1,6 +1,7 @@
-#include "../../include/UI/rightClickSettings.h"
-#include "../../include/parameters.h"
-#include "../../include/UI/UI.h"
+#include "UI/rightClickSettings.h"
+#include "UI/UI.h"
+
+#include "parameters.h"
 
 void RightClickSettings::rightClickMenuSpawnLogic(bool& isMouseNotHoveringUI,
 	bool& isSpawningAllowed, bool& isDragging, bool& selectedColor)

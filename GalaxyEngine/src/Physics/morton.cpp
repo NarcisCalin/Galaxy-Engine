@@ -1,6 +1,4 @@
-#include <algorithm>
-#include <iostream>
-#include "../../include/Physics/morton.h"
+#include "Physics/morton.h"
 
 uint32_t Morton::scaleToGrid(float pos, float minVal, float maxVal) {
     if (maxVal <= minVal) return 0;
