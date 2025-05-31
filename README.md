@@ -98,9 +98,8 @@ Result:
 ---
 
 ### Dependencies
-- [FFmpeg](https://ffmpeg.org/): On Windows, this is included with Galaxy Engine; on Linux you will need to either compile it yourself or install it with a package manager.
 - [CMake](https://cmake.org/): On Windows, you can install it from [their website](https://cmake.org/download/) or the [Chocolatey cmake package](https://community.chocolatey.org/packages/cmake), and on Linux you can install the `cmake` package with your package manager.
-- A C++ compiler: Any compiler is probably gonna work, but MSVC is known to have issues outside debug builds, and Clang is recommended as it's known to produce a faster binary than GCC for this project.
+- A C++ compiler: Any compiler is probably gonna work, but Clang is recommended as it's known to produce a faster binary than GCC for this project.
   - [Clang](https://clang.llvm.org/): On Linux, you may install the `clang` package from a package manager. On Windows, it can be installed from [their website](https://clang.llvm.org/get_started.html), the [Chocolatey llvm package](https://community.chocolatey.org/packages/llvm), or from the Visual Studio Installer: 
 
     ![image](https://github.com/user-attachments/assets/b46a0e7d-188e-43a3-bf7e-fb3edced233a)
@@ -109,7 +108,6 @@ Result:
 These instructions assume you have already met the above requirements.
 
 - Clone or download this repo
-- **Linux only:** Build FFmpeg for this project if you don't intend to install it. (If you intend to have your code under LGPL, you should build the LGPL version of FFmpeg)
 - Build the project with CMake
 - After doing this you should have the executable file inside the build folder
-- The last step is running the executable file from the same working directory as the "Textures" folder (otherwise the particles won't be visible). This applies to the "Shaders" folder as well
+- The last step is running the executable file from the same working directory as the "Textures" folder (otherwise the particles won't be visible). This applies to the "Shaders" and "fonts" folder as well
