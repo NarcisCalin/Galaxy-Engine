@@ -61,9 +61,9 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 
 				float scaleLength = 90.0f;
 
-				float normalizedRand = static_cast<float>(rand()) / RAND_MAX;
+				float normalizedRand = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 
-				float angle = static_cast<float>(rand()) / RAND_MAX * 2 * PI;
+				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 * PI;
 
 				float finalRadius = -scaleLength * log(1.0f - normalizedRand);
 
@@ -119,11 +119,11 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 					float outerRadius = 2000.0f;
 					float radiusCore = 3.5f;
 
-					float normalizedRand = static_cast<float>(rand()) / RAND_MAX;
+					float normalizedRand = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 
 					float radiusMultiplier = radiusCore * sqrt(static_cast<float>(pow(1 + pow(outerRadius / radiusCore, 2), normalizedRand) - 1));
 
-					float angle = static_cast<float>(rand()) / RAND_MAX * 2 * PI;
+					float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 * PI;
 
 					glm::vec2 pos = glm::vec2(galaxyCenter.x + radiusMultiplier * cos(angle), galaxyCenter.y + radiusMultiplier * sin(angle));
 
@@ -169,9 +169,9 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 
 				float scaleLength = 45.0f;
 
-				float normalizedRand = static_cast<float>(rand()) / RAND_MAX;
+				float normalizedRand = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 
-				float angle = static_cast<float>(rand()) / RAND_MAX * 2 * PI;
+				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 * PI;
 
 				float finalRadius = -scaleLength * log(1.0f - normalizedRand);
 
@@ -226,11 +226,11 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 					float outerRadius = 2000.0f;
 					float radiusCore = 3.5f;
 
-					float normalizedRand = static_cast<float>(rand()) / RAND_MAX;
+					float normalizedRand = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 
 					float radiusMultiplier = radiusCore * sqrt(static_cast<float>(pow(1 + pow(outerRadius / radiusCore, 2), normalizedRand) - 1));
 
-					float angle = static_cast<float>(rand()) / RAND_MAX * 2 * PI;
+					float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 * PI;
 
 					glm::vec2 pos = glm::vec2(galaxyCenter.x + radiusMultiplier * cos(angle), galaxyCenter.y + radiusMultiplier * sin(angle));
 

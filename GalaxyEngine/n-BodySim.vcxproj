@@ -110,10 +110,13 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>F:\Coding\GalaxyEngine\GalaxyEngine\external\ffmpeg\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>F:\Coding\GalaxyEngine\GalaxyEngine\external\ffmpeg\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>OpenCL.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -214,6 +217,7 @@
       <LinkCompiled>true</LinkCompiled>
       <AdditionalIncludeDirectories>;C:\Users\jeff3\vcpkg\installed\x64-windows\include</AdditionalIncludeDirectories>
       <FileType>CppCode</FileType>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">F:\Coding\GalaxyEngine\GalaxyEngine\external\ffmpeg\include</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="src\Particles\particleSelection.cpp">
       <RuntimeLibrary>MultiThreadedDebugDll</RuntimeLibrary>
@@ -290,6 +294,7 @@
       <SDLCheck>true</SDLCheck>
       <LinkCompiled>true</LinkCompiled>
       <AdditionalIncludeDirectories>;C:\Users\jeff3\vcpkg\installed\x64-windows\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">F:\Coding\GalaxyEngine\GalaxyEngine\external\ffmpeg\include</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="src\Particles\particlesSpawning.cpp">
       <RuntimeLibrary>MultiThreadedDebugDll</RuntimeLibrary>
@@ -366,6 +371,7 @@
       <SDLCheck>true</SDLCheck>
       <LinkCompiled>true</LinkCompiled>
       <AdditionalIncludeDirectories>;C:\Users\jeff3\vcpkg\installed\x64-windows\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">F:\Coding\GalaxyEngine\GalaxyEngine\external\ffmpeg\include</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="src\Particles\particleSubdivision.cpp">
       <RuntimeLibrary>MultiThreadedDebugDll</RuntimeLibrary>
@@ -442,6 +448,7 @@
       <SDLCheck>true</SDLCheck>
       <LinkCompiled>true</LinkCompiled>
       <AdditionalIncludeDirectories>;C:\Users\jeff3\vcpkg\installed\x64-windows\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">F:\Coding\GalaxyEngine\GalaxyEngine\external\ffmpeg\include</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="src\Particles\particleTrails.cpp">
       <RuntimeLibrary>MultiThreadedDebugDll</RuntimeLibrary>
@@ -518,8 +525,11 @@
       <SDLCheck>true</SDLCheck>
       <LinkCompiled>true</LinkCompiled>
       <AdditionalIncludeDirectories>;C:\Users\jeff3\vcpkg\installed\x64-windows\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">F:\Coding\GalaxyEngine\GalaxyEngine\external\ffmpeg\include</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClCompile Include="src\Physics\collisionGrid.cpp" />
+    <ClCompile Include="src\Physics\collisionGrid.cpp">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">F:\Coding\GalaxyEngine\GalaxyEngine\external\ffmpeg\include</AdditionalIncludeDirectories>
+    </ClCompile>
     <ClCompile Include="src\Physics\morton.cpp">
       <RuntimeLibrary>MultiThreadedDebugDll</RuntimeLibrary>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -595,6 +605,7 @@
       <SDLCheck>true</SDLCheck>
       <LinkCompiled>true</LinkCompiled>
       <AdditionalIncludeDirectories>;C:\Users\jeff3\vcpkg\installed\x64-windows\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">F:\Coding\GalaxyEngine\GalaxyEngine\external\ffmpeg\include</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="src\Physics\physics.cpp">
       <RuntimeLibrary>MultiThreadedDebugDll</RuntimeLibrary>
@@ -671,6 +682,7 @@
       <SDLCheck>true</SDLCheck>
       <LinkCompiled>true</LinkCompiled>
       <AdditionalIncludeDirectories>;C:\Users\jeff3\vcpkg\installed\x64-windows\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">F:\Coding\GalaxyEngine\GalaxyEngine\external\ffmpeg\include</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="src\Physics\quadtree.cpp">
       <RuntimeLibrary>MultiThreadedDebugDll</RuntimeLibrary>
@@ -747,6 +759,7 @@
       <SDLCheck>true</SDLCheck>
       <LinkCompiled>true</LinkCompiled>
       <AdditionalIncludeDirectories>;C:\Users\jeff3\vcpkg\installed\x64-windows\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">F:\Coding\GalaxyEngine\GalaxyEngine\external\ffmpeg\include</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="src\Physics\slingshot.cpp">
       <RuntimeLibrary>MultiThreadedDebugDll</RuntimeLibrary>
@@ -823,8 +836,11 @@
       <SDLCheck>true</SDLCheck>
       <LinkCompiled>true</LinkCompiled>
       <AdditionalIncludeDirectories>;C:\Users\jeff3\vcpkg\installed\x64-windows\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">F:\Coding\GalaxyEngine\GalaxyEngine\external\ffmpeg\include</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClCompile Include="src\Physics\SPH.cpp" />
+    <ClCompile Include="src\Physics\SPH.cpp">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">F:\Coding\GalaxyEngine\GalaxyEngine\external\ffmpeg\include</AdditionalIncludeDirectories>
+    </ClCompile>
     <ClCompile Include="src\UI\brush.cpp">
       <RuntimeLibrary>MultiThreadedDebugDll</RuntimeLibrary>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -900,6 +916,7 @@
       <SDLCheck>true</SDLCheck>
       <LinkCompiled>true</LinkCompiled>
       <AdditionalIncludeDirectories>;C:\Users\jeff3\vcpkg\installed\x64-windows\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">F:\Coding\GalaxyEngine\GalaxyEngine\external\ffmpeg\include</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="src\UI\controls.cpp">
       <RuntimeLibrary>MultiThreadedDebugDll</RuntimeLibrary>
@@ -976,6 +993,7 @@
       <SDLCheck>true</SDLCheck>
       <LinkCompiled>true</LinkCompiled>
       <AdditionalIncludeDirectories>;C:\Users\jeff3\vcpkg\installed\x64-windows\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">F:\Coding\GalaxyEngine\GalaxyEngine\external\ffmpeg\include</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="src\UI\rightClickSettings.cpp">
       <RuntimeLibrary>MultiThreadedDebugDll</RuntimeLibrary>
@@ -1052,6 +1070,7 @@
       <SDLCheck>true</SDLCheck>
       <LinkCompiled>true</LinkCompiled>
       <AdditionalIncludeDirectories>;C:\Users\jeff3\vcpkg\installed\x64-windows\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">F:\Coding\GalaxyEngine\GalaxyEngine\external\ffmpeg\include</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="src\UI\UI.cpp">
       <RuntimeLibrary>MultiThreadedDebugDll</RuntimeLibrary>
@@ -1128,6 +1147,7 @@
       <SDLCheck>true</SDLCheck>
       <LinkCompiled>true</LinkCompiled>
       <AdditionalIncludeDirectories>;C:\Users\jeff3\vcpkg\installed\x64-windows\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">F:\Coding\GalaxyEngine\GalaxyEngine\external\ffmpeg\include</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="src\UX\camera.cpp">
       <RuntimeLibrary>MultiThreadedDebugDll</RuntimeLibrary>
@@ -1204,6 +1224,7 @@
       <SDLCheck>true</SDLCheck>
       <LinkCompiled>true</LinkCompiled>
       <AdditionalIncludeDirectories>;C:\Users\jeff3\vcpkg\installed\x64-windows\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">F:\Coding\GalaxyEngine\GalaxyEngine\external\ffmpeg\include</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="src\UX\screenCapture.cpp">
       <RuntimeLibrary>MultiThreadedDebugDll</RuntimeLibrary>
@@ -1280,6 +1301,7 @@
       <SDLCheck>true</SDLCheck>
       <LinkCompiled>true</LinkCompiled>
       <AdditionalIncludeDirectories>;C:\Users\jeff3\vcpkg\installed\x64-windows\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">F:\Coding\GalaxyEngine\GalaxyEngine\external\ffmpeg\include</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

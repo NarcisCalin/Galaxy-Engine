@@ -258,19 +258,25 @@ void ScreenCapture::discardRecording() {
 }
 
 std::string ScreenCapture::generateVideoFilename() {
-
 	int maxNumberFound = 0;
-	std::regex videoFolderRegex(R"(Video_(\d+))");
+	const std::string prefix = "Video_";
 
 	if (std::filesystem::exists("Videos")) {
 		for (const auto& entry : std::filesystem::directory_iterator("Videos")) {
 			if (entry.is_directory()) {
 				std::string folderName = entry.path().filename().string();
-				std::smatch match;
-				if (std::regex_match(folderName, match, videoFolderRegex)) {
-					int number = std::stoi(match[1].str());
-					if (number > maxNumberFound) {
-						maxNumberFound = number;
+
+				if (folderName.compare(0, prefix.size(), prefix) == 0) {
+					const char* numberPart = folderName.c_str() + prefix.size();
+					char* endPtr = nullptr;
+
+					double value = std::strtod(numberPart, &endPtr);
+
+					if (endPtr != numberPart && *endPtr == '\0') {
+						int number = static_cast<int>(value);
+						if (number > maxNumberFound) {
+							maxNumberFound = number;
+						}
 					}
 				}
 			}
@@ -278,7 +284,7 @@ std::string ScreenCapture::generateVideoFilename() {
 	}
 
 	int nextAvailableNumber = maxNumberFound + 1;
-	std::string videoName = "Video_" + std::to_string(nextAvailableNumber);
+	std::string videoName = prefix + std::to_string(nextAvailableNumber);
 	return "Videos/" + videoName + "/" + videoName + ".mp4";
 }
 
@@ -734,7 +740,7 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture,
 				ImGui::Button(discardButtonText.c_str(),
 					ImVec2(ImGui::GetContentRegionAvail().x, 40.0f));
 
-		ImGui::PopStyleColor(3);
+			ImGui::PopStyleColor(3);
 			if (isExportingFrames) {
 				ImGui::PopStyleVar();
 			}
@@ -755,23 +761,6 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture,
 						"without saving");
 				}
 			}
-
-			// Show appropriate warning message
-			std::string warning;
-			if (isExportingFrames) {
-				warning = "EXPORT IN PROGRESS";
-			}
-			else {
-				warning = "EXPORT WILL CLEAR FRAMES";
-			}
-
-			float windowWidth = ImGui::GetWindowSize().x;
-			float textWidth = ImGui::CalcTextSize(warning.c_str()).x;
-
-			ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
-			ImVec4 warningColor = isExportingFrames ? ImVec4(0.0f, 0.8f, 0.2f, 1.0f)
-				: ImVec4(0.9f, 0.6f, 0.0f, 1.0f);
-			ImGui::TextColored(warningColor, "%s", warning.c_str());
 		}
 		ImGui::PopFont();
 		ImGui::End();
