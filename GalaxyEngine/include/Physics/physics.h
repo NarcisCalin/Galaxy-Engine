@@ -1,13 +1,10 @@
 #pragma once
 
-#include <glm.hpp>
-#include <raylib.h>
-#include "../Particles/particle.h"
-#include "quadtree.h"
-#include "../parameters.h"
-#include <vector>
-#include <cmath>
-#include "omp.h"
+#include "Particles/particle.h"
+
+#include "Physics/quadtree.h"
+
+#include "parameters.h"
 
 struct Physics {
 

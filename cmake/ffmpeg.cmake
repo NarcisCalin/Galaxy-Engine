@@ -11,8 +11,6 @@ FetchContent_MakeAvailable(ffmpeg-fetch)
 
 add_library(ffmpeg INTERFACE)
 
-add_dependencies(ffmpeg ffmpeg-fetch)
-
 target_include_directories(ffmpeg INTERFACE ${ffmpeg-fetch_SOURCE_DIR}/include)
 
 target_link_directories(ffmpeg INTERFACE ${ffmpeg-fetch_SOURCE_DIR}/lib)

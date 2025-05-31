@@ -1,6 +1,4 @@
 #pragma once
-#include <raylib.h>
-#include <string>
 
 struct SPHWater {
 

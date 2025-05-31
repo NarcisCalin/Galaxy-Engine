@@ -1,14 +1,7 @@
 #pragma once
 
-#include <iostream>
-#include <vector>
-#include <glm.hpp>
-#include <raylib.h>
-#include <rlgl.h>
-#include <raymath.h>
-#include "../Particles/particle.h"
-#include "../Particles/particleTrails.h"
-
+#include "Particles/particle.h"
+#include "Particles/particleTrails.h"
 
 class SceneCamera {
 public:

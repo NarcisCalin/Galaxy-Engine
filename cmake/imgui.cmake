@@ -14,26 +14,24 @@ set(RLGUI_URL https://github.com/raylib-extras/rlImGui/archive/refs/heads/main.z
 FetchContent_Declare(rlgui-fetch URL ${RLGUI_URL})
 FetchContent_MakeAvailable(rlgui-fetch)
 
-add_library(imgui INTERFACE)
+add_library(imgui STATIC)
 
-add_dependencies(imgui imgui-fetch implot-fetch rlgui-fetch)
-
-target_include_directories(imgui INTERFACE ${imgui-fetch_SOURCE_DIR})
-target_include_directories(imgui INTERFACE ${implot-fetch_SOURCE_DIR})
-target_include_directories(imgui INTERFACE ${rlgui-fetch_SOURCE_DIR})
+target_include_directories(imgui PUBLIC ${imgui-fetch_SOURCE_DIR})
+target_include_directories(imgui PUBLIC ${implot-fetch_SOURCE_DIR})
+target_include_directories(imgui PUBLIC ${rlgui-fetch_SOURCE_DIR})
 
 target_sources(
-	imgui INTERFACE
+	imgui PRIVATE
 	${imgui-fetch_SOURCE_DIR}/imgui.cpp
 	${imgui-fetch_SOURCE_DIR}/imgui_tables.cpp
 	${imgui-fetch_SOURCE_DIR}/imgui_widgets.cpp
 	${imgui-fetch_SOURCE_DIR}/imgui_draw.cpp)
 
 target_sources(
-	imgui INTERFACE
+	imgui PRIVATE
 	${implot-fetch_SOURCE_DIR}/implot.cpp
 	${implot-fetch_SOURCE_DIR}/implot_items.cpp)
 
-target_sources(imgui INTERFACE ${rlgui-fetch_SOURCE_DIR}/rlImGui.cpp)
+target_sources(imgui PRIVATE ${rlgui-fetch_SOURCE_DIR}/rlImGui.cpp)
 
-target_link_libraries(imgui INTERFACE raylib)
+target_link_libraries(imgui PUBLIC raylib-lib)

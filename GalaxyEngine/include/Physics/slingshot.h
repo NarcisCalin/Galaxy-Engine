@@ -1,7 +1,6 @@
 #pragma once
 
-#include <glm.hpp>
-#include "../UX/camera.h"
+#include "UX/camera.h"
 
 class Slingshot {
 public:

@@ -1,6 +1,4 @@
-#include "../../include/UI/UI.h"
-#include <variant>
-
+#include "UI/UI.h"
 
 void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, SaveSystem& save) {
 

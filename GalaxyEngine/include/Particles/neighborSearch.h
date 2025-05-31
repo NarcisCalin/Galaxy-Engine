@@ -1,13 +1,6 @@
 #pragma once
 
-#include <glm.hpp>
-#include <raylib.h>
-#include "particle.h"
-#include "omp.h"
-#include <vector>
-#include <algorithm>
-#include <limits> 
-
+#include "Particles/particle.h"
 
 struct NeighborSearch {
 

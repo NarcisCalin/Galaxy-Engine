@@ -40,6 +40,10 @@ list(TRANSFORM GALAXYENGINE_SOURCES PREPEND ${CMAKE_CURRENT_LIST_DIR}/GalaxyEngi
 
 add_executable(GalaxyEngine ${GALAXYENGINE_SOURCES})
 
+target_precompile_headers(GalaxyEngine PUBLIC ${CMAKE_CURRENT_LIST_DIR}/GalaxyEngine/include/pch.h)
+
+target_include_directories(GalaxyEngine PUBLIC ${CMAKE_CURRENT_LIST_DIR}/GalaxyEngine/include)
+
 target_compile_features(GalaxyEngine PRIVATE cxx_std_17)
 set_target_properties(
         GalaxyEngine PROPERTIES

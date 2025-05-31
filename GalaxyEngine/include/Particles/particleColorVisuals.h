@@ -1,10 +1,6 @@
 #pragma once
 
-#include <glm.hpp>
-#include <raylib.h>
-#include "particle.h"
-#include <vector>
-#include <algorithm>
+#include "Particles/particle.h"
 
 struct ColorVisuals {
 

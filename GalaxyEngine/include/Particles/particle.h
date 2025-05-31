@@ -1,12 +1,5 @@
 #pragma once
 
-#include <cstdint>
-#include <ostream>
-#include <istream>
-#include <string>
-#include <glm.hpp>
-#include <raylib.h>
-
 // Streamable Vec2
 inline std::ostream& operator<<(std::ostream& os, glm::vec2 const& v) {
 	return os << v.x << ' ' << v.y;

@@ -1,6 +1,6 @@
-#include "../../include/UI/brush.h"
-#include "../../include/parameters.h"
-#include <cmath>
+#include "UI/brush.h"
+
+#include "parameters.h"
 
 struct SPHWater water;
 struct SPHRock rock;

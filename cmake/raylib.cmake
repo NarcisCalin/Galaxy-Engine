@@ -12,8 +12,6 @@ FetchContent_MakeAvailable(raylib-fetch)
 
 add_library(raylib-lib INTERFACE)
 
-add_dependencies(raylib-lib raylib-fetch)
-
 target_include_directories(raylib-lib INTERFACE ${raylib-fetch_SOURCE_DIR}/include)
 
 target_link_directories(raylib-lib INTERFACE ${raylib-fetch_SOURCE_DIR}/lib)

@@ -1,10 +1,8 @@
 #pragma once
 
-#include <glm.hpp>
-#include <raylib.h>
-#include "particle.h"
-#include "vector"
-#include "../IO/io.h"
+#include "IO/io.h"
+
+#include "Particles/particle.h"
 
 struct ParticleDeletion {
 

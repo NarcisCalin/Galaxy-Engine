@@ -1,19 +1,13 @@
 #pragma once
 
-#include <glm.hpp>
-#include <iostream>
-#include <array>
-#include <raylib.h>
-#include "../Particles/particle.h"
-#include "../parameters.h"
-#include "../Physics/quadtree.h"
-#include "../Physics/SPH.h"
-#include "../UX/saveSystem.h"
-#include <imgui.h>
-#include <implot.h>
-#include <implot_internal.h>
-#include <rlImGui.h>
-#include <rlImGuiColors.h>
+#include "Particles/particle.h"
+
+#include "Physics/quadtree.h"
+#include "Physics/SPH.h"
+
+#include "UX/saveSystem.h"
+
+#include "parameters.h"
 
 struct settingsParams {
 	std::string text;

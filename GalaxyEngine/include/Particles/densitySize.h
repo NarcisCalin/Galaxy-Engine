@@ -1,10 +1,6 @@
 #pragma once
 
-#include <raylib.h>
-#include <glm.hpp>
-#include "particle.h"
-#include <vector>
-#include <algorithm>
+#include "Particles/particle.h"
 
 struct DensitySize {
 

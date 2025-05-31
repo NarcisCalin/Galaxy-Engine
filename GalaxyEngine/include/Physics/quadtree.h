@@ -1,12 +1,6 @@
 #pragma once
 
-#include <glm.hpp>
-#include <raylib.h>
-#include <vector>
-#include <iostream>
-#include <memory>
-#include "../Particles/particle.h"
-#include "omp.h"
+#include "Particles/particle.h"
 
 struct Quadtree {
 	glm::vec2 pos;

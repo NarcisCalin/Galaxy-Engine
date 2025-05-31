@@ -1,5 +1,6 @@
-#include "../../include/Particles/particleTrails.h"
-#include "../../include/parameters.h"
+#include "Particles/particleTrails.h"
+
+#include "parameters.h"
 
 void ParticleTrails::trailLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 
