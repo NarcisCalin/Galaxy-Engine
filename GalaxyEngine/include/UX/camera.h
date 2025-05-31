@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include <vector>
-#include <glm/glm.hpp>
+#include <glm.hpp>
 #include <raylib.h>
 #include <rlgl.h>
 #include <raymath.h>

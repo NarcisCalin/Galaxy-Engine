@@ -3,7 +3,7 @@ set(RL_URL_BASE https://github.com/raysan5/raylib/releases/download)
 
 if(LINUX)
     set(RL_URL ${RL_URL_BASE}/${RL_VERSION}/raylib-${RL_VERSION}_linux_amd64.tar.gz)
-elseif(WINDOWS)
+elseif(WIN32)
     set(RL_URL ${RL_URL_BASE}/${RL_VERSION}/raylib-${RL_VERSION}_win64_msvc16.zip)
 endif()
 

@@ -33,27 +33,14 @@
 #define MODE_BINARY 0
 #endif
 
-#ifdef _WIN32
-
-extern "C" {
-#include "../../external/ffmpeg/include/libavcodec/avcodec.h"
-#include "../../external/ffmpeg/include/libavformat/avformat.h"
-#include "../../external/ffmpeg/include/libavutil/avutil.h"
-#include "../../external/ffmpeg/include/libavutil/imgutils.h"
-#include "../../external/ffmpeg/include/libavutil/opt.h"
-#include "../../external/ffmpeg/include/libswscale/swscale.h"
-}
-#else
-
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
-#include <libavutil/frame.h>
+#include <libavutil/avutil.h>
 #include <libavutil/imgutils.h>
 #include <libavutil/opt.h>
 #include <libswscale/swscale.h>
 }
-#endif
 
 void ScreenCapture::cleanupFFmpeg() {
 	if (pCodecCtx) {

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <raylib.h>
-#include <glm/glm.hpp>
+#include <glm.hpp>
 #include <imgui.h>
 #include <rlImGui.h>
 #include <array>

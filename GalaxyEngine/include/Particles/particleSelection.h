@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include <glm/glm.hpp>
+#include <glm.hpp>
 #include <raylib.h>
 #include "particle.h"
 #include "../UX/camera.h"

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <glm/glm.hpp>
+#include <glm.hpp>
 #include <raylib.h>
 #include "particle.h"
 #include <vector>
@@ -65,7 +65,7 @@ struct ColorVisuals {
 			const float invMaxNeighbors = 1.0f / maxNeighbors;
 
 #pragma omp parallel for schedule(dynamic)
-			for (size_t i = 0; i < pParticles.size(); i++) {
+			for (int64_t i = 0; i < pParticles.size(); i++) {
 				if (rParticles[i].isDarkMatter) {
 					continue;
 				}
@@ -88,7 +88,7 @@ struct ColorVisuals {
 
 		if (velocityColor) {
 #pragma omp parallel for schedule(dynamic)
-			for (size_t i = 0; i < pParticles.size(); i++) {
+			for (int64_t i = 0; i < pParticles.size(); i++) {
 
 				float particleVelSq = pParticles[i].vel.x * pParticles[i].vel.x +
 					pParticles[i].vel.y * pParticles[i].vel.y;
@@ -155,7 +155,7 @@ struct ColorVisuals {
 
 		if (pressureColor) {
 #pragma omp parallel for schedule(dynamic)
-			for (size_t i = 0; i < pParticles.size(); i++) {
+			for (int64_t i = 0; i < pParticles.size(); i++) {
 
 				ParticlePhysics& p = pParticles[i];
 

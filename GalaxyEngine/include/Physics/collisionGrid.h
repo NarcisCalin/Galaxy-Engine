@@ -1,6 +1,6 @@
 #pragma once
 
-#include <glm/glm.hpp>
+#include <glm.hpp>
 #include <raylib.h>
 #include <vector>
 #include "../Particles/particle.h"

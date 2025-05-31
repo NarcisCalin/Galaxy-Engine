@@ -1,6 +1,6 @@
 #pragma once
 
-#include <glm/glm.hpp>
+#include <glm.hpp>
 #include <iostream>
 #include <vector>
 #include <raylib.h>

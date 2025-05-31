@@ -3,6 +3,7 @@
 
 # Visual Studio settings
 .vs/
+CMakeSettings.json
 
 # Build directory
 build/

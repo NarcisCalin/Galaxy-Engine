@@ -1,5 +1,5 @@
 #pragma once
-#include <glm/glm.hpp>
+#include <glm.hpp>
 #include <raylib.h>
 #include "../Particles/particle.h"
 #include "../parameters.h"

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <raylib.h>
-#include <glm/glm.hpp>
+#include <glm.hpp>
 #include "particle.h"
 #include <vector>
 #include <algorithm>
@@ -20,7 +20,7 @@ struct DensitySize {
 		if (isForceSizeEnabled) {
 #pragma omp parallel for schedule(dynamic)
 
-			for (size_t i = 0; i < pParticles.size(); i++) {
+			for (int64_t i = 0; i < pParticles.size(); i++) {
 				if (rParticles[i].isSolid || rParticles[i].isDarkMatter) {
 					continue;
 				}
@@ -39,7 +39,7 @@ struct DensitySize {
 
 			std::vector<int> neighborCounts(pParticles.size(), 0);
 #pragma omp parallel for schedule(dynamic)
-			for (size_t i = 0; i < pParticles.size(); i++) {
+			for (int64_t i = 0; i < pParticles.size(); i++) {
 
 				if (rParticles[i].isDarkMatter || rParticles[i].isSolid) {
 					continue;

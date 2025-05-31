@@ -2,7 +2,7 @@ set(FFMPEG_URL_BASE https://github.com/BtbN/FFmpeg-Builds/releases/download/late
 
 if(LINUX)
 	set(FFMPEG_ARCHIVE ffmpeg-master-latest-linux64-lgpl-shared.tar.xz)
-elseif(WINDOWS)
+elseif(WIN32)
 	set(FFMPEG_ARCHIVE ffmpeg-master-latest-win64-lgpl-shared.zip)
 endif()
 
@@ -16,4 +16,5 @@ add_dependencies(ffmpeg ffmpeg-fetch)
 target_include_directories(ffmpeg INTERFACE ${ffmpeg-fetch_SOURCE_DIR}/include)
 
 target_link_directories(ffmpeg INTERFACE ${ffmpeg-fetch_SOURCE_DIR}/lib)
+target_link_directories(ffmpeg INTERFACE ${ffmpeg-fetch_SOURCE_DIR}/bin)
 target_link_libraries(ffmpeg INTERFACE avcodec avformat avutil swscale swresample)

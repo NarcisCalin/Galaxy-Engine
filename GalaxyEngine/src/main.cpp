@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <bitset>
 
-#include "glm/glm.hpp"
+#include <glm.hpp>
 #include "../include/Particles/particle.h"
 #include "../include/Physics/quadtree.h"
 #include "../include/Physics/slingshot.h"
@@ -353,8 +353,7 @@ void fullscreenToggle(int& lastScreenWidth, int& lastScreenHeight,
 	}
 }
 
-int main() {
-
+int main(int argc, char** argv) {
 	SetConfigFlags(FLAG_MSAA_4X_HINT);
 
 	SetConfigFlags(FLAG_WINDOW_RESIZABLE);

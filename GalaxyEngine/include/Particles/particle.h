@@ -4,7 +4,7 @@
 #include <ostream>
 #include <istream>
 #include <string>
-#include <glm/glm.hpp>
+#include <glm.hpp>
 #include <raylib.h>
 
 // Streamable Vec2

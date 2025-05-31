@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.26..3.30 FATAL_ERROR)
 
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 cmake_policy(SET CMP0077 NEW)
@@ -41,5 +41,19 @@ list(TRANSFORM GALAXYENGINE_SOURCES PREPEND ${CMAKE_CURRENT_LIST_DIR}/GalaxyEngi
 add_executable(GalaxyEngine ${GALAXYENGINE_SOURCES})
 
 target_compile_features(GalaxyEngine PRIVATE cxx_std_17)
+set_target_properties(
+        GalaxyEngine PROPERTIES
+        MSVC_RUNTIME_LIBRARY MultiThreadedDLL
+        VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/GalaxyEngine)
 
-target_link_libraries(GalaxyEngine PUBLIC raylib-lib ffmpeg imgui glm OpenMP::OpenMP_CXX)
+target_link_libraries(GalaxyEngine PUBLIC raylib-lib ffmpeg imgui glm-lib openmp)
+
+if(WIN32)
+    target_link_libraries(GalaxyEngine PUBLIC winmm)
+
+    add_custom_command(
+            TARGET GalaxyEngine
+            POST_BUILD
+            COMMAND
+                ${CMAKE_COMMAND} -E copy_directory ${ffmpeg-fetch_SOURCE_DIR}/bin $<TARGET_FILE_DIR:GalaxyEngine>)
+endif()
