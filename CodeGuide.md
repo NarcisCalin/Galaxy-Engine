@@ -21,6 +21,7 @@ If you want to contribute or mod Galaxy Engine and have any questions, consider 
 - Colors currently use Raylib's **"Color"** struct.
 - The current physics are built on top of a base framerate of 144 FPS.
 - Try to use float instead of double. There can be exceptions if needed like the **"G"** constant.
+- When asking for user keyboard input, use the custom IO::shortcut(key) from the io.h file instead of raylib's keyboard input.
 - Stuff from files like images, fonts, etc., that are loaded into memory must be unloaded when the program closes.
 - Before doing a pull request, you must check that your code runs both on Windows and Linux first. Please try to solve any warnings you might have before doing a pull request too.
 
