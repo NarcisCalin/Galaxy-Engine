@@ -13,10 +13,9 @@ struct GridCell {
 
 class SPH {
 public:
-	float restDensity = 0.008f;
 	float radiusMultiplier = 3.0f;
-	float radiusSq = radiusMultiplier * radiusMultiplier;
 	float mass = 0.03f;
+	float stiffMultiplier = 1.0f;
 	float viscosity = 0.1f;
 	float cohesionCoefficient = 1.0f;
 	const float boundDamping = -0.1f;

@@ -10,7 +10,7 @@ struct ParticleDeletion {
 
 	bool deleteNonImportant = false;
 	void deleteSelected(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles) {
-		if (deleteSelection || IO::handleShortcut(KEY_DELETE)) {
+		if (deleteSelection || IO::shortcutPress(KEY_DELETE)) {
 			for (size_t i = pParticles.size(); i-- > 0;) {
 				if (rParticles[i].isSelected) {
 

@@ -3,7 +3,7 @@
 void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, SaveSystem& save) {
 
 
-	if (IO::handleShortcut(KEY_U)) {
+	if (IO::shortcutPress(KEY_U)) {
 		showSettings = !showSettings;
 	}
 
@@ -29,7 +29,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	float buttonsWindowY = screenY - 30.0f;
 
 	float settingsButtonX = 250.0f;
-	float settingsButtonY = 30.0f;
+	float settingsButtonY = 25.0f;
 
 	ImGui::SetNextWindowSize(ImVec2(buttonsWindowX, buttonsWindowY), ImGuiCond_Once);
 	ImGui::SetNextWindowSizeConstraints(ImVec2(buttonsWindowX, buttonsWindowY), ImVec2(buttonsWindowX, buttonsWindowY));
@@ -42,7 +42,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	static std::array<std::variant<
 		visualSlidersParams<float>,
 		visualSlidersParams<int>>,
-		13> visualSliders = {
+		14> visualSliders = {
 		visualSlidersParams<float>("Density Radius", "Controls the neighbor search radius", myParam.neighborSearch.densityRadius, 0.0f, 7.0f),
 		visualSlidersParams<int>("Max Neighbors", "Controls the maximum neighbor count range", myParam.colorVisuals.maxNeighbors, 1, 500),
 		visualSlidersParams<float>("Max Color Force", "Controls the acceleration threshold to use the secondary color", myParam.colorVisuals.maxColorAcc, 1.0f, 400.0f),
@@ -50,6 +50,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		visualSlidersParams<float>("Max Shockwave Accel", "Controls the acceleration threshold to map the particle color in Shockwave color mode", myParam.colorVisuals.ShockwaveMaxAcc, 1.0f, 120.0f),
 		visualSlidersParams<float>("Max Velocity Color", "Controls the max velocity used to map the colors in the velocity color mode", myParam.colorVisuals.maxVel, 10.0f, 10000.0f),
 		visualSlidersParams<float>("Max Pressure Color", "Controls the max pressure used to map the colors in the pressure color mode", myParam.colorVisuals.maxPress, 100.0f, 100000.0f),
+		visualSlidersParams<float>("Max Temperature Color", "Controls the max temperature used to map the colors in the temperature color mode", myParam.colorVisuals.tempColorMaxTemp, 10.0f, 10000.0f),
 		visualSlidersParams<float>("Particles Size", "Controls the size of all particles", myVar.particleSizeMultiplier, 0.1f, 5.0f),
 		visualSlidersParams<int>("Trails Length", "Controls how long should the trails be. This feature is computationally expensive", myVar.trailMaxLength, 0, 1500),
 		visualSlidersParams<float>("Trails Thickness", "Controls the trails thickness", myParam.trails.trailThickness, 0.007f, 0.5f),
@@ -61,7 +62,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	static std::array<std::variant<
 		physicsSlidersParams<float>,
 		physicsSlidersParams<int>>,
-		17> physicsSliders = {
+		19> physicsSliders = {
 		physicsSlidersParams<float>("Softening", "Controls the smoothness of the gravity forces", myVar.softening, 1.0f, 30.0f),
 		physicsSlidersParams<float>("Theta", "Controls the quality of the gravity calculation. Higher means lower quality", myVar.theta, 0.1f, 5.0f),
 		physicsSlidersParams<float>("Time Scale", "Controls how fast time passes", myVar.timeStepMultiplier, 0.0f, 15.0f),
@@ -73,13 +74,16 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		physicsSlidersParams<float>("Domain Height", "Controls the height of the global container", myVar.domainSize.y, 200.0f, 2160.0f),
 		physicsSlidersParams<int>("Threads Amount", "Controls the amount of cpu threads used by the simulation", myVar.threadsAmount, 1, 32),
 
-		physicsSlidersParams<float>("SPH Rest Density", "Controls what the density should be in equilibrium", sph.restDensity, 0.001f, 10.0f),
-		physicsSlidersParams<float>("SPH Radius", "Controls the hitbox of the particles in SPH mode", sph.radiusMultiplier, 0.1f, 4.0f),
 		physicsSlidersParams<float>("SPH Mass Multiplier", "Controls the fluid mass of particles", sph.mass, 0.005f, 0.15f),
 		physicsSlidersParams<float>("SPH Viscosity", "Controls how viscous particles are", sph.viscosity, 0.01f, 15.0f),
+		physicsSlidersParams<float>("SPH Stiffness", "Controls how stiff particles are", sph.stiffMultiplier, 0.01f, 15.0f),
 		physicsSlidersParams<float>("SPH Cohesion", "Controls how sticky particles are", sph.cohesionCoefficient, 0.0f, 10.0f),
 		physicsSlidersParams<float>("SPH Delta", "Controls the scaling factor in the pressure solver to enforce fluid incompressibility", sph.delta, 500.0f, 20000.0f),
 		physicsSlidersParams<float>("SPH Max Velocity", "Controls the maximum velocity a particle can have in SPH mode", myVar.sphMaxVel, 0.0f, 2000.0f),
+
+		physicsSlidersParams<float>("Ambient Temperature", "Controls the desired temperature of the scene in Kelvin. 1 is near absolute zero. The default value is set just high enough to allow liquid water", myVar.ambientTemp, 1.0f, 2500.0f),
+		physicsSlidersParams<float>("Ambient Heat Rate", "Controls how fast particles' temperature try to match ambient temperature", myVar.globalAmbientHeatRate, 0.0f, 10.0f),
+		physicsSlidersParams<float>("Heat Conductivity Multiplier", "Controls the global heat conductivity of particles", myVar.globalHeatConductivity, 0.001f, 1.0f)
 	};
 
 	float oldSpacingY = ImGui::GetStyle().ItemSpacing.y;
@@ -99,11 +103,13 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 	std::vector<SimilarTypeButton::Mode> color{
 	{ "Solid Color",     "Particles will only use the primary color",           &myParam.colorVisuals.solidColor },
-	{ "Density Color",   "Maps particle neighbor amount to colors",            &myParam.colorVisuals.densityColor },
-	{ "Force Color",     "Maps particle acceleration to colors",               &myParam.colorVisuals.forceColor },
+	{ "Density Color",   "Maps particle neighbor amount to primary and secondary colors",            &myParam.colorVisuals.densityColor },
+	{ "Force Color",     "Maps particle acceleration to primary and secondary colors",               &myParam.colorVisuals.forceColor },
 	{ "Velocity Color",  "Maps particle velocity to color",                    &myParam.colorVisuals.velocityColor },
 	{ "Shockwave Color", "Maps particle acceleration to color",                &myParam.colorVisuals.shockwaveColor },
 	{ "Pressure Color",  "Maps particle pressure to color",                    &myParam.colorVisuals.pressureColor },
+	{ "Temperature Color",  "Maps particle temperature to color",                    &myParam.colorVisuals.temperatureColor },
+	{ "Temperature Gas Color",  "Maps particle temperature to primary and secondary colors",                    &myParam.colorVisuals.gasTempColor },
 	{ "SPH Color",       "Uses the SPH materials colors",                      &myParam.colorVisuals.SPHColor }
 	};
 
@@ -148,6 +154,8 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		sphGroundButtonEnabled = false;
 		myVar.sphGround = false;
 	}
+
+	buttonHelper("Temperature Simulation", "Enables temperature simulation", myVar.isTempEnabled, -1.0f, settingsButtonY, true, enabled);
 
 	buttonHelper("SPH Ground Mode", "Adds vertical gravity and makes particles collide with the domain walls", myVar.sphGround, -1.0f, settingsButtonY, true, sphGroundButtonEnabled);
 	buttonHelper("Collisions (!!!)", "Enables elastic collisions", myVar.isCollisionsEnabled, -1.0f, settingsButtonY, true, enabled);
@@ -701,6 +709,29 @@ void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 	}
 
 	plotLinesHelper(myVar.timeFactor, "Pressure: ", graphHistoryLimit, totalPress, 0.0f, 100.0f, graphDefaultSize);
+
+	ImGui::Spacing();
+	ImGui::Separator();
+	ImGui::Spacing();
+
+	//------ Temperature ------//
+
+	ImGui::TextColored(statsNamesCol, "Selected Temperature");
+	ImGui::Spacing();
+
+	float totalTemp = 0.0f;
+
+	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+		if (myParam.rParticles[i].isSelected) {
+			totalTemp += myParam.pParticles[i].temp;
+		}
+	}
+
+	if (myParam.pParticlesSelected.size() > 0) {
+		totalTemp /= myParam.pParticlesSelected.size();
+	}
+
+	plotLinesHelper(myVar.timeFactor, "Temperature: ", graphHistoryLimit, totalTemp, 0.0f, 100.0f, graphDefaultSize);
 }
 
 std::unordered_map<std::string, PlotData> UI::plotDataMap;

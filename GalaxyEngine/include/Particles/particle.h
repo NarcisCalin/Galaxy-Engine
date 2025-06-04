@@ -8,10 +8,13 @@ inline std::istream& operator>>(std::istream& is, glm::vec2& v) {
 	return is >> v.x >> v.y;
 }
 
+static uint64_t nextParticleID = 0;
+
 struct ParticlePhysics {
 	glm::vec2 pos;
 	glm::vec2 predPos;
 	glm::vec2 vel;
+	glm::vec2 prevVel;
 	glm::vec2 predVel;
 	glm::vec2 acc;
 	float mass;
@@ -29,21 +32,28 @@ struct ParticlePhysics {
 	float stiff;
 	float visc;
 	float cohesion;
+
+	// Other parameters
+	float temp;
+	float ke;
+	float prevKe;
 	uint32_t mortonKey;
 
 	// Default constructor
 	ParticlePhysics()
-		: pos(0.0f, 0.0f) , predPos{ 0,0 }, vel{ 0,0 }, predVel{0.0f, 0.0f}, acc{ 0,0 },
+		: pos(0.0f, 0.0f), predPos{ 0,0 }, vel{ 0,0 }, prevVel{ 0.0f, 0.0f }, predVel{ 0.0f, 0.0f }, acc{ 0,0 },
 		mass(1.0f), press(0.0f), pressTmp(0.0f), pressF{ 0.0f,0.0f }, dens(0.0f), predDens(0.0f), sphMass(0.0f),
 		restDens(0.0f), stiff(0.0f), visc(0.0f), cohesion(0.0f),
-		mortonKey(0)
-	{}
+		temp(0.0f), ke(0.0f), prevKe(0.0f), mortonKey(0)
+	{
+	}
 
 	// Parameterized constructor
 	ParticlePhysics(glm::vec2 pos, glm::vec2 vel, float mass, float restDens, float stiff, float visc, float cohesion) {
 		this->pos = pos;
 		this->predPos = { 0.0f, 0.0f };
 		this->vel = vel;
+		this->prevVel = { 0.0f, 0.0f };
 		this->predVel = { 0.0f, 0.0f };
 		this->acc = { 0.0f, 0.0f };
 		this->mass = mass;
@@ -62,8 +72,11 @@ struct ParticlePhysics {
 		this->visc = visc;
 		this->cohesion = cohesion;
 
-
-		mortonKey = 0;
+		// Other parameters
+		this->temp = 288.0f;
+		this->ke = 0.0f;
+		this->prevKe = 0.0f;
+		this->mortonKey = 0;
 	}
 };
 
@@ -73,6 +86,7 @@ inline std::ostream& operator<<(std::ostream& os, ParticlePhysics const& p) {
 		<< p.pos << ' '
 		<< p.predPos << ' '
 		<< p.vel << ' '
+		<< p.prevVel << ' '
 		<< p.predVel << ' '
 		<< p.acc << ' '
 		<< p.mass << ' '
@@ -86,6 +100,9 @@ inline std::ostream& operator<<(std::ostream& os, ParticlePhysics const& p) {
 		<< p.stiff << ' '
 		<< p.visc << ' '
 		<< p.cohesion << ' '
+		<< p.temp << ' '
+		<< p.ke << ' '
+		<< p.prevKe << ' '
 		<< p.mortonKey;
 }
 
@@ -93,6 +110,7 @@ inline std::istream& operator>>(std::istream& is, ParticlePhysics& p) {
 	return is
 		>> p.pos.x >> p.pos.y
 		>> p.predPos.x >> p.predPos.y
+		>> p.prevVel.x >> p.prevVel.y
 		>> p.vel.x >> p.vel.y
 		>> p.predVel.x >> p.predVel.y
 		>> p.acc.x >> p.acc.y
@@ -107,6 +125,9 @@ inline std::istream& operator>>(std::istream& is, ParticlePhysics& p) {
 		>> p.stiff
 		>> p.visc
 		>> p.cohesion
+		>> p.temp
+		>> p.ke
+		>> p.prevKe
 		>> p.mortonKey;
 }
 
@@ -156,7 +177,8 @@ struct ParticleRendering {
 		canBeResized(false), isDarkMatter(false), isSPH(false),
 		isSelected(false), isGrabbed(false), previousSize(1.0f),
 		neighbors(0), totalRadius(0.0f), lifeSpan(0.0f), sphLabel("nonSPH")
-	{}
+	{
+	}
 
 	// Parameterized constructor
 	ParticleRendering(Color color, float size, bool uniqueColor, bool isSelected,

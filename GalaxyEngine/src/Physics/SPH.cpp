@@ -55,18 +55,13 @@ void SPH::computeViscCohesionForces(std::vector<ParticlePhysics>& pParticles, st
 #pragma omp atomic
 				sphForce[pjIdx].x -= viscF.x + cohF.x;
 #pragma omp atomic
-				sphForce[pjIdx].y -= viscF.y + cohF.y;
+				sphForce[pjIdx].y -= viscF.y + cohF.y;	
 			}
 		}
 	}
 }
 
 void SPH::PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, float& dt) {
-
-	const float dtSq = dt * dt;
-	const float rho0Sq = restDensity * restDensity;
-	const float h = radiusMultiplier;
-	const float h2 = h * h;
 
 	size_t N = pParticles.size();
 
@@ -129,11 +124,11 @@ void SPH::PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleR
 					glm::vec2 dr = { pi.predPos.x - pj.predPos.x,
 								   pi.predPos.y - pj.predPos.y };
 					float   rr = sqrtf(dr.x * dr.x + dr.y * dr.y);
-					if (rr >= h) continue;
+					if (rr >= radiusMultiplier) continue;
 					float mJ = pj.sphMass * mass;
 					float rho0 = 0.5f * (pi.restDens + pj.restDens);
 
-					pi.predDens += mJ * smoothingKernel(rr, h) / rho0;
+					pi.predDens += mJ * smoothingKernel(rr, radiusMultiplier) / rho0;
 				}
 			}
 
@@ -145,7 +140,7 @@ void SPH::PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleR
 
 			maxRhoErr = std::max(maxRhoErr, std::abs(err));
 
-			pi.press += pi.pressTmp * pi.stiff;
+			pi.press += pi.pressTmp * pi.stiff * stiffMultiplier;
 		}
 
 #pragma omp parallel for
@@ -168,13 +163,20 @@ void SPH::PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleR
 					glm::vec2 dr = { pi.predPos.x - pj.predPos.x,
 								   pi.predPos.y - pj.predPos.y };
 					float   rr = sqrtf(dr.x * dr.x + dr.y * dr.y);
-					if (rr < 1e-5f || rr >= h) continue;
+					if (rr < 1e-5f || rr >= radiusMultiplier) continue;
 
-					float gradW = spikyKernelDerivative(rr, h);
+					float gradW = spikyKernelDerivative(rr, radiusMultiplier);
 					glm::vec2 nrm = { dr.x / rr, dr.y / rr };
 					float   avgP = 0.5f * (pi.press + pj.press);
 					float   avgD = 0.5f * (pi.predDens + pj.predDens);
+
 					float   mag = -(pi.sphMass * mass + pj.sphMass * mass) * avgP / std::max(avgD, 0.01f);
+
+					// Mass ratio mag limiter
+					float massRatio = std::max(pi.sphMass, pj.sphMass) / std::min(pi.sphMass, pj.sphMass);
+					float scale = std::min(1.0f, 8.0f / massRatio);
+
+					mag *= scale;
 
 					glm::vec2 pF = { mag * gradW * nrm.x,
 								   mag * gradW * nrm.y };

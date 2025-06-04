@@ -20,10 +20,10 @@ Slingshot Slingshot::particleSlingshot(bool &isDragging, SceneCamera myCamera) {
 
 	if ((IsMouseButtonPressed(0) && !IsKeyDown(KEY_LEFT_CONTROL) && 
 		!IsKeyDown(KEY_LEFT_ALT)) || 
-		IO::handleShortcut(KEY_ONE) ||
-		IO::handleShortcut(KEY_TWO) || 
-		IO::handleShortcut(KEY_THREE) ||
-		IO::handleShortcut(KEY_J)
+		IO::shortcutPress(KEY_ONE) ||
+		IO::shortcutPress(KEY_TWO) || 
+		IO::shortcutPress(KEY_THREE) ||
+		IO::shortcutPress(KEY_J)
 	)
 	{   
 		isDragging = true;

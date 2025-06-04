@@ -2,6 +2,7 @@
 
 #include "Particles/particle.h"
 #include "Physics/materialsSPH.h"
+#include "IO/io.h"
 
 class ParticleSpaceship {
 public:
@@ -33,10 +34,10 @@ public:
 			return;
 		}
 
-		isShipEnabled = (IsKeyDown(KEY_UP)
-			|| IsKeyDown(KEY_RIGHT)
-			|| IsKeyDown(KEY_DOWN)
-			|| IsKeyDown(KEY_LEFT));
+		isShipEnabled = (IO::shortcutDown(KEY_UP)
+			|| IO::shortcutDown(KEY_RIGHT)
+			|| IO::shortcutDown(KEY_DOWN)
+			|| IO::shortcutDown(KEY_LEFT));
 
 		if (!isShipEnabled) {
 			return;
@@ -55,7 +56,7 @@ public:
 			}
 
 
-			if (IsKeyDown(KEY_UP)) {
+			if (IO::shortcutDown(KEY_UP)) {
 				pParticles[i].acc.y -= acceleration;
 
 				if (isShipGasEnabled) {
@@ -65,16 +66,16 @@ public:
 						pParticles.emplace_back(ParticlePhysics(
 							glm::vec2{ pParticles[i].pos.x + (4.0f * normalRand - 2.0f), pParticles[i].pos.y + 3.3f },
 							glm::vec2{ pParticles[i].vel.x + (4.0f * normalRand - 2.0f), pParticles[i].vel.y + 10.0f },
-							8500000000.0f * gas.massMult,
+							8500000000.0f * water.massMult,
 
-							gas.restDens,
-							gas.stiff,
-							gas.visc,
-							gas.cohesion
+							water.restDens,
+							water.stiff,
+							water.visc,
+							water.cohesion
 						));
 
 						rParticles.emplace_back(ParticleRendering(
-							gas.color,
+							water.color,
 							rParticles[i].size * 0.7f,
 							false,
 							false,
@@ -84,14 +85,15 @@ public:
 							false,
 							true,
 							3.0f,
-							gas.sphLabel
+							water.sphLabel
 						));
 
-						rParticles.back().sphColor = gas.color;
+						rParticles.back().sphColor = water.color;
+						pParticles.back().temp = 440.0f;
 					}
 				}
 			}
-			if (IsKeyDown(KEY_RIGHT)) {
+			if (IO::shortcutDown(KEY_RIGHT)) {
 				pParticles[i].acc.x += acceleration;
 
 				if (isShipGasEnabled) {
@@ -101,16 +103,16 @@ public:
 						pParticles.emplace_back(ParticlePhysics(
 							glm::vec2{ pParticles[i].pos.x - 3.3f, pParticles[i].pos.y + (4.0f * normalRand - 2.0f) },
 							glm::vec2{ pParticles[i].vel.x - 10.0f, pParticles[i].vel.y + (4.0f * normalRand - 2.0f) },
-							8500000000.0f * gas.massMult,
+							8500000000.0f * water.massMult,
 
-							gas.restDens,
-							gas.stiff,
-							gas.visc,
-							gas.cohesion
+							water.restDens,
+							water.stiff,
+							water.visc,
+							water.cohesion
 						));
 
 						rParticles.emplace_back(ParticleRendering(
-							gas.color,
+							water.color,
 							rParticles[i].size * 0.7f,
 							false,
 							false,
@@ -120,14 +122,15 @@ public:
 							false,
 							true,
 							3.0f,
-							gas.sphLabel
+							water.sphLabel
 						));
 
-						rParticles.back().sphColor = gas.color;
+						rParticles.back().sphColor = water.color;
+						pParticles.back().temp = 440.0f;
 					}
 				}
 			}
-			if (IsKeyDown(KEY_DOWN)) {
+			if (IO::shortcutDown(KEY_DOWN)) {
 				pParticles[i].acc.y += acceleration;
 
 				if (isShipGasEnabled) {
@@ -137,16 +140,16 @@ public:
 						pParticles.emplace_back(ParticlePhysics(
 							glm::vec2{ pParticles[i].pos.x + (4.0f * normalRand - 2.0f), pParticles[i].pos.y - 3.3f },
 							glm::vec2{ pParticles[i].vel.x + (4.0f * normalRand - 2.0f), pParticles[i].vel.y - 10.0f },
-							8500000000.0f * gas.massMult,
+							8500000000.0f * water.massMult,
 
-							gas.restDens,
-							gas.stiff,
-							gas.visc,
-							gas.cohesion
+							water.restDens,
+							water.stiff,
+							water.visc,
+							water.cohesion
 						));
 
 						rParticles.emplace_back(ParticleRendering(
-							gas.color,
+							water.color,
 							rParticles[i].size * 0.7f,
 							false,
 							false,
@@ -156,14 +159,15 @@ public:
 							false,
 							true,
 							3.0f,
-							gas.sphLabel
+							water.sphLabel
 						));
 
-						rParticles.back().sphColor = gas.color;
+						rParticles.back().sphColor = water.color;
+						pParticles.back().temp = 440.0f;
 					}
 				}
 			}
-			if (IsKeyDown(KEY_LEFT)) {
+			if (IO::shortcutDown(KEY_LEFT)) {
 				pParticles[i].acc.x -= acceleration;
 
 				if (isShipGasEnabled) {
@@ -173,16 +177,16 @@ public:
 						pParticles.emplace_back(ParticlePhysics(
 							glm::vec2{ pParticles[i].pos.x + 3.3f, pParticles[i].pos.y + (4.0f * normalRand - 2.0f) },
 							glm::vec2{ pParticles[i].vel.x + 10.0f, pParticles[i].vel.y + (4.0f * normalRand - 2.0f) },
-							8500000000.0f * gas.massMult,
+							8500000000.0f * water.massMult,
 
-							gas.restDens,
-							gas.stiff,
-							gas.visc,
-							gas.cohesion
+							water.restDens,
+							water.stiff,
+							water.visc,
+							water.cohesion
 						));
 
 						rParticles.emplace_back(ParticleRendering(
-							gas.color,
+							water.color,
 							rParticles[i].size * 0.7f,
 							false,
 							false,
@@ -192,10 +196,11 @@ public:
 							false,
 							true,
 							3.0f,
-							gas.sphLabel
+							water.sphLabel
 						));
 
-						rParticles.back().sphColor = gas.color;
+						rParticles.back().sphColor = water.color;
+						pParticles.back().temp = 440.0f;
 					}
 				}
 			}
@@ -204,7 +209,7 @@ public:
 
 private:
 
-	SPHGas gas;
+	SPHWater water;
 	SPHRock rock;
 
 	bool isShipEnabled = false;

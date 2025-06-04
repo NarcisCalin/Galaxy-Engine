@@ -306,7 +306,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 			myVar.isDragging = false;
 		}
 
-		if (IO::handleShortcut(KEY_FOUR)) {
+		if (IO::shortcutPress(KEY_FOUR)) {
 
 			// VISIBLE MATTER
 
@@ -423,7 +423,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 void ParticlesSpawning::copyPaste(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles,
 	bool& isDragging, SceneCamera& myCamera, std::vector<ParticlePhysics>& pParticlesSelected) {
 
-	if (IO::handleShortcut(KEY_H) && pParticlesSelected.size() > 0) {
+	if (IO::shortcutPress(KEY_H) && pParticlesSelected.size() > 0) {
 
 		pParticlesCopied.clear();
 		rParticlesCopied.clear();
@@ -457,6 +457,10 @@ void ParticlesSpawning::copyPaste(std::vector<ParticlePhysics>& pParticles, std:
 			pCopy.pos = myCamera.mouseWorldPos + copyRelPos;
 
 			pCopy.vel += slingshot.length * slingshot.norm * 0.3f;
+			pCopy.prevVel = pCopy.vel;
+
+			pCopy.ke = 0.0f;
+			pCopy.prevKe = 0.0f;
 
 			pParticles.push_back(ParticlePhysics(pCopy));
 		}

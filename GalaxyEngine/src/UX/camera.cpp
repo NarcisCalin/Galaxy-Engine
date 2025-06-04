@@ -54,7 +54,7 @@ Camera2D SceneCamera::cameraLogic(bool& loadFlag, bool& isMouseNotHoveringUI) {
 	}
 
 	// RESET CAMERA
-	if (IO::handleShortcut(KEY_F)) {
+	if (IO::shortcutPress(KEY_F)) {
 		camera.zoom = defaultCamZoom;
 		camera.target = { 0.0f, 0.0f };
 		camera.offset = { 0.0f, 0.0f };
@@ -152,7 +152,7 @@ void SceneCamera::cameraFollowObject(UpdateVariables& myVar, UpdateParameters& m
 		}
 	}
 
-	if (IO::handleShortcut(KEY_Z) || centerCamera) {
+	if (IO::shortcutPress(KEY_Z) || centerCamera) {
 		panFollowingOffset = { 0.0f, 0.0f };
 		isFollowing = true;
 		centerCamera = false;
@@ -178,7 +178,7 @@ void SceneCamera::cameraFollowObject(UpdateVariables& myVar, UpdateParameters& m
 
 		camera.offset = { GetScreenWidth() / 2.0f, GetScreenHeight() / 2.0f };
 
-		if (IO::handleShortcut(KEY_F) || count == 0 || myParam.pParticles.size() == 0) {
+		if (IO::shortcutPress(KEY_F) || count == 0 || myParam.pParticles.size() == 0) {
 			isFollowing = false;
 			camera.zoom = defaultCamZoom;
 			camera.target = { 0.0f, 0.0f };

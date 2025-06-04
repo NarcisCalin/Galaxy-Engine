@@ -68,6 +68,14 @@ ImVec4 UpdateVariables::colPlotBg = ImVec4(0.05f, 0.05f, 0.1f, 1.0f);
 ImVec4 UpdateVariables::colPlotBorder = ImVec4(1.0f, 0.0f, 1.0f, 1.0f);
 ImVec4 UpdateVariables::colLegendBg = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
 
+
+// SPH Materials vector definition
+std::vector<std::unique_ptr<SPHMaterial>> SPHMaterials::materials;
+std::unordered_map<std::string, SPHMaterial*> SPHMaterials::labelToMaterial;
+
+
+float UpdateVariables::particleBaseMass = 8500000000.0f;
+
 static Quadtree* gridFunction(std::vector<ParticlePhysics>& pParticles,
 	std::vector<ParticleRendering>& rParticles) {
 	Quadtree* grid = Quadtree::boundingBox(pParticles, rParticles);
@@ -89,13 +97,26 @@ struct ParticleBounds {
 	float minX, maxX, minY, maxY;
 };
 
+
+// THIS FUNCTION IS MEAN FOR QUICK DEBUGGING WHERE YOU NEED TO CHECK A SPECIFIC PARTICLE'S VARIABLES
+void selectedParticleDebug() {
+
+	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+		ParticlePhysics& p = myParam.pParticles[i];
+		ParticleRendering& r = myParam.rParticles[i];
+		if (r.isSelected && myVar.timeFactor != 0.0f) {
+			std::cout << "Ke: " << p.ke - p.prevKe << std::endl;
+		}
+	}
+}
+
 static void updateScene() {
 
 	Quadtree* grid = nullptr;
 
 	myVar.G = 6.674e-11 * myVar.gravityMultiplier;
 
-	if (IO::handleShortcut(KEY_SPACE)) {
+	if (IO::shortcutPress(KEY_SPACE)) {
 		myVar.isTimePlaying = !myVar.isTimePlaying;
 	}
 
@@ -154,6 +175,10 @@ static void updateScene() {
 			sph.pcisphSolver(myParam.pParticles, myParam.rParticles, myVar.timeFactor, myVar.domainSize, myVar.sphGround);
 		}
 
+		if (myVar.isTempEnabled) {
+			physics.temperatureCalculation(myParam.pParticles, myParam.rParticles, myVar);
+		}
+
 		ship.spaceshipLogic(myParam.pParticles, myParam.rParticles, myVar.isShipGasEnabled);
 
 		if (myVar.isCollisionsEnabled) {
@@ -202,7 +227,11 @@ static void updateScene() {
 
 	myParam.brush.particlesGrabber(myParam);
 
+	myParam.brush.temperatureBrush(myParam);
+
 	myParam.brush.eraseBrush(myParam);
+
+	//selectedParticleDebug();
 
 	if (grid != nullptr) {
 		delete grid;
@@ -235,7 +264,7 @@ static void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture) 
 	}
 
 
-	myParam.colorVisuals.particlesColorVisuals(myParam.pParticles, myParam.rParticles);
+	myParam.colorVisuals.particlesColorVisuals(myParam.pParticles, myParam.rParticles, myVar.isTempEnabled);
 
 	myParam.trails.drawTrail(myParam.rParticles, particleBlurTex);
 
@@ -255,7 +284,7 @@ static void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture) 
 
 	BeginMode2D(myParam.myCamera.camera);
 
-	myVar.mouseWorldPos = glm::vec2(GetScreenToWorld2D(GetMousePosition(), myParam.myCamera.camera).x, 
+	myVar.mouseWorldPos = glm::vec2(GetScreenToWorld2D(GetMousePosition(), myParam.myCamera.camera).x,
 		GetScreenToWorld2D(GetMousePosition(), myParam.myCamera.camera).y);
 	myParam.brush.drawBrush(myVar.mouseWorldPos);
 	DrawRectangleLinesEx({ 0,0, static_cast<float>(myVar.domainSize.x), static_cast<float>(myVar.domainSize.y) }, 3, GRAY);
@@ -297,7 +326,7 @@ static void enableMultiThreading() {
 void fullscreenToggle(int& lastScreenWidth, int& lastScreenHeight,
 	bool& wasFullscreen, bool& lastScreenState,
 	RenderTexture2D& myParticlesTexture, RenderTexture2D& myUITexture) {
-	if (IO::handleShortcut(KEY_TAB)) {
+	if (IO::shortcutPress(KEY_TAB)) {
 		myVar.fullscreenState = !myVar.fullscreenState;
 	}
 
@@ -341,6 +370,10 @@ void fullscreenToggle(int& lastScreenWidth, int& lastScreenHeight,
 }
 
 int main(int argc, char** argv) {
+
+	// SPH Materials initialization
+	SPHMaterials::Init();
+
 	SetConfigFlags(FLAG_MSAA_4X_HINT);
 
 	SetConfigFlags(FLAG_WINDOW_RESIZABLE);

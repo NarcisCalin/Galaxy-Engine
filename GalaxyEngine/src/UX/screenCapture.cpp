@@ -250,7 +250,7 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture,
 	UpdateVariables& myVar,
 	UpdateParameters& myParam) {
 
-	if (IO::handleShortcut(KEY_S)) {
+	if (IO::shortcutPress(KEY_S)) {
 		if (!std::filesystem::exists("Screenshots")) {
 			std::filesystem::create_directory("Screenshots");
 		}
@@ -284,7 +284,7 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture,
 		screenshotIndex++;
 	}
 
-	if (IO::handleShortcut(KEY_R) && !showSaveConfirmationDialog) {
+	if (IO::shortcutPress(KEY_R) && !showSaveConfirmationDialog) {
 		if (!isFunctionRecording && !isSafeFramesEnabled) {
 			for (Image& frame : myFrames) {
 				UnloadImage(frame);

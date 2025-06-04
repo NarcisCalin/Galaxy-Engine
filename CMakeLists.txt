@@ -44,7 +44,7 @@ target_precompile_headers(GalaxyEngine PUBLIC ${CMAKE_CURRENT_LIST_DIR}/GalaxyEn
 
 target_include_directories(GalaxyEngine PUBLIC ${CMAKE_CURRENT_LIST_DIR}/GalaxyEngine/include)
 
-target_compile_features(GalaxyEngine PRIVATE cxx_std_17)
+target_compile_features(GalaxyEngine PRIVATE cxx_std_20)
 set_target_properties(
         GalaxyEngine PROPERTIES
         MSVC_RUNTIME_LIBRARY MultiThreadedDLL

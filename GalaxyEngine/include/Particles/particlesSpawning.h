@@ -31,7 +31,8 @@ public:
 	void copyPaste(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, 
 		bool& isDragging, SceneCamera& myCamera, std::vector<ParticlePhysics>& pParticlesSelected);
 
-	void predictTrajectory(const std::vector<ParticlePhysics>& actualParticles, SceneCamera& myCamera, Physics physics,
+	void predictTrajectory(const std::vector<ParticlePhysics>& actualParticles, 
+		SceneCamera& myCamera, Physics physics,
 		Quadtree* quadtree, UpdateVariables& myVar, Slingshot& slingshot);
 
 private:

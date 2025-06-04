@@ -19,6 +19,7 @@ public:
 	bool SPHSoil = false;
 	bool SPHIce = false;
 	bool SPHMud = false;
+	bool SPHGas = false;
 
 	Brush(SceneCamera myCamera, float brushRadius);
 
@@ -35,6 +36,8 @@ public:
 	void particlesSpinner(UpdateVariables& myVar, UpdateParameters& myParam);
 
 	void particlesGrabber(UpdateParameters& myParam);
+
+	void temperatureBrush(UpdateParameters& myParam);
 
 private:
 	float brushRadius;

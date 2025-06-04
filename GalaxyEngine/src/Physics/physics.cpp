@@ -19,12 +19,23 @@ glm::vec2 Physics::calculateForceFromGrid(const Quadtree& grid, std::vector<Part
 		if ((grid.endIndex - grid.startIndex) == 1 &&
 			fabs(pParticles[grid.startIndex].pos.x - pParticle.pos.x) < 0.001f &&
 			fabs(pParticles[grid.startIndex].pos.y - pParticle.pos.y) < 0.001f) {
+
+
 			return totalForce;
 		}
 
 		float invDistance = 1.0f / sqrt(distanceSq);
 		float forceMagnitude = static_cast<float>(myVar.G) * pParticle.mass * grid.gridMass * invDistance * invDistance * invDistance;
 		totalForce = d * forceMagnitude;
+
+		// Heat transfer
+		if (myVar.isTempEnabled) {
+			float temperatureDifference = grid.gridTemp / (grid.endIndex - grid.startIndex) - pParticle.temp;
+
+			float heatTransfer = myVar.globalHeatConductivity * temperatureDifference * invDistance * invDistance;
+
+			pParticle.temp += heatTransfer;
+		}
 	}
 	else {
 		for (const auto& subGridPtr : grid.subGrids) {
@@ -35,10 +46,80 @@ glm::vec2 Physics::calculateForceFromGrid(const Quadtree& grid, std::vector<Part
 	return totalForce;
 }
 
+void Physics::temperatureCalculation(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar) {
+
+	for (size_t i = 0; i < pParticles.size(); i++) {
+		ParticlePhysics& p = pParticles[i];
+		auto it = SPHMaterials::labelToMaterial.find(rParticles[i].sphLabel);
+		if (it != SPHMaterials::labelToMaterial.end()) {
+			SPHMaterial* pMat = it->second;
+
+			float pTotalVel = sqrt(p.vel.x * p.vel.x + p.vel.y * p.vel.y);
+			float pTotalPrevVel = sqrt(p.prevVel.x * p.prevVel.x + p.prevVel.y * p.prevVel.y);
+
+			p.ke = 0.5f * p.sphMass * pTotalVel * pTotalVel;
+			p.prevKe = 0.5f * p.sphMass * pTotalPrevVel * pTotalPrevVel;
+
+			float q = std::abs(p.ke - p.prevKe);
+
+			float dTemp = q / (2.0f * pMat->heatConductivity * p.sphMass + 1.0f);
+			p.temp += dTemp;
+
+			float tempDifference = p.temp - myVar.ambientTemp;
+			float dTempCooling = -(pMat->heatConductivity * myVar.globalAmbientHeatRate) * tempDifference * myVar.timeFactor;
+			p.temp += dTempCooling;
+
+
+			if (p.temp >= pMat->hotPoint) {
+				p.sphMass = pMat->hotMassMult;
+				p.mass = UpdateVariables::particleBaseMass * p.sphMass;
+				p.restDens = pMat->hotRestDens;
+				p.stiff = pMat->hotStiff;
+				p.visc = pMat->hotVisc;
+				p.cohesion = pMat->hotCohesion;
+			}
+			else if (p.temp <= pMat->coldPoint) {
+				p.sphMass = pMat->coldMassMult;
+				p.mass = UpdateVariables::particleBaseMass * p.sphMass;
+				p.restDens = pMat->coldRestDens;
+				p.stiff = pMat->coldStiff;
+				p.visc = pMat->coldVisc;
+				p.cohesion = pMat->coldCohesion;
+			}
+			else {
+				p.sphMass = pMat->massMult;
+				p.mass = UpdateVariables::particleBaseMass * p.sphMass;
+				p.restDens = pMat->restDens;
+				p.stiff = pMat->stiff;
+				p.visc = pMat->visc;
+				p.cohesion = pMat->cohesion;
+			}
+		}
+		else {
+			float pTotalVel = sqrt(p.vel.x * p.vel.x + p.vel.y * p.vel.y);
+			float pTotalPrevVel = sqrt(p.prevVel.x * p.prevVel.x + p.prevVel.y * p.prevVel.y);
+
+			p.ke = 0.5f * p.sphMass * pTotalVel * pTotalVel;
+			p.prevKe = 0.5f * p.sphMass * pTotalPrevVel * pTotalPrevVel;
+
+			float q = std::abs(p.ke - p.prevKe);
+
+			float dTemp = q / (2.0f * 0.05f * p.sphMass + 1.0f);
+			p.temp += dTemp;
+
+			float tempDifference = p.temp - myVar.ambientTemp;
+			float dTempCooling = -(0.05f * myVar.globalAmbientHeatRate) * tempDifference * myVar.timeFactor;
+			p.temp += dTempCooling;
+		}
+	}
+}
+
 void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar, bool& sphGround) {
 	if (myVar.isPeriodicBoundaryEnabled) {
 		for (size_t i = 0; i < pParticles.size(); i++) {
 			ParticlePhysics& pParticle = pParticles[i];
+
+			pParticle.prevVel = pParticle.vel;
 
 			pParticle.vel += myVar.timeFactor * 1.5f * pParticle.acc;
 
@@ -46,8 +127,11 @@ void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vecto
 			if (myVar.isSPHEnabled) {
 				const float sphMaxVelSq = myVar.sphMaxVel * myVar.sphMaxVel;
 				float vSq = pParticle.vel.x * pParticle.vel.x + pParticle.vel.y * pParticle.vel.y;
+				float prevVSq = pParticle.prevVel.x * pParticle.prevVel.x + pParticle.prevVel.y * pParticle.prevVel.y;
 				if (vSq > sphMaxVelSq) {
+					float invPrevLen = myVar.sphMaxVel / sqrtf(prevVSq);
 					float invLen = myVar.sphMaxVel / sqrtf(vSq);
+					pParticle.prevVel *= invPrevLen;
 					pParticle.vel *= invLen;
 				}
 			}
@@ -71,7 +155,22 @@ void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vecto
 		for (size_t i = 0; i < pParticles.size(); i++) {
 			ParticlePhysics& pParticle = pParticles[i];
 
+			pParticle.prevVel = pParticle.vel;
+
 			pParticle.vel += myVar.timeFactor * 1.5f * pParticle.acc;
+
+			// Max velocity for SPH
+			if (myVar.isSPHEnabled) {
+				const float sphMaxVelSq = myVar.sphMaxVel * myVar.sphMaxVel;
+				float vSq = pParticle.vel.x * pParticle.vel.x + pParticle.vel.y * pParticle.vel.y;
+				float prevVSq = pParticle.prevVel.x * pParticle.prevVel.x + pParticle.prevVel.y * pParticle.prevVel.y;
+				if (vSq > sphMaxVelSq) {
+					float invPrevLen = myVar.sphMaxVel / sqrtf(prevVSq);
+					float invLen = myVar.sphMaxVel / sqrtf(vSq);
+					pParticle.prevVel *= invPrevLen;
+					pParticle.vel *= invLen;
+				}
+			}
 
 			pParticle.pos += pParticle.vel * myVar.timeFactor;
 

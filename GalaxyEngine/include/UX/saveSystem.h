@@ -71,7 +71,6 @@ public:
 		WRITE(GravityMultiplier, myVar.gravityMultiplier);
 		WRITE(HeavyParticlesMass, myParam.particlesSpawning.heavyParticleWeightMultiplier);
 		WRITE(CollisionBounciness, myVar.particleBounciness);
-		WRITE(SPHRestDens, sph.restDensity);
 		WRITE(SPHRadiusMult, sph.radiusMultiplier);
 		WRITE(SPHMass, sph.mass);
 		WRITE(SPHViscosity, sph.viscosity);
@@ -86,12 +85,45 @@ public:
 		WRITE(CameraZoom, myParam.myCamera.camera.zoom);
 		WRITE(ColorMaxVel, myParam.colorVisuals.maxVel);
 		WRITE(ColorMaxPressure, myParam.colorVisuals.maxPress);
+		WRITE(TemperatureSimulation, myVar.isTempEnabled);
+		WRITE(TemperatureColor, myParam.colorVisuals.temperatureColor);
+		WRITE(TemperatureGasColor, myParam.colorVisuals.gasTempColor);
+		WRITE(MaxTemperatureColor, myParam.colorVisuals.tempColorMaxTemp);
+		WRITE(AmbientTemperature, myVar.ambientTemp);
+		WRITE(AmbientHeatRate, myVar.globalAmbientHeatRate);
+		WRITE(HeatConductivityMultiplier, myVar.globalHeatConductivity);
 
 #undef WRITE
 
 		out << "numParticles " << myParam.pParticles.size() << "\n";
 		for (auto const& p : myParam.pParticles) out << "P " << p << "\n";
 		for (auto const& r : myParam.rParticles) out << "R " << r << "\n";
+	}
+
+
+	template <typename T>
+	bool READ(std::ifstream& in, std::string key, std::string paramName, T& param) {
+		if (key == paramName) {
+			if (in >> param) {
+				std::cout << "Successfully read " << paramName << ": " << param << std::endl;
+				return true;
+			}
+			else {
+				std::cout << "Error reading parameter: " << paramName << std::endl;
+				in.clear(); // Clear error flags
+
+				if constexpr (std::is_same_v<T, float>) {
+					// This entire block is only *compiled* when T is float.
+					param = 20.0f;
+				}
+				// Skip the rest of the current line to avoid infinite loop
+				std::string line;
+				std::getline(in, line);
+
+				return false;
+			}
+		}
+		return false;
 	}
 
 	void loadSimulation(const std::string& filename, UpdateVariables& myVar, UpdateParameters& myParam, SPH& sph) {
@@ -101,77 +133,81 @@ public:
 			return;
 		}
 
-		std::cout << "Loading from: " << filename << std::endl;
-
 		myParam.pParticles.clear();
 		myParam.rParticles.clear();
 
 		std::string key;
 		while (in >> key) {
-#define READ(k, v) else if (key == #k) in >> v
-			if (false);
-			READ(GlobalTrails, myVar.isGlobalTrailsEnabled);
-			READ(SelectedTrails, myVar.isSelectedTrailsEnabled);
-			READ(LocalTrails, myVar.isLocalTrailsEnabled);
-			READ(WhiteTrails, myParam.trails.whiteTrails);
-			READ(SolidColor, myParam.colorVisuals.solidColor);
-			READ(DensityColor, myParam.colorVisuals.densityColor);
-			READ(ForceColor, myParam.colorVisuals.forceColor);
-			READ(VelocityColor, myParam.colorVisuals.velocityColor);
-			READ(DeltaVColor, myParam.colorVisuals.shockwaveColor);
-			READ(PressureColor, myParam.colorVisuals.pressureColor);
-			READ(SPHColor, myParam.colorVisuals.SPHColor);
-			READ(SelectedColor, myParam.colorVisuals.selectedColor);
-			READ(DarkMatter, myVar.isDarkMatterEnabled);
-			READ(ShowDarkMatter, myParam.colorVisuals.showDarkMatterEnabled);
-			READ(LoopingSpace, myVar.isPeriodicBoundaryEnabled);
-			READ(SPHEnabled, myVar.isSPHEnabled);
-			READ(Collisions, myVar.isCollisionsEnabled);
-			READ(DensitySize, myVar.isDensitySizeEnabled);
-			READ(ForceSize, myVar.isForceSizeEnabled);
-			READ(Glow, myVar.isGlowEnabled);
-			READ(ShipGas, myVar.isShipGasEnabled);
-			READ(SPHWater, myParam.brush.SPHWater);
-			READ(SPHRock, myParam.brush.SPHRock);
-			READ(SPHSand, myParam.brush.SPHSand);
-			READ(SPHSoil, myParam.brush.SPHSoil);
-			READ(pColors, myParam.colorVisuals.pColor);
-			READ(sColors, myParam.colorVisuals.sColor);
-			READ(DensityRadius, myParam.neighborSearch.densityRadius);
-			READ(MaxNeighbors, myParam.colorVisuals.maxNeighbors);
-			READ(MaxColorForce, myParam.colorVisuals.maxColorAcc);
-			READ(MaxSizeForce, myParam.densitySize.sizeAcc);
-			READ(DeltaVMaxAcc, myParam.colorVisuals.ShockwaveMaxAcc);
-			READ(TrailsMaxLength, myVar.trailMaxLength);
-			READ(TrailsThickness, myParam.trails.trailThickness);
-			READ(ParticleSizeMult, myVar.particleSizeMultiplier);
-			READ(VisiblePAmountMult, myParam.particlesSpawning.particleAmountMultiplier);
-			READ(DMPAmountMult, myParam.particlesSpawning.DMAmountMultiplier);
-			READ(Softening, myVar.softening);
-			READ(Theta, myVar.theta);
-			READ(TimeMult, myVar.timeStepMultiplier);
-			READ(CollisionSubsteps, myVar.substeps);
-			READ(GravityMultiplier, myVar.gravityMultiplier);
-			READ(HeavyParticlesMass, myParam.particlesSpawning.heavyParticleWeightMultiplier);
-			READ(CollisionBounciness, myVar.particleBounciness);
-			READ(SPHRestDens, sph.restDensity);
-			READ(SPHRadiusMult, sph.radiusMultiplier);
-			READ(SPHMass, sph.mass);
-			READ(SPHViscosity, sph.viscosity);
-			READ(SPHCohesion, sph.cohesionCoefficient);
-			READ(SPHGround, myVar.sphGround);
-			READ(SPHDelta, sph.delta);
-			READ(SPHMaxVel, myVar.sphMaxVel);
-			READ(DomainWidth, myVar.domainSize.x);
-			READ(DomainHeight, myVar.domainSize.y);
-			READ(CameraTarget, myParam.myCamera.camera.target);
-			READ(CameraOffset, myParam.myCamera.camera.offset);
-			READ(CameraZoom, myParam.myCamera.camera.zoom);
-			READ(ColorMaxVel, myParam.colorVisuals.maxVel);
-			READ(ColorMaxPressure, myParam.colorVisuals.maxPress);
-			
-#undef READ
-			else if (key == "numParticles") {
+			READ(in, key, "GlobalTrails", myVar.isGlobalTrailsEnabled);
+			READ(in, key, "SelectedTrails", myVar.isSelectedTrailsEnabled);
+			READ(in, key, "LocalTrails", myVar.isLocalTrailsEnabled);
+			READ(in, key, "WhiteTrails", myParam.trails.whiteTrails);
+			READ(in, key, "SolidColor", myParam.colorVisuals.solidColor);
+			READ(in, key, "DensityColor", myParam.colorVisuals.densityColor);
+			READ(in, key, "ForceColor", myParam.colorVisuals.forceColor);
+			READ(in, key, "VelocityColor", myParam.colorVisuals.velocityColor);
+			READ(in, key, "DeltaVColor", myParam.colorVisuals.shockwaveColor);
+			READ(in, key, "PressureColor", myParam.colorVisuals.pressureColor);
+			READ(in, key, "SPHColor", myParam.colorVisuals.SPHColor);
+			READ(in, key, "SelectedColor", myParam.colorVisuals.selectedColor);
+			READ(in, key, "DarkMatter", myVar.isDarkMatterEnabled);
+			READ(in, key, "ShowDarkMatter", myParam.colorVisuals.showDarkMatterEnabled);
+			READ(in, key, "LoopingSpace", myVar.isPeriodicBoundaryEnabled);
+			READ(in, key, "SPHEnabled", myVar.isSPHEnabled);
+			READ(in, key, "Collisions", myVar.isCollisionsEnabled);
+			READ(in, key, "DensitySize", myVar.isDensitySizeEnabled);
+			READ(in, key, "ForceSize", myVar.isForceSizeEnabled);
+			READ(in, key, "Glow", myVar.isGlowEnabled);
+			READ(in, key, "ShipGas", myVar.isShipGasEnabled);
+			READ(in, key, "SPHWater", myParam.brush.SPHWater);
+			READ(in, key, "SPHRock", myParam.brush.SPHRock);
+			READ(in, key, "SPHSand", myParam.brush.SPHSand);
+			READ(in, key, "SPHSoil", myParam.brush.SPHSoil);
+			READ(in, key, "SPHIce", myParam.brush.SPHIce);
+			READ(in, key, "SPHMud", myParam.brush.SPHMud);
+			READ(in, key, "pColors", myParam.colorVisuals.pColor);
+			READ(in, key, "sColors", myParam.colorVisuals.sColor);
+			READ(in, key, "DensityRadius", myParam.neighborSearch.densityRadius);
+			READ(in, key, "MaxNeighbors", myParam.colorVisuals.maxNeighbors);
+			READ(in, key, "MaxColorForce", myParam.colorVisuals.maxColorAcc);
+			READ(in, key, "MaxSizeForce", myParam.densitySize.sizeAcc);
+			READ(in, key, "DeltaVMaxAcc", myParam.colorVisuals.ShockwaveMaxAcc);
+			READ(in, key, "TrailsMaxLength", myVar.trailMaxLength);
+			READ(in, key, "TrailsThickness", myParam.trails.trailThickness);
+			READ(in, key, "ParticleSizeMult", myVar.particleSizeMultiplier);
+			READ(in, key, "VisiblePAmountMult", myParam.particlesSpawning.particleAmountMultiplier);
+			READ(in, key, "DMPAmountMult", myParam.particlesSpawning.DMAmountMultiplier);
+			READ(in, key, "Softening", myVar.softening);
+			READ(in, key, "Theta", myVar.theta);
+			READ(in, key, "TimeMult", myVar.timeStepMultiplier);
+			READ(in, key, "CollisionSubsteps", myVar.substeps);
+			READ(in, key, "GravityMultiplier", myVar.gravityMultiplier);
+			READ(in, key, "HeavyParticlesMass", myParam.particlesSpawning.heavyParticleWeightMultiplier);
+			READ(in, key, "CollisionBounciness", myVar.particleBounciness);
+			READ(in, key, "SPHRadiusMult", sph.radiusMultiplier);
+			READ(in, key, "SPHMass", sph.mass);
+			READ(in, key, "SPHViscosity", sph.viscosity);
+			READ(in, key, "SPHCohesion", sph.cohesionCoefficient);
+			READ(in, key, "SPHGround", myVar.sphGround);
+			READ(in, key, "SPHDelta", sph.delta);
+			READ(in, key, "SPHMaxVel", myVar.sphMaxVel);
+			READ(in, key, "DomainWidth", myVar.domainSize.x);
+			READ(in, key, "DomainHeight", myVar.domainSize.y);
+			READ(in, key, "CameraTarget", myParam.myCamera.camera.target);
+			READ(in, key, "CameraOffset", myParam.myCamera.camera.offset);
+			READ(in, key, "CameraZoom", myParam.myCamera.camera.zoom);
+			READ(in, key, "ColorMaxVel", myParam.colorVisuals.maxVel);
+			READ(in, key, "ColorMaxPressure", myParam.colorVisuals.maxPress);
+			READ(in, key, "TemperatureSimulation", myVar.isTempEnabled);
+			READ(in, key, "TemperatureColor", myParam.colorVisuals.temperatureColor);
+			READ(in, key, "TemperatureGasColor", myParam.colorVisuals.gasTempColor);
+			READ(in, key, "MaxTemperatureColor", myParam.colorVisuals.tempColorMaxTemp);
+			READ(in, key, "AmbientTemperature", myVar.ambientTemp);
+			READ(in, key, "AmbientHeatRate", myVar.globalAmbientHeatRate);
+			READ(in, key, "HeatConductivityMultiplier", myVar.globalHeatConductivity);
+
+
+			if (key == "numParticles") {
 				size_t n;
 				in >> n;
 				myParam.pParticles.reserve(n);

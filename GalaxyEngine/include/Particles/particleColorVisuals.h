@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Particles/particle.h"
+#include "Physics/materialsSPH.h"
 
 struct ColorVisuals {
 
@@ -10,6 +11,8 @@ struct ColorVisuals {
 	bool shockwaveColor = false;
 	bool forceColor = false;
 	bool pressureColor = false;
+	bool temperatureColor = false;
+	bool gasTempColor = false;
 	bool SPHColor = false;
 
 	bool showDarkMatterEnabled = false;
@@ -39,9 +42,14 @@ struct ColorVisuals {
 	float maxPress = 1000.0f;
 	float minPress = 0.0f;
 
+	float minTemp = 274.0f; // Min temp is set to roughly 1 degrees Celsius
+
+	float tempColorMinTemp = 1.0f;
+	float tempColorMaxTemp = 1000.0f;
+
 	glm::vec2 prevVel = { 0.0f, 0.0f };
 
-	void particlesColorVisuals(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles) {
+	void particlesColorVisuals(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, bool& isTempEnabled) {
 
 		if (solidColor) {
 			for (size_t i = 0; i < pParticles.size(); i++) {
@@ -120,11 +128,11 @@ struct ColorVisuals {
 					rParticles[i].sColor = sColor;
 				}
 
-				Color lowDensityColor = rParticles[i].pColor;
+				Color lowAccColor = rParticles[i].pColor;
 
-				Color highDensityColor = rParticles[i].sColor;
+				Color highAccColor = rParticles[i].sColor;
 
-				rParticles[i].color = ColorLerp(lowDensityColor, highDensityColor, normalizedAcc);
+				rParticles[i].color = ColorLerp(lowAccColor, highAccColor, normalizedAcc);
 
 			}
 			blendMode = 1;
@@ -164,14 +172,73 @@ struct ColorVisuals {
 
 				rParticles[i].color = ColorFromHSV(hue, saturation, value);
 			}
-
 			blendMode = 0;
+		}
+
+		if (temperatureColor) {
+#pragma omp parallel for schedule(dynamic)
+			for (int64_t i = 0; i < pParticles.size(); i++) {
+
+				ParticlePhysics& p = pParticles[i];
+
+				float clampedTemp = std::clamp(p.temp, tempColorMinTemp, tempColorMaxTemp);
+				float normalizedTemp = clampedTemp / tempColorMaxTemp;
+
+				hue = (1.0f - normalizedTemp) * 240.0f;
+				saturation = 1.0f;
+				value = 1.0f;
+
+				rParticles[i].color = ColorFromHSV(hue, saturation, value);
+			}
+			blendMode = 0;
+		}
+
+		if (gasTempColor) {
+			for (size_t i = 0; i < rParticles.size(); i++) {
+
+				if (!rParticles[i].uniqueColor) {
+					rParticles[i].pColor = pColor;
+					rParticles[i].sColor = sColor;
+				}
+
+				float normalizedTemp = (pParticles[i].temp - tempColorMinTemp) / (tempColorMaxTemp - tempColorMinTemp);
+				normalizedTemp = std::clamp(normalizedTemp, 0.0f, 1.0f);
+
+				Color lowTempColor = rParticles[i].pColor;
+
+				Color highTempColor = rParticles[i].sColor;
+
+				rParticles[i].color = ColorLerp(lowTempColor, highTempColor, normalizedTemp);
+			}
+			blendMode = 1;
 		}
 
 		if (SPHColor) {
 			for (size_t i = 0; i < rParticles.size(); i++) {
 				if (!rParticles[i].uniqueColor) {
-					rParticles[i].color = rParticles[i].sphColor;
+
+					auto it = SPHMaterials::labelToMaterial.find(rParticles[i].sphLabel);
+					if (it != SPHMaterials::labelToMaterial.end()) {
+						SPHMaterial* pMat = it->second;
+
+						float normalizedTemp = (pParticles[i].temp - minTemp) / (pMat->hotPoint - minTemp);
+						normalizedTemp = std::clamp(normalizedTemp, 0.0f, 1.0f);
+
+						Color lowTempColor = rParticles[i].sphColor;
+
+						Color highTempColor = { 255, 113, 33, 255 };
+
+						highTempColor = it->second->hotColor;
+
+
+						if (pParticles[i].temp < pMat->coldPoint) {
+
+							rParticles[i].color = pMat->coldColor;
+						}
+						else {
+							rParticles[i].color = ColorLerp(lowTempColor, highTempColor, normalizedTemp);
+						}
+					}
 				}
 				else {
 					rParticles[i].color = rParticles[i].pColor;

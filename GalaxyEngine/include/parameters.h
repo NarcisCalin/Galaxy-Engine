@@ -81,8 +81,11 @@ struct UpdateVariables{
 	float theta = 0.8f;
 	float timeStepMultiplier = 1.0f;
 	float sphMaxVel = 250.0f;
+	float globalHeatConductivity = 0.045f;
+	float globalAmbientHeatRate = 1.0f;
+	float ambientTemp = 274.0f;
 
-	const float particleBaseMass = 8500000000.0f;
+	static float particleBaseMass;
 
 	int maxLeafParticles = 1;
 	float minLeafSize = 1.0f;
@@ -108,6 +111,7 @@ struct UpdateVariables{
 	bool isShipGasEnabled = true;
 	bool isSPHEnabled = false;
 	bool sphGround = false;
+	bool isTempEnabled = false;
 
 	bool isSpawningAllowed = true;
 

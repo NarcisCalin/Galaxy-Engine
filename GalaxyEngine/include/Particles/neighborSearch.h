@@ -112,9 +112,8 @@ struct NeighborSearch {
 
 						if (neighborIdx == i) continue;
 
-						const float dx = particle.pos.x - pParticles[neighborIdx].pos.x;
-						const float dy = particle.pos.y - pParticles[neighborIdx].pos.y;
-						const float distSq = dx * dx + dy * dy;
+						glm::vec2 d = particle.pos - pParticles[neighborIdx].pos;
+						const float distSq = d.x * d.x + d.y * d.y;
 
 						if (distSq < densityRadiusSq) {
 							#pragma omp atomic
