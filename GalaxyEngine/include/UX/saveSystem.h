@@ -21,211 +21,268 @@ public:
 	bool saveFlag = false;
 	bool loadFlag = false;
 
-	void saveSimulation(const std::string& filename, const UpdateVariables& myVar, const UpdateParameters& myParam, const SPH& sph) {
-		std::ofstream out(filename);
-		if (!out) return;
+    template <typename T>
+    void paramIO(const std::string& filename, YAML::Emitter& out, std::string key, T& value) {
+        int ucToInt = 0;
 
-#define WRITE(k, v) out << #k << " " << v << "\n"
+        if constexpr (!std::is_same_v<T, unsigned char>) {
+            if (saveFlag) {
+                out << YAML::BeginMap;
+                out << YAML::Key << key;
+                out << YAML::Value << value;
+                std::cout << "Parameter: " << key.c_str() << " | Value: " << value << std::endl;
+                out << YAML::EndMap;
+            }
+        }
+        else {
+            ucToInt = static_cast<int>(value);
+            if (saveFlag) {
+                out << YAML::BeginMap;
+                out << YAML::Key << key;
+                out << YAML::Value << ucToInt;
+                std::cout << "Parameter: " << key.c_str() << " | Value: " << ucToInt << std::endl;
+                out << YAML::EndMap;
+            }
+        }
 
-		WRITE(GlobalTrails, myVar.isGlobalTrailsEnabled);
-		WRITE(SelectedTrails, myVar.isSelectedTrailsEnabled);
-		WRITE(LocalTrails, myVar.isLocalTrailsEnabled);
-		WRITE(WhiteTrails, myParam.trails.whiteTrails);
-		WRITE(SolidColor, myParam.colorVisuals.solidColor);
-		WRITE(DensityColor, myParam.colorVisuals.densityColor);
-		WRITE(ForceColor, myParam.colorVisuals.forceColor);
-		WRITE(VelocityColor, myParam.colorVisuals.velocityColor);
-		WRITE(DeltaVColor, myParam.colorVisuals.shockwaveColor);
-		WRITE(PressureColor, myParam.colorVisuals.pressureColor);
-		WRITE(SPHColor, myParam.colorVisuals.SPHColor);
-		WRITE(SelectedColor, myParam.colorVisuals.selectedColor);
-		WRITE(DarkMatter, myVar.isDarkMatterEnabled);
-		WRITE(ShowDarkMatter, myParam.colorVisuals.showDarkMatterEnabled);
-		WRITE(LoopingSpace, myVar.isPeriodicBoundaryEnabled);
-		WRITE(SPHEnabled, myVar.isSPHEnabled);
-		WRITE(Collisions, myVar.isCollisionsEnabled);
-		WRITE(DensitySize, myVar.isDensitySizeEnabled);
-		WRITE(ForceSize, myVar.isForceSizeEnabled);
-		WRITE(Glow, myVar.isGlowEnabled);
-		WRITE(ShipGas, myVar.isShipGasEnabled);
-		WRITE(SPHWater, myParam.brush.SPHWater);
-		WRITE(SPHRock, myParam.brush.SPHRock);
-		WRITE(SPHSand, myParam.brush.SPHSand);
-		WRITE(SPHSoil, myParam.brush.SPHSoil);
-		WRITE(pColors, myParam.colorVisuals.pColor);
-		WRITE(sColors, myParam.colorVisuals.sColor);
-		WRITE(DensityRadius, myParam.neighborSearch.densityRadius);
-		WRITE(MaxNeighbors, myParam.colorVisuals.maxNeighbors);
-		WRITE(MaxColorForce, myParam.colorVisuals.maxColorAcc);
-		WRITE(MaxSizeForce, myParam.densitySize.sizeAcc);
-		WRITE(DeltaVMaxAcc, myParam.colorVisuals.ShockwaveMaxAcc);
-		WRITE(TrailsMaxLength, myVar.trailMaxLength);
-		WRITE(TrailsThickness, myParam.trails.trailThickness);
-		WRITE(ParticleSizeMult, myVar.particleSizeMultiplier);
-		WRITE(VisiblePAmountMult, myParam.particlesSpawning.particleAmountMultiplier);
-		WRITE(DMPAmountMult, myParam.particlesSpawning.DMAmountMultiplier);
-		WRITE(Softening, myVar.softening);
-		WRITE(Theta, myVar.theta);
-		WRITE(TimeMult, myVar.timeStepMultiplier);
-		WRITE(CollisionSubsteps, myVar.substeps);
-		WRITE(GravityMultiplier, myVar.gravityMultiplier);
-		WRITE(HeavyParticlesMass, myParam.particlesSpawning.heavyParticleWeightMultiplier);
-		WRITE(CollisionBounciness, myVar.particleBounciness);
-		WRITE(SPHRadiusMult, sph.radiusMultiplier);
-		WRITE(SPHMass, sph.mass);
-		WRITE(SPHViscosity, sph.viscosity);
-		WRITE(SPHCohesion, sph.cohesionCoefficient);
-		WRITE(SPHGround, myVar.sphGround);
-		WRITE(SPHDelta, sph.delta);
-		WRITE(SPHMaxVel, myVar.sphMaxVel);
-		WRITE(DomainWidth, myVar.domainSize.x);
-		WRITE(DomainHeight, myVar.domainSize.y);
-		WRITE(CameraTarget, myParam.myCamera.camera.target);
-		WRITE(CameraOffset, myParam.myCamera.camera.offset);
-		WRITE(CameraZoom, myParam.myCamera.camera.zoom);
-		WRITE(ColorMaxVel, myParam.colorVisuals.maxVel);
-		WRITE(ColorMaxPressure, myParam.colorVisuals.maxPress);
-		WRITE(TemperatureSimulation, myVar.isTempEnabled);
-		WRITE(TemperatureColor, myParam.colorVisuals.temperatureColor);
-		WRITE(TemperatureGasColor, myParam.colorVisuals.gasTempColor);
-		WRITE(MaxTemperatureColor, myParam.colorVisuals.tempColorMaxTemp);
-		WRITE(AmbientTemperature, myVar.ambientTemp);
-		WRITE(AmbientHeatRate, myVar.globalAmbientHeatRate);
-		WRITE(HeatConductivityMultiplier, myVar.globalHeatConductivity);
+        if (loadFlag && !saveFlag) {
+            std::ifstream inFile(filename, std::ios::in | std::ios::binary);
+            if (!inFile.is_open()) {
+                std::cerr << "Failed to open file for reading: " << filename << std::endl;
+                return;
+            }
 
-#undef WRITE
+            const std::string sepToken = "---PARTICLE BINARY DATA---";
+            std::string   line;
+            std::string   yamlText;
+            bool          sawSeparator = false;
 
-		out << "numParticles " << myParam.pParticles.size() << "\n";
-		for (auto const& p : myParam.pParticles) out << "P " << p << "\n";
-		for (auto const& r : myParam.rParticles) out << "R " << r << "\n";
-	}
+            while (std::getline(inFile, line)) {
+                if (line.find(sepToken) != std::string::npos) {
+                    sawSeparator = true;
+                    break;
+                }
+                yamlText += line + "\n";
+            }
 
+            inFile.close();
 
-	template <typename T>
-	bool READ(std::ifstream& in, std::string key, std::string paramName, T& param) {
-		if (key == paramName) {
-			if (in >> param) {
-				std::cout << "Successfully read " << paramName << ": " << param << std::endl;
-				return true;
-			}
-			else {
-				std::cout << "Error reading parameter: " << paramName << std::endl;
-				in.clear(); // Clear error flags
+            try {
+                std::vector<YAML::Node> documents = YAML::LoadAll(yamlText);
+                bool found = false;
 
-				if constexpr (std::is_same_v<T, float>) {
-					// This entire block is only *compiled* when T is float.
-					param = 20.0f;
-				}
-				// Skip the rest of the current line to avoid infinite loop
-				std::string line;
-				std::getline(in, line);
+                for (const auto& doc : documents) {
+                    if (!doc || !doc[key]) continue;
 
-				return false;
-			}
-		}
-		return false;
-	}
+                    if constexpr (!std::is_same_v<T, unsigned char>) {
+                        value = doc[key].as<T>();
+                        std::cout << "Loaded " << key << ": " << value << std::endl;
+                    }
+                    else {
+                        int tempInt = doc[key].as<int>();
+                        value = static_cast<unsigned char>(tempInt);
+                        std::cout << "Loaded " << key << ": " << tempInt << std::endl;
+                    }
 
-	void loadSimulation(const std::string& filename, UpdateVariables& myVar, UpdateParameters& myParam, SPH& sph) {
-		std::ifstream in(filename);
-		if (!in) {
-			std::cout << "Failed to open file for loading: " << filename << std::endl;
-			return;
-		}
+                    found = true;
+                    break;
+                }
 
-		myParam.pParticles.clear();
-		myParam.rParticles.clear();
+                if (!found) {
+                    std::cerr << "No " << key << " found in any YAML document in the file!" << std::endl;
+                }
+            }
+            catch (const YAML::Exception& e) {
+                std::cerr << "YAML error while loading key \"" << key << "\": " << e.what() << std::endl;
+            }
+        }
+    }
 
-		std::string key;
-		while (in >> key) {
-			READ(in, key, "GlobalTrails", myVar.isGlobalTrailsEnabled);
-			READ(in, key, "SelectedTrails", myVar.isSelectedTrailsEnabled);
-			READ(in, key, "LocalTrails", myVar.isLocalTrailsEnabled);
-			READ(in, key, "WhiteTrails", myParam.trails.whiteTrails);
-			READ(in, key, "SolidColor", myParam.colorVisuals.solidColor);
-			READ(in, key, "DensityColor", myParam.colorVisuals.densityColor);
-			READ(in, key, "ForceColor", myParam.colorVisuals.forceColor);
-			READ(in, key, "VelocityColor", myParam.colorVisuals.velocityColor);
-			READ(in, key, "DeltaVColor", myParam.colorVisuals.shockwaveColor);
-			READ(in, key, "PressureColor", myParam.colorVisuals.pressureColor);
-			READ(in, key, "SPHColor", myParam.colorVisuals.SPHColor);
-			READ(in, key, "SelectedColor", myParam.colorVisuals.selectedColor);
-			READ(in, key, "DarkMatter", myVar.isDarkMatterEnabled);
-			READ(in, key, "ShowDarkMatter", myParam.colorVisuals.showDarkMatterEnabled);
-			READ(in, key, "LoopingSpace", myVar.isPeriodicBoundaryEnabled);
-			READ(in, key, "SPHEnabled", myVar.isSPHEnabled);
-			READ(in, key, "Collisions", myVar.isCollisionsEnabled);
-			READ(in, key, "DensitySize", myVar.isDensitySizeEnabled);
-			READ(in, key, "ForceSize", myVar.isForceSizeEnabled);
-			READ(in, key, "Glow", myVar.isGlowEnabled);
-			READ(in, key, "ShipGas", myVar.isShipGasEnabled);
-			READ(in, key, "SPHWater", myParam.brush.SPHWater);
-			READ(in, key, "SPHRock", myParam.brush.SPHRock);
-			READ(in, key, "SPHSand", myParam.brush.SPHSand);
-			READ(in, key, "SPHSoil", myParam.brush.SPHSoil);
-			READ(in, key, "SPHIce", myParam.brush.SPHIce);
-			READ(in, key, "SPHMud", myParam.brush.SPHMud);
-			READ(in, key, "pColors", myParam.colorVisuals.pColor);
-			READ(in, key, "sColors", myParam.colorVisuals.sColor);
-			READ(in, key, "DensityRadius", myParam.neighborSearch.densityRadius);
-			READ(in, key, "MaxNeighbors", myParam.colorVisuals.maxNeighbors);
-			READ(in, key, "MaxColorForce", myParam.colorVisuals.maxColorAcc);
-			READ(in, key, "MaxSizeForce", myParam.densitySize.sizeAcc);
-			READ(in, key, "DeltaVMaxAcc", myParam.colorVisuals.ShockwaveMaxAcc);
-			READ(in, key, "TrailsMaxLength", myVar.trailMaxLength);
-			READ(in, key, "TrailsThickness", myParam.trails.trailThickness);
-			READ(in, key, "ParticleSizeMult", myVar.particleSizeMultiplier);
-			READ(in, key, "VisiblePAmountMult", myParam.particlesSpawning.particleAmountMultiplier);
-			READ(in, key, "DMPAmountMult", myParam.particlesSpawning.DMAmountMultiplier);
-			READ(in, key, "Softening", myVar.softening);
-			READ(in, key, "Theta", myVar.theta);
-			READ(in, key, "TimeMult", myVar.timeStepMultiplier);
-			READ(in, key, "CollisionSubsteps", myVar.substeps);
-			READ(in, key, "GravityMultiplier", myVar.gravityMultiplier);
-			READ(in, key, "HeavyParticlesMass", myParam.particlesSpawning.heavyParticleWeightMultiplier);
-			READ(in, key, "CollisionBounciness", myVar.particleBounciness);
-			READ(in, key, "SPHRadiusMult", sph.radiusMultiplier);
-			READ(in, key, "SPHMass", sph.mass);
-			READ(in, key, "SPHViscosity", sph.viscosity);
-			READ(in, key, "SPHCohesion", sph.cohesionCoefficient);
-			READ(in, key, "SPHGround", myVar.sphGround);
-			READ(in, key, "SPHDelta", sph.delta);
-			READ(in, key, "SPHMaxVel", myVar.sphMaxVel);
-			READ(in, key, "DomainWidth", myVar.domainSize.x);
-			READ(in, key, "DomainHeight", myVar.domainSize.y);
-			READ(in, key, "CameraTarget", myParam.myCamera.camera.target);
-			READ(in, key, "CameraOffset", myParam.myCamera.camera.offset);
-			READ(in, key, "CameraZoom", myParam.myCamera.camera.zoom);
-			READ(in, key, "ColorMaxVel", myParam.colorVisuals.maxVel);
-			READ(in, key, "ColorMaxPressure", myParam.colorVisuals.maxPress);
-			READ(in, key, "TemperatureSimulation", myVar.isTempEnabled);
-			READ(in, key, "TemperatureColor", myParam.colorVisuals.temperatureColor);
-			READ(in, key, "TemperatureGasColor", myParam.colorVisuals.gasTempColor);
-			READ(in, key, "MaxTemperatureColor", myParam.colorVisuals.tempColorMaxTemp);
-			READ(in, key, "AmbientTemperature", myVar.ambientTemp);
-			READ(in, key, "AmbientHeatRate", myVar.globalAmbientHeatRate);
-			READ(in, key, "HeatConductivityMultiplier", myVar.globalHeatConductivity);
+    void saveSystem(const std::string& filename, UpdateVariables& myVar, UpdateParameters& myParam, SPH& sph) {
 
+        YAML::Emitter out;
+        /*out << YAML::BeginMap;*/
 
-			if (key == "numParticles") {
-				size_t n;
-				in >> n;
-				myParam.pParticles.reserve(n);
-				myParam.rParticles.reserve(n);
-			}
-			else if (key == "P") {
-				ParticlePhysics p;
-				in >> p;
-				myParam.pParticles.push_back(p);
-			}
-			else if (key == "R") {
-				ParticleRendering r;
-				in >> r;
-				myParam.rParticles.push_back(r);
-			}
-		}
-		std::cout << "Successfully loaded " << myParam.pParticles.size() << " particles" << std::endl;
-	}
+        // ----- Trails -----
+        paramIO(filename, out, "GlobalTrails", myVar.isGlobalTrailsEnabled);
+        paramIO(filename, out, "SelectedTrails", myVar.isSelectedTrailsEnabled);
+        paramIO(filename, out, "LocalTrails", myVar.isLocalTrailsEnabled);
+        paramIO(filename, out, "WhiteTrails", myParam.trails.whiteTrails);
+        paramIO(filename, out, "TrailsMaxLength", myVar.trailMaxLength);
+        paramIO(filename, out, "TrailsThickness", myParam.trails.trailThickness);
+
+        // ----- Color parameters -----
+        paramIO(filename, out, "SolidColor", myParam.colorVisuals.solidColor);
+        paramIO(filename, out, "DensityColor", myParam.colorVisuals.densityColor);
+        paramIO(filename, out, "ForceColor", myParam.colorVisuals.forceColor);
+        paramIO(filename, out, "VelocityColor", myParam.colorVisuals.velocityColor);
+        paramIO(filename, out, "ShockwaveColor", myParam.colorVisuals.shockwaveColor);
+        paramIO(filename, out, "PressureColor", myParam.colorVisuals.pressureColor);
+        paramIO(filename, out, "SPHColor", myParam.colorVisuals.SPHColor);
+        paramIO(filename, out, "SelectedColor", myParam.colorVisuals.selectedColor);
+        paramIO(filename, out, "ShowDarkMatter", myParam.colorVisuals.showDarkMatterEnabled);
+
+        // ----- Color sliders -----
+        paramIO(filename, out, "ColorMaxVel", myParam.colorVisuals.maxVel);
+        paramIO(filename, out, "ColorMaxPressure", myParam.colorVisuals.maxPress);
+        paramIO(filename, out, "MaxColorForce", myParam.colorVisuals.maxColorAcc);
+        paramIO(filename, out, "ShockwaveMaxAcc", myParam.colorVisuals.ShockwaveMaxAcc);
+        paramIO(filename, out, "TemperatureColor", myParam.colorVisuals.temperatureColor);
+        paramIO(filename, out, "TemperatureGasColor", myParam.colorVisuals.gasTempColor);
+        paramIO(filename, out, "MaxTemperatureColor", myParam.colorVisuals.tempColorMaxTemp);
+        paramIO(filename, out, "MaxNeighbors", myParam.colorVisuals.maxNeighbors);
+
+        // ----- Other visual sliders -----
+        paramIO(filename, out, "DensityRadius", myParam.neighborSearch.densityRadius);
+        paramIO(filename, out, "MaxSizeForce", myParam.densitySize.sizeAcc);
+        paramIO(filename, out, "ParticleSizeMult", myVar.particleSizeMultiplier);
+        paramIO(filename, out, "VisiblePAmountMult", myParam.particlesSpawning.particleAmountMultiplier);
+        paramIO(filename, out, "DMPAmountMult", myParam.particlesSpawning.DMAmountMultiplier);
+
+        // ----- Colors -----
+        paramIO(filename, out, "pColorsR", myParam.colorVisuals.pColor.r);
+        paramIO(filename, out, "pColorsG", myParam.colorVisuals.pColor.g);
+        paramIO(filename, out, "pColorsB", myParam.colorVisuals.pColor.b);
+        paramIO(filename, out, "pColorsA", myParam.colorVisuals.pColor.a);
+
+        paramIO(filename, out, "sColorsR", myParam.colorVisuals.sColor.r);
+        paramIO(filename, out, "sColorsG", myParam.colorVisuals.sColor.g);
+        paramIO(filename, out, "sColorsB", myParam.colorVisuals.sColor.b);
+        paramIO(filename, out, "sColorsA", myParam.colorVisuals.sColor.a);
+
+        // ----- Misc Toggles -----
+        paramIO(filename, out, "DarkMatter", myVar.isDarkMatterEnabled);
+        paramIO(filename, out, "LoopingSpace", myVar.isPeriodicBoundaryEnabled);
+        paramIO(filename, out, "SPHEnabled", myVar.isSPHEnabled);
+        paramIO(filename, out, "Collisions", myVar.isCollisionsEnabled);
+        paramIO(filename, out, "DensitySize", myVar.isDensitySizeEnabled);
+        paramIO(filename, out, "ForceSize", myVar.isForceSizeEnabled);
+        paramIO(filename, out, "Glow", myVar.isGlowEnabled);
+        paramIO(filename, out, "ShipGas", myVar.isShipGasEnabled);
+
+        // ----- SPH Materials -----
+        paramIO(filename, out, "SPHWater", myParam.brush.SPHWater);
+        paramIO(filename, out, "SPHRock", myParam.brush.SPHRock);
+        paramIO(filename, out, "SPHSand", myParam.brush.SPHSand);
+        paramIO(filename, out, "SPHSoil", myParam.brush.SPHSoil);
+        paramIO(filename, out, "SPHIce", myParam.brush.SPHIce);
+        paramIO(filename, out, "SPHMud", myParam.brush.SPHMud);
+
+        // ----- Physics params -----
+        paramIO(filename, out, "Softening", myVar.softening);
+        paramIO(filename, out, "Theta", myVar.theta);
+        paramIO(filename, out, "TimeMult", myVar.timeStepMultiplier);
+        paramIO(filename, out, "CollisionSubsteps", myVar.substeps);
+        paramIO(filename, out, "GravityMultiplier", myVar.gravityMultiplier);
+        paramIO(filename, out, "CollisionBounciness", myVar.particleBounciness);
+        paramIO(filename, out, "HeavyParticlesMass", myParam.particlesSpawning.heavyParticleWeightMultiplier);
+        paramIO(filename, out, "TemperatureSimulation", myVar.isTempEnabled);
+        paramIO(filename, out, "AmbientTemperature", myVar.ambientTemp);
+        paramIO(filename, out, "AmbientHeatRate", myVar.globalAmbientHeatRate);
+        paramIO(filename, out, "HeatConductivityMultiplier", myVar.globalHeatConductivity);
+
+        // ----- SPH -----
+        paramIO(filename, out, "SPHRadiusMult", sph.radiusMultiplier);
+        paramIO(filename, out, "SPHMass", sph.mass);
+        paramIO(filename, out, "SPHViscosity", sph.viscosity);
+        paramIO(filename, out, "SPHCohesion", sph.cohesionCoefficient);
+        paramIO(filename, out, "SPHGround", myVar.sphGround);
+        paramIO(filename, out, "SPHDelta", sph.delta);
+        paramIO(filename, out, "SPHMaxVel", myVar.sphMaxVel);
+
+        // ----- Domain size -----
+        paramIO(filename, out, "DomainWidth", myVar.domainSize.x);
+        paramIO(filename, out, "DomainHeight", myVar.domainSize.y);
+
+        // ----- Camera -----
+        paramIO(filename, out, "CameraTargetX", myParam.myCamera.camera.target.x);
+        paramIO(filename, out, "CameraTargetY", myParam.myCamera.camera.target.y);
+        paramIO(filename, out, "CameraOffsetX", myParam.myCamera.camera.offset.x);
+        paramIO(filename, out, "CameraOffsetY", myParam.myCamera.camera.offset.y);
+        paramIO(filename, out, "CameraZoom", myParam.myCamera.camera.zoom);
+
+        /*out << YAML::EndMap;*/
+
+        std::string yamlString = out.c_str();
+
+        std::fstream file;
+        if (saveFlag) {
+            file.open(filename, std::ios::out | std::ios::binary | std::ios::trunc);
+            if (!file.is_open()) {
+                std::cerr << "Failed to open file for writing: " << filename << "\n";
+                return;
+            }
+
+            file.write(yamlString.c_str(), yamlString.size());
+
+            const char* separator = "\n---PARTICLE BINARY DATA---\n";
+            file.write(separator, strlen(separator));
+
+            for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+                const ParticlePhysics& p = myParam.pParticles[i];
+                const ParticleRendering& r = myParam.rParticles[i];
+                file.write(reinterpret_cast<const char*>(&p), sizeof(p));
+                file.write(reinterpret_cast<const char*>(&r), sizeof(r));
+            }
+
+            file.close();
+        }
+        else if (loadFlag) {
+            file.open(filename, std::ios::in | std::ios::binary);
+            if (!file.is_open()) {
+                std::cerr << "Failed to open file for reading: " << filename << "\n";
+                return;
+            }
+
+            const std::string sepToken = "---PARTICLE BINARY DATA---";
+            std::string line;
+            bool foundSeparator = false;
+            std::streampos binaryStartPos = 0;
+
+            file.seekg(0, std::ios::beg);
+
+            while (std::getline(file, line)) {
+                if (line.find(sepToken) != std::string::npos) {
+                    foundSeparator = true;
+
+                    binaryStartPos = file.tellg();
+                    break;
+                }
+            }
+
+            if (!foundSeparator) {
+                std::cerr << "Separator not found. Cannot load binary data.\n";
+                file.close();
+                return;
+            }
+
+            file.clear();
+            file.seekg(binaryStartPos);
+
+            myParam.pParticles.clear();
+            myParam.rParticles.clear();
+
+            while (true) {
+                ParticlePhysics p;
+                ParticleRendering r;
+
+                file.read(reinterpret_cast<char*>(&p), sizeof(p));
+                if (file.gcount() != sizeof(p)) {
+                    break;
+                }
+                file.read(reinterpret_cast<char*>(&r), sizeof(r));
+                if (file.gcount() != sizeof(r)) {
+                    std::cerr << "Incomplete ParticleRendering read; file may be corrupted.\n";
+                    break;
+                }
+                myParam.pParticles.push_back(p);
+                myParam.rParticles.push_back(r);
+            }
+
+            file.close();
+        }
+    }
+
 
 	void saveLoadLogic(UpdateVariables& myVar, UpdateParameters& myParam, SPH& sph) {
 		if (saveFlag) {
@@ -237,10 +294,10 @@ public:
 			for (const std::filesystem::directory_entry& entry : std::filesystem::directory_iterator("Saves")) {
 
 				std::string filename = entry.path().filename().string();
-				if (filename.rfind("Save_", 0) == 0 && filename.find(".galaxsim") != std::string::npos) {
+				if (filename.rfind("Save_", 0) == 0 && filename.find(".bin") != std::string::npos) {
 
 					size_t startPos = filename.find_last_of('_') + 1;
-					size_t endPos = filename.find(".galaxsim");
+					size_t endPos = filename.find(".bin");
 					int index = std::stoi(filename.substr(startPos, endPos - startPos));
 
 					if (index >= nextAvailableIndex) {
@@ -249,9 +306,9 @@ public:
 				}
 			}
 
-			std::string savePath = "Saves/Save_" + std::to_string(nextAvailableIndex) + ".galaxsim";
+			std::string savePath = "Saves/Save_" + std::to_string(nextAvailableIndex) + ".bin";
 
-			saveSimulation(savePath.c_str(), myVar, myParam, sph);
+			saveSystem(savePath.c_str(), myVar, myParam, sph);
 
 			saveIndex++;
 
@@ -276,7 +333,7 @@ public:
 				if (entry.is_regular_file()) {
 					const auto filename = entry.path().filename().string();
 					const auto fullpath = entry.path().string();
-					if (filename.rfind(".galaxsim") != std::string::npos) {
+					if (filename.rfind(".bin") != std::string::npos) {
 						std::string relativePath = fullpath.substr(6);
 						files.emplace_back(relativePath, fullpath);
 					}
@@ -284,7 +341,7 @@ public:
 			}
 
 			if (files.empty()) {
-				std::cout << "No .galaxsim files found in Saves directory" << std::endl;
+				std::cout << "No .bin files found in Saves directory" << std::endl;
 				loadFlag = false;
 				return;
 			}
@@ -295,7 +352,7 @@ public:
 					const std::string& nameB = B.first;
 
 					auto isDefault = [](const std::string& s) {
-						const std::string key = "DefaultSettings.galaxsim";
+						const std::string key = "DefaultSettings.bin";
 
 						return s.size() >= key.size()
 							&& s.compare(s.size() - key.size(), key.size(), key) == 0;
@@ -341,9 +398,9 @@ public:
 			ImGui::Begin("Files");
 
 			for (const auto& [filename, fullPath] : files) {
-				
+
 				if (ImGui::Button(fullPath.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, buttonHeight))) {
-					loadSimulation(fullPath.c_str(), myVar, myParam, sph);
+					saveSystem(fullPath.c_str(), myVar, myParam, sph);
 					loadFlag = false;
 				}
 

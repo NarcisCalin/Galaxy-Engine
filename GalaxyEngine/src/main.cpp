@@ -71,7 +71,7 @@ ImVec4 UpdateVariables::colLegendBg = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
 
 // SPH Materials vector definition
 std::vector<std::unique_ptr<SPHMaterial>> SPHMaterials::materials;
-std::unordered_map<std::string, SPHMaterial*> SPHMaterials::labelToMaterial;
+std::unordered_map<uint32_t, SPHMaterial*> SPHMaterials::idToMaterial;
 
 
 float UpdateVariables::particleBaseMass = 8500000000.0f;
@@ -237,7 +237,6 @@ static void updateScene() {
 		delete grid;
 	}
 }
-
 
 static void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture) {
 
@@ -407,7 +406,9 @@ int main(int argc, char** argv) {
 	if (!std::filesystem::exists("Saves")) {
 		std::filesystem::create_directory("Saves");
 	}
-	save.saveSimulation("Saves/DefaultSettings.galaxsim", myVar, myParam, sph);
+	save.saveFlag = true;
+	save.saveSystem("Saves/DefaultSettings.bin", myVar, myParam, sph);
+	save.saveFlag = false;
 
 	ImGuiStyle& style = ImGui::GetStyle();
 	ImVec4* colors = style.Colors;

@@ -41,7 +41,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 				false,
 				false,
 				-1.0f,
-				"nonSPH"
+				0
 			);
 			myVar.isDragging = false;
 		}
@@ -106,7 +106,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 					false,
 					true,
 					-1.0f,
-					"nonSPH"
+					0
 				);
 			}
 
@@ -150,7 +150,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 						true,
 						false,
 						-1.0f,
-						"nonSPH"
+						0
 					);
 				}
 			}
@@ -214,7 +214,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 					false,
 					true,
 					-1.0f,
-					"nonSPH"
+					0
 				);
 			}
 
@@ -257,7 +257,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 						true,
 						false,
 						-1.0f,
-						"nonSPH"
+						0
 					);
 				}
 			}
@@ -299,7 +299,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 					false,
 					true,
 					-1.0f,
-					"nonSPH"
+					0
 				);
 			}
 
@@ -352,7 +352,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 					false,
 					true,
 					-1.0f,
-					"nonSPH"
+					0
 				);
 			}
 
@@ -402,7 +402,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 						true,
 						false,
 						-1.0f,
-						"nonSPH"
+						0
 					);
 				}
 			}

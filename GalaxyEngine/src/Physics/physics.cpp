@@ -50,8 +50,8 @@ void Physics::temperatureCalculation(std::vector<ParticlePhysics>& pParticles, s
 
 	for (size_t i = 0; i < pParticles.size(); i++) {
 		ParticlePhysics& p = pParticles[i];
-		auto it = SPHMaterials::labelToMaterial.find(rParticles[i].sphLabel);
-		if (it != SPHMaterials::labelToMaterial.end()) {
+		auto it = SPHMaterials::idToMaterial.find(rParticles[i].sphLabel);
+		if (it != SPHMaterials::idToMaterial.end()) {
 			SPHMaterial* pMat = it->second;
 
 			float pTotalVel = sqrt(p.vel.x * p.vel.x + p.vel.y * p.vel.y);

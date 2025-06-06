@@ -85,7 +85,7 @@ public:
 							false,
 							true,
 							3.0f,
-							water.sphLabel
+							water.id
 						));
 
 						rParticles.back().sphColor = water.color;
@@ -122,7 +122,7 @@ public:
 							false,
 							true,
 							3.0f,
-							water.sphLabel
+							water.id
 						));
 
 						rParticles.back().sphColor = water.color;
@@ -159,7 +159,7 @@ public:
 							false,
 							true,
 							3.0f,
-							water.sphLabel
+							water.id
 						));
 
 						rParticles.back().sphColor = water.color;
@@ -196,7 +196,7 @@ public:
 							false,
 							true,
 							3.0f,
-							water.sphLabel
+							water.id
 						));
 
 						rParticles.back().sphColor = water.color;

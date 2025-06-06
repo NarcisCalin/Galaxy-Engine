@@ -217,8 +217,8 @@ struct ColorVisuals {
 			for (size_t i = 0; i < rParticles.size(); i++) {
 				if (!rParticles[i].uniqueColor) {
 
-					auto it = SPHMaterials::labelToMaterial.find(rParticles[i].sphLabel);
-					if (it != SPHMaterials::labelToMaterial.end()) {
+					auto it = SPHMaterials::idToMaterial.find(rParticles[i].sphLabel);
+					if (it != SPHMaterials::idToMaterial.end()) {
 						SPHMaterial* pMat = it->second;
 
 						float normalizedTemp = (pParticles[i].temp - minTemp) / (pMat->hotPoint - minTemp);

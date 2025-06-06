@@ -14,6 +14,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/cmake/glm.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/openmp.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/raylib.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/imgui.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/yaml.cmake)
 
 set(
     GALAXYENGINE_SOURCES
@@ -50,7 +51,7 @@ set_target_properties(
         MSVC_RUNTIME_LIBRARY MultiThreadedDLL
         VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/GalaxyEngine)
 
-target_link_libraries(GalaxyEngine PUBLIC raylib-lib ffmpeg imgui glm-lib openmp)
+target_link_libraries(GalaxyEngine PUBLIC raylib-lib ffmpeg imgui glm-lib openmp yaml-cpp::yaml-cpp)
 
 if(WIN32)
     target_link_libraries(GalaxyEngine PUBLIC winmm)

@@ -46,7 +46,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 				1.0f,
 				1.0f);
 
-			myParam.rParticles.emplace_back(Color{ 128, 128, 128, 100 }, 0.125f, false, false, false, true, true, false, true, -1.0f, "nonSPH");
+			myParam.rParticles.emplace_back(Color{ 128, 128, 128, 100 }, 0.125f, false, false, false, true, true, false, true, -1.0f, 0);
 		}
 	}
 
@@ -72,7 +72,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 					water.visc,
 					water.cohesion);
 
-				myParam.rParticles.emplace_back(water.color, 0.125f, false, false, false, true, true, false, true, -1.0f, water.sphLabel);
+				myParam.rParticles.emplace_back(water.color, 0.125f, false, false, false, true, true, false, true, -1.0f, water.id);
 
 				myParam.rParticles.back().sphColor = water.color;
 			}
@@ -123,7 +123,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 					false,
 					true, 
 					-1.0f,
-					rock.sphLabel
+					rock.id
 				);
 
 				myParam.rParticles.back().sphColor = Color{
@@ -181,7 +181,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 					false, 
 					true,
 					-1.0f,
-					sand.sphLabel
+					sand.id
 				);
 
 				myParam.rParticles.back().sphColor = Color{
@@ -238,7 +238,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 					false, 
 					true, 
 					-1.0f,
-					soil.sphLabel
+					soil.id
 				);
 
 				myParam.rParticles.back().sphColor = Color{
@@ -271,7 +271,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 					water.visc,
 					water.cohesion);
 
-				myParam.rParticles.emplace_back(water.color, 0.125f, false, false, false, true, true, false, true, -1.0f, water.sphLabel);
+				myParam.rParticles.emplace_back(water.color, 0.125f, false, false, false, true, true, false, true, -1.0f, water.id);
 
 				myParam.rParticles.back().sphColor = water.color;
 				myParam.pParticles.back().temp = 1.0f;
@@ -323,7 +323,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 					false,
 					true,
 					-1.0f,
-					mud.sphLabel
+					mud.id
 				);
 
 				myParam.rParticles.back().sphColor = Color{
@@ -356,7 +356,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 					water.visc,
 					water.cohesion);
 
-				myParam.rParticles.emplace_back(water.color, 0.125f, false, false, false, true, true, false, true, -1.0f, water.sphLabel);
+				myParam.rParticles.emplace_back(water.color, 0.125f, false, false, false, true, true, false, true, -1.0f, water.id);
 
 				myParam.rParticles.back().sphColor = water.color;
 				myParam.pParticles.back().temp = 440.0f;

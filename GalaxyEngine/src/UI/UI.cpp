@@ -50,7 +50,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		visualSlidersParams<float>("Max Shockwave Accel", "Controls the acceleration threshold to map the particle color in Shockwave color mode", myParam.colorVisuals.ShockwaveMaxAcc, 1.0f, 120.0f),
 		visualSlidersParams<float>("Max Velocity Color", "Controls the max velocity used to map the colors in the velocity color mode", myParam.colorVisuals.maxVel, 10.0f, 10000.0f),
 		visualSlidersParams<float>("Max Pressure Color", "Controls the max pressure used to map the colors in the pressure color mode", myParam.colorVisuals.maxPress, 100.0f, 100000.0f),
-		visualSlidersParams<float>("Max Temperature Color", "Controls the max temperature used to map the colors in the temperature color mode", myParam.colorVisuals.tempColorMaxTemp, 10.0f, 10000.0f),
+		visualSlidersParams<float>("Max Temperature Color", "Controls the max temperature used to map the colors in the temperature color mode", myParam.colorVisuals.tempColorMaxTemp, 10.0f, 50000.0f),
 		visualSlidersParams<float>("Particles Size", "Controls the size of all particles", myVar.particleSizeMultiplier, 0.1f, 5.0f),
 		visualSlidersParams<int>("Trails Length", "Controls how long should the trails be. This feature is computationally expensive", myVar.trailMaxLength, 0, 1500),
 		visualSlidersParams<float>("Trails Thickness", "Controls the trails thickness", myParam.trails.trailThickness, 0.007f, 0.5f),
@@ -538,42 +538,36 @@ void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 		ParticleRendering& r = myParam.rParticles[i];
 		if (myParam.pParticlesSelected.size() == 0) {
-			if (r.sphLabel == "water") {
+			if (r.sphLabel == 1) {
 				waterAmount++;
 			}
-			else if (r.sphLabel == "rock") {
+			else if (r.sphLabel == 2) {
 				rockAmount++;
 			}
-			else if (r.sphLabel == "sand") {
+			else if (r.sphLabel == 3) {
 				sandAmount++;
 			}
-			else if (r.sphLabel == "soil") {
+			else if (r.sphLabel == 4) {
 				soilAmount++;
 			}
-			else if (r.sphLabel == "ice") {
-				iceAmount++;
-			}
-			else if (r.sphLabel == "mud") {
+			else if (r.sphLabel == 5) {
 				mudAmount++;
 			}
 		}
 		else {
-			if (r.sphLabel == "water" && r.isSelected) {
+			if (r.sphLabel == 1 && r.isSelected) {
 				waterAmount++;
 			}
-			else if (r.sphLabel == "rock" && r.isSelected) {
+			else if (r.sphLabel == 2 && r.isSelected) {
 				rockAmount++;
 			}
-			else if (r.sphLabel == "sand" && r.isSelected) {
+			else if (r.sphLabel == 3 && r.isSelected) {
 				sandAmount++;
 			}
-			else if (r.sphLabel == "soil" && r.isSelected) {
+			else if (r.sphLabel == 4 && r.isSelected) {
 				soilAmount++;
 			}
-			else if (r.sphLabel == "ice" && r.isSelected) {
-				iceAmount++;
-			}
-			else if (r.sphLabel == "mud" && r.isSelected) {
+			else if (r.sphLabel == 5 && r.isSelected) {
 				mudAmount++;
 			}
 		}
