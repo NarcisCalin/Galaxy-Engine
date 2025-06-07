@@ -13,7 +13,7 @@ struct Controls {
 
 	void showInfo(bool& fullscreen);
 
-	std::array<std::string, 49> controlsArray = {
+	std::array<std::string, 51> controlsArray = {
 	"----PARTICLES CREATION----",
 	"1. Hold LMB and Drag: Throw heavy particle",
 	"2. Hold MMB: Paint particles",
@@ -57,6 +57,8 @@ struct Controls {
 	"15. H: Copy selected",
 	"16. Hold J and drag: Throw copied",
 	"17. Arrows: Control selected particles"
+	"18. K: Heat brush",
+	"19. L: Cool brush"
 	};
 
 	std::array<std::string, 30> infoArray = {
