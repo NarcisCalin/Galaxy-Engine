@@ -82,7 +82,7 @@ struct UpdateVariables{
 	float timeStepMultiplier = 1.0f;
 	float sphMaxVel = 250.0f;
 	float globalHeatConductivity = 0.045f;
-	float globalAmbientHeatRate = 0.1f;
+	float globalAmbientHeatRate = 1.0f;
 	float ambientTemp = 274.0f;
 
 	static float particleBaseMass;
