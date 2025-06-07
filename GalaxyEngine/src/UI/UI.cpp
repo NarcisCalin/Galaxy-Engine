@@ -72,7 +72,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		physicsSlidersParams<float>("Collisions Bounciness", "Controls how much particles bounce when collisions mode is enabled", myVar.particleBounciness, 0.0f, 1.0f),
 		physicsSlidersParams<float>("Domain Width", "Controls the width of the global container", myVar.domainSize.x, 200.0f, 3840.0f),
 		physicsSlidersParams<float>("Domain Height", "Controls the height of the global container", myVar.domainSize.y, 200.0f, 2160.0f),
-		physicsSlidersParams<int>("Threads Amount", "Controls the amount of cpu threads used by the simulation", myVar.threadsAmount, 1, 32),
+		physicsSlidersParams<int>("Threads Amount", "Controls the amount of threads used by the simulation. Half your total amount of threads is usually the sweet spot", myVar.threadsAmount, 1, 32),
 
 		physicsSlidersParams<float>("Ambient Temperature", "Controls the desired temperature of the scene in Kelvin. 1 is near absolute zero. The default value is set just high enough to allow liquid water", myVar.ambientTemp, 1.0f, 2500.0f),
 		physicsSlidersParams<float>("Ambient Heat Rate", "Controls how fast particles' temperature try to match ambient temperature", myVar.globalAmbientHeatRate, 0.0f, 10.0f),
