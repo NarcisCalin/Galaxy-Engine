@@ -56,7 +56,7 @@ struct Controls {
 	"14. X + MMB: Eraser",
 	"15. H: Copy selected",
 	"16. Hold J and drag: Throw copied",
-	"17. Arrows: Control selected particles"
+	"17. Arrows: Control selected particles",
 	"18. K: Heat brush",
 	"19. L: Cool brush"
 	};
