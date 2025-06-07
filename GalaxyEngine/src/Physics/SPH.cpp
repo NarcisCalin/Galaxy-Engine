@@ -214,7 +214,7 @@ void SPH::groundModeBoundary(std::vector<ParticlePhysics>& pParticles, std::vect
 	for (size_t i = 0; i < pParticles.size(); ++i) {
 		if (!rParticles[i].isSPH) continue;
 		auto& p = pParticles[i];
-		p.acc.y += 3.0f;
+		p.acc.y += verticalGravity;
 
 		// Left wall
 		if (p.pos.x - radiusMultiplier < 0.0f) {

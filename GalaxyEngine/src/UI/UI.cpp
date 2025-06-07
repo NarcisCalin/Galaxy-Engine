@@ -62,7 +62,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	static std::array<std::variant<
 		physicsSlidersParams<float>,
 		physicsSlidersParams<int>>,
-		19> physicsSliders = {
+		20> physicsSliders = {
 		physicsSlidersParams<float>("Softening", "Controls the smoothness of the gravity forces", myVar.softening, 1.0f, 30.0f),
 		physicsSlidersParams<float>("Theta", "Controls the quality of the gravity calculation. Higher means lower quality", myVar.theta, 0.1f, 5.0f),
 		physicsSlidersParams<float>("Time Scale", "Controls how fast time passes", myVar.timeStepMultiplier, 0.0f, 15.0f),
@@ -74,16 +74,17 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		physicsSlidersParams<float>("Domain Height", "Controls the height of the global container", myVar.domainSize.y, 200.0f, 2160.0f),
 		physicsSlidersParams<int>("Threads Amount", "Controls the amount of cpu threads used by the simulation", myVar.threadsAmount, 1, 32),
 
+		physicsSlidersParams<float>("Ambient Temperature", "Controls the desired temperature of the scene in Kelvin. 1 is near absolute zero. The default value is set just high enough to allow liquid water", myVar.ambientTemp, 1.0f, 2500.0f),
+		physicsSlidersParams<float>("Ambient Heat Rate", "Controls how fast particles' temperature try to match ambient temperature", myVar.globalAmbientHeatRate, 0.0f, 10.0f),
+		physicsSlidersParams<float>("Heat Conductivity Multiplier", "Controls the global heat conductivity of particles", myVar.globalHeatConductivity, 0.001f, 1.0f),
+
+		physicsSlidersParams<float>("SPH Vertical Gravity", "Controls the vertical gravity strength in SPH Ground Mode", sph.verticalGravity, 0.0f, 10.0f),
 		physicsSlidersParams<float>("SPH Mass Multiplier", "Controls the fluid mass of particles", sph.mass, 0.005f, 0.15f),
 		physicsSlidersParams<float>("SPH Viscosity", "Controls how viscous particles are", sph.viscosity, 0.01f, 15.0f),
 		physicsSlidersParams<float>("SPH Stiffness", "Controls how stiff particles are", sph.stiffMultiplier, 0.01f, 15.0f),
 		physicsSlidersParams<float>("SPH Cohesion", "Controls how sticky particles are", sph.cohesionCoefficient, 0.0f, 10.0f),
 		physicsSlidersParams<float>("SPH Delta", "Controls the scaling factor in the pressure solver to enforce fluid incompressibility", sph.delta, 500.0f, 20000.0f),
-		physicsSlidersParams<float>("SPH Max Velocity", "Controls the maximum velocity a particle can have in SPH mode", myVar.sphMaxVel, 0.0f, 2000.0f),
-
-		physicsSlidersParams<float>("Ambient Temperature", "Controls the desired temperature of the scene in Kelvin. 1 is near absolute zero. The default value is set just high enough to allow liquid water", myVar.ambientTemp, 1.0f, 2500.0f),
-		physicsSlidersParams<float>("Ambient Heat Rate", "Controls how fast particles' temperature try to match ambient temperature", myVar.globalAmbientHeatRate, 0.0f, 10.0f),
-		physicsSlidersParams<float>("Heat Conductivity Multiplier", "Controls the global heat conductivity of particles", myVar.globalHeatConductivity, 0.001f, 1.0f)
+		physicsSlidersParams<float>("SPH Max Velocity", "Controls the maximum velocity a particle can have in SPH mode", myVar.sphMaxVel, 0.0f, 2000.0f)
 	};
 
 	float oldSpacingY = ImGui::GetStyle().ItemSpacing.y;

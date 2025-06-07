@@ -20,6 +20,7 @@ public:
 	float cohesionCoefficient = 1.0f;
 	const float boundDamping = -0.1f;
 	float delta = 9500.0f;
+	float verticalGravity = 3.0f;
 
 	float densTolerance = 0.08f;
 

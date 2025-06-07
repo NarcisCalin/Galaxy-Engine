@@ -182,6 +182,7 @@ public:
         paramIO(filename, out, "HeatConductivityMultiplier", myVar.globalHeatConductivity);
 
         // ----- SPH -----
+        paramIO(filename, out, "SPHGravity", sph.verticalGravity);
         paramIO(filename, out, "SPHRadiusMult", sph.radiusMultiplier);
         paramIO(filename, out, "SPHMass", sph.mass);
         paramIO(filename, out, "SPHViscosity", sph.viscosity);
