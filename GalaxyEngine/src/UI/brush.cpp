@@ -25,7 +25,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 		SPHMud = false;
 	}
 
-	if (!SPHWater && !SPHRock && !SPHSand && !SPHSoil && !SPHIce && !SPHMud) {
+	if (!SPHWater && !SPHRock && !SPHSand && !SPHSoil && !SPHIce && !SPHMud && !SPHGas) {
 		for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
 			float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 			float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;

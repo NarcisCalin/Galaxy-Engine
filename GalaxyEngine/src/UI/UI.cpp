@@ -113,6 +113,11 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	{ "SPH Color",       "Uses the SPH materials colors",                      &myParam.colorVisuals.SPHColor }
 	};
 
+	std::vector<SimilarTypeButton::Mode> size{
+{ "Density Size", "Maps particle neighbor amount to size", &myVar.isDensitySizeEnabled },
+{ "Force Size", "Maps particle acceleration to size", &myVar.isForceSizeEnabled }
+	};
+
 	buttonHelper("Fullscreen", "Toggles fulscreen", myVar.fullscreenState, -1.0f, settingsButtonY, true, enabled);
 
 	SimilarTypeButton::buttonIterator(controlsAndInfo, -1.0f, settingsButtonY, true, enabled);
@@ -159,8 +164,9 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 	buttonHelper("SPH Ground Mode", "Adds vertical gravity and makes particles collide with the domain walls", myVar.sphGround, -1.0f, settingsButtonY, true, sphGroundButtonEnabled);
 	buttonHelper("Collisions (!!!)", "Enables elastic collisions", myVar.isCollisionsEnabled, -1.0f, settingsButtonY, true, enabled);
-	buttonHelper("Density Size", "Maps particle neighbor amount to size", myVar.isDensitySizeEnabled, -1.0f, settingsButtonY, true, enabled);
-	buttonHelper("Force Size", "Maps particle acceleration to size", myVar.isForceSizeEnabled, -1.0f, settingsButtonY, true, enabled);
+	
+	SimilarTypeButton::buttonIterator(size, -1.0f, settingsButtonY, true, enabled);
+
 	buttonHelper("Glow", "Enables glow shader", myVar.isGlowEnabled, -1.0f, settingsButtonY, true, enabled);
 	buttonHelper("Predict Path", "Predicts the trajectory of heavy particles before launching them", myParam.particlesSpawning.enablePathPrediction, -1.0f, settingsButtonY, true, enabled);
 	buttonHelper("Ship Gas", "Enables gas particles coming from the ship when controlling particles", myVar.isShipGasEnabled, -1.0f, settingsButtonY, true, enabled);
@@ -391,6 +397,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				{"SPH Soil", "Soil", &myParam.brush.SPHSoil},
 				{"SPH Ice", "Ice", &myParam.brush.SPHIce},
 				{"SPH Mud", "Mud", &myParam.brush.SPHMud},
+				{"SPH Gas", "Gas", &myParam.brush.SPHGas}
 			};
 
 			float oldSpacingY = ImGui::GetStyle().ItemSpacing.y;
@@ -531,7 +538,6 @@ void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 	float rockAmount = 0.0f;
 	float sandAmount = 0.0f;
 	float soilAmount = 0.0f;
-	float iceAmount = 0.0f;
 	float mudAmount = 0.0f;
 
 	// This is not the ideal way to do it, but I'm using this for now because there are not many materials
@@ -580,7 +586,6 @@ void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 	if (rockAmount > 0) { labels.push_back("Rock"); values.push_back(rockAmount); }
 	if (sandAmount > 0) { labels.push_back("Sand"); values.push_back(sandAmount); }
 	if (soilAmount > 0) { labels.push_back("Soil"); values.push_back(soilAmount); }
-	if (iceAmount > 0) { labels.push_back("Ice"); values.push_back(iceAmount); }
 	if (mudAmount > 0) { labels.push_back("Mud"); values.push_back(mudAmount); }
 
 	if (!values.empty() && ImPlot::BeginPlot("Material Distribution", ImVec2(300, 300), ImPlotFlags_Equal)) {
