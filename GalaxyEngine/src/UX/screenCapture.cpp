@@ -65,6 +65,7 @@ void ScreenCapture::exportFrameToFile(const Image& frame,
 	}
 
 	Image frameCopy = ImageCopy(frame);
+	ImageFormat(&frameCopy, PIXELFORMAT_UNCOMPRESSED_R8G8B8);
 	ImageFlipVertical(&frameCopy);
 
 	std::string filename = videoFolder + "/" + videoName + "_" +
@@ -274,6 +275,8 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture,
 		}
 
 		Image renderImage = LoadImageFromTexture(myParticlesTexture.texture);
+
+		ImageFormat(&renderImage, PIXELFORMAT_UNCOMPRESSED_R8G8B8);
 		ImageFlipVertical(&renderImage);
 
 		std::string screenshotPath =
@@ -543,6 +546,7 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture,
 		if (!isSafeFramesEnabled && isExportFramesEnabled) {
 
 			Image frameCopy = ImageCopy(img);
+			ImageFormat(&frameCopy, PIXELFORMAT_UNCOMPRESSED_R8G8B8);
 			ImageFlipVertical(&frameCopy);
 			myFrames.push_back(frameCopy);
 		}
@@ -550,7 +554,7 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture,
 
 			if (!this->videoFolder.empty() && !this->folderName.empty()) {
 				Image frameForExport = ImageCopy(img);
-
+				ImageFormat(&frameForExport, PIXELFORMAT_UNCOMPRESSED_R8G8B8);
 				std::string safeFramePath = this->videoFolder + "/" + this->folderName +
 					"_frame_" +
 					std::to_string(diskModeFrameIdx) + ".png";

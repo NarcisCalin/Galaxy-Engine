@@ -19,6 +19,8 @@ include(${CMAKE_CURRENT_LIST_DIR}/cmake/yaml.cmake)
 set(
     GALAXYENGINE_SOURCES
     main.cpp
+    globalLogic.cpp
+    parameters.cpp
     Particles/particleSelection.cpp
     Particles/particlesSpawning.cpp
     Particles/particleSubdivision.cpp

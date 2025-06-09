@@ -167,7 +167,7 @@ struct UpdateVariables{
 
 	float particleBounciness = 0.75f;
 
-	int threadsAmount = 16;
+	int threadsAmount = 1;
 	bool longExposure = false;
 	ImFont* robotoMediumFont = nullptr;
 
