@@ -39,7 +39,7 @@ void selectedParticleDebug() {
 	}
 }
 
-static void updateScene() {
+void updateScene() {
 
 	Quadtree* grid = nullptr;
 
@@ -167,7 +167,7 @@ static void updateScene() {
 	}
 }
 
-static void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture) {
+void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture) {
 
 	for (int i = 0; i < myParam.pParticles.size(); ++i) {
 
