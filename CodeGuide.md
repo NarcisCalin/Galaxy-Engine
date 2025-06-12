@@ -33,7 +33,7 @@ If you want to contribute or mod Galaxy Engine and have any questions, consider 
 - There is one std::vector for each struct. They are named **"pParticles"** and **"rParticles"**.
 - These std::vectors must always be synchronized, meaning that the position of a particle's **pParticle** at index **N**, must be the same number as its **rParticle**.
 - All particles are sorted spatially with Z-Curves. This means that particles' index inside a vector or array changes constantly between frames.
-- All added or removed variables of a particle's class must be updated in their stream operators as well so that they can be saved by the save system to a file.
+- All particle struct changes must work with all the existing features. For example, make sure that the copy-paste feature works as intended with the new particle struct changes you make.
 
 ## UI
 
