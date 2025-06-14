@@ -112,6 +112,7 @@ struct UpdateVariables{
 	bool isSPHEnabled = false;
 	bool sphGround = false;
 	bool isTempEnabled = false;
+	bool constraintsEnabled = false;
 
 	bool isSpawningAllowed = true;
 

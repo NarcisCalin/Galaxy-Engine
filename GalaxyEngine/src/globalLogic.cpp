@@ -9,6 +9,10 @@ ParticleSpaceship ship;
 SPH sph;
 SaveSystem save;
 
+uint32_t globalId = 0;
+
+std::unordered_map<unsigned int, uint64_t> NeighborSearch::idToIndex;
+
 Quadtree* gridFunction(std::vector<ParticlePhysics>& pParticles,
 	std::vector<ParticleRendering>& rParticles) {
 	Quadtree* grid = Quadtree::boundingBox(pParticles, rParticles);
@@ -27,7 +31,7 @@ void flattenQuadtree(Quadtree* node, std::vector<Quadtree*>& flatList) {
 }
 
 
-// THIS FUNCTION IS MEAN FOR QUICK DEBUGGING WHERE YOU NEED TO CHECK A SPECIFIC PARTICLE'S VARIABLES
+// THIS FUNCTION IS MEANT FOR QUICK DEBUGGING WHERE YOU NEED TO CHECK A SPECIFIC PARTICLE'S VARIABLES
 void selectedParticleDebug() {
 
 	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
@@ -78,9 +82,23 @@ void updateScene() {
 		rParticle.totalRadius = rParticle.size * myVar.particleTextureHalfSize * myVar.particleSizeMultiplier;
 	}
 
+	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+		myParam.pParticles[i].neighborIds.clear();
+	}
+
 	myParam.brush.brushSize();
 
 	myParam.particlesSpawning.particlesInitialConditions(grid, physics, myVar, myParam);
+
+	if(myVar.constraintsEnabled) {
+	NeighborSearch::idToI(myParam.pParticles);
+	myParam.neighborSearch.neighborSearchHash(myParam.pParticles, myParam.rParticles);
+	}
+	else {
+		physics.particleConstraints.clear();
+	}
+
+	physics.createConstraints(myParam.pParticles, myParam.rParticles);
 
 	myParam.particlesSpawning.copyPaste(myParam.pParticles, myParam.rParticles, myVar.isDragging, myParam.myCamera, myParam.pParticlesSelected);
 
@@ -118,8 +136,22 @@ void updateScene() {
 			}
 		}
 
+		physics.constraints(myParam.pParticles, myParam.rParticles, myVar.isPeriodicBoundaryEnabled, myVar.domainSize);
+
 		physics.physicsUpdate(myParam.pParticles, myParam.rParticles, myVar, myVar.sphGround);
 	}
+
+	/*if (myParam.pParticles.size() > 1) {
+		for (size_t i = 1; i < myParam.pParticles.size(); i++) {
+			ParticlePhysics& pi = myParam.pParticles[i];
+
+			for (size_t j = 0; j < myParam.pParticles.size(); j++) {
+				ParticlePhysics& pj = myParam.pParticles[j];
+
+				DrawLineV({ pi.pos.x, pi.pos.y }, { pj.pos.x, pj.pos.y }, WHITE);
+			}
+		}
+	}*/
 
 	if (myVar.isDensitySizeEnabled || myParam.colorVisuals.densityColor) {
 		myParam.neighborSearch.neighborSearch(myParam.pParticles, myParam.rParticles, myVar.particleSizeMultiplier, myVar.particleTextureHalfSize);
@@ -254,10 +286,6 @@ void enableMultiThreading() {
 void fullscreenToggle(int& lastScreenWidth, int& lastScreenHeight,
 	bool& wasFullscreen, bool& lastScreenState,
 	RenderTexture2D& myParticlesTexture, RenderTexture2D& myUITexture) {
-
-	if (IO::shortcutPress(KEY_TAB)) {
-		myVar.fullscreenState = !myVar.fullscreenState;
-	}
 
 	if (myVar.fullscreenState != lastScreenState) {
 		int monitor = GetCurrentMonitor();

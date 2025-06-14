@@ -222,7 +222,15 @@ public:
             for (size_t i = 0; i < myParam.pParticles.size(); i++) {
                 const ParticlePhysics& p = myParam.pParticles[i];
                 const ParticleRendering& r = myParam.rParticles[i];
-                file.write(reinterpret_cast<const char*>(&p), sizeof(p));
+
+                file.write(reinterpret_cast<const char*>(&p.pos), offsetof(ParticlePhysics, neighborIds));
+
+                uint32_t numNeighbors = p.neighborIds.size();
+                file.write(reinterpret_cast<const char*>(&numNeighbors), sizeof(numNeighbors));
+                if (numNeighbors > 0) {
+                    file.write(reinterpret_cast<const char*>(p.neighborIds.data()), numNeighbors * sizeof(uint32_t));
+                }
+
                 file.write(reinterpret_cast<const char*>(&r), sizeof(r));
             }
 
@@ -245,7 +253,6 @@ public:
             while (std::getline(file, line)) {
                 if (line.find(sepToken) != std::string::npos) {
                     foundSeparator = true;
-
                     binaryStartPos = file.tellg();
                     break;
                 }
@@ -267,20 +274,33 @@ public:
                 ParticlePhysics p;
                 ParticleRendering r;
 
-                file.read(reinterpret_cast<char*>(&p), sizeof(p));
-                if (file.gcount() != sizeof(p)) {
-                    break;
+                file.read(reinterpret_cast<char*>(&p.pos), offsetof(ParticlePhysics, neighborIds));
+                if (file.gcount() != offsetof(ParticlePhysics, neighborIds)) break;
+
+                uint32_t numNeighbors = 0;
+                file.read(reinterpret_cast<char*>(&numNeighbors), sizeof(numNeighbors));
+                if (numNeighbors > 0) {
+                    p.neighborIds.resize(numNeighbors);
+                    file.read(reinterpret_cast<char*>(p.neighborIds.data()), numNeighbors * sizeof(uint32_t));
                 }
+
                 file.read(reinterpret_cast<char*>(&r), sizeof(r));
                 if (file.gcount() != sizeof(r)) {
                     std::cerr << "Incomplete ParticleRendering read; file may be corrupted.\n";
                     break;
                 }
+
                 myParam.pParticles.push_back(p);
                 myParam.rParticles.push_back(r);
             }
 
             file.close();
+
+            uint32_t maxId = 0;
+            for (const auto& particle : myParam.pParticles) {
+                if (particle.id > maxId) maxId = particle.id;
+            }
+            globalId = maxId + 1;
         }
     }
 

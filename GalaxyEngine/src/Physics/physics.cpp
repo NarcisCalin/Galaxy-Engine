@@ -114,6 +114,123 @@ void Physics::temperatureCalculation(std::vector<ParticlePhysics>& pParticles, s
 	}
 }
 
+void Physics::createConstraints(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles) {
+
+	if (IO::shortcutPress(KEY_P)) {
+		rlBegin(RL_LINES);
+		for (size_t i = 0; i < pParticles.size(); i++) {
+			if (!rParticles[i].isSelected) continue;
+
+			ParticlePhysics& pi = pParticles[i];
+
+			for (uint32_t& id : pParticles[i].neighborIds) {
+				auto it = NeighborSearch::idToIndex.find(id);
+				if (it != NeighborSearch::idToIndex.end()) {
+					size_t neighborIndex = it->second;
+
+					if (neighborIndex == i) continue;
+
+					if (!rParticles[neighborIndex].isSelected) continue;
+
+					auto& pj = pParticles[neighborIndex];
+
+					if (pi.id < pj.id) {
+
+						float currentDist = glm::distance(pi.pos, pj.pos);
+						bool broken = false;
+						particleConstraints.push_back({ pi.id, pj.id, currentDist, globalStiffness, broken });
+
+						Color lineColor = rParticles[i].color;
+						rlColor4ub(lineColor.r, lineColor.g, lineColor.b, lineColor.a);
+						rlVertex2f(pi.pos.x, pi.pos.y);
+						rlVertex2f(pj.pos.x, pj.pos.y);
+					}
+				}
+			}
+		}
+		rlEnd();
+	}
+}
+
+void Physics::constraints(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, 
+	bool& isPeriodicBoundaryEnabled, glm::vec2& domainSize) {
+
+	if (!particleConstraints.empty()) {
+		const int substeps = 15;
+
+			particleConstraints.erase(
+				std::remove_if(particleConstraints.begin(), particleConstraints.end(),
+					[](const auto& constraint) {
+						auto it1 = NeighborSearch::idToIndex.find(constraint.id1);
+						auto it2 = NeighborSearch::idToIndex.find(constraint.id2);
+						return it1 == NeighborSearch::idToIndex.end() ||
+							it2 == NeighborSearch::idToIndex.end() ||
+							constraint.isBroken;
+					}),
+				particleConstraints.end());
+
+		for (int step = 0; step < substeps; step++) {
+
+#pragma omp parallel for schedule(dynamic)
+			for (size_t i = 0; i < particleConstraints.size(); i++) {
+				auto& constraint = particleConstraints[i];
+
+				auto it1 = NeighborSearch::idToIndex.find(constraint.id1);
+				auto it2 = NeighborSearch::idToIndex.find(constraint.id2);
+
+				ParticlePhysics& pi = pParticles[it1->second];
+				ParticlePhysics& pj = pParticles[it2->second];
+
+				glm::vec2 delta = pj.pos - pi.pos;
+
+				if (isPeriodicBoundaryEnabled) {
+					delta.x = fmod(delta.x + domainSize.x * 1.5f, domainSize.x) - domainSize.x * 0.5f;
+					delta.y = fmod(delta.y + domainSize.y * 1.5f, domainSize.y) - domainSize.y * 0.5f;
+				}
+
+				float currentLength = glm::length(delta);
+				if (currentLength < 0.0001f) continue;
+
+				glm::vec2 dir = delta / currentLength;
+				float displacement = currentLength - constraint.restLength;
+
+				if (displacement > 1.1f || displacement < -1.1f) {
+					constraint.isBroken = true;
+				}
+
+				glm::vec2 springForce = constraintStiffness * displacement * dir * pi.mass;
+				glm::vec2 relVel = pj.vel - pi.vel;
+				glm::vec2 dampForce = -constraintDamping * glm::dot(relVel, dir) * dir * pi.mass;
+				glm::vec2 totalForce = springForce + dampForce;
+
+#pragma omp atomic
+				pi.acc.x += totalForce.x / pi.mass;
+#pragma omp atomic
+				pi.acc.y += totalForce.y / pi.mass;
+#pragma omp atomic
+				pj.acc.x -= totalForce.x / pj.mass;
+#pragma omp atomic
+				pj.acc.y -= totalForce.y / pj.mass;
+
+				float correctionFactor = constraintStiffness * stiffCorrectionRatio;
+				glm::vec2 correction = dir * displacement * correctionFactor;
+				float massSum = pi.mass + pj.mass;
+				glm::vec2 correctionI = correction * (pj.mass / massSum);
+				glm::vec2 correctionJ = correction * (pi.mass / massSum);
+
+#pragma omp atomic
+				pi.pos.x += correctionI.x;
+#pragma omp atomic
+				pi.pos.y += correctionI.y;
+#pragma omp atomic
+				pj.pos.x -= correctionJ.x;
+#pragma omp atomic
+				pj.pos.y -= correctionJ.y;
+			}
+		}
+	}
+}
+
 void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar, bool& sphGround) {
 	if (myVar.isPeriodicBoundaryEnabled) {
 		for (size_t i = 0; i < pParticles.size(); i++) {
@@ -152,7 +269,7 @@ void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vecto
 		}
 	}
 	else {
-		for (size_t i = 0; i < pParticles.size(); i++) {
+		for (size_t i = 0; i < pParticles.size(); ) {
 			ParticlePhysics& pParticle = pParticles[i];
 
 			pParticle.prevVel = pParticle.vel;
@@ -176,8 +293,14 @@ void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vecto
 
 			if (!sphGround) {
 				if (pParticles[i].pos.x < 0 || pParticles[i].pos.x >= myVar.domainSize.x || pParticles[i].pos.y < 0 || pParticles[i].pos.y >= myVar.domainSize.y) {
-					pParticles.erase(pParticles.begin() + i);
-					rParticles.erase(rParticles.begin() + i);
+					std::swap(pParticles[i], pParticles.back());
+					std::swap(rParticles[i], rParticles.back());
+
+					pParticles.pop_back();
+					rParticles.pop_back();
+				}
+				else {
+					i++;
 				}
 			}
 		}

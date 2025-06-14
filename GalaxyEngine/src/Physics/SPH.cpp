@@ -55,7 +55,7 @@ void SPH::computeViscCohesionForces(std::vector<ParticlePhysics>& pParticles, st
 #pragma omp atomic
 				sphForce[pjIdx].x -= viscF.x + cohF.x;
 #pragma omp atomic
-				sphForce[pjIdx].y -= viscF.y + cohF.y;	
+				sphForce[pjIdx].y -= viscF.y + cohF.y;
 			}
 		}
 	}
@@ -90,8 +90,7 @@ void SPH::PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleR
 			if (!rParticles[i].isSPH) continue;
 
 			auto& p = pParticles[i];
-			p.predVel.x = p.vel.x + dt * 1.5f * (sphForce[i].x / p.sphMass);
-			p.predVel.y = p.vel.y + dt * 1.5f * (sphForce[i].y / p.sphMass);
+			p.predVel = p.vel + dt * 1.5f * (sphForce[i] / p.sphMass);
 
 			p.predPos = { p.pos.x + p.predVel.x * dt, p.pos.y + p.predVel.y * dt };
 		}

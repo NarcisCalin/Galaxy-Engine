@@ -1,5 +1,7 @@
 #pragma once
 
+extern uint32_t globalId;
+
 struct ParticlePhysics {
 	glm::vec2 pos;
 	glm::vec2 predPos;
@@ -28,13 +30,15 @@ struct ParticlePhysics {
 	float ke;
 	float prevKe;
 	uint32_t mortonKey;
+	uint32_t id;
+	std::vector<uint32_t> neighborIds;
 
 	// Default constructor
 	ParticlePhysics()
 		: pos(0.0f, 0.0f), predPos{ 0,0 }, vel{ 0,0 }, prevVel{ 0.0f, 0.0f }, predVel{ 0.0f, 0.0f }, acc{ 0,0 },
 		mass(1.0f), press(0.0f), pressTmp(0.0f), pressF{ 0.0f,0.0f }, dens(0.0f), predDens(0.0f), sphMass(0.0f),
 		restDens(0.0f), stiff(0.0f), visc(0.0f), cohesion(0.0f),
-		temp(0.0f), ke(0.0f), prevKe(0.0f), mortonKey(0)
+		temp(0.0f), ke(0.0f), prevKe(0.0f), mortonKey(0), id(globalId++)
 	{
 	}
 
@@ -67,6 +71,7 @@ struct ParticlePhysics {
 		this->ke = 0.0f;
 		this->prevKe = 0.0f;
 		this->mortonKey = 0;
+		this->id = globalId++;
 	}
 };
 

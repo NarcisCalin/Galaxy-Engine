@@ -35,6 +35,7 @@
 #include <raylib.h>
 #include <raymath.h>
 #include <rlgl.h>
+#include <external/glad.h>
 
 #include <imgui.h>
 

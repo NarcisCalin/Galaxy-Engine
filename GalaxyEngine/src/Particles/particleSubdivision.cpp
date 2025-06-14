@@ -15,7 +15,7 @@ void ParticleSubdivision::subdivideParticles(UpdateVariables& myVar, UpdateParam
 			float screenH = static_cast<float>(GetScreenHeight());
 
 			ImVec2 subdivisionMenuSize = { 550.0f, 150.0f };
-			
+
 			ImGui::SetNextWindowSize(subdivisionMenuSize, ImGuiCond_Once);
 			ImGui::SetNextWindowPos(ImVec2(screenW * 0.5f - subdivisionMenuSize.x * 0.5f, screenH * 0.5f - subdivisionMenuSize.y * 0.5f), ImGuiCond_Appearing);
 
@@ -76,8 +76,8 @@ void ParticleSubdivision::subdivideParticles(UpdateVariables& myVar, UpdateParam
 						};
 
 						myParam.pParticles.emplace_back(
-							newPos, 
-							myParam.pParticles[i].vel, 
+							newPos,
+							myParam.pParticles[i].vel,
 							myParam.pParticles[i].mass / 4.0f,
 							myParam.pParticles[i].restDens,
 							myParam.pParticles[i].stiff,
@@ -85,19 +85,25 @@ void ParticleSubdivision::subdivideParticles(UpdateVariables& myVar, UpdateParam
 							myParam.pParticles[i].cohesion
 						);
 
+
 						myParam.rParticles.emplace_back(
-							myParam.rParticles[i].color, 
+							myParam.rParticles[i].color,
 							halfOffsetVisual,
 							myParam.rParticles[i].uniqueColor,
-							myParam.rParticles[i].isSelected, 
-							myParam.rParticles[i].isSolid, 
-							myParam.rParticles[i].canBeSubdivided, 
-							myParam.rParticles[i].canBeResized, 
-							myParam.rParticles[i].isDarkMatter, 
+							myParam.rParticles[i].isSelected,
+							myParam.rParticles[i].isSolid,
+							myParam.rParticles[i].canBeSubdivided,
+							myParam.rParticles[i].canBeResized,
+							myParam.rParticles[i].isDarkMatter,
 							myParam.rParticles[i].isSPH,
 							myParam.rParticles[i].lifeSpan,
 							myParam.rParticles[i].sphLabel
 						);
+					}
+
+					for (int j = 0; j < 4; ++j) {
+						myParam.pParticles[firstNewParticleIndex + j].id = globalId++;
+						myParam.pParticles[firstNewParticleIndex + j].temp = myParam.pParticles[i].temp;
 					}
 
 					for (int j = 0; j < 4; ++j) {

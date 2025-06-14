@@ -78,13 +78,13 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		physicsSlidersParams<float>("Ambient Heat Rate", "Controls how fast particles' temperature try to match ambient temperature", myVar.globalAmbientHeatRate, 0.0f, 10.0f),
 		physicsSlidersParams<float>("Heat Conductivity Multiplier", "Controls the global heat conductivity of particles", myVar.globalHeatConductivity, 0.001f, 1.0f),
 
-		physicsSlidersParams<float>("SPH Vertical Gravity", "Controls the vertical gravity strength in SPH Ground Mode", sph.verticalGravity, 0.0f, 10.0f),
-		physicsSlidersParams<float>("SPH Mass Multiplier", "Controls the fluid mass of particles", sph.mass, 0.005f, 0.15f),
-		physicsSlidersParams<float>("SPH Viscosity", "Controls how viscous particles are", sph.viscosity, 0.01f, 15.0f),
-		physicsSlidersParams<float>("SPH Stiffness", "Controls how stiff particles are", sph.stiffMultiplier, 0.01f, 15.0f),
-		physicsSlidersParams<float>("SPH Cohesion", "Controls how sticky particles are", sph.cohesionCoefficient, 0.0f, 10.0f),
-		physicsSlidersParams<float>("SPH Delta", "Controls the scaling factor in the pressure solver to enforce fluid incompressibility", sph.delta, 500.0f, 20000.0f),
-		physicsSlidersParams<float>("SPH Max Velocity", "Controls the maximum velocity a particle can have in SPH mode", myVar.sphMaxVel, 0.0f, 2000.0f)
+		physicsSlidersParams<float>("Fluid Vertical Gravity", "Controls the vertical gravity strength in Fluid Ground Mode", sph.verticalGravity, 0.0f, 10.0f),
+		physicsSlidersParams<float>("Fluid Mass Multiplier", "Controls the fluid mass of particles", sph.mass, 0.005f, 0.15f),
+		physicsSlidersParams<float>("Fluid Viscosity", "Controls how viscous particles are", sph.viscosity, 0.01f, 15.0f),
+		physicsSlidersParams<float>("Fluid Stiffness", "Controls how stiff particles are", sph.stiffMultiplier, 0.01f, 15.0f),
+		physicsSlidersParams<float>("Fluid Cohesion", "Controls how sticky particles are", sph.cohesionCoefficient, 0.0f, 10.0f),
+		physicsSlidersParams<float>("Fluid Delta", "Controls the scaling factor in the pressure solver to enforce fluid incompressibility", sph.delta, 500.0f, 20000.0f),
+		physicsSlidersParams<float>("Fluid Max Velocity", "Controls the maximum velocity a particle can have in Fluid mode", myVar.sphMaxVel, 0.0f, 2000.0f)
 	};
 
 	float oldSpacingY = ImGui::GetStyle().ItemSpacing.y;
@@ -111,7 +111,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	{ "Pressure Color",  "Maps particle pressure to color",                    &myParam.colorVisuals.pressureColor },
 	{ "Temperature Color",  "Maps particle temperature to color",                    &myParam.colorVisuals.temperatureColor },
 	{ "Temperature Gas Color",  "Maps particle temperature to primary and secondary colors",                    &myParam.colorVisuals.gasTempColor },
-	{ "SPH Color",       "Uses the SPH materials colors",                      &myParam.colorVisuals.SPHColor }
+	{ "Material Color",       "Uses materials colors",                      &myParam.colorVisuals.SPHColor }
 	};
 
 	std::vector<SimilarTypeButton::Mode> size{
@@ -139,7 +139,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	bool wasEnabled = myVar.isSPHEnabled;
 	bool sphGroundButtonEnabled = false;
 
-	if (buttonHelper("SPH", "Enables SPH fluids", myVar.isSPHEnabled, -1.0f, settingsButtonY, true, enabled)) {
+	if (buttonHelper("Fluid Mode", "Enables SPH fluids", myVar.isSPHEnabled, -1.0f, settingsButtonY, true, enabled)) {
 		if (!wasEnabled && myVar.isSPHEnabled) {
 			for (size_t i = 0; i < color.size(); i++) {
 				if (color[i].flag == &myParam.colorVisuals.SPHColor) {
@@ -163,7 +163,9 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 	buttonHelper("Temperature Simulation", "Enables temperature simulation", myVar.isTempEnabled, -1.0f, settingsButtonY, true, enabled);
 
-	buttonHelper("SPH Ground Mode", "Adds vertical gravity and makes particles collide with the domain walls", myVar.sphGround, -1.0f, settingsButtonY, true, sphGroundButtonEnabled);
+	buttonHelper("Particle Constraints", "Enables particles constraints for solids and soft bodies simulation", myVar.constraintsEnabled, -1.0f, settingsButtonY, true, enabled);
+
+	buttonHelper("Fluid Ground Mode", "Adds vertical gravity and makes particles collide with the domain walls", myVar.sphGround, -1.0f, settingsButtonY, true, sphGroundButtonEnabled);
 	buttonHelper("Collisions (!!!)", "Enables elastic collisions", myVar.isCollisionsEnabled, -1.0f, settingsButtonY, true, enabled);
 	
 	SimilarTypeButton::buttonIterator(size, -1.0f, settingsButtonY, true, enabled);
@@ -392,19 +394,27 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			}
 
 			std::vector<SimilarTypeButton::Mode> sphMats{
-{ "SPH Water", "Water", &myParam.brush.SPHWater},
-{ "SPH Rock", "Rock", &myParam.brush.SPHRock},
-				{"SPH Sand", "Sand", &myParam.brush.SPHSand},
-				{"SPH Soil", "Soil", &myParam.brush.SPHSoil},
-				{"SPH Ice", "Ice", &myParam.brush.SPHIce},
-				{"SPH Mud", "Mud", &myParam.brush.SPHMud},
-				{"SPH Gas", "Gas", &myParam.brush.SPHGas}
+{ "Water", "Water", &myParam.brush.SPHWater},
+{ "Rock", "Rock", &myParam.brush.SPHRock},
+				{"Sand", "Sand", &myParam.brush.SPHSand},
+				{"Soil", "Soil", &myParam.brush.SPHSoil},
+				{"Ice", "Ice", &myParam.brush.SPHIce},
+				{"Mud", "Mud", &myParam.brush.SPHMud},
+				{"Gas", "Gas", &myParam.brush.SPHGas}
 			};
 
 			float oldSpacingY = ImGui::GetStyle().ItemSpacing.y;
 			ImGui::GetStyle().ItemSpacing.y = 5.0f; // Set the spacing only for the settings buttons
 
-			SimilarTypeButton::buttonIterator(sphMats, -1.0f, settingsButtonY, true, enabled);
+			bool enableMats;
+			if (myVar.isSPHEnabled) {
+				enableMats = true;
+			}
+			else {
+				enableMats = false;
+			}
+
+			SimilarTypeButton::buttonIterator(sphMats, -1.0f, settingsButtonY, true, enableMats);
 
 			ImGui::GetStyle().ItemSpacing.y = oldSpacingY;
 

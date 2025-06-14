@@ -9,6 +9,8 @@ int main(int argc, char** argv) {
 
 	SetConfigFlags(FLAG_WINDOW_RESIZABLE);
 
+	SetConfigFlags(FLAG_WINDOW_ALWAYS_RUN);
+
 	int threadsAvailable = std::thread::hardware_concurrency();
 
 	myVar.threadsAmount = static_cast<int>(threadsAvailable * 0.5f);

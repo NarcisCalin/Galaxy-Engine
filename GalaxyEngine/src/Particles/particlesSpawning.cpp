@@ -45,6 +45,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 			);
 			myVar.isDragging = false;
 		}
+
 		if (IsMouseButtonDown(2) && !IsKeyDown(KEY_LEFT_CONTROL) && !IsKeyDown(KEY_LEFT_ALT) && !IsKeyDown(KEY_X)) {
 			myParam.brush.brushLogic(myParam, myVar.isSPHEnabled);
 		}
@@ -461,6 +462,8 @@ void ParticlesSpawning::copyPaste(std::vector<ParticlePhysics>& pParticles, std:
 
 			pCopy.ke = 0.0f;
 			pCopy.prevKe = 0.0f;
+
+			pCopy.id = globalId++;
 
 			pParticles.push_back(ParticlePhysics(pCopy));
 		}
