@@ -146,14 +146,16 @@ void Physics::createConstraints(std::vector<ParticlePhysics>& pParticles, std::v
 		}
 
 		if (IO::shortcutPress(KEY_P) || constraintAllSolids) {
-			if (pMatI->coldPoint == 0.0f) {
-				if (pi.temp >= pMatI->hotPoint) {
-					continue;
+			if (pMatI) {
+				if (pMatI->coldPoint == 0.0f) {
+					if (pi.temp >= pMatI->hotPoint) {
+						continue;
+					}
 				}
-			}
-			else {
-				if (pi.temp >= pMatI->coldPoint) {
-					continue;
+				else {
+					if (pi.temp >= pMatI->coldPoint) {
+						continue;
+					}
 				}
 			}
 		}

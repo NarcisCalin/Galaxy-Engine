@@ -226,7 +226,7 @@ void drawConstraints() {
 		rlEnd();
 	}
 
-	if (myVar.drawConstraints) {
+	if (myVar.drawConstraints && !physics.particleConstraints.empty()) {
 		rlBegin(RL_LINES);
 		for (size_t i = 0; i < physics.particleConstraints.size(); i++) {
 			auto& constraint = physics.particleConstraints[i];
