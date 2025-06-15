@@ -164,6 +164,8 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	buttonHelper("Temperature Simulation", "Enables temperature simulation", myVar.isTempEnabled, -1.0f, settingsButtonY, true, enabled);
 
 	buttonHelper("Particle Constraints", "Enables particles constraints for solids and soft bodies simulation", myVar.constraintsEnabled, -1.0f, settingsButtonY, true, enabled);
+	buttonHelper("Visualize Constraints", "Draws all existing constraints", myVar.drawConstraints, -1.0f, settingsButtonY, true, enabled);
+	buttonHelper("Visualize Mesh", "Draws a mesh that connect particles", myVar.visualizeMesh, -1.0f, settingsButtonY, true, enabled);
 
 	buttonHelper("Fluid Ground Mode", "Adds vertical gravity and makes particles collide with the domain walls", myVar.sphGround, -1.0f, settingsButtonY, true, sphGroundButtonEnabled);
 	buttonHelper("Collisions (!!!)", "Enables elastic collisions", myVar.isCollisionsEnabled, -1.0f, settingsButtonY, true, enabled);
@@ -406,15 +408,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			float oldSpacingY = ImGui::GetStyle().ItemSpacing.y;
 			ImGui::GetStyle().ItemSpacing.y = 5.0f; // Set the spacing only for the settings buttons
 
-			bool enableMats;
-			if (myVar.isSPHEnabled) {
-				enableMats = true;
-			}
-			else {
-				enableMats = false;
-			}
-
-			SimilarTypeButton::buttonIterator(sphMats, -1.0f, settingsButtonY, true, enableMats);
+			SimilarTypeButton::buttonIterator(sphMats, -1.0f, settingsButtonY, true, myVar.isSPHEnabled);
 
 			ImGui::GetStyle().ItemSpacing.y = oldSpacingY;
 

@@ -91,6 +91,9 @@ void RightClickSettings::rightClickMenu(UpdateVariables& myVar, UpdateParameters
 		if (UI::buttonHelper("Subdivide Selected", "Subdivide all selected normal particles", myParam.subdivision.subdivideSelected, -1.0f, buttonSizeY, enabled, enabled)) {
 			isMenuActive = false;
 		}
+		if (UI::buttonHelper("Constraint Solids", "Adds constraints to all current solid particles", myVar.constraintAllSolids, -1.0f, buttonSizeY, enabled, myVar.constraintsEnabled)) {
+			isMenuActive = false;
+		}
 		if (UI::buttonHelper("Invert Particle Selec.", "Invert the particle selection", myParam.particleSelection.invertParticleSelection, -1.0f, buttonSizeY, enabled, enabled)) {
 			isMenuActive = false;
 		}

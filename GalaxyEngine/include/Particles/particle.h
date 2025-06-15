@@ -33,12 +33,15 @@ struct ParticlePhysics {
 	uint32_t id;
 	std::vector<uint32_t> neighborIds;
 
+	bool isHotPoint;
+	bool hasSolidified;
+
 	// Default constructor
 	ParticlePhysics()
 		: pos(0.0f, 0.0f), predPos{ 0,0 }, vel{ 0,0 }, prevVel{ 0.0f, 0.0f }, predVel{ 0.0f, 0.0f }, acc{ 0,0 },
 		mass(1.0f), press(0.0f), pressTmp(0.0f), pressF{ 0.0f,0.0f }, dens(0.0f), predDens(0.0f), sphMass(0.0f),
 		restDens(0.0f), stiff(0.0f), visc(0.0f), cohesion(0.0f),
-		temp(0.0f), ke(0.0f), prevKe(0.0f), mortonKey(0), id(globalId++)
+		temp(0.0f), ke(0.0f), prevKe(0.0f), mortonKey(0), id(globalId++), isHotPoint(false), hasSolidified(false)
 	{
 	}
 
@@ -72,6 +75,9 @@ struct ParticlePhysics {
 		this->prevKe = 0.0f;
 		this->mortonKey = 0;
 		this->id = globalId++;
+
+		this->isHotPoint = false;
+		this->hasSolidified = false;
 	}
 };
 

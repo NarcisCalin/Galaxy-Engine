@@ -71,7 +71,11 @@ void updateScene() {
 
 	flattenQuadtree(grid, flatNodes);
 
-	size_t index = 0;*/
+	size_t index = 0;
+
+	for (size_t i = 0; i < flatNodes.size(); i++) {
+		Quadtree* node = flatNodes[i];
+	}*/
 
 	if (grid != nullptr && myVar.drawQuadtree) {
 		grid->drawQuadtree();
@@ -90,15 +94,18 @@ void updateScene() {
 
 	myParam.particlesSpawning.particlesInitialConditions(grid, physics, myVar, myParam);
 
-	if(myVar.constraintsEnabled) {
-	NeighborSearch::idToI(myParam.pParticles);
-	myParam.neighborSearch.neighborSearchHash(myParam.pParticles, myParam.rParticles);
-	}
-	else {
-		physics.particleConstraints.clear();
+	if (myVar.constraintsEnabled || myVar.drawConstraints || myVar.visualizeMesh) {
+		NeighborSearch::idToI(myParam.pParticles);
+		myParam.neighborSearch.neighborSearchHash(myParam.pParticles, myParam.rParticles);
 	}
 
-	physics.createConstraints(myParam.pParticles, myParam.rParticles);
+	if(myVar.constraintsEnabled) {
+	physics.createConstraints(myParam.pParticles, myParam.rParticles, myVar.constraintAllSolids);
+	}
+	else {
+		physics.constraintMap.clear();
+		physics.particleConstraints.clear();
+	}
 
 	myParam.particlesSpawning.copyPaste(myParam.pParticles, myParam.rParticles, myVar.isDragging, myParam.myCamera, myParam.pParticlesSelected);
 
@@ -140,18 +147,6 @@ void updateScene() {
 
 		physics.physicsUpdate(myParam.pParticles, myParam.rParticles, myVar, myVar.sphGround);
 	}
-
-	/*if (myParam.pParticles.size() > 1) {
-		for (size_t i = 1; i < myParam.pParticles.size(); i++) {
-			ParticlePhysics& pi = myParam.pParticles[i];
-
-			for (size_t j = 0; j < myParam.pParticles.size(); j++) {
-				ParticlePhysics& pj = myParam.pParticles[j];
-
-				DrawLineV({ pi.pos.x, pi.pos.y }, { pj.pos.x, pj.pos.y }, WHITE);
-			}
-		}
-	}*/
 
 	if (myVar.isDensitySizeEnabled || myParam.colorVisuals.densityColor) {
 		myParam.neighborSearch.neighborSearch(myParam.pParticles, myParam.rParticles, myVar.particleSizeMultiplier, myVar.particleTextureHalfSize);
@@ -196,6 +191,58 @@ void updateScene() {
 
 	if (grid != nullptr) {
 		delete grid;
+	}
+}
+
+void drawConstraints() {
+
+	// TODO: ADD A COLOR LERP FOR CONSTRAINTS
+
+	if (myVar.visualizeMesh) {
+		rlBegin(RL_LINES);
+		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+
+			ParticlePhysics& pi = myParam.pParticles[i];
+
+			for (uint32_t& id : myParam.pParticles[i].neighborIds) {
+				auto it = NeighborSearch::idToIndex.find(id);
+				if (it != NeighborSearch::idToIndex.end()) {
+					size_t neighborIndex = it->second;
+
+					if (neighborIndex == i) continue;
+
+					auto& pj = myParam.pParticles[neighborIndex];
+
+					if (pi.id < pj.id) {
+
+						Color lineColor = myParam.rParticles[i].color;
+						rlColor4ub(lineColor.r, lineColor.g, lineColor.b, lineColor.a);
+						rlVertex2f(pi.pos.x, pi.pos.y);
+						rlVertex2f(pj.pos.x, pj.pos.y);
+					}
+				}
+			}
+		}
+		rlEnd();
+	}
+
+	if (myVar.drawConstraints) {
+		rlBegin(RL_LINES);
+		for (size_t i = 0; i < physics.particleConstraints.size(); i++) {
+			auto& constraint = physics.particleConstraints[i];
+
+			auto it1 = NeighborSearch::idToIndex.find(constraint.id1);
+			auto it2 = NeighborSearch::idToIndex.find(constraint.id2);
+
+			ParticlePhysics& pi = myParam.pParticles[it1->second];
+			ParticlePhysics& pj = myParam.pParticles[it2->second];
+
+			Color lineColor = myParam.rParticles[it1->second].color;
+			rlColor4ub(lineColor.r, lineColor.g, lineColor.b, lineColor.a);
+			rlVertex2f(pi.pos.x, pi.pos.y);
+			rlVertex2f(pj.pos.x, pj.pos.y);
+		}
+		rlEnd();
 	}
 }
 
@@ -248,6 +295,8 @@ void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture) {
 		GetScreenToWorld2D(GetMousePosition(), myParam.myCamera.camera).y);
 	myParam.brush.drawBrush(myVar.mouseWorldPos);
 	DrawRectangleLinesEx({ 0,0, static_cast<float>(myVar.domainSize.x), static_cast<float>(myVar.domainSize.y) }, 3, GRAY);
+
+	drawConstraints();
 
 	// Z-Curves debug toggle
 	if (myParam.pParticles.size() > 1 && myVar.drawZCurves) {

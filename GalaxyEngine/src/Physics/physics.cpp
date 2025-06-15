@@ -77,6 +77,9 @@ void Physics::temperatureCalculation(std::vector<ParticlePhysics>& pParticles, s
 				p.stiff = pMat->hotStiff;
 				p.visc = pMat->hotVisc;
 				p.cohesion = pMat->hotCohesion;
+				if (pMat->coldPoint == 0.0f) {
+					p.isHotPoint = true;
+				}
 			}
 			else if (p.temp <= pMat->coldPoint) {
 				p.sphMass = pMat->coldMassMult;
@@ -93,6 +96,22 @@ void Physics::temperatureCalculation(std::vector<ParticlePhysics>& pParticles, s
 				p.stiff = pMat->stiff;
 				p.visc = pMat->visc;
 				p.cohesion = pMat->cohesion;
+				if (pMat->coldPoint != 0.0f) {
+					p.isHotPoint = true;
+				}
+			}
+
+			if (pMat->coldPoint == 0.0f) {
+				if (p.temp <= pMat->hotPoint && p.isHotPoint) {
+					p.hasSolidified = true;
+					p.isHotPoint = false;
+				}
+			}
+			else {
+				if (p.temp <= pMat->coldPoint && p.isHotPoint) {
+					p.hasSolidified = true;
+					p.isHotPoint = false;
+				}
 			}
 		}
 		else {
@@ -114,60 +133,102 @@ void Physics::temperatureCalculation(std::vector<ParticlePhysics>& pParticles, s
 	}
 }
 
-void Physics::createConstraints(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles) {
+void Physics::createConstraints(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, bool& constraintAllSolids) {
 
-	if (IO::shortcutPress(KEY_P)) {
-		rlBegin(RL_LINES);
-		for (size_t i = 0; i < pParticles.size(); i++) {
-			if (!rParticles[i].isSelected) continue;
+	for (size_t i = 0; i < pParticles.size(); i++) {
 
-			ParticlePhysics& pi = pParticles[i];
+		ParticlePhysics& pi = pParticles[i];
 
-			for (uint32_t& id : pParticles[i].neighborIds) {
-				auto it = NeighborSearch::idToIndex.find(id);
-				if (it != NeighborSearch::idToIndex.end()) {
-					size_t neighborIndex = it->second;
+		SPHMaterial* pMatI = nullptr;
+		auto matItI = SPHMaterials::idToMaterial.find(rParticles[i].sphLabel);
+		if (matItI != SPHMaterials::idToMaterial.end()) {
+			pMatI = matItI->second;
+		}
 
-					if (neighborIndex == i) continue;
-
-					if (!rParticles[neighborIndex].isSelected) continue;
-
-					auto& pj = pParticles[neighborIndex];
-
-					if (pi.id < pj.id) {
-
-						float currentDist = glm::distance(pi.pos, pj.pos);
-						bool broken = false;
-						particleConstraints.push_back({ pi.id, pj.id, currentDist, globalStiffness, broken });
-
-						Color lineColor = rParticles[i].color;
-						rlColor4ub(lineColor.r, lineColor.g, lineColor.b, lineColor.a);
-						rlVertex2f(pi.pos.x, pi.pos.y);
-						rlVertex2f(pj.pos.x, pj.pos.y);
-					}
+		if (IO::shortcutPress(KEY_P) || constraintAllSolids) {
+			if (pMatI->coldPoint == 0.0f) {
+				if (pi.temp >= pMatI->hotPoint) {
+					continue;
+				}
+			}
+			else {
+				if (pi.temp >= pMatI->coldPoint) {
+					continue;
 				}
 			}
 		}
-		rlEnd();
+		else {
+			if (!pi.hasSolidified) {
+				continue;
+			}
+			else {
+				pi.hasSolidified = false;
+			}
+		}
+
+		for (uint32_t& id : pParticles[i].neighborIds) {
+			auto it = NeighborSearch::idToIndex.find(id);
+			if (it != NeighborSearch::idToIndex.end()) {
+				size_t neighborIndex = it->second;
+
+				if (neighborIndex == i) continue;
+
+				auto& pj = pParticles[neighborIndex];
+
+				SPHMaterial* pMatJ = nullptr;
+				auto matItJ = SPHMaterials::idToMaterial.find(rParticles[neighborIndex].sphLabel);
+				if (matItJ != SPHMaterials::idToMaterial.end()) {
+					pMatJ = matItJ->second;
+				}
+
+				/*if (pj.temp >= pMatJ->hotPoint) {
+					continue;
+				}*/
+
+				// This code avoids creating a new constraint if there already is one that includes both particles
+				uint64_t key = makeKey(pi.id, pj.id);
+				if (constraintMap.find(key) != constraintMap.end()) {
+					continue;
+				}
+
+				float hardness = 0.6f;
+				if (pMatI && pMatJ) {
+					hardness = (pMatI->constraintHardness + pMatJ->constraintHardness) * 0.5f;
+				}
+
+				if (pi.id < pj.id) {
+
+					float currentDist = glm::distance(pi.pos, pj.pos);
+					bool broken = false;
+					particleConstraints.push_back({ pi.id, pj.id, currentDist, globalStiffness, hardness, broken });
+					constraintMap[key] = &particleConstraints.back();
+				}
+			}
+		}
 	}
+	constraintAllSolids = false;
 }
 
-void Physics::constraints(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, 
+void Physics::constraints(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles,
 	bool& isPeriodicBoundaryEnabled, glm::vec2& domainSize) {
 
 	if (!particleConstraints.empty()) {
 		const int substeps = 15;
 
-			particleConstraints.erase(
-				std::remove_if(particleConstraints.begin(), particleConstraints.end(),
-					[](const auto& constraint) {
-						auto it1 = NeighborSearch::idToIndex.find(constraint.id1);
-						auto it2 = NeighborSearch::idToIndex.find(constraint.id2);
-						return it1 == NeighborSearch::idToIndex.end() ||
-							it2 == NeighborSearch::idToIndex.end() ||
-							constraint.isBroken;
-					}),
-				particleConstraints.end());
+		auto new_end = std::remove_if(particleConstraints.begin(), particleConstraints.end(),
+			[](const auto& constraint) {
+				auto it1 = NeighborSearch::idToIndex.find(constraint.id1);
+				auto it2 = NeighborSearch::idToIndex.find(constraint.id2);
+				return it1 == NeighborSearch::idToIndex.end() ||
+					it2 == NeighborSearch::idToIndex.end() ||
+					constraint.isBroken;
+			});
+
+		for (auto it = new_end; it != particleConstraints.end(); ++it) {
+			constraintMap.erase(makeKey(it->id1, it->id2));
+		}
+
+		particleConstraints.erase(new_end, particleConstraints.end());
 
 		for (int step = 0; step < substeps; step++) {
 
@@ -177,9 +238,26 @@ void Physics::constraints(std::vector<ParticlePhysics>& pParticles, std::vector<
 
 				auto it1 = NeighborSearch::idToIndex.find(constraint.id1);
 				auto it2 = NeighborSearch::idToIndex.find(constraint.id2);
+				if (it1 == NeighborSearch::idToIndex.end() ||
+					it2 == NeighborSearch::idToIndex.end()) {
+					constraint.isBroken = true;
+					continue;
+				}
 
 				ParticlePhysics& pi = pParticles[it1->second];
 				ParticlePhysics& pj = pParticles[it2->second];
+
+				SPHMaterial* pMatI = nullptr;
+				auto matItI = SPHMaterials::idToMaterial.find(rParticles[it1->second].sphLabel);
+				if (matItI != SPHMaterials::idToMaterial.end()) {
+					pMatI = matItI->second;
+				}
+
+				SPHMaterial* pMatJ = nullptr;
+				auto matItJ = SPHMaterials::idToMaterial.find(rParticles[it2->second].sphLabel);
+				if (matItJ != SPHMaterials::idToMaterial.end()) {
+					pMatJ = matItJ->second;
+				}
 
 				glm::vec2 delta = pj.pos - pi.pos;
 
@@ -194,8 +272,14 @@ void Physics::constraints(std::vector<ParticlePhysics>& pParticles, std::vector<
 				glm::vec2 dir = delta / currentLength;
 				float displacement = currentLength - constraint.restLength;
 
-				if (displacement > 1.1f || displacement < -1.1f) {
+				if (displacement > constraint.hardness || displacement < -constraint.hardness) {
 					constraint.isBroken = true;
+				}
+
+				if (pMatI && pMatJ) {
+					if (pi.isHotPoint || pj.isHotPoint) {
+						constraint.isBroken = true;
+					}
 				}
 
 				glm::vec2 springForce = constraintStiffness * displacement * dir * pi.mass;

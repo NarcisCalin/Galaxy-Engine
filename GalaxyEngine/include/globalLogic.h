@@ -55,9 +55,10 @@ void updateScene();
 
 void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture);
 
-
 void enableMultiThreading();
 
 void fullscreenToggle(int& lastScreenWidth, int& lastScreenHeight,
 	bool& wasFullscreen, bool& lastScreenState,
 	RenderTexture2D& myParticlesTexture, RenderTexture2D& myUITexture);
+
+void drawConstraints();

@@ -13,7 +13,7 @@ struct Controls {
 
 	void showInfo(bool& fullscreen);
 
-	std::array<std::string, 51> controlsArray = {
+	std::array<std::string, 52> controlsArray = {
 	"----PARTICLES CREATION----",
 	"1. Hold LMB and Drag: Throw heavy particle",
 	"2. Hold MMB: Paint particles",
@@ -58,10 +58,11 @@ struct Controls {
 	"16. Hold J and drag: Throw copied",
 	"17. Arrows: Control selected particles",
 	"18. K: Heat brush",
-	"19. L: Cool brush"
+	"19. L: Cool brush",
+	"20. P: Constraint Solids"
 	};
 
-	std::array<std::string, 30> infoArray = {
+	std::array<std::string, 31> infoArray = {
 		"----INFORMATION----",
 		"",
 		"Galaxy Engine is a personal project done for learning purposes",
@@ -78,13 +79,14 @@ struct Controls {
 		"invisible particles, which are 5 times heavier than visible ones",
 		"",
 		"4. Multi-Threading: Parallelizes the simulation across multiple",
-		"threads. The default is 16 threads, but it is possible to modify this.",
+		"threads. The default is half the max amount of threads your CPU has,"
+		"but it is possible to modify this number.",
 		"",
 		"5. Collisions: Currently, collisions are experimental. They do not",
 		"respect conservation of energy when they are enabled with gravity.",
 		"They work as intended when gravity is disabled.",
 		"",
-		"6. SPH: This enables fluids for planetary simulation. Each SPH",
+		"6. Fluids Mode: This enables fluids for planetary simulation. Each",
 		"material has different parameters like stiffness, viscosity,",
 		"cohesion, and more.",
 		"",

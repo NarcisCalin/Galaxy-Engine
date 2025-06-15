@@ -175,4 +175,8 @@ struct UpdateVariables{
 	bool pauseAfterRecording = false;
 	bool cleanSceneAfterRecording = false;
 	float recordingTimeLimit = 0.0f; 
+
+	bool constraintAllSolids = false;
+	bool drawConstraints = false;
+	bool visualizeMesh = false;
 };
