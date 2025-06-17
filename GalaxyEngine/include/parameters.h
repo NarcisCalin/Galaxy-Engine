@@ -71,7 +71,7 @@ struct UpdateVariables{
 	float halfDomainWidth = domainSize.x * 0.5f;
 	float halfDomainHeight = domainSize.y * 0.5f;
 
-	bool fullscreenState = true;
+	bool fullscreenState = false;
 
 	int targetFPS = 144;
 
@@ -90,8 +90,6 @@ struct UpdateVariables{
 	int maxLeafParticles = 1;
 	float minLeafSize = 1.0f;
 
-	int substeps = 1;
-
 	const float fixedDeltaTime = 0.045f;
 
 	bool isTimePlaying = true;
@@ -105,7 +103,6 @@ struct UpdateVariables{
 	bool isMultiThreadingEnabled = true;
 	bool isBarnesHutEnabled = true;
 	bool isDarkMatterEnabled = true;
-	bool isCollisionsEnabled = false;
 	bool isDensitySizeEnabled = false;
 	bool isForceSizeEnabled = false;
 	bool isShipGasEnabled = true;
@@ -166,8 +163,6 @@ struct UpdateVariables{
 
 	glm::vec2 mouseWorldPos = { 0.0f, 0.0f };
 
-	float particleBounciness = 0.75f;
-
 	int threadsAmount = 1;
 	bool longExposure = false;
 	ImFont* robotoMediumFont = nullptr;
@@ -176,7 +171,25 @@ struct UpdateVariables{
 	bool cleanSceneAfterRecording = false;
 	float recordingTimeLimit = 0.0f; 
 
+	float globalConstraintStiffnessMult = 1.0f;
+	float globalConstraintResistence = 1.0f;
+
 	bool constraintAllSolids = false;
+	bool constraintSelected = false;
+	bool deleteAllConstraints = false;
+	bool deleteSelectedConstraints = false;
 	bool drawConstraints = false;
 	bool visualizeMesh = false;
+	bool unbreakableConstraints = false;
+	bool constraintStressColor = false;
+
+	bool constraintAfterDrawingFlag = false;
+	bool constraintAfterDrawing = false;
+
+	float constraintMaxStressColor = 0.0f;
+
+	bool pinFlag = false;
+	bool unPinFlag = false;
+
+	bool isBrushDrawing = false;
 };

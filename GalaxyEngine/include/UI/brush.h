@@ -15,15 +15,17 @@ public:
 
 	bool SPHWater = false;
 	bool SPHRock = false;
+	bool SPHIron = false;
 	bool SPHSand = false;
 	bool SPHSoil = false;
 	bool SPHIce = false;
 	bool SPHMud = false;
+	bool SPHRubber = false;
 	bool SPHGas = false;
 
 	Brush(SceneCamera myCamera, float brushRadius);
 
-	void brushLogic(UpdateParameters& myParam, bool& isSPHEnabled);
+	void brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& constraintAfterDrawing);
 
 	void brushSize();
 

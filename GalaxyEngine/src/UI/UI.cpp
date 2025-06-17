@@ -42,7 +42,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	static std::array<std::variant<
 		visualSlidersParams<float>,
 		visualSlidersParams<int>>,
-		14> visualSliders = {
+		15> visualSliders = {
 		visualSlidersParams<float>("Density Radius", "Controls the neighbor search radius", myParam.neighborSearch.densityRadius, 0.0f, 7.0f),
 		visualSlidersParams<int>("Max Neighbors", "Controls the maximum neighbor count range", myParam.colorVisuals.maxNeighbors, 1, 500),
 		visualSlidersParams<float>("Max Color Force", "Controls the acceleration threshold to use the secondary color", myParam.colorVisuals.maxColorAcc, 1.0f, 400.0f),
@@ -51,6 +51,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		visualSlidersParams<float>("Max Velocity Color", "Controls the max velocity used to map the colors in the velocity color mode", myParam.colorVisuals.maxVel, 10.0f, 10000.0f),
 		visualSlidersParams<float>("Max Pressure Color", "Controls the max pressure used to map the colors in the pressure color mode", myParam.colorVisuals.maxPress, 100.0f, 100000.0f),
 		visualSlidersParams<float>("Max Temperature Color", "Controls the max temperature used to map the colors in the temperature color mode", myParam.colorVisuals.tempColorMaxTemp, 10.0f, 50000.0f),
+		visualSlidersParams<float>("Max Constraint Stress", "Controls the max constraint stress used to map the colors in the constraints stress color mode. If set to 0, it will set the max stress to the material's breaking limit", myVar.constraintMaxStressColor, 0.0f, 1.0f),
 		visualSlidersParams<float>("Particles Size", "Controls the size of all particles", myVar.particleSizeMultiplier, 0.1f, 5.0f),
 		visualSlidersParams<int>("Trails Length", "Controls how long should the trails be. This feature is computationally expensive", myVar.trailMaxLength, 0, 1500),
 		visualSlidersParams<float>("Trails Thickness", "Controls the trails thickness", myParam.trails.trailThickness, 0.007f, 0.5f),
@@ -66,10 +67,8 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		physicsSlidersParams<float>("Softening", "Controls the smoothness of the gravity forces", myVar.softening, 1.0f, 30.0f),
 		physicsSlidersParams<float>("Theta", "Controls the quality of the gravity calculation. Higher means lower quality", myVar.theta, 0.1f, 5.0f),
 		physicsSlidersParams<float>("Time Scale", "Controls how fast time passes", myVar.timeStepMultiplier, 0.0f, 15.0f),
-		physicsSlidersParams<int>("Collision Substeps", "Controls the amount of collision substeps. Only works if collisions are on", myVar.substeps, 1, 64),
 		physicsSlidersParams<float>("Gravity Strength", "Controls how mcuh particles attract eachother", myVar.gravityMultiplier, 0.0f, 100.0f),
 		physicsSlidersParams<float>("Heavy Particle Init Mass", "Controls the mass of the heavy particles when spawned", myParam.particlesSpawning.heavyParticleWeightMultiplier, 0.005f, 15.0f),
-		physicsSlidersParams<float>("Collisions Bounciness", "Controls how much particles bounce when collisions mode is enabled", myVar.particleBounciness, 0.0f, 1.0f),
 		physicsSlidersParams<float>("Domain Width", "Controls the width of the global container", myVar.domainSize.x, 200.0f, 3840.0f),
 		physicsSlidersParams<float>("Domain Height", "Controls the height of the global container", myVar.domainSize.y, 200.0f, 2160.0f),
 		physicsSlidersParams<int>("Threads Amount", "Controls the amount of threads used by the simulation. Half your total amount of threads is usually the sweet spot", myVar.threadsAmount, 1, 32),
@@ -77,6 +76,9 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		physicsSlidersParams<float>("Ambient Temperature", "Controls the desired temperature of the scene in Kelvin. 1 is near absolute zero. The default value is set just high enough to allow liquid water", myVar.ambientTemp, 1.0f, 2500.0f),
 		physicsSlidersParams<float>("Ambient Heat Rate", "Controls how fast particles' temperature try to match ambient temperature", myVar.globalAmbientHeatRate, 0.0f, 10.0f),
 		physicsSlidersParams<float>("Heat Conductivity Multiplier", "Controls the global heat conductivity of particles", myVar.globalHeatConductivity, 0.001f, 1.0f),
+
+		physicsSlidersParams<float>("Constraints Stiffness Multiplier", "Controls the global stiffness multiplier for constraints", myVar.globalConstraintStiffnessMult, 0.001f, 3.0f),
+		physicsSlidersParams<float>("Constraints Resistance Multiplier", "Controls the global resistance multiplier for constraints", myVar.globalConstraintResistence, 0.001f, 30.0f),
 
 		physicsSlidersParams<float>("Fluid Vertical Gravity", "Controls the vertical gravity strength in Fluid Ground Mode", sph.verticalGravity, 0.0f, 10.0f),
 		physicsSlidersParams<float>("Fluid Mass Multiplier", "Controls the fluid mass of particles", sph.mass, 0.005f, 0.15f),
@@ -137,7 +139,6 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	buttonHelper("Multi-Threading", "Distributes the simulation across multiple threads", myVar.isMultiThreadingEnabled, -1.0f, settingsButtonY, true, enabled);
 
 	bool wasEnabled = myVar.isSPHEnabled;
-	bool sphGroundButtonEnabled = false;
 
 	if (buttonHelper("Fluid Mode", "Enables SPH fluids", myVar.isSPHEnabled, -1.0f, settingsButtonY, true, enabled)) {
 		if (!wasEnabled && myVar.isSPHEnabled) {
@@ -153,22 +154,22 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		}
 	}
 
-	if (myVar.isSPHEnabled) {
-		sphGroundButtonEnabled = true;
-	}
-	else {
-		sphGroundButtonEnabled = false;
-		myVar.sphGround = false;
-	}
+	buttonHelper("Fluid Ground Mode", "Adds vertical gravity and makes particles collide with the domain walls", myVar.sphGround, -1.0f, settingsButtonY, true, myVar.isSPHEnabled);
 
 	buttonHelper("Temperature Simulation", "Enables temperature simulation", myVar.isTempEnabled, -1.0f, settingsButtonY, true, enabled);
 
-	buttonHelper("Particle Constraints", "Enables particles constraints for solids and soft bodies simulation", myVar.constraintsEnabled, -1.0f, settingsButtonY, true, enabled);
-	buttonHelper("Visualize Constraints", "Draws all existing constraints", myVar.drawConstraints, -1.0f, settingsButtonY, true, enabled);
-	buttonHelper("Visualize Mesh", "Draws a mesh that connect particles", myVar.visualizeMesh, -1.0f, settingsButtonY, true, enabled);
+	buttonHelper("Particle Constraints", "Enables particles constraints for solids and soft bodies simulation. Works best with Fluid Mode enabled", myVar.constraintsEnabled, -1.0f, settingsButtonY, true, enabled);
+	buttonHelper("Unbreakable Constraints", "Makes all constraints unbreakable", myVar.unbreakableConstraints, -1.0f, settingsButtonY, true, myVar.constraintsEnabled);
+	buttonHelper("Constraint After Drawing", "Creates constraints in between particles right after drawing them", myVar.constraintAfterDrawing, -1.0f, settingsButtonY, true, myVar.constraintsEnabled);
 
-	buttonHelper("Fluid Ground Mode", "Adds vertical gravity and makes particles collide with the domain walls", myVar.sphGround, -1.0f, settingsButtonY, true, sphGroundButtonEnabled);
-	buttonHelper("Collisions (!!!)", "Enables elastic collisions", myVar.isCollisionsEnabled, -1.0f, settingsButtonY, true, enabled);
+	if (buttonHelper("Visualize Constraints", "Draws all existing constraints", myVar.drawConstraints, -1.0f, settingsButtonY, true, myVar.constraintsEnabled)) {
+		myVar.visualizeMesh = false;
+	}
+	if (buttonHelper("Visualize Mesh", "Draws a mesh that connect particles", myVar.visualizeMesh, -1.0f, settingsButtonY, true, enabled)) {
+		myVar.drawConstraints = false;
+	}
+
+	buttonHelper("Constraint Stress Color", "Maps the constraints stress to an RGB color", myVar.constraintStressColor, -1.0f, settingsButtonY, true, myVar.drawConstraints);
 	
 	SimilarTypeButton::buttonIterator(size, -1.0f, settingsButtonY, true, enabled);
 
@@ -348,6 +349,12 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 					}, visualSliders[i]);
 
 			}
+			bool massMultiplierButtonEnable = true;
+			if (myVar.isSPHEnabled) {
+				myParam.particlesSpawning.massMultiplierEnabled = false;
+				massMultiplierButtonEnable = false;
+			}
+			buttonHelper("Mass Multiplier", "Decides if particles' masses should be inversely multiplied by the amount of particles multiplier", myParam.particlesSpawning.massMultiplierEnabled, 240.0f, 30.0f, true, massMultiplierButtonEnable);
 		}
 
 		if (bPhysicsSliders) {
@@ -396,12 +403,14 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			}
 
 			std::vector<SimilarTypeButton::Mode> sphMats{
-{ "Water", "Water", &myParam.brush.SPHWater},
-{ "Rock", "Rock", &myParam.brush.SPHRock},
-				{"Sand", "Sand", &myParam.brush.SPHSand},
+				{ "Water", "Water", &myParam.brush.SPHWater},
+				{ "Rock", "Rock", &myParam.brush.SPHRock},
+				{ "Iron", "Iron", &myParam.brush.SPHIron},
+			    {"Sand", "Sand", &myParam.brush.SPHSand},
 				{"Soil", "Soil", &myParam.brush.SPHSoil},
 				{"Ice", "Ice", &myParam.brush.SPHIce},
 				{"Mud", "Mud", &myParam.brush.SPHMud},
+				{"Rubber", "Rubber", &myParam.brush.SPHRubber},
 				{"Gas", "Gas", &myParam.brush.SPHGas}
 			};
 
@@ -541,9 +550,11 @@ void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 
 	float waterAmount = 0.0f;
 	float rockAmount = 0.0f;
+	float ironAmount = 0.0f;
 	float sandAmount = 0.0f;
 	float soilAmount = 0.0f;
 	float mudAmount = 0.0f;
+	float rubberAmount = 0.0f;
 
 	// This is not the ideal way to do it, but I'm using this for now because there are not many materials
 	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
@@ -556,13 +567,19 @@ void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 				rockAmount++;
 			}
 			else if (r.sphLabel == 3) {
-				sandAmount++;
+				ironAmount++;
 			}
 			else if (r.sphLabel == 4) {
-				soilAmount++;
+				sandAmount++;
 			}
 			else if (r.sphLabel == 5) {
+				soilAmount++;
+			}
+			else if (r.sphLabel == 6) {
 				mudAmount++;
+			}
+			else if (r.sphLabel == 7) {
+				rubberAmount++;
 			}
 		}
 		else {
@@ -573,13 +590,19 @@ void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 				rockAmount++;
 			}
 			else if (r.sphLabel == 3 && r.isSelected) {
-				sandAmount++;
+				ironAmount++;
 			}
 			else if (r.sphLabel == 4 && r.isSelected) {
-				soilAmount++;
+				sandAmount++;
 			}
 			else if (r.sphLabel == 5 && r.isSelected) {
+				soilAmount++;
+			}
+			else if (r.sphLabel == 6 && r.isSelected) {
 				mudAmount++;
+			}
+			else if (r.sphLabel == 7 && r.isSelected) {
+				rubberAmount++;
 			}
 		}
 	}
@@ -589,9 +612,11 @@ void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 
 	if (waterAmount > 0) { labels.push_back("Water"); values.push_back(waterAmount); }
 	if (rockAmount > 0) { labels.push_back("Rock"); values.push_back(rockAmount); }
+	if (ironAmount > 0) { labels.push_back("Iron"); values.push_back(ironAmount); }
 	if (sandAmount > 0) { labels.push_back("Sand"); values.push_back(sandAmount); }
 	if (soilAmount > 0) { labels.push_back("Soil"); values.push_back(soilAmount); }
 	if (mudAmount > 0) { labels.push_back("Mud"); values.push_back(mudAmount); }
+	if (rubberAmount > 0) { labels.push_back("Rubber"); values.push_back(rubberAmount); }
 
 	if (!values.empty() && ImPlot::BeginPlot("Material Distribution", ImVec2(300, 300), ImPlotFlags_Equal)) {
 

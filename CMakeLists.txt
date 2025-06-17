@@ -25,7 +25,6 @@ set(
     Particles/particlesSpawning.cpp
     Particles/particleSubdivision.cpp
     Particles/particleTrails.cpp
-    Physics/collisionGrid.cpp
     Physics/morton.cpp
     Physics/physics.cpp
     Physics/quadtree.cpp

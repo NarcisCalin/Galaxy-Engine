@@ -4,9 +4,11 @@
 
 struct SPHWater water;
 struct SPHRock rock;
+struct SPHIron iron;
 struct SPHSand sand;
 struct SPHSoil soil;
 struct SPHMud mud;
+struct SPHRubber rubber;
 
 Brush::Brush(SceneCamera myCamera, float brushRadius) {
 	this->myCamera = myCamera;
@@ -14,18 +16,23 @@ Brush::Brush(SceneCamera myCamera, float brushRadius) {
 	mouseWorldPos = { 0.0f, 0.0f };
 }
 
-void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
+void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& constraintAfterDrawing) {
+
+	// This entire function is a crime against programming and perhaps humanity as well. I don't know what destiny shall await for whoever reads such cursed code. 
+	// But I'm too lazy to change this for now. Will change it some time in the future
 
 	if (!isSPHEnabled) {
 		SPHWater = false;
 		SPHRock = false;
+		SPHIron = false;
 		SPHSand = false;
 		SPHSoil = false;
 		SPHIce = false;
 		SPHMud = false;
+		SPHRubber = false;
 	}
 
-	if (!SPHWater && !SPHRock && !SPHSand && !SPHSoil && !SPHIce && !SPHMud && !SPHGas) {
+	if (!SPHWater && !SPHRock && !SPHSand && !SPHSoil && !SPHIce && !SPHMud && !SPHGas && !SPHIron && !SPHRubber) {
 		for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
 			float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 			float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
@@ -37,9 +44,18 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 
 			glm::vec2 particlePos = myParam.myCamera.mouseWorldPos + randomOffset;
 
+			float finalMass = 0.0f;
+
+			if (myParam.particlesSpawning.massMultiplierEnabled) {
+				finalMass = 8500000000.0f / myParam.particlesSpawning.particleAmountMultiplier;
+			}
+			else {
+				finalMass = 8500000000.0f;
+			}
+
 			myParam.pParticles.emplace_back(particlePos,
 				glm::vec2{ 0, 0 },
-				8500000000.0f / myParam.particlesSpawning.particleAmountMultiplier,
+				finalMass,
 
 				0.008f,
 				1.0f,
@@ -47,6 +63,15 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 				1.0f);
 
 			myParam.rParticles.emplace_back(Color{ 128, 128, 128, 100 }, 0.125f, false, false, false, true, true, false, true, -1.0f, 0);
+
+			if (isSPHEnabled) {
+				myParam.rParticles.back().spawnCorrectIter = 0;
+				myParam.rParticles.back().isBeingDrawn = true;
+			}
+			else {
+				myParam.rParticles.back().spawnCorrectIter = 10000000;
+			myParam.rParticles.back().isBeingDrawn = false;
+			}
 		}
 	}
 
@@ -63,9 +88,18 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 
 				glm::vec2 particlePos = myParam.myCamera.mouseWorldPos + randomOffset;
 
+				float finalMass = 0.0f;
+
+				if (myParam.particlesSpawning.massMultiplierEnabled) {
+					finalMass = (8500000000.0f * water.massMult) / myParam.particlesSpawning.particleAmountMultiplier;
+				}
+				else {
+					finalMass = (8500000000.0f * water.massMult);
+				}
+
 				myParam.pParticles.emplace_back(particlePos,
 					glm::vec2{ 0, 0 },
-					(8500000000.0f * water.massMult) / myParam.particlesSpawning.particleAmountMultiplier,
+					finalMass,
 
 					water.restDens,
 					water.stiff,
@@ -75,6 +109,10 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 				myParam.rParticles.emplace_back(water.color, 0.125f, false, false, false, true, true, false, true, -1.0f, water.id);
 
 				myParam.rParticles.back().sphColor = water.color;
+
+				myParam.rParticles.back().spawnCorrectIter = 0;
+
+				myParam.rParticles.back().isBeingDrawn = true;
 			}
 		}
 
@@ -90,9 +128,18 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 
 				glm::vec2 particlePos = myParam.myCamera.mouseWorldPos + randomOffset;
 
+				float finalMass = 0.0f;
+
+				if (myParam.particlesSpawning.massMultiplierEnabled) {
+					finalMass = (8500000000.0f * rock.massMult) / myParam.particlesSpawning.particleAmountMultiplier;
+				}
+				else {
+					finalMass = (8500000000.0f * rock.massMult);
+				}
+
 				myParam.pParticles.emplace_back(particlePos,
 					glm::vec2{ 0, 0 },
-					(8500000000.0f * rock.massMult) / myParam.particlesSpawning.particleAmountMultiplier,
+					finalMass,
 
 					rock.restDens,
 					rock.stiff,
@@ -133,6 +180,79 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 						rock.color.a
 				};
 
+				myParam.rParticles.back().spawnCorrectIter = 0;
+
+				myParam.rParticles.back().isBeingDrawn = true;
+			}
+		}
+
+		if (SPHIron) {
+			for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
+				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
+				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
+
+				glm::vec2 randomOffset = {
+					cos(angle) * distance,
+					sin(angle) * distance
+				};
+
+				glm::vec2 particlePos = myParam.myCamera.mouseWorldPos + randomOffset;
+
+				float finalMass = 0.0f;
+
+				if (myParam.particlesSpawning.massMultiplierEnabled) {
+					finalMass = (8500000000.0f * iron.massMult) / myParam.particlesSpawning.particleAmountMultiplier;
+				}
+				else {
+					finalMass = (8500000000.0f * iron.massMult);
+				}
+
+				myParam.pParticles.emplace_back(particlePos,
+					glm::vec2{ 0, 0 },
+					finalMass,
+
+					iron.restDens,
+					iron.stiff,
+					iron.visc,
+					iron.cohesion);
+
+				float normalRand = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+				auto addRandom = [&](unsigned char c) -> unsigned char {
+					float value = static_cast<float>(c) + (40.0f * normalRand) - 20.0f;
+					value = std::clamp(value, 0.0f, 255.0f);
+					return static_cast<unsigned char>(value);
+					};
+
+				myParam.rParticles.emplace_back(
+					Color{
+						addRandom(iron.color.r),
+						addRandom(iron.color.g),
+						addRandom(iron.color.b),
+						iron.color.a
+					},
+
+					0.125f,
+					false,
+					false,
+					false,
+					true,
+					true,
+					false,
+					true,
+					-1.0f,
+					iron.id
+				);
+
+				myParam.rParticles.back().sphColor = Color{
+						addRandom(iron.color.r),
+						addRandom(iron.color.g),
+						addRandom(iron.color.b),
+						iron.color.a
+				};
+
+				myParam.rParticles.back().spawnCorrectIter = 0;
+
+				myParam.rParticles.back().isBeingDrawn = true;
 			}
 		}
 
@@ -148,9 +268,18 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 
 				glm::vec2 particlePos = myParam.myCamera.mouseWorldPos + randomOffset;
 
+				float finalMass = 0.0f;
+
+				if (myParam.particlesSpawning.massMultiplierEnabled) {
+					finalMass = (8500000000.0f * sand.massMult) / myParam.particlesSpawning.particleAmountMultiplier;
+				}
+				else {
+					finalMass = (8500000000.0f * sand.massMult);
+				}
+
 				myParam.pParticles.emplace_back(particlePos,
 					glm::vec2{ 0, 0 },
-					(8500000000.0f * sand.massMult) / myParam.particlesSpawning.particleAmountMultiplier,
+					finalMass,
 
 					sand.restDens,
 					sand.stiff,
@@ -190,6 +319,10 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 						addRandom(sand.color.b),
 						sand.color.a
 				};
+
+				myParam.rParticles.back().spawnCorrectIter = 0;
+
+				myParam.rParticles.back().isBeingDrawn = true;
 			}
 		}
 
@@ -205,9 +338,18 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 
 				glm::vec2 particlePos = myParam.myCamera.mouseWorldPos + randomOffset;
 
+				float finalMass = 0.0f;
+
+				if (myParam.particlesSpawning.massMultiplierEnabled) {
+					finalMass = (8500000000.0f * soil.massMult) / myParam.particlesSpawning.particleAmountMultiplier;
+				}
+				else {
+					finalMass = (8500000000.0f * soil.massMult);
+				}
+
 				myParam.pParticles.emplace_back(particlePos,
 					glm::vec2{ 0, 0 },
-					(8500000000.0f * soil.massMult) / myParam.particlesSpawning.particleAmountMultiplier,
+					finalMass,
 
 					soil.restDens,
 					soil.stiff,
@@ -247,6 +389,10 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 						addRandom(soil.color.b),
 						soil.color.a
 				};
+
+				myParam.rParticles.back().spawnCorrectIter = 0;
+
+				myParam.rParticles.back().isBeingDrawn = true;
 			}
 		}
 
@@ -262,9 +408,18 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 
 				glm::vec2 particlePos = myParam.myCamera.mouseWorldPos + randomOffset;
 
+				float finalMass = 0.0f;
+
+				if (myParam.particlesSpawning.massMultiplierEnabled) {
+					finalMass = (8500000000.0f * water.massMult) / myParam.particlesSpawning.particleAmountMultiplier;
+				}
+				else {
+					finalMass = (8500000000.0f * water.massMult);
+				}
+
 				myParam.pParticles.emplace_back(particlePos,
 					glm::vec2{ 0, 0 },
-					(8500000000.0f * water.massMult) / myParam.particlesSpawning.particleAmountMultiplier,
+					finalMass,
 
 					water.restDens,
 					water.stiff,
@@ -275,6 +430,10 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 
 				myParam.rParticles.back().sphColor = water.color;
 				myParam.pParticles.back().temp = 1.0f;
+
+				myParam.rParticles.back().spawnCorrectIter = 0;
+
+				myParam.rParticles.back().isBeingDrawn = true;
 			}
 		}
 
@@ -290,9 +449,18 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 
 				glm::vec2 particlePos = myParam.myCamera.mouseWorldPos + randomOffset;
 
+				float finalMass = 0.0f;
+
+				if (myParam.particlesSpawning.massMultiplierEnabled) {
+					finalMass = (8500000000.0f * mud.massMult) / myParam.particlesSpawning.particleAmountMultiplier;
+				}
+				else {
+					finalMass = (8500000000.0f * mud.massMult);
+				}
+
 				myParam.pParticles.emplace_back(particlePos,
 					glm::vec2{ 0, 0 },
-					(8500000000.0f * mud.massMult) / myParam.particlesSpawning.particleAmountMultiplier,
+					finalMass,
 
 					mud.restDens,
 					mud.stiff,
@@ -332,6 +500,80 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 						addRandom(mud.color.b),
 						mud.color.a
 				};
+
+				myParam.rParticles.back().spawnCorrectIter = 0;
+
+				myParam.rParticles.back().isBeingDrawn = true;
+			}
+		}
+
+		if (SPHRubber) {
+			for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
+				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
+				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
+
+				glm::vec2 randomOffset = {
+					cos(angle) * distance,
+					sin(angle) * distance
+				};
+
+				glm::vec2 particlePos = myParam.myCamera.mouseWorldPos + randomOffset;
+
+				float finalMass = 0.0f;
+
+				if (myParam.particlesSpawning.massMultiplierEnabled) {
+					finalMass = (8500000000.0f * rubber.massMult) / myParam.particlesSpawning.particleAmountMultiplier;
+				}
+				else {
+					finalMass = (8500000000.0f * rubber.massMult);
+				}
+
+				myParam.pParticles.emplace_back(particlePos,
+					glm::vec2{ 0, 0 },
+					finalMass,
+
+					rubber.restDens,
+					rubber.stiff,
+					rubber.visc,
+					rubber.cohesion);
+
+				float normalRand = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+				auto addRandom = [&](unsigned char c) -> unsigned char {
+					float value = static_cast<float>(c) + (40.0f * normalRand) - 20.0f;
+					value = std::clamp(value, 0.0f, 255.0f);
+					return static_cast<unsigned char>(value);
+					};
+
+				myParam.rParticles.emplace_back(
+					Color{
+						addRandom(rubber.color.r),
+						addRandom(rubber.color.g),
+						addRandom(rubber.color.b),
+						rubber.color.a
+					},
+
+					0.125f,
+					false,
+					false,
+					false,
+					true,
+					true,
+					false,
+					true,
+					-1.0f,
+					rubber.id
+				);
+
+				myParam.rParticles.back().sphColor = Color{
+						addRandom(rubber.color.r),
+						addRandom(rubber.color.g),
+						addRandom(rubber.color.b),
+						rubber.color.a
+				};
+
+				myParam.rParticles.back().spawnCorrectIter = 0;
+
+				myParam.rParticles.back().isBeingDrawn = true;
 			}
 		}
 
@@ -347,9 +589,18 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 
 				glm::vec2 particlePos = myParam.myCamera.mouseWorldPos + randomOffset;
 
+				float finalMass = 0.0f;
+
+				if (myParam.particlesSpawning.massMultiplierEnabled) {
+					finalMass = (8500000000.0f * water.massMult) / myParam.particlesSpawning.particleAmountMultiplier;
+				}
+				else {
+					finalMass = (8500000000.0f * water.massMult);
+				}
+
 				myParam.pParticles.emplace_back(particlePos,
 					glm::vec2{ 0, 0 },
-					(8500000000.0f * water.massMult) / myParam.particlesSpawning.particleAmountMultiplier,
+					finalMass,
 
 					water.restDens,
 					water.stiff,
@@ -360,6 +611,10 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled) {
 
 				myParam.rParticles.back().sphColor = water.color;
 				myParam.pParticles.back().temp = 440.0f;
+
+				myParam.rParticles.back().spawnCorrectIter = 0;
+
+				myParam.rParticles.back().isBeingDrawn = true;
 			}
 		}
 	}

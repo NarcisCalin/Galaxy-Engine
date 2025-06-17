@@ -26,9 +26,9 @@ struct ParticleDeletion {
 	}
 
 	void deleteStrays(std::vector<ParticlePhysics>& pParticles,
-		std::vector<ParticleRendering>& rParticles, bool& isCollisionsEnabled, bool& isSPHEnabled) {
+		std::vector<ParticleRendering>& rParticles, bool& isSPHEnabled) {
 		if (deleteNonImportant) {
-			if (isCollisionsEnabled || isSPHEnabled) {
+			if (isSPHEnabled) {
 				collisionRMultiplier = 6.0f;
 			}
 			else {

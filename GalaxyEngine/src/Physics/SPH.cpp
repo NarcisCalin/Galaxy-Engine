@@ -9,7 +9,7 @@ void SPH::computeViscCohesionForces(std::vector<ParticlePhysics>& pParticles, st
 #pragma omp parallel for
 	for (size_t i = 0; i < N; ++i) {
 
-		if (!rParticles[i].isSPH) continue;
+		if (!rParticles[i].isSPH || rParticles[i].isPinned || rParticles[i].isBeingDrawn) continue;
 
 		auto& pi = pParticles[i];
 
@@ -23,7 +23,7 @@ void SPH::computeViscCohesionForces(std::vector<ParticlePhysics>& pParticles, st
 
 			for (auto pjIdx : cell.particleIndices) {
 
-				if (!rParticles[pjIdx].isSPH) continue;
+				if (!rParticles[pjIdx].isSPH || rParticles[pjIdx].isBeingDrawn) continue;
 
 				if (pjIdx == i) continue;
 				auto& pj = pParticles[pjIdx];
@@ -87,7 +87,7 @@ void SPH::PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleR
 #pragma omp parallel for
 		for (size_t i = 0; i < N; ++i) {
 
-			if (!rParticles[i].isSPH) continue;
+			if (!rParticles[i].isSPH || rParticles[i].isPinned || rParticles[i].isBeingDrawn) continue;
 
 			auto& p = pParticles[i];
 			p.predVel = p.vel + dt * 1.5f * (sphForce[i] / p.sphMass);
@@ -104,7 +104,7 @@ void SPH::PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleR
 #pragma omp parallel for reduction(max:maxRhoErr)
 		for (size_t i = 0; i < N; ++i) {
 
-			if (!rParticles[i].isSPH) continue;
+			if (!rParticles[i].isSPH || rParticles[i].isBeingDrawn) continue;
 
 			auto& pi = pParticles[i];
 			pi.predDens = 0.0f;
@@ -117,7 +117,7 @@ void SPH::PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleR
 				if (it == grid.end()) continue;
 				for (auto pjIdx : it->second.particleIndices) {
 
-					if (!rParticles[pjIdx].isSPH) continue;
+					if (!rParticles[pjIdx].isSPH || rParticles[pjIdx].isBeingDrawn) continue;
 
 					auto& pj = pParticles[pjIdx];
 					glm::vec2 dr = { pi.predPos.x - pj.predPos.x,
@@ -145,7 +145,7 @@ void SPH::PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleR
 #pragma omp parallel for
 		for (size_t i = 0; i < N; ++i) {
 
-			if (!rParticles[i].isSPH) continue;
+			if (!rParticles[i].isSPH || rParticles[i].isBeingDrawn) continue;
 
 			auto& pi = pParticles[i];
 			size_t cellIndex = getGridIndex(pi.predPos);
@@ -157,7 +157,7 @@ void SPH::PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleR
 				for (auto pjIdx : it->second.particleIndices) {
 					if (pjIdx == i) continue;
 
-					if (!rParticles[pjIdx].isSPH) continue;
+					if (!rParticles[pjIdx].isSPH || rParticles[pjIdx].isBeingDrawn) continue;
 					auto& pj = pParticles[pjIdx];
 					glm::vec2 dr = { pi.predPos.x - pj.predPos.x,
 								   pi.predPos.y - pj.predPos.y };
@@ -203,7 +203,12 @@ void SPH::PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleR
 
 		p.pressF = sphForce[i] / p.sphMass;
 
-		p.acc += p.pressF;
+		if (!rParticles[i].isPinned) {
+			p.acc += p.pressF;
+		}
+		else {
+			p.acc *= 0.0f;
+		}
 	}
 }
 
@@ -211,7 +216,7 @@ void SPH::groundModeBoundary(std::vector<ParticlePhysics>& pParticles, std::vect
 
 #pragma omp parallel for
 	for (size_t i = 0; i < pParticles.size(); ++i) {
-		if (!rParticles[i].isSPH) continue;
+		if (!rParticles[i].isSPH || rParticles[i].isPinned) continue;
 		auto& p = pParticles[i];
 		p.acc.y += verticalGravity;
 

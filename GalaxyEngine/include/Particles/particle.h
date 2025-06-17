@@ -39,7 +39,7 @@ struct ParticlePhysics {
 	// Default constructor
 	ParticlePhysics()
 		: pos(0.0f, 0.0f), predPos{ 0,0 }, vel{ 0,0 }, prevVel{ 0.0f, 0.0f }, predVel{ 0.0f, 0.0f }, acc{ 0,0 },
-		mass(1.0f), press(0.0f), pressTmp(0.0f), pressF{ 0.0f,0.0f }, dens(0.0f), predDens(0.0f), sphMass(0.0f),
+		mass(8500000000.0f), press(0.0f), pressTmp(0.0f), pressF{ 0.0f,0.0f }, dens(0.0f), predDens(0.0f), sphMass(1.0f),
 		restDens(0.0f), stiff(0.0f), visc(0.0f), cohesion(0.0f),
 		temp(0.0f), ke(0.0f), prevKe(0.0f), mortonKey(0), id(globalId++), isHotPoint(false), hasSolidified(false)
 	{
@@ -100,6 +100,10 @@ struct ParticleRendering {
 	float totalRadius;
 	float lifeSpan;
 	uint32_t sphLabel;
+	bool isPinned;
+	bool isBeingDrawn;
+	int spawnCorrectIter;
+
 
 	// Default constructor
 	ParticleRendering()
@@ -108,7 +112,7 @@ struct ParticleRendering {
 		uniqueColor(false), isSolid(false), canBeSubdivided(false),
 		canBeResized(false), isDarkMatter(false), isSPH(false),
 		isSelected(false), isGrabbed(false), previousSize(1.0f),
-		neighbors(0), totalRadius(0.0f), lifeSpan(0.0f), sphLabel(0)
+		neighbors(0), totalRadius(0.0f), lifeSpan(-1.0f), sphLabel(0), isPinned(false), isBeingDrawn(true), spawnCorrectIter(100000000)
 	{
 	}
 
@@ -136,5 +140,9 @@ struct ParticleRendering {
 		this->totalRadius = 0.0f;
 		this->lifeSpan = lifeSpan;
 		this->sphLabel = sphLabel;
+
+		this->isPinned = false;
+		this->isBeingDrawn = false;
+		this->spawnCorrectIter = 100000000;
 	}
 };

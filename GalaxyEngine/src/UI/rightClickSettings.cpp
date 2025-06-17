@@ -94,6 +94,21 @@ void RightClickSettings::rightClickMenu(UpdateVariables& myVar, UpdateParameters
 		if (UI::buttonHelper("Constraint Solids", "Adds constraints to all current solid particles", myVar.constraintAllSolids, -1.0f, buttonSizeY, enabled, myVar.constraintsEnabled)) {
 			isMenuActive = false;
 		}
+		if (UI::buttonHelper("Constraint Selected", "Adds constraints to selected solid particles", myVar.constraintSelected, -1.0f, buttonSizeY, enabled, myVar.constraintsEnabled)) {
+			isMenuActive = false;
+		}
+		if (UI::buttonHelper("Delete All Constraints", "Deletes all current constraints", myVar.deleteAllConstraints, -1.0f, buttonSizeY, enabled, myVar.constraintsEnabled)) {
+			isMenuActive = false;
+		}
+		if (UI::buttonHelper("Del. Selec. Constraints", "Deletes all selected constraints", myVar.deleteSelectedConstraints, -1.0f, buttonSizeY, enabled, myVar.constraintsEnabled)) {
+			isMenuActive = false;
+		}
+		if (UI::buttonHelper("Pin Selected", "Pins selected particles", myVar.pinFlag, -1.0f, buttonSizeY, enabled, enabled)) {
+			isMenuActive = false;
+		}
+		if (UI::buttonHelper("Unpin Selected", "Unpins selected particles", myVar.unPinFlag, -1.0f, buttonSizeY, enabled, enabled)) {
+			isMenuActive = false;
+		}
 		if (UI::buttonHelper("Invert Particle Selec.", "Invert the particle selection", myParam.particleSelection.invertParticleSelection, -1.0f, buttonSizeY, enabled, enabled)) {
 			isMenuActive = false;
 		}

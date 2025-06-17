@@ -58,7 +58,7 @@ struct NeighborSearch {
 		float h2 = cellSize * cellSize;
 
 		updateGrid(pParticles, rParticles);
-#pragma omp parallel for
+		#pragma omp parallel for
 		for (size_t i = 0; i < pParticles.size(); ++i) {
 
 			if (rParticles[i].isDarkMatter) continue;

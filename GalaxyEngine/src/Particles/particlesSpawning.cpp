@@ -7,10 +7,6 @@
 
 void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& physics, UpdateVariables& myVar, UpdateParameters& myParam) {
 
-	if (myVar.isSPHEnabled) {
-		particleAmountMultiplier = 1.0f;
-	}
-
 	if (myVar.isMouseNotHoveringUI && isSpawningAllowed) {
 
 		Slingshot slingshot = slingshot.particleSlingshot(myVar.isDragging, myParam.myCamera);
@@ -46,9 +42,64 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 			myVar.isDragging = false;
 		}
 
-		if (IsMouseButtonDown(2) && !IsKeyDown(KEY_LEFT_CONTROL) && !IsKeyDown(KEY_LEFT_ALT) && !IsKeyDown(KEY_X)) {
-			myParam.brush.brushLogic(myParam, myVar.isSPHEnabled);
+		if (!myVar.isSPHEnabled) {
+			myVar.isBrushDrawing = false;
+			myVar.constraintAfterDrawingFlag = false;
 		}
+
+		if (IsMouseButtonDown(2) && !IsKeyDown(KEY_LEFT_CONTROL) && !IsKeyDown(KEY_LEFT_ALT) && !IsKeyDown(KEY_X)) {
+			myVar.isBrushDrawing = true;
+
+			myParam.brush.brushLogic(myParam, myVar.isSPHEnabled, myVar.constraintAfterDrawing);
+			if (myVar.isBrushDrawing) {
+				if (myVar.isSPHEnabled) {
+
+					particlesIterating = true;
+
+#pragma omp parallel for
+					for (int i = 0; i < correctionSubsteps; i++) {
+						physics.buildGrid(myParam.pParticles, myParam.rParticles, physics, myVar.domainSize, correctionSubsteps);
+					}
+				}
+			}
+		}
+		else {
+
+			if (myVar.isSPHEnabled && myVar.isBrushDrawing) {
+
+				particlesIterating = false;
+				for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+					if (myParam.rParticles[i].spawnCorrectIter < correctionSubsteps && myParam.rParticles[i].isBeingDrawn) {
+						particlesIterating = true;
+						break;
+					}
+				}
+
+				if (particlesIterating) {
+#pragma omp parallel for
+					for (int i = 0; i < correctionSubsteps * 2; i++) {
+						physics.buildGrid(myParam.pParticles, myParam.rParticles, physics, myVar.domainSize, correctionSubsteps);
+					}
+				}
+				else {
+
+					if (myVar.constraintAfterDrawing) {
+						myVar.constraintAfterDrawingFlag = true;
+					}
+
+					if (myVar.constraintAfterDrawingFlag && myVar.constraintAfterDrawing) {
+						physics.createConstraints(myParam.pParticles, myParam.rParticles, 
+							myVar.constraintAfterDrawingFlag, myVar);
+					}
+
+					for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+						myParam.rParticles[i].isBeingDrawn = false;
+					}
+					myVar.isBrushDrawing = false;
+				}
+			}
+		}
+
 
 		if (IsKeyReleased(KEY_ONE) && myVar.isDragging) {
 
@@ -86,10 +137,19 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 
 				glm::vec2 vel = tangent * speed;
 
+				float finalMass = 0.0f;
+
+				if (massMultiplierEnabled) {
+					finalMass = 8500000000.0f / particleAmountMultiplier;
+				}
+				else {
+					finalMass = 8500000000.0f;
+				}
+
 				myParam.pParticles.emplace_back(
 					pos,
 					vel + slingshot.norm * slingshot.length * 0.3f,
-					8500000000.0f / particleAmountMultiplier,
+					finalMass,
 
 					0.008f,
 					1.0f,
@@ -130,10 +190,19 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 
 					glm::vec2 vel = glm::vec2(static_cast<float>(rand() % 60 - 30), static_cast<float>(rand() % 60 - 30));
 
+					float finalMass = 0.0f;
+
+					if (massMultiplierEnabled) {
+						finalMass = 141600000000.0f / DMAmountMultiplier;
+					}
+					else {
+						finalMass = 141600000000.0f;
+					}
+
 					myParam.pParticles.emplace_back(
 						pos,
 						vel + slingshot.norm * slingshot.length * 0.3f,
-						141600000000.0f / DMAmountMultiplier,
+						finalMass,
 
 						0.008f,
 						1.0f,
@@ -194,10 +263,19 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 
 				glm::vec2 vel = tangent * speed;
 
+				float finalMass = 0.0f;
+
+				if (massMultiplierEnabled) {
+					finalMass = 8500000000.0f / particleAmountMultiplier;
+				}
+				else {
+					finalMass = 8500000000.0f;
+				}
+
 				myParam.pParticles.emplace_back(
 					pos,
 					vel + slingshot.norm * slingshot.length * 0.3f,
-					8500000000.0f / particleAmountMultiplier,
+					finalMass,
 
 					0.008f,
 					1.0f,
@@ -237,10 +315,19 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 
 					glm::vec2 vel = glm::vec2(static_cast<float>(rand() % 60 - 30), static_cast<float>(rand() % 60 - 30));
 
+					float finalMass = 0.0f;
+
+					if (massMultiplierEnabled) {
+						finalMass = 141600000000.0f / DMAmountMultiplier;
+					}
+					else {
+						finalMass = 141600000000.0f;
+					}
+
 					myParam.pParticles.emplace_back(
 						pos,
 						vel + slingshot.norm * slingshot.length * 0.3f,
-						141600000000.0f / DMAmountMultiplier,
+						finalMass,
 
 						0.008f,
 						1.0f,
@@ -279,10 +366,19 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 
 				glm::vec2 particlePos = myParam.myCamera.mouseWorldPos + randomOffset;
 
+				float finalMass = 0.0f;
+
+				if (massMultiplierEnabled) {
+					finalMass = 8500000000.0f / particleAmountMultiplier;
+				}
+				else {
+					finalMass = 8500000000.0f;
+				}
+
 				myParam.pParticles.emplace_back(
 					glm::vec2{ particlePos.x, particlePos.y },
 					slingshot.norm * slingshot.length * 0.3f,
-					8500000000.0f / particleAmountMultiplier,
+					finalMass,
 
 					0.008f,
 					1.0f,
@@ -332,10 +428,19 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 
 				glm::vec2 vel = adjustedSpeed * norm;
 
+				float finalMass = 0.0f;
+
+				if (massMultiplierEnabled) {
+					finalMass = 8500000000.0f / particleAmountMultiplier;
+				}
+				else {
+					finalMass = 8500000000.0f;
+				}
+
 				myParam.pParticles.emplace_back(
 					particlePos,
 					vel,
-					8500000000.0f / particleAmountMultiplier,
+					finalMass,
 
 					0.008f,
 					1.0f,
@@ -382,10 +487,19 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 
 					glm::vec2 vel = adjustedSpeed * norm;
 
+					float finalMass = 0.0f;
+
+					if (massMultiplierEnabled) {
+						finalMass = 141600000000.0f / DMAmountMultiplier;
+					}
+					else {
+						finalMass = 141600000000.0f;
+					}
+
 					myParam.pParticles.emplace_back(
 						particlePos,
 						vel,
-						141600000000.0f / DMAmountMultiplier,
+						finalMass,
 
 						0.008f,
 						1.0f,
@@ -422,12 +536,14 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 }
 
 void ParticlesSpawning::copyPaste(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles,
-	bool& isDragging, SceneCamera& myCamera, std::vector<ParticlePhysics>& pParticlesSelected) {
+	bool& isDragging, SceneCamera& myCamera, std::vector<ParticlePhysics>& pParticlesSelected, Physics& physics, 
+	UpdateVariables& myVar, UpdateParameters& myParam) {
 
 	if (IO::shortcutPress(KEY_H) && pParticlesSelected.size() > 0) {
 
 		pParticlesCopied.clear();
 		rParticlesCopied.clear();
+		constraintsCopied.clear();
 
 		for (size_t i = 0; i < pParticles.size(); i++) {
 			if (rParticles[i].isSelected) {
@@ -450,7 +566,6 @@ void ParticlesSpawning::copyPaste(std::vector<ParticlePhysics>& pParticles, std:
 
 	if (IsKeyReleased(KEY_J)) {
 
-
 		for (ParticlePhysics pCopy : pParticlesCopied) {
 
 			glm::vec2 copyRelPos = pCopy.pos - avgPos;
@@ -472,7 +587,19 @@ void ParticlesSpawning::copyPaste(std::vector<ParticlePhysics>& pParticles, std:
 
 			rCopy.isSelected = false;
 
+			rCopy.isBeingDrawn = true;
+
 			rParticles.push_back(ParticleRendering(rCopy));
+		}
+
+		NeighborSearch::idToI(myParam.pParticles);
+		myParam.neighborSearch.neighborSearchHash(myParam.pParticles, myParam.rParticles);
+
+		bool enabled = true;
+		physics.createConstraints(myParam.pParticles, myParam.rParticles, enabled, myVar);
+
+		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+			myParam.rParticles[i].isBeingDrawn = false;
 		}
 
 		isDragging = false;
@@ -522,6 +649,6 @@ void ParticlesSpawning::predictTrajectory(const std::vector<ParticlePhysics>& pP
 	}
 
 	for (size_t i = 1; i < predictedPath.size(); ++i) {
-		DrawLineV({ predictedPath[i - 1].x,  predictedPath[i - 1].y }, { predictedPath[i].x,  predictedPath[i].y}, WHITE);
+		DrawLineV({ predictedPath[i - 1].x,  predictedPath[i - 1].y }, { predictedPath[i].x,  predictedPath[i].y }, WHITE);
 	}
 }

@@ -33,7 +33,11 @@ struct SPHMaterial {
 
 	// Other values
 	float heatConductivity = 0.1f;
-	float constraintHardness = 1.0f;
+	float constraintResistance = 1.0f;
+	float constraintPlasticPoint = 0.5f;
+	float constraintPlasticPointMult = 2.0f;
+	float constraintStiffness = 60.0f;
+	bool isPlastic = false;
 
 	virtual ~SPHMaterial() = default;
 
@@ -74,7 +78,11 @@ struct SPHWater : public SPHMaterial {
 		coldColor = { 230, 230, 240, 250 };
 
 		heatConductivity = 0.15f;
-		constraintHardness = 0.2f;
+		constraintResistance = 0.06f;
+		constraintPlasticPoint = constraintResistance * 0.5f;
+		constraintPlasticPointMult = 0.0f;
+		constraintStiffness = 55.0f;
+		isPlastic = false;
 	}
 };
 
@@ -104,12 +112,50 @@ struct SPHRock : public SPHMaterial {
 		coldColor = color;
 
 		heatConductivity = 0.02f;
-		constraintHardness = 0.57f;
+		constraintResistance = 0.211f;
+		constraintPlasticPoint = constraintResistance * 0.5f;
+		constraintPlasticPointMult = 0.0f;
+		constraintStiffness = 60.0f;
+		isPlastic = false;
+	}
+};
+
+struct SPHIron : public SPHMaterial {
+	SPHIron() : SPHMaterial(3, "iron") {
+		massMult = 4.0f;
+		restDens = 0.008f;
+		stiff = 1.4f;
+		visc = 3.0f;
+		cohesion = 1750.0f;
+		color = { 110, 125, 157, 255 };
+
+		hotPoint = 1740.0f;
+		hotMassMult = 2.8f;
+		hotRestDens = 0.005f;
+		hotStiff = 1.0f;
+		hotVisc = 0.6f;
+		hotCohesion = 300.0f;
+		hotColor = { 255, 105, 0, 255 };
+
+		coldPoint = 0.0f;
+		coldMassMult = massMult;
+		coldRestDens = restDens;
+		coldStiff = stiff;
+		coldVisc = visc;
+		coldCohesion = cohesion;
+		coldColor = color;
+
+		heatConductivity = 0.02f;
+		constraintResistance = 0.24f;
+		constraintPlasticPoint = constraintResistance * 0.45f;
+		constraintPlasticPointMult = 1.8f;
+		constraintStiffness = 60.0f;
+		isPlastic = true;
 	}
 };
 
 struct SPHSand : public SPHMaterial {
-	SPHSand() : SPHMaterial(3, "sand") {
+	SPHSand() : SPHMaterial(4, "sand") {
 		massMult = 2.1f;
 		restDens = 0.008f;
 		stiff = 1.255f;
@@ -134,12 +180,16 @@ struct SPHSand : public SPHMaterial {
 		coldColor = color;
 
 		heatConductivity = 0.01f;
-		constraintHardness = 0.6f;
+		constraintResistance = 0.08f;
+		constraintPlasticPoint = constraintResistance * 0.5f;
+		constraintPlasticPointMult = 0.0f;
+		constraintStiffness = 55.0f;
+		isPlastic = false;
 	}
 };
 
 struct SPHSoil : public SPHMaterial {
-	SPHSoil() : SPHMaterial(4, "soil") {
+	SPHSoil() : SPHMaterial(5, "soil") {
 		massMult = 1.9f;
 		restDens = 0.008f;
 		stiff = 1.0f;
@@ -164,12 +214,16 @@ struct SPHSoil : public SPHMaterial {
 		coldColor = color;
 
 		heatConductivity = 0.02f;
-		constraintHardness = 0.3f;
+		constraintResistance = 0.09f;
+		constraintPlasticPoint = constraintResistance * 0.5f;
+		constraintPlasticPointMult = 2.0f;
+		constraintStiffness = 30.0f;
+		isPlastic = true;
 	}
 };
 
 struct SPHMud : public SPHMaterial {
-	SPHMud() : SPHMaterial(5, "mud") {
+	SPHMud() : SPHMaterial(6, "mud") {
 		massMult = 2.3f;
 		restDens = 0.0095f;
 		stiff = 1.0f;
@@ -194,7 +248,45 @@ struct SPHMud : public SPHMaterial {
 		coldColor = color;
 
 		heatConductivity = 0.1f;
-		constraintHardness = 0.2f;
+		constraintResistance = 0.03f;
+		constraintPlasticPoint = constraintResistance * 0.5f;
+		constraintPlasticPointMult = 2.0f;
+		constraintStiffness = 20.0f;
+		isPlastic = true;
+	}
+};
+
+struct SPHRubber : public SPHMaterial {
+	SPHRubber() : SPHMaterial(7, "rubber") {
+		massMult = 1.7f;
+		restDens = 0.0095f;
+		stiff = 1.0f;
+		visc = 0.6f;
+		cohesion = 100.0f;
+		color = { 226, 166, 114, 255 };
+
+		hotPoint = 453.0f;
+		hotMassMult = 1.6f;
+		hotRestDens = 0.011f;
+		hotStiff = 1.0f;
+		hotVisc = 0.5f;
+		hotCohesion = 40.0f;
+		hotColor = { 255, 105, 0, 255 };
+
+		coldPoint = 0.0f;
+		coldMassMult = massMult;
+		coldRestDens = restDens;
+		coldStiff = stiff;
+		coldVisc = visc;
+		coldCohesion = cohesion;
+		coldColor = color;
+
+		heatConductivity = 1.1f;
+		constraintResistance = 5.5f;
+		constraintPlasticPoint = constraintResistance * 0.5f;
+		constraintPlasticPointMult = 2.0f;
+		constraintStiffness = 6.0f;
+		isPlastic = true;
 	}
 };
 
@@ -208,9 +300,11 @@ struct SPHMaterials {
 	static void Init() {
 		materials.emplace_back(std::make_unique<SPHWater>());
 		materials.emplace_back(std::make_unique<SPHRock>());
+		materials.emplace_back(std::make_unique<SPHIron>());
 		materials.emplace_back(std::make_unique<SPHSand>());
 		materials.emplace_back(std::make_unique<SPHSoil>());
 		materials.emplace_back(std::make_unique<SPHMud>());
+		materials.emplace_back(std::make_unique<SPHRubber>());
 
 		for (auto& mat : materials) {
 			idToMaterial[mat->id] = mat.get();

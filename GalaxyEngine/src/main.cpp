@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
 		std::filesystem::create_directory("Saves");
 	}
 	save.saveFlag = true;
-	save.saveSystem("Saves/DefaultSettings.bin", myVar, myParam, sph);
+	save.saveSystem("Saves/DefaultSettings.bin", myVar, myParam, sph, physics);
 	save.saveFlag = false;
 
 	ImGuiStyle& style = ImGui::GetStyle();

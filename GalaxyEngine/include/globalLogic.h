@@ -14,7 +14,6 @@
 #include "Physics/slingshot.h"
 #include "Physics/morton.h"
 #include "Physics/physics.h"
-#include "Physics/collisionGrid.h"
 #include "Physics/SPH.h"
 
 #include "UI/brush.h"
@@ -32,7 +31,6 @@ extern UpdateParameters myParam;
 extern UpdateVariables myVar;
 extern UI myUI;
 extern Physics physics;
-extern CollisionGrid collisionGrid;
 extern ParticleSpaceship ship;
 extern SPH sph;
 extern SaveSystem save;
@@ -50,6 +48,8 @@ struct ParticleBounds {
 
 // THIS FUNCTION IS MEAN FOR QUICK DEBUGGING WHERE YOU NEED TO CHECK A SPECIFIC PARTICLE'S VARIABLES
 void selectedParticleDebug();
+
+void pinParticles();
 
 void updateScene();
 

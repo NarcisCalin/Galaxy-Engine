@@ -4,16 +4,9 @@
 
 #include "Physics/quadtree.h"
 
-#include "parameters.h"
+#include "Physics/constraint.h"
 
-struct ParticleConstraint {
-	uint32_t id1;
-	uint32_t id2;
-	float restLength;
-	float stiffness;
-	float hardness;
-	bool isBroken;
-};
+#include "parameters.h"
 
 struct Physics {
 
@@ -25,24 +18,25 @@ struct Physics {
 			: ((uint64_t)id2 << 32) | id1;
 	}
 
-	const float constraintStiffness = 60.0f;
-	const float constraintDamping = 0.001f;
-	float globalStiffness = 10.0f;
+	const float globalConstraintDamping = 0.001f;
 
-	float stiffCorrectionRatio = 0.013333f; // Heuristic. This used to modify the stiffness of a constraint in a more intuitive way
+	const float stiffCorrectionRatio = 0.013333f; // Heuristic. This used to modify the stiffness of a constraint in a more intuitive way. DO NOT CHANGE
 
 	glm::vec2 calculateForceFromGrid(const Quadtree& grid, std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar, 
 		ParticlePhysics& pParticle);
 
 	void temperatureCalculation(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar);
 
-	void createConstraints(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, bool& constraintAllSolids);
+	void createConstraints(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, bool& constraintCreateSpecialFlag,
+		UpdateVariables& myVar);
 
-	void constraints(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles,
-		bool& isPeriodicBoundaryEnabled, glm::vec2& domainSize);
+	void constraints(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar);
 
 	void physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar, bool& sphGround);
 
 	void collisions(ParticlePhysics& pParticleA, ParticlePhysics& pParticleB,
-		ParticleRendering& rParticleA, ParticleRendering& rParticleB, UpdateVariables& myVar, float& dt);
+		ParticleRendering& rParticleA, ParticleRendering& rParticleB);
+
+	void buildGrid(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles,
+		Physics& physics, glm::vec2& domainSize, const int& iterations);
 };

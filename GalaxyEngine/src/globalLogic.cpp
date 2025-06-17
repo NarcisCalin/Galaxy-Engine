@@ -4,7 +4,6 @@ UpdateParameters myParam;
 UpdateVariables myVar;
 UI myUI;
 Physics physics;
-CollisionGrid collisionGrid;
 ParticleSpaceship ship;
 SPH sph;
 SaveSystem save;
@@ -38,8 +37,29 @@ void selectedParticleDebug() {
 		ParticlePhysics& p = myParam.pParticles[i];
 		ParticleRendering& r = myParam.rParticles[i];
 		if (r.isSelected && myVar.timeFactor != 0.0f) {
-			std::cout << "Ke: " << p.ke - p.prevKe << std::endl;
+			std::cout << "Drawn: " << r.isBeingDrawn << std::endl;
 		}
+	}
+}
+
+void pinParticles() {
+
+	if (myVar.pinFlag) {
+		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+			if (myParam.rParticles[i].isSelected) {
+				myParam.rParticles[i].isPinned = true;
+			}
+		}
+		myVar.pinFlag = false;
+	}
+
+	if (myVar.unPinFlag) {
+		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+			if (myParam.rParticles[i].isSelected) {
+				myParam.rParticles[i].isPinned = false;
+			}
+		}
+		myVar.unPinFlag = false;
 	}
 }
 
@@ -92,22 +112,23 @@ void updateScene() {
 
 	myParam.brush.brushSize();
 
-	myParam.particlesSpawning.particlesInitialConditions(grid, physics, myVar, myParam);
-
-	if (myVar.constraintsEnabled || myVar.drawConstraints || myVar.visualizeMesh) {
+	if (myVar.constraintsEnabled || myVar.drawConstraints || myVar.visualizeMesh || myVar.isBrushDrawing) {
 		NeighborSearch::idToI(myParam.pParticles);
 		myParam.neighborSearch.neighborSearchHash(myParam.pParticles, myParam.rParticles);
 	}
 
-	if(myVar.constraintsEnabled) {
-	physics.createConstraints(myParam.pParticles, myParam.rParticles, myVar.constraintAllSolids);
+	myParam.particlesSpawning.particlesInitialConditions(grid, physics, myVar, myParam);
+
+	if (myVar.constraintsEnabled && !myVar.isBrushDrawing) {
+		physics.createConstraints(myParam.pParticles, myParam.rParticles, myVar.constraintAfterDrawingFlag, myVar);
 	}
-	else {
+	else if(!myVar.constraintsEnabled && !myVar.isBrushDrawing) {
 		physics.constraintMap.clear();
 		physics.particleConstraints.clear();
 	}
 
-	myParam.particlesSpawning.copyPaste(myParam.pParticles, myParam.rParticles, myVar.isDragging, myParam.myCamera, myParam.pParticlesSelected);
+	myParam.particlesSpawning.copyPaste(myParam.pParticles, myParam.rParticles, myVar.isDragging, myParam.myCamera, myParam.pParticlesSelected, 
+		physics, myVar, myParam);
 
 	if (myVar.timeFactor > 0.0f && grid != nullptr) {
 
@@ -117,6 +138,10 @@ void updateScene() {
 
 #pragma omp parallel for schedule(dynamic)
 		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+
+			if (myParam.rParticles[i].isBeingDrawn && myVar.isBrushDrawing && myVar.isSPHEnabled) {
+				continue;
+			}
 
 			ParticlePhysics& pParticle = myParam.pParticles[i];
 
@@ -135,15 +160,7 @@ void updateScene() {
 
 		ship.spaceshipLogic(myParam.pParticles, myParam.rParticles, myVar.isShipGasEnabled);
 
-		if (myVar.isCollisionsEnabled) {
-			float dt = myVar.timeFactor / myVar.substeps;
-
-			for (int i = 0; i < myVar.substeps; ++i) {
-				collisionGrid.buildGrid(myParam.pParticles, myParam.rParticles, physics, myVar, myVar.domainSize, dt);
-			}
-		}
-
-		physics.constraints(myParam.pParticles, myParam.rParticles, myVar.isPeriodicBoundaryEnabled, myVar.domainSize);
+		physics.constraints(myParam.pParticles, myParam.rParticles, myVar);
 
 		physics.physicsUpdate(myParam.pParticles, myParam.rParticles, myVar, myVar.sphGround);
 	}
@@ -175,7 +192,7 @@ void updateScene() {
 
 	myParam.particleDeletion.deleteSelected(myParam.pParticles, myParam.rParticles);
 
-	myParam.particleDeletion.deleteStrays(myParam.pParticles, myParam.rParticles, myVar.isCollisionsEnabled, myVar.isSPHEnabled);
+	myParam.particleDeletion.deleteStrays(myParam.pParticles, myParam.rParticles, myVar.isSPHEnabled);
 
 	myParam.brush.particlesAttractor(myVar, myParam);
 
@@ -186,6 +203,8 @@ void updateScene() {
 	myParam.brush.temperatureBrush(myParam);
 
 	myParam.brush.eraseBrush(myParam);
+
+	pinParticles();
 
 	//selectedParticleDebug();
 
@@ -201,12 +220,11 @@ void drawConstraints() {
 	if (myVar.visualizeMesh) {
 		rlBegin(RL_LINES);
 		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-
 			ParticlePhysics& pi = myParam.pParticles[i];
-
 			for (uint32_t& id : myParam.pParticles[i].neighborIds) {
 				auto it = NeighborSearch::idToIndex.find(id);
 				if (it != NeighborSearch::idToIndex.end()) {
+
 					size_t neighborIndex = it->second;
 
 					if (neighborIndex == i) continue;
@@ -214,11 +232,22 @@ void drawConstraints() {
 					auto& pj = myParam.pParticles[neighborIndex];
 
 					if (pi.id < pj.id) {
+						glm::vec2 delta = pj.pos - pi.pos;
+						glm::vec2 periodicDelta = delta;
 
-						Color lineColor = myParam.rParticles[i].color;
+						if (abs(delta.x) > myVar.domainSize.x * 0.5f) {
+							periodicDelta.x += (delta.x > 0) ? -myVar.domainSize.x : myVar.domainSize.x;
+						}
+						if (abs(delta.y) > myVar.domainSize.y * 0.5f) {
+							periodicDelta.y += (delta.y > 0) ? -myVar.domainSize.y : myVar.domainSize.y;
+						}
+
+						glm::vec2 pjCorrectedPos = pi.pos + periodicDelta;
+
+						Color lineColor = ColorLerp(myParam.rParticles[i].color, myParam.rParticles[neighborIndex].color, 0.5f);
 						rlColor4ub(lineColor.r, lineColor.g, lineColor.b, lineColor.a);
 						rlVertex2f(pi.pos.x, pi.pos.y);
-						rlVertex2f(pj.pos.x, pj.pos.y);
+						rlVertex2f(pjCorrectedPos.x, pjCorrectedPos.y);
 					}
 				}
 			}
@@ -230,17 +259,57 @@ void drawConstraints() {
 		rlBegin(RL_LINES);
 		for (size_t i = 0; i < physics.particleConstraints.size(); i++) {
 			auto& constraint = physics.particleConstraints[i];
-
 			auto it1 = NeighborSearch::idToIndex.find(constraint.id1);
 			auto it2 = NeighborSearch::idToIndex.find(constraint.id2);
+
+			if (it1 == NeighborSearch::idToIndex.end() ||
+				it2 == NeighborSearch::idToIndex.end()) {
+				continue;
+			}
 
 			ParticlePhysics& pi = myParam.pParticles[it1->second];
 			ParticlePhysics& pj = myParam.pParticles[it2->second];
 
-			Color lineColor = myParam.rParticles[it1->second].color;
+			glm::vec2 delta = pj.pos - pi.pos;
+			glm::vec2 periodicDelta = delta;
+
+			if (abs(delta.x) > myVar.domainSize.x * 0.5f) {
+				periodicDelta.x += (delta.x > 0) ? -myVar.domainSize.x : myVar.domainSize.x;
+			}
+			if (abs(delta.y) > myVar.domainSize.y * 0.5f) {
+				periodicDelta.y += (delta.y > 0) ? -myVar.domainSize.y : myVar.domainSize.y;
+			}
+
+			glm::vec2 pjCorrectedPos = pi.pos + periodicDelta;
+
+			Color lineColor;
+			if (myVar.constraintStressColor) {
+
+				float maxStress = 0.0f;
+
+				if (myVar.constraintMaxStressColor > 0.0f) {
+					maxStress = myVar.constraintMaxStressColor;
+				}
+				else {
+					maxStress = constraint.resistance * myVar.globalConstraintResistence * constraint.restLength * 0.18f; // The last multiplier is a heuristic
+				}
+
+				float clampedStress = std::clamp(constraint.displacement, 0.0f, maxStress);
+				float normalizedStress = clampedStress / maxStress;
+
+				float hue = (1.0f - normalizedStress) * 240.0f;
+				float saturation = 1.0f;
+				float value = 1.0f;
+
+				lineColor = ColorFromHSV(hue, saturation, value);
+			}
+			else {
+				lineColor = ColorLerp(myParam.rParticles[it1->second].color, myParam.rParticles[it2->second].color, 0.5f);
+			}
+
 			rlColor4ub(lineColor.r, lineColor.g, lineColor.b, lineColor.a);
 			rlVertex2f(pi.pos.x, pi.pos.y);
-			rlVertex2f(pj.pos.x, pj.pos.y);
+			rlVertex2f(pjCorrectedPos.x, pjCorrectedPos.y);
 		}
 		rlEnd();
 	}
@@ -315,7 +384,7 @@ void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture) {
 
 	myUI.uiLogic(myParam, myVar, sph, save);
 
-	save.saveLoadLogic(myVar, myParam, sph);
+	save.saveLoadLogic(myVar, myParam, sph, physics);
 
 	myParam.subdivision.subdivideParticles(myVar, myParam);
 
