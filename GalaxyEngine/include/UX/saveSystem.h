@@ -24,8 +24,8 @@ public:
 	bool saveFlag = false;
 	bool loadFlag = false;
 
-	static const uint32_t version160 = 160;
-	static const uint32_t currentVersion = version160; // VERY IMPORTANT. CHANGE THIS IF YOU MAKE ANY CHANGES TO THE SAVE SYSTEM. VERSION "1.6.0" = 160, VERSION "1.6.12" = 1612
+	const uint32_t version160 = 160;
+	const uint32_t currentVersion = version160; // VERY IMPORTANT. CHANGE THIS IF YOU MAKE ANY CHANGES TO THE SAVE SYSTEM. VERSION "1.6.0" = 160, VERSION "1.6.12" = 1612
 
 	template <typename T>
 	void paramIO(const std::string& filename, YAML::Emitter& out, std::string key, T& value) {
