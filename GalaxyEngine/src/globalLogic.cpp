@@ -48,6 +48,11 @@ void pinParticles() {
 		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 			if (myParam.rParticles[i].isSelected) {
 				myParam.rParticles[i].isPinned = true;
+				myParam.pParticles[i].vel *= 0.0f;
+				myParam.pParticles[i].prevVel *= 0.0f;
+				myParam.pParticles[i].acc *= 0.0f;
+				myParam.pParticles[i].ke *= 0.0f;
+				myParam.pParticles[i].prevKe *= 0.0f;
 			}
 		}
 		myVar.pinFlag = false;
@@ -60,6 +65,16 @@ void pinParticles() {
 			}
 		}
 		myVar.unPinFlag = false;
+	}
+
+	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+		if (myParam.rParticles[i].isPinned) {
+			myParam.pParticles[i].vel *= 0.0f;
+			myParam.pParticles[i].prevVel *= 0.0f;
+			myParam.pParticles[i].acc *= 0.0f;
+			myParam.pParticles[i].ke *= 0.0f;
+			myParam.pParticles[i].prevKe *= 0.0f;
+		}
 	}
 }
 
@@ -139,7 +154,7 @@ void updateScene() {
 #pragma omp parallel for schedule(dynamic)
 		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 
-			if (myParam.rParticles[i].isBeingDrawn && myVar.isBrushDrawing && myVar.isSPHEnabled) {
+			if ((myParam.rParticles[i].isBeingDrawn && myVar.isBrushDrawing && myVar.isSPHEnabled) || myParam.rParticles[i].isPinned) {
 				continue;
 			}
 

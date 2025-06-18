@@ -87,7 +87,7 @@ void SPH::PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleR
 #pragma omp parallel for
 		for (size_t i = 0; i < N; ++i) {
 
-			if (!rParticles[i].isSPH || rParticles[i].isPinned || rParticles[i].isBeingDrawn) continue;
+			if (!rParticles[i].isSPH || rParticles[i].isBeingDrawn) continue;
 
 			auto& p = pParticles[i];
 			p.predVel = p.vel + dt * 1.5f * (sphForce[i] / p.sphMass);

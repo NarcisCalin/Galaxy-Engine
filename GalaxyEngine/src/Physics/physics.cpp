@@ -418,10 +418,6 @@ void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vecto
 	if (myVar.isPeriodicBoundaryEnabled) {
 		for (size_t i = 0; i < pParticles.size(); i++) {
 
-			if (rParticles[i].isPinned) {
-				continue;
-			}
-
 			ParticlePhysics& pParticle = pParticles[i];
 
 			pParticle.prevVel = pParticle.vel;
@@ -458,10 +454,6 @@ void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vecto
 	}
 	else {
 		for (size_t i = 0; i < pParticles.size(); ) {
-
-			if (rParticles[i].isPinned) {
-				continue;
-			}
 
 			ParticlePhysics& pParticle = pParticles[i];
 
