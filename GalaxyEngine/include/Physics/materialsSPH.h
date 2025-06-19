@@ -88,7 +88,7 @@ struct SPHWater : public SPHMaterial {
 
 struct SPHRock : public SPHMaterial {
 	SPHRock() : SPHMaterial(2, "rock") {
-		massMult = 4.0f;
+		massMult = 3.3f;
 		restDens = 0.008f;
 		stiff = 1.4f;
 		visc = 3.0f;

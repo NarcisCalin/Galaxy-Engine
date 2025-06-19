@@ -493,7 +493,7 @@ void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vecto
 }
 
 void Physics::collisions(ParticlePhysics& pParticleA, ParticlePhysics& pParticleB,
-	ParticleRendering& rParticleA, ParticleRendering& rParticleB) {
+	ParticleRendering& rParticleA, ParticleRendering& rParticleB, float& radius) {
 
 	// IN THIS CODE I ONLY KEEP THE POSITION CORRECTION. COLLISION MODE IS NOT SUPPORTED ANYMORE BUT THE COMMENTED CODE MIGHT STILL BE OF USE SOME TIME
 
@@ -510,7 +510,7 @@ void Physics::collisions(ParticlePhysics& pParticleA, ParticlePhysics& pParticle
 	glm::vec2 d = posB - posA;
 	float distanceSq = d.x * d.x + d.y * d.y;
 
-	float radiiSum = (rParticleA.totalRadius + rParticleB.totalRadius) * 0.7f; // <- Heuristic
+	float radiiSum = radius + radius;
 	float radiiSumSq = radiiSum * radiiSum;
 
 
@@ -630,24 +630,23 @@ void Physics::buildGrid(std::vector<ParticlePhysics>& pParticles, std::vector<Pa
 
 		if (a == b) return;
 
-		float rA = rParticles[a].totalRadius;
-		float rB = rParticles[b].totalRadius;
+		float r = 1.3f; // <- Heuristic
 
 		glm::vec2 delta = pParticles[a].pos - pParticles[b].pos;
 		float distSq = delta.x * delta.x + delta.y * delta.y;
-		float sumR = rA + rB;
+		float sumR = r + r;
 
 		if (distSq < sumR * sumR) {
 
 			if (a < b) {
 				// std::scoped_lock lock(particleLocks[a], particleLocks[b]);
 				physics.collisions(pParticles[a], pParticles[b],
-					rParticles[a], rParticles[b]);
+					rParticles[a], rParticles[b], r);
 			}
 			else {
 				//std::scoped_lock lock(particleLocks[b], particleLocks[a]);
 				physics.collisions(pParticles[a], pParticles[b],
-					rParticles[a], rParticles[b]);
+					rParticles[a], rParticles[b], r);
 			}
 		}
 		};

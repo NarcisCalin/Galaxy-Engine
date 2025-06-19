@@ -35,7 +35,7 @@ struct Physics {
 	void physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar, bool& sphGround);
 
 	void collisions(ParticlePhysics& pParticleA, ParticlePhysics& pParticleB,
-		ParticleRendering& rParticleA, ParticleRendering& rParticleB);
+		ParticleRendering& rParticleA, ParticleRendering& rParticleB, float& radius);
 
 	void buildGrid(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles,
 		Physics& physics, glm::vec2& domainSize, const int& iterations);
