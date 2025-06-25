@@ -13,11 +13,12 @@ If you want to contribute or mod Galaxy Engine and have any questions, consider 
 - The code must be compatible with the MIT license.
 - Various classes for different purposes can be added to the **"UpdateParameters"** struct in **"parameters.h"**. This is not necessary for important or complex classes like **"SPH"**, **"Physics"**, or **"UI"**.
 - Global variables go to the "UpdateVariables" struct in **"parameters.h"**.
+- Try to use the **"UI::buttonHelper()"** and **"UI::sliderHelper()"** functions when adding UI elements.
 - When you pass the "UpdateParameters" or "UpdateVariables" structs to a function, **ALWAYS** name them **"myParam"** and **"myVar"**.
 - saveSystem.h is meant for parameters that change how the simulation looks or behaves. For example, threads amount is not saved because it doesn't affect the physics or the visuals of the simulation, while trails length is saved because it affects how the simulation might look like with trails enabled.
 - Keep physics and similar features inside **"updateScene();"**.
 - Keep visual features (like UI, particle visuals, etc.) inside **"drawScene();"**.
-- For now, the current vector struct used in Galaxy Engine is Raylib's **"Vector2"**.
+- For now, the current vector struct used in Galaxy Engine is **"glm::vec2"**.
 - Colors currently use Raylib's **"Color"** struct.
 - The current physics are built on top of a base framerate of 144 FPS.
 - Try to use float instead of double. There can be exceptions if needed like the **"G"** constant.
