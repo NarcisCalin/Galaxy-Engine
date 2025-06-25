@@ -544,8 +544,8 @@ void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture, RenderT
 		Font fontToUse = (myVar.customFont.texture.id != 0) ? myVar.customFont : GetFontDefault();
 
 		Vector2 textSize = MeasureTextEx(fontToUse, text, fontSize, 1.0f);
-		int posX = (GetScreenWidth() - textSize.x) / 2;
-		int posY = (GetScreenHeight() - textSize.y) / 2;
+		int posX = (GetScreenWidth() - textSize.x) * 0.5f;
+		int posY = (GetScreenHeight() - textSize.y) * 0.5f;
 
 		float textAlpha;
 		if (fadeProgress < 0.2f) {

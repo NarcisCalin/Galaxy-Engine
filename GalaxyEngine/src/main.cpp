@@ -18,6 +18,11 @@ int main(int argc, char** argv) {
 	std::cout << "Threads available: " << threadsAvailable << std::endl;
 	std::cout << "Thread amount set to: " << myVar.threadsAmount << std::endl;
 
+	if (myVar.fullscreenState) {
+		myVar.screenWidth = GetMonitorWidth(GetCurrentMonitor());
+		myVar.screenHeight = GetMonitorHeight(GetCurrentMonitor());
+	}
+
 	InitWindow(myVar.screenWidth, myVar.screenHeight, "Galaxy Engine");
 
 	// ---- Config ---- //
@@ -138,6 +143,11 @@ int main(int argc, char** argv) {
 
 	if (myVar.customFont.texture.id == 0) {
 		TraceLog(LOG_WARNING, "Failed to load font! Using default font");
+	}
+
+	if (myVar.fullscreenState) {
+		myVar.screenWidth = GetMonitorWidth(GetCurrentMonitor()) * 0.5f;
+		myVar.screenHeight = GetMonitorHeight(GetCurrentMonitor()) * 0.5f;
 	}
 
 	while (!WindowShouldClose()) {
