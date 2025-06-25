@@ -1,6 +1,7 @@
 #pragma once
 
 struct UpdateVariables;
+class UI;
 
 struct Controls {
 

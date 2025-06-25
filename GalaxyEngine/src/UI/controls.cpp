@@ -1,5 +1,5 @@
 #include "UI/controls.h"
-
+#include "UI/UI.h"
 #include "parameters.h"
 
 void Controls::showControls() {
@@ -66,21 +66,25 @@ void Controls::showInfo(bool& fullscreen) {
 
         ImGui::TextColored(ImVec4(0.8f, 0.0f, 0.0f, 1.0f), "The links might not work on Linux");
 
-        if (ImGui::Button("GitHub Repository", linkButtonSize)) {
+        bool placeHolder = false;
+
+        bool enabled = true;
+
+        if (UI::buttonHelper("GitHub Repository", "Go to GitHub", placeHolder, linkButtonSize.x, linkButtonSize.y, enabled, enabled)) {
             fullscreen = false;
             OpenURL("https://github.com/NarcisCalin/Galaxy-Engine");
         }
 
         ImGui::SameLine();
 
-        if (ImGui::Button("Join Our Discord Community!", linkButtonSize)) {
+        if (UI::buttonHelper("Join Our Discord Community!", "Click to join!", placeHolder, linkButtonSize.x, linkButtonSize.y, enabled, enabled)) {
             fullscreen = false;
             OpenURL("https://discord.gg/Xd5JUqNFPM");
         }
 
         ImGui::SameLine();
 
-        if (ImGui::Button("Soundtrack by HAVA", linkButtonSize)) {
+        if (UI::buttonHelper("Soundtrack by HAVA", "Check their work!", placeHolder, linkButtonSize.x, linkButtonSize.y, enabled, enabled)) {
             fullscreen = false;
             OpenURL("https://soundcloud.com/user-150017147");
         }
