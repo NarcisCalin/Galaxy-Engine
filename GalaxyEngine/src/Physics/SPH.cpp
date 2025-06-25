@@ -216,7 +216,7 @@ void SPH::groundModeBoundary(std::vector<ParticlePhysics>& pParticles, std::vect
 
 #pragma omp parallel for
 	for (size_t i = 0; i < pParticles.size(); ++i) {
-		if (!rParticles[i].isSPH || rParticles[i].isPinned) continue;
+		if (rParticles[i].isPinned) continue;
 		auto& p = pParticles[i];
 		p.acc.y += verticalGravity;
 

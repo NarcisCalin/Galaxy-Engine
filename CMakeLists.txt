@@ -30,11 +30,13 @@ set(
     Physics/quadtree.cpp
     Physics/slingshot.cpp
     Physics/SPH.cpp
+    Sound/sound.cpp
     UI/brush.cpp
     UI/controls.cpp
     UI/rightClickSettings.cpp
     UI/UI.cpp
     UX/camera.cpp
+    UX/saveSystem.cpp
     UX/screenCapture.cpp
     resources.rc)
 

@@ -36,6 +36,8 @@ struct ParticlePhysics {
 	bool isHotPoint;
 	bool hasSolidified;
 
+	glm::vec2 force;
+
 	// Default constructor
 	ParticlePhysics()
 		: pos(0.0f, 0.0f), predPos{ 0,0 }, vel{ 0,0 }, prevVel{ 0.0f, 0.0f }, predVel{ 0.0f, 0.0f }, acc{ 0,0 },

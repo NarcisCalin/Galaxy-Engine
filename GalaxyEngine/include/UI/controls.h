@@ -79,7 +79,7 @@ struct Controls {
 		"invisible particles, which are 5 times heavier than visible ones",
 		"",
 		"4. Multi-Threading: Parallelizes the simulation across multiple",
-		"threads. The default is half the max amount of threads your CPU has,"
+		"threads. The default is half the max amount of threads your CPU has,",
 		"but it is possible to modify this number.",
 		"",
 		"5. Collisions: Currently, collisions are experimental. They do not",

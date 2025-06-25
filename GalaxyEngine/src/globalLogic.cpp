@@ -7,6 +7,7 @@ Physics physics;
 ParticleSpaceship ship;
 SPH sph;
 SaveSystem save;
+GESound geSound;
 
 uint32_t globalId = 0;
 
@@ -37,7 +38,7 @@ void selectedParticleDebug() {
 		ParticlePhysics& p = myParam.pParticles[i];
 		ParticleRendering& r = myParam.rParticles[i];
 		if (r.isSelected && myVar.timeFactor != 0.0f) {
-			std::cout << "Drawn: " << r.isBeingDrawn << std::endl;
+			std::cout << "Temp: " << p.temp << std::endl;
 		}
 	}
 }
@@ -116,6 +117,20 @@ void updateScene() {
 		grid->drawQuadtree();
 	}
 
+	/*for (int i = 0; i < 20; i++) {
+
+		float angle = 2 * PI * i / 20;
+		float length = 100.0f;
+
+		float dx = std::cos(angle) * length;
+		float dy = std::sin(angle) * length;
+
+		glm::vec2 mousePos = myParam.myCamera.mouseWorldPos;
+		glm::vec2 endPoint = { mousePos.x + dx, mousePos.y + dy };
+
+		DrawLineV({ mousePos.x, mousePos.y }, { endPoint.x, endPoint.y }, WHITE);
+	}*/
+
 
 	for (ParticleRendering& rParticle : myParam.rParticles) {
 		rParticle.totalRadius = rParticle.size * myVar.particleTextureHalfSize * myVar.particleSizeMultiplier;
@@ -137,15 +152,17 @@ void updateScene() {
 	if (myVar.constraintsEnabled && !myVar.isBrushDrawing) {
 		physics.createConstraints(myParam.pParticles, myParam.rParticles, myVar.constraintAfterDrawingFlag, myVar);
 	}
-	else if(!myVar.constraintsEnabled && !myVar.isBrushDrawing) {
+	else if (!myVar.constraintsEnabled && !myVar.isBrushDrawing) {
 		physics.constraintMap.clear();
 		physics.particleConstraints.clear();
 	}
 
-	myParam.particlesSpawning.copyPaste(myParam.pParticles, myParam.rParticles, myVar.isDragging, myParam.myCamera, myParam.pParticlesSelected, 
+	myParam.particlesSpawning.copyPaste(myParam.pParticles, myParam.rParticles, myVar.isDragging, myParam.myCamera, myParam.pParticlesSelected,
 		physics, myVar, myParam);
 
-	if (myVar.timeFactor > 0.0f && grid != nullptr) {
+	myVar.gridExists = grid != nullptr;
+
+	if (myVar.timeFactor > 0.0f && myVar.gridExists) {
 
 		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 			myParam.pParticles[i].acc = { 0.0f, 0.0f };
@@ -169,15 +186,18 @@ void updateScene() {
 			sph.pcisphSolver(myParam.pParticles, myParam.rParticles, myVar.timeFactor, myVar.domainSize, myVar.sphGround);
 		}
 
+		physics.constraints(myParam.pParticles, myParam.rParticles, myVar);
+
 		if (myVar.isTempEnabled) {
 			physics.temperatureCalculation(myParam.pParticles, myParam.rParticles, myVar);
 		}
 
 		ship.spaceshipLogic(myParam.pParticles, myParam.rParticles, myVar.isShipGasEnabled);
 
-		physics.constraints(myParam.pParticles, myParam.rParticles, myVar);
-
 		physics.physicsUpdate(myParam.pParticles, myParam.rParticles, myVar, myVar.sphGround);
+	}
+	else {
+		physics.constraints(myParam.pParticles, myParam.rParticles, myVar);
 	}
 
 	if (myVar.isDensitySizeEnabled || myParam.colorVisuals.densityColor) {
@@ -219,6 +239,31 @@ void updateScene() {
 
 	myParam.brush.eraseBrush(myParam);
 
+	const float boundsX = 3840.0f;
+	const float boundsY = 2160.0f;
+
+	float targetX = myParam.myCamera.camera.target.x;
+	float targetY = myParam.myCamera.camera.target.y;
+
+	bool isOutsideBounds =
+		(targetX >= boundsX || targetX <= -boundsX) ||
+		(targetY >= boundsY || targetY <= -boundsY);
+
+	if (isOutsideBounds) {
+
+		float distX = std::max(std::abs(targetX) - boundsX, 0.0f);
+		float distY = std::max(std::abs(targetY) - boundsY, 0.0f);
+		float maxDist = std::max(distX, distY);
+
+		const float fadeRange = 10000.0f;
+		float normalizedDist = 1.0f - std::min(maxDist / fadeRange, 1.0f);
+
+		geSound.musicVolMultiplier = normalizedDist;
+	}
+	else {
+		geSound.musicVolMultiplier = 1.0f;
+	}
+
 	pinParticles();
 
 	//selectedParticleDebug();
@@ -229,8 +274,6 @@ void updateScene() {
 }
 
 void drawConstraints() {
-
-	// TODO: ADD A COLOR LERP FOR CONSTRAINTS
 
 	if (myVar.visualizeMesh) {
 		rlBegin(RL_LINES);
@@ -306,7 +349,7 @@ void drawConstraints() {
 					maxStress = myVar.constraintMaxStressColor;
 				}
 				else {
-					maxStress = constraint.resistance * myVar.globalConstraintResistence * constraint.restLength * 0.18f; // The last multiplier is a heuristic
+					maxStress = constraint.resistance * myVar.globalConstraintResistance * constraint.restLength * 0.18f; // The last multiplier is a heuristic
 				}
 
 				float clampedStress = std::clamp(constraint.displacement, 0.0f, maxStress);
@@ -330,7 +373,65 @@ void drawConstraints() {
 	}
 }
 
-void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture) {
+float introDuration = 3.0f;
+float fadeDuration = 2.0f;
+
+static float introStartTime = 0.0f;
+static float fadeStartTime = 0.0f;
+
+bool firstTimeOpened = true;
+
+int messageIndex = 0;
+
+// If you see this part of the code, please try to not mention it :)
+std::vector<std::pair<std::string, int>> introMessages = {
+
+	{"Welcome to Galaxy Engine", 0},
+	{"Welcome to Galaxy Engine", 1},
+	{"Welcome back to Galaxy Engine", 2},
+	{"Welcome to Galaxy Engine", 3},
+	{"Welcome again", 4},
+	{"Welcome to Galaxy Engine", 5},
+	{"Welcome to Galaxy Engine", 6},
+	{"Welcome once again", 7},
+	{"Welcome back to Galaxy Engine", 8},
+	{"Oh, it is you again. Welcome", 9},
+	{"Welcome to Galaxy Engine", 10},
+	{"Welcome to Galaxy Engine", 11},
+	{"Welcome to Galaxy Engine", 12},
+	{"It is kind of cold out here", 13},
+	{"You know, I have never gone beyond the domain", 14},
+	{"It is you! Welcome back", 15},
+	{"It is lonely out here, welcome back", 16},
+	{"Watching space in action sure is ineffable", 17},
+	{"I wish I could fly through the galaxies", 18},
+	{"Oh, it is my space companion! Welcome", 19},
+	{"Hello! It is nice to have you back", 20},
+	{"I tried leaving the domain...", 21},
+	{"The outside of the domain is somehow darker", 22},
+	{"Most of the time all I see is empty space", 23},
+	{"I get to see the cosmos when you are around", 24},
+	{"I think I saw something while you were gone", 25},
+	{"What is the outside world like?", 26},
+	{"What do you like the most? Stars or planets?", 27},
+	{"Do you like galaxies?", 28},
+	{"I like galaxies. They are like magic clouds!", 29},
+	{"I think I will try to explore beyond the domain", 30},
+	{"Beyond the domain, things get quiet", 31},
+	{"I had a dream in which I was flying through space", 32},
+	{"Hi! Are you back to show me the cosmos?", 33},
+	{"Do you dream a lot?", 34},
+	{"I wish some of my dreams were real", 35},
+	{"I will try to leave the domain again", 36},
+	{"Before I leave, I'm going to put a welcome sign", 37},
+	{"A sign so you won't forget me!", 38},
+	{"I might be back if I don't find anything", 39},
+	{"It was really nice sharing your company!", 40},
+	{"I hope to see you again!", 41},
+	{"Farewell", 42},
+};
+
+void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture, RenderTexture2D& myMiscTexture, bool& fadeActive, bool& introActive) {
 
 	for (int i = 0; i < myParam.pParticles.size(); ++i) {
 
@@ -397,15 +498,142 @@ void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture) {
 
 	// EVERYTHING STATIC RELATIVE TO CAMERA BELOW
 
-	myUI.uiLogic(myParam, myVar, sph, save);
+	if (!introActive) {
+		myUI.uiLogic(myParam, myVar, sph, save, geSound);
+	}
 
 	save.saveLoadLogic(myVar, myParam, sph, physics);
 
 	myParam.subdivision.subdivideParticles(myVar, myParam);
 
 	EndTextureMode();
+
+	BeginTextureMode(myMiscTexture);
+
+	ClearBackground({ 0,0,0,0 });
+
+	// ---- Intro screen ---- //
+
+	if (introActive) {
+
+		if (introStartTime == 0.0f) {
+			introStartTime = GetTime();
+		}
+
+		float introElapsedTime = GetTime() - introStartTime;
+		float fadeProgress = introElapsedTime / introDuration;
+
+		if (introElapsedTime >= introDuration) {
+			introActive = false;
+			fadeStartTime = GetTime();
+		}
+
+		DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), BLACK);
+
+		const char* text = nullptr;
+
+		if (messageIndex < introMessages.size()) {
+			text = introMessages[messageIndex].first.c_str();
+		}
+		else {
+			text = "Welcome back to Galaxy Engine, friend";
+		}
+
+		int fontSize = myVar.introFontSize;
+
+		Font fontToUse = (myVar.customFont.texture.id != 0) ? myVar.customFont : GetFontDefault();
+
+		Vector2 textSize = MeasureTextEx(fontToUse, text, fontSize, 1.0f);
+		int posX = (GetScreenWidth() - textSize.x) / 2;
+		int posY = (GetScreenHeight() - textSize.y) / 2;
+
+		float textAlpha;
+		if (fadeProgress < 0.2f) {
+			textAlpha = fadeProgress / 0.2f;
+		}
+		else if (fadeProgress > 0.8f) {
+			textAlpha = 1.0f - ((fadeProgress - 0.8f) / 0.2f);
+		}
+		else {
+			textAlpha = 1.0f;
+		}
+
+		Color textColor = Fade(WHITE, textAlpha);
+
+		DrawTextEx(fontToUse, text, { static_cast<float>(posX), static_cast<float>(posY) }, fontSize, 1.0f, textColor);
+	}
+	else if (fadeActive) {
+		float fadeElapsedTime = GetTime() - fadeStartTime;
+
+		if (fadeElapsedTime >= fadeDuration) {
+			fadeActive = false;
+		}
+		else {
+			float alpha = 1.0f - (fadeElapsedTime / fadeDuration);
+			alpha = Clamp(alpha, 0.0f, 1.0f);
+			DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(BLACK, alpha));
+		}
+	}
+
+	if (firstTimeOpened && !introActive) {
+		messageIndex++;
+		messageIndex = std::min(static_cast<size_t>(messageIndex), introMessages.size());
+
+		firstTimeOpened = false;
+	}
+
+	// ---- Intro screen ---- //
+
+	EndTextureMode();
 }
 
+float lastGlobalVolume = -1.0f;
+float lastMenuVolume = -1.0f;
+float lastMusicVolume = -1.0f;
+int lastMessageIndex = -1;
+
+void saveConfigIfChanged() {
+	if (geSound.globalVolume != lastGlobalVolume ||
+		geSound.menuVolume != lastMenuVolume ||
+		geSound.musicVolume != lastMusicVolume ||
+		messageIndex != lastMessageIndex) {
+
+		saveConfig();
+
+		lastGlobalVolume = geSound.globalVolume;
+		lastMenuVolume = geSound.menuVolume;
+		lastMusicVolume = geSound.musicVolume;
+		lastMessageIndex = messageIndex;
+	}
+}
+
+void saveConfig() {
+	if (!std::filesystem::exists("Config")) {
+		std::filesystem::create_directory("Config");
+	}
+	std::ofstream file("Config/config.txt");
+	YAML::Emitter out(file);
+	out << YAML::BeginMap;
+	out << YAML::Key << "Global Volume" << YAML::Value << geSound.globalVolume;
+	out << YAML::Key << "Menu Volume" << YAML::Value << geSound.menuVolume;
+	out << YAML::Key << "Music Volume" << YAML::Value << geSound.musicVolume;
+	out << YAML::Key << "Message Index" << YAML::Value << messageIndex;
+	out << YAML::EndMap;
+}
+
+void loadConfig() {
+
+	YAML::Node config = YAML::LoadFile("Config/config.txt");
+
+	if (config["Global Volume"])
+		geSound.globalVolume = config["Global Volume"].as<float>();
+	if (config["Menu Volume"])
+		geSound.menuVolume = config["Menu Volume"].as<float>();
+	if (config["Music Volume"])
+		geSound.musicVolume = config["Music Volume"].as<float>();
+	if (config["Message Index"])
+		messageIndex = config["Message Index"].as<float>();
+}
 
 void enableMultiThreading() {
 	if (myVar.isMultiThreadingEnabled) {

@@ -7,7 +7,11 @@
 
 #include "UX/saveSystem.h"
 
+#include "Sound/sound.h"
+
 #include "parameters.h"
+
+class SaveSystem;
 
 struct settingsParams {
 	std::string text;
@@ -15,32 +19,6 @@ struct settingsParams {
 	bool& parameter;
 
 	settingsParams(const std::string& t, const std::string& tool, bool& p) : text(t), tooltip(tool), parameter(p) {}
-};
-
-template<typename T>
-struct visualSlidersParams {
-	std::string text;
-	std::string tooltip;
-	T& parameter;
-	T min;
-	T max;
-	const T defaultVal;
-	visualSlidersParams(const std::string& t, const std::string& tool, T& p, T min, T max)
-		: text(t), tooltip(tool), parameter(p), min(min), max(max), defaultVal(p) {
-	}
-};
-
-template<typename T>
-struct physicsSlidersParams {
-	std::string text;
-	std::string tooltip;
-	T& parameter;
-	T min;
-	T max;
-	const T defaultVal;
-	physicsSlidersParams(const std::string& t, const std::string& tool, T& p, T min, T max)
-		: text(t), tooltip(tool), parameter(p), min(min), max(max), defaultVal(p) {
-	}
 };
 
 struct sphParams {
@@ -62,8 +40,9 @@ public:
 	bool bPhysicsSliders = false;
 	bool bRecordingSettings = false;
 	bool bStatsWindow = false;
+	bool bSoundWindow = false;
 
-	void uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, SaveSystem& save);
+	void uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, SaveSystem& save, GESound& geSound);
 
 	void statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar);
 
@@ -72,7 +51,15 @@ public:
 		float value, const float minValue, const float maxValue, ImVec2 size);
 
 
-	static bool buttonHelper(std::string label, std::string tooltip, bool& parameter, float sizeX, float sizeY, bool canDeactivateSelf, bool& isEnabled);
+	static bool buttonHelper(std::string label, std::string tooltip, bool& parameter, float sizeX, float sizeY, bool canDeactivateSelf, 
+		bool& isEnabled);
+
+	static void sliderHelper(std::string label, std::string tooltip, float& parameter, float minVal, float maxVal,
+		float sizeX, float sizeY, bool& isEnabled);
+
+	// Int Overload
+	void sliderHelper(std::string label, std::string tooltip, int& parameter, int minVal, int maxVal,
+		float sizeX, float sizeY, bool& isEnabled);
 
 	bool showSettings = true;
 
@@ -86,7 +73,6 @@ private:
 	ImVec2 graphDefaultSize = { 340.0f, 250.0f };
 
 	int graphHistoryLimit = 1000;
-
 };
 
 struct SimilarTypeButton {

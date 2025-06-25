@@ -20,8 +20,29 @@ int main(int argc, char** argv) {
 
 	InitWindow(myVar.screenWidth, myVar.screenHeight, "Galaxy Engine");
 
+	// ---- Config ---- //
+
+	if (!std::filesystem::exists("Config")) {
+		std::filesystem::create_directory("Config");
+	}
+
+	if (!std::filesystem::exists("Config/config.txt")) {
+		saveConfig();
+	}
+	else {
+		loadConfig();
+	}
+
+	// ---- Audio ---- //
+
+	geSound.loadSounds();
+
+	// ---- Icon ---- //
+
 	Image icon = LoadImage("Textures/WindowIcon.png");
 	SetWindowIcon(icon);
+
+	// ---- Textures & rlImGui ---- //
 
 	rlImGuiSetup(true);
 
@@ -31,8 +52,11 @@ int main(int argc, char** argv) {
 
 	RenderTexture2D myParticlesTexture = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
 	RenderTexture2D myUITexture = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
+	RenderTexture2D myMiscTexture = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
 
 	SetTargetFPS(myVar.targetFPS);
+
+	// ---- Fullscreen ---- //
 
 	int lastScreenWidth = GetScreenWidth();
 	int lastScreenHeight = GetScreenHeight();
@@ -40,14 +64,18 @@ int main(int argc, char** argv) {
 
 	bool lastScreenState = false;
 
+	// ---- Save ---- //
 
 	// If "Saves" directory doesn't exist, then create one. This is done here to store the default parameters
 	if (!std::filesystem::exists("Saves")) {
 		std::filesystem::create_directory("Saves");
 	}
+
 	save.saveFlag = true;
 	save.saveSystem("Saves/DefaultSettings.bin", myVar, myParam, sph, physics);
 	save.saveFlag = false;
+
+	// ---- ImGui ---- //
 
 	ImGuiStyle& style = ImGui::GetStyle();
 	ImVec4* colors = style.Colors;
@@ -99,6 +127,18 @@ int main(int argc, char** argv) {
 	rlImGuiReloadFonts();
 	ImPlot::CreateContext();
 
+	// ---- Intro ---- //
+
+	bool fadeActive = true;
+	bool introActive = true;
+
+	myVar.customFont = LoadFontEx("fonts/Unispace Bd.otf", myVar.introFontSize, 0, 250);
+
+	SetTextureFilter(myVar.customFont.texture, TEXTURE_FILTER_BILINEAR);
+
+	if (myVar.customFont.texture.id == 0) {
+		TraceLog(LOG_WARNING, "Failed to load font! Using default font");
+	}
 
 	while (!WindowShouldClose()) {
 
@@ -114,11 +154,28 @@ int main(int argc, char** argv) {
 
 		rlImGuiBegin();
 
+		if (introActive) {
+			ImGuiIO& io = ImGui::GetIO();
+			io.WantCaptureMouse = true;
+			io.WantCaptureKeyboard = true;
+			io.WantTextInput = true;
+
+			if (myParam.pParticles.size() > 0) {
+				myParam.pParticles.clear();
+				myParam.rParticles.clear();
+			}
+		}
+		else {
+			geSound.soundtrackLogic();
+		}
+
 		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 2.0f);
+
+		saveConfigIfChanged();
 
 		updateScene();
 
-		drawScene(particleBlurTex, myUITexture);
+		drawScene(particleBlurTex, myUITexture, myMiscTexture, fadeActive, introActive);
 
 		EndMode2D();
 
@@ -166,6 +223,13 @@ int main(int argc, char** argv) {
 
 		rlImGuiEnd();
 
+		DrawTextureRec(
+			myMiscTexture.texture,
+			Rectangle{ 0, 0, static_cast<float>(GetScreenWidth()), -static_cast<float>(GetScreenHeight()) },
+			Vector2{ 0, 0 },
+			WHITE
+		);
+
 
 		EndDrawing();
 
@@ -177,9 +241,14 @@ int main(int argc, char** argv) {
 
 	UnloadShader(myBloom);
 	UnloadTexture(particleBlurTex);
+
 	UnloadRenderTexture(myParticlesTexture);
 	UnloadRenderTexture(myUITexture);
+	UnloadRenderTexture(myMiscTexture);
+
 	UnloadImage(icon);
+
+	geSound.unloadSounds();
 
 	CloseWindow();
 

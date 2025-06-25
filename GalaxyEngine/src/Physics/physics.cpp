@@ -30,11 +30,14 @@ glm::vec2 Physics::calculateForceFromGrid(const Quadtree& grid, std::vector<Part
 
 		// Heat transfer
 		if (myVar.isTempEnabled) {
-			float temperatureDifference = grid.gridTemp / (grid.endIndex - grid.startIndex) - pParticle.temp;
+			float gridAverageTemp = grid.gridTemp / (grid.endIndex - grid.startIndex);
 
-			float heatTransfer = myVar.globalHeatConductivity * temperatureDifference * invDistance * invDistance;
+			float temperatureDifference = gridAverageTemp - pParticle.temp;
 
-			pParticle.temp += heatTransfer;
+			float distance = sqrt(distanceSq);
+			float heatTransfer = myVar.globalHeatConductivity * temperatureDifference / distance;
+
+			pParticle.temp += heatTransfer * myVar.timeFactor;
 		}
 	}
 	else {
@@ -345,8 +348,8 @@ void Physics::constraints(std::vector<ParticlePhysics>& pParticles, std::vector<
 
 							constraint.isPlastic = false;
 
-							if (constraint.displacement >= (constraint.resistance * myVar.globalConstraintResistence) * constraint.restLength ||
-								constraint.displacement <= -((constraint.resistance * myVar.globalConstraintResistence) * constraint.restLength)) {
+							if (constraint.displacement >= (constraint.resistance * myVar.globalConstraintResistance) * constraint.restLength ||
+								constraint.displacement <= -((constraint.resistance * myVar.globalConstraintResistance) * constraint.restLength)) {
 								constraint.isBroken = true;
 							}
 						}
@@ -362,11 +365,11 @@ void Physics::constraints(std::vector<ParticlePhysics>& pParticles, std::vector<
 							}
 
 							if (constraint.restLength >= (constraint.originalLength + constraint.originalLength *
-								(constraint.resistance * myVar.globalConstraintResistence)) *
+								(constraint.resistance * myVar.globalConstraintResistance)) *
 								(pMatI->constraintPlasticPointMult + pMatJ->constraintPlasticPointMult) * 0.5f ||
 
 								constraint.restLength <= -(constraint.originalLength + constraint.originalLength *
-									(constraint.resistance * myVar.globalConstraintResistence) *
+									(constraint.resistance * myVar.globalConstraintResistance) *
 									(pMatI->constraintPlasticPointMult + pMatJ->constraintPlasticPointMult) * 0.5f)) {
 
 								constraint.isBroken = true;
@@ -381,36 +384,48 @@ void Physics::constraints(std::vector<ParticlePhysics>& pParticles, std::vector<
 					}
 				}
 
-				glm::vec2 springForce = constraint.stiffness * constraint.displacement * dir * pi.mass * myVar.globalConstraintStiffnessMult;
-				glm::vec2 relVel = pj.vel - pi.vel;
-				glm::vec2 dampForce = -globalConstraintDamping * glm::dot(relVel, dir) * dir * pi.mass;
-				glm::vec2 totalForce = springForce + dampForce;
+				if (myVar.timeFactor > 0.0f && myVar.gridExists) {
+					glm::vec2 springForce = constraint.stiffness * constraint.displacement * dir * pi.mass * myVar.globalConstraintStiffnessMult;
+					glm::vec2 relVel = pj.vel - pi.vel;
+					glm::vec2 dampForce = -globalConstraintDamping * glm::dot(relVel, dir) * dir * pi.mass;
+					glm::vec2 totalForce = springForce + dampForce;
 
 #pragma omp atomic
-				pi.acc.x += totalForce.x / pi.mass;
+					pi.acc.x += totalForce.x / pi.mass;
 #pragma omp atomic
-				pi.acc.y += totalForce.y / pi.mass;
+					pi.acc.y += totalForce.y / pi.mass;
 #pragma omp atomic
-				pj.acc.x -= totalForce.x / pj.mass;
+					pj.acc.x -= totalForce.x / pj.mass;
 #pragma omp atomic
-				pj.acc.y -= totalForce.y / pj.mass;
+					pj.acc.y -= totalForce.y / pj.mass;
 
-				float correctionFactor = constraint.stiffness * stiffCorrectionRatio * myVar.globalConstraintStiffnessMult;
-				glm::vec2 correction = dir * constraint.displacement * correctionFactor;
-				float massSum = pi.mass + pj.mass;
-				glm::vec2 correctionI = correction * (pj.mass / massSum);
-				glm::vec2 correctionJ = correction * (pi.mass / massSum);
+					float correctionFactor = constraint.stiffness * stiffCorrectionRatio * myVar.globalConstraintStiffnessMult;
+					glm::vec2 correction = dir * constraint.displacement * correctionFactor;
+					float massSum = pi.mass + pj.mass;
+					glm::vec2 correctionI = correction * (pj.mass / massSum);
+					glm::vec2 correctionJ = correction * (pi.mass / massSum);
 
 #pragma omp atomic
-				pi.pos.x += correctionI.x;
+					pi.pos.x += correctionI.x;
 #pragma omp atomic
-				pi.pos.y += correctionI.y;
+					pi.pos.y += correctionI.y;
 #pragma omp atomic
-				pj.pos.x -= correctionJ.x;
+					pj.pos.x -= correctionJ.x;
 #pragma omp atomic
-				pj.pos.y -= correctionJ.y;
+					pj.pos.y -= correctionJ.y;
+				}
 			}
 		}
+	}
+}
+
+void Physics::pausedConstraints(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar) {
+
+	for (size_t i = 0; i < particleConstraints.size(); i++) {
+		auto& constraint = particleConstraints[i];
+
+		float prevLength = constraint.restLength;
+
 	}
 }
 
@@ -477,7 +492,7 @@ void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vecto
 			pParticle.pos += pParticle.vel * myVar.timeFactor;
 
 			if (!sphGround) {
-				if (pParticles[i].pos.x < 0 || pParticles[i].pos.x >= myVar.domainSize.x || pParticles[i].pos.y < 0 || pParticles[i].pos.y >= myVar.domainSize.y) {
+				if (pParticles[i].pos.x <= 0.0f || pParticles[i].pos.x >= myVar.domainSize.x || pParticles[i].pos.y <= 0.0f || pParticles[i].pos.y >= myVar.domainSize.y) {
 					std::swap(pParticles[i], pParticles.back());
 					std::swap(rParticles[i], rParticles.back());
 
@@ -488,6 +503,10 @@ void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vecto
 					i++;
 				}
 			}
+			else {
+				i++;
+			}
+			
 		}
 	}
 }

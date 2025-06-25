@@ -13,10 +13,10 @@ void Controls::showControls() {
         controlSize.x = std::clamp(controlSize.x, 400.0f, 2000.0f);
         controlSize.y = std::clamp(controlSize.y, 600.0f, 2000.0f);
 
-        ImGui::SetNextWindowSize(controlSize, ImGuiCond_Always);
-        ImGui::SetNextWindowPos(ImVec2(screenW * 0.5f - controlSize.x * 0.5f, screenH * 0.5f - controlSize.y * 0.5f), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(controlSize, ImGuiCond_Appearing);
+        ImGui::SetNextWindowPos(ImVec2(screenW * 0.5f - controlSize.x * 0.5f, screenH * 0.5f - controlSize.y * 0.5f), ImGuiCond_Appearing);
 
-        ImGui::Begin("Controls", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
+        ImGui::Begin("Controls", nullptr, ImGuiWindowFlags_NoCollapse);
 
         for (size_t i = 0; i < controlsArray.size(); i++) {
 
@@ -45,10 +45,10 @@ void Controls::showInfo(bool& fullscreen) {
         infoSize.x = std::clamp(infoSize.x, 700.0f, 2000.0f);
         infoSize.y = std::clamp(infoSize.y, 600.0f, 2000.0f);
 
-        ImGui::SetNextWindowSize(infoSize, ImGuiCond_Always);
-        ImGui::SetNextWindowPos(ImVec2(screenW * 0.5f - infoSize.x * 0.5f, screenH * 0.5f - infoSize.y * 0.5f), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(infoSize, ImGuiCond_Appearing);
+        ImGui::SetNextWindowPos(ImVec2(screenW * 0.5f - infoSize.x * 0.5f, screenH * 0.5f - infoSize.y * 0.5f), ImGuiCond_Appearing);
 
-        ImGui::Begin("Information", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize);
+        ImGui::Begin("Information", nullptr, ImGuiWindowFlags_NoCollapse);
 
         for (size_t i = 0; i < infoArray.size(); i++) {
 
@@ -76,6 +76,13 @@ void Controls::showInfo(bool& fullscreen) {
         if (ImGui::Button("Join Our Discord Community!", linkButtonSize)) {
             fullscreen = false;
             OpenURL("https://discord.gg/Xd5JUqNFPM");
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Soundtrack by HAVA", linkButtonSize)) {
+            fullscreen = false;
+            OpenURL("https://soundcloud.com/user-150017147");
         }
 
         ImGui::End();

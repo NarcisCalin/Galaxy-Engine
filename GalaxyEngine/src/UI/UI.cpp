@@ -1,6 +1,6 @@
 #include "UI/UI.h"
 
-void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, SaveSystem& save) {
+void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, SaveSystem& save, GESound& geSound) {
 
 
 	if (IO::shortcutPress(KEY_U)) {
@@ -31,6 +31,11 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	float settingsButtonX = 250.0f;
 	float settingsButtonY = 25.0f;
 
+	float parametersSliderX = 200.0f;
+	float parametersSliderY = 30.0f;
+
+	bool enabled = true;
+
 	ImGui::SetNextWindowSize(ImVec2(buttonsWindowX, buttonsWindowY), ImGuiCond_Once);
 	ImGui::SetNextWindowSizeConstraints(ImVec2(buttonsWindowX, buttonsWindowY), ImVec2(buttonsWindowX, buttonsWindowY));
 	ImGui::SetNextWindowPos(ImVec2(screenX - buttonsWindowX, 0.0f), ImGuiCond_Always);
@@ -39,60 +44,8 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	float contentRegionWidth = ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x;
 	float buttonX = (contentRegionWidth - settingsButtonX) * 0.5f;
 
-	static std::array<std::variant<
-		visualSlidersParams<float>,
-		visualSlidersParams<int>>,
-		15> visualSliders = {
-		visualSlidersParams<float>("Density Radius", "Controls the neighbor search radius", myParam.neighborSearch.densityRadius, 0.0f, 7.0f),
-		visualSlidersParams<int>("Max Neighbors", "Controls the maximum neighbor count range", myParam.colorVisuals.maxNeighbors, 1, 500),
-		visualSlidersParams<float>("Max Color Force", "Controls the acceleration threshold to use the secondary color", myParam.colorVisuals.maxColorAcc, 1.0f, 400.0f),
-		visualSlidersParams<float>("Max Size Force", "Controls the acceleration threshold to map the particle size", myParam.densitySize.sizeAcc, 1.0f, 400.0f),
-		visualSlidersParams<float>("Max Shockwave Accel", "Controls the acceleration threshold to map the particle color in Shockwave color mode", myParam.colorVisuals.ShockwaveMaxAcc, 1.0f, 120.0f),
-		visualSlidersParams<float>("Max Velocity Color", "Controls the max velocity used to map the colors in the velocity color mode", myParam.colorVisuals.maxVel, 10.0f, 10000.0f),
-		visualSlidersParams<float>("Max Pressure Color", "Controls the max pressure used to map the colors in the pressure color mode", myParam.colorVisuals.maxPress, 100.0f, 100000.0f),
-		visualSlidersParams<float>("Max Temperature Color", "Controls the max temperature used to map the colors in the temperature color mode", myParam.colorVisuals.tempColorMaxTemp, 10.0f, 50000.0f),
-		visualSlidersParams<float>("Max Constraint Stress", "Controls the max constraint stress used to map the colors in the constraints stress color mode. If set to 0, it will set the max stress to the material's breaking limit", myVar.constraintMaxStressColor, 0.0f, 1.0f),
-		visualSlidersParams<float>("Particles Size", "Controls the size of all particles", myVar.particleSizeMultiplier, 0.1f, 5.0f),
-		visualSlidersParams<int>("Trails Length", "Controls how long should the trails be. This feature is computationally expensive", myVar.trailMaxLength, 0, 1500),
-		visualSlidersParams<float>("Trails Thickness", "Controls the trails thickness", myParam.trails.trailThickness, 0.007f, 0.5f),
-		visualSlidersParams<int>("Path Prediction Lenght", "Controls how long is the predicted path", myParam.particlesSpawning.predictPathLength, 100, 2000),
-		visualSlidersParams<float>("Visible P. Amount Multiplier", "Controls the spawn amount of visible particles", myParam.particlesSpawning.particleAmountMultiplier, 0.1f, 100.0f),
-		visualSlidersParams<float>("DM P. Amount Multiplier", "Controls the spawn amount of dark matter particles", myParam.particlesSpawning.DMAmountMultiplier, 0.1f, 100.0f)
-	};
-
-	static std::array<std::variant<
-		physicsSlidersParams<float>,
-		physicsSlidersParams<int>>,
-		20> physicsSliders = {
-		physicsSlidersParams<float>("Softening", "Controls the smoothness of the gravity forces", myVar.softening, 1.0f, 30.0f),
-		physicsSlidersParams<float>("Theta", "Controls the quality of the gravity calculation. Higher means lower quality", myVar.theta, 0.1f, 5.0f),
-		physicsSlidersParams<float>("Time Scale", "Controls how fast time passes", myVar.timeStepMultiplier, 0.0f, 15.0f),
-		physicsSlidersParams<float>("Gravity Strength", "Controls how mcuh particles attract eachother", myVar.gravityMultiplier, 0.0f, 100.0f),
-		physicsSlidersParams<float>("Heavy Particle Init Mass", "Controls the mass of the heavy particles when spawned", myParam.particlesSpawning.heavyParticleWeightMultiplier, 0.005f, 15.0f),
-		physicsSlidersParams<float>("Domain Width", "Controls the width of the global container", myVar.domainSize.x, 200.0f, 3840.0f),
-		physicsSlidersParams<float>("Domain Height", "Controls the height of the global container", myVar.domainSize.y, 200.0f, 2160.0f),
-		physicsSlidersParams<int>("Threads Amount", "Controls the amount of threads used by the simulation. Half your total amount of threads is usually the sweet spot", myVar.threadsAmount, 1, 32),
-
-		physicsSlidersParams<float>("Ambient Temperature", "Controls the desired temperature of the scene in Kelvin. 1 is near absolute zero. The default value is set just high enough to allow liquid water", myVar.ambientTemp, 1.0f, 2500.0f),
-		physicsSlidersParams<float>("Ambient Heat Rate", "Controls how fast particles' temperature try to match ambient temperature", myVar.globalAmbientHeatRate, 0.0f, 10.0f),
-		physicsSlidersParams<float>("Heat Conductivity Multiplier", "Controls the global heat conductivity of particles", myVar.globalHeatConductivity, 0.001f, 1.0f),
-
-		physicsSlidersParams<float>("Constraints Stiffness Multiplier", "Controls the global stiffness multiplier for constraints", myVar.globalConstraintStiffnessMult, 0.001f, 3.0f),
-		physicsSlidersParams<float>("Constraints Resistance Multiplier", "Controls the global resistance multiplier for constraints", myVar.globalConstraintResistence, 0.001f, 30.0f),
-
-		physicsSlidersParams<float>("Fluid Vertical Gravity", "Controls the vertical gravity strength in Fluid Ground Mode", sph.verticalGravity, 0.0f, 10.0f),
-		physicsSlidersParams<float>("Fluid Mass Multiplier", "Controls the fluid mass of particles", sph.mass, 0.005f, 0.15f),
-		physicsSlidersParams<float>("Fluid Viscosity", "Controls how viscous particles are", sph.viscosity, 0.01f, 15.0f),
-		physicsSlidersParams<float>("Fluid Stiffness", "Controls how stiff particles are", sph.stiffMultiplier, 0.01f, 15.0f),
-		physicsSlidersParams<float>("Fluid Cohesion", "Controls how sticky particles are", sph.cohesionCoefficient, 0.0f, 10.0f),
-		physicsSlidersParams<float>("Fluid Delta", "Controls the scaling factor in the pressure solver to enforce fluid incompressibility", sph.delta, 500.0f, 20000.0f),
-		physicsSlidersParams<float>("Fluid Max Velocity", "Controls the maximum velocity a particle can have in Fluid mode", myVar.sphMaxVel, 0.0f, 2000.0f)
-	};
-
 	float oldSpacingY = ImGui::GetStyle().ItemSpacing.y;
 	ImGui::GetStyle().ItemSpacing.y = 5.0f; // Set the spacing only for the settings buttons
-
-	bool enabled = true;
 
 	std::vector<SimilarTypeButton::Mode> controlsAndInfo{
 { "Controls", "Open controls panel", &myParam.controls.isShowControlsEnabled },
@@ -170,7 +123,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	}
 
 	buttonHelper("Constraint Stress Color", "Maps the constraints stress to an RGB color", myVar.constraintStressColor, -1.0f, settingsButtonY, true, myVar.drawConstraints);
-	
+
 	SimilarTypeButton::buttonIterator(size, -1.0f, settingsButtonY, true, enabled);
 
 	buttonHelper("Glow", "Enables glow shader", myVar.isGlowEnabled, -1.0f, settingsButtonY, true, enabled);
@@ -188,9 +141,6 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	float parametersWindowSizeX = 400.0f;
 	float parametersWindowSizeY = screenY - 30.0f;
 
-	float parametersSliderX = 200.0f;
-	float parametersSliderY = 30.0f;
-
 	ImGui::SetNextWindowSize(ImVec2(parametersWindowSizeX, parametersWindowSizeY), ImGuiCond_Once);
 	ImGui::SetNextWindowSizeConstraints(ImVec2(parametersWindowSizeX, parametersWindowSizeY), ImVec2(parametersWindowSizeX, parametersWindowSizeY));
 	ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f), ImGuiCond_Always);
@@ -200,13 +150,24 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 	if (ImGui::BeginTabBar("##MainTabBar", ImGuiTabBarFlags_NoTabListScrollingButtons)) {
 
-
 		if (ImGui::BeginTabItem("Visuals")) {
 
 			bVisualsSliders = true;
 			bPhysicsSliders = false;
 			bStatsWindow = false;
 			bRecordingSettings = false;
+			bSoundWindow = false;
+
+			// Initialize all tabs for sliders defaults
+			if (loadSettings) {
+				bVisualsSliders = true;
+				bPhysicsSliders = true;
+				bStatsWindow = true;
+				bRecordingSettings = true;
+				bSoundWindow = true;
+
+				loadSettings = false;
+			}
 
 			ImGui::EndTabItem();
 		}
@@ -217,6 +178,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			bPhysicsSliders = true;
 			bStatsWindow = false;
 			bRecordingSettings = false;
+			bSoundWindow = false;
 
 			ImGui::EndTabItem();
 		}
@@ -227,6 +189,18 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			bPhysicsSliders = false;
 			bStatsWindow = true;
 			bRecordingSettings = false;
+			bSoundWindow = false;
+
+			ImGui::EndTabItem();
+		}
+
+		if (ImGui::BeginTabItem("Sound")) {
+
+			bVisualsSliders = false;
+			bPhysicsSliders = false;
+			bStatsWindow = false;
+			bRecordingSettings = false;
+			bSoundWindow = true;
 
 			ImGui::EndTabItem();
 		}
@@ -237,6 +211,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			bPhysicsSliders = false;
 			bStatsWindow = false;
 			bRecordingSettings = true;
+			bSoundWindow = false;
 
 			ImGui::EndTabItem();
 		}
@@ -256,14 +231,16 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			ImVec4 imguiPColor = rlImGuiColors::Convert(primaryColors);
 			static Color originalPColor = primaryColors;
 
-			if (ImGui::Button("Reset Primary Colors", ImVec2(240.0f, 30.0f))) {
+			bool placeholderP = false;
+
+			if (buttonHelper("Reset Primary Color", "Resets the secondary color picker", placeholderP, 240.0f, 30.0f, true, enabled)) {
 				myParam.colorVisuals.pColor.r = originalPColor.r;
 				myParam.colorVisuals.pColor.g = originalPColor.g;
 				myParam.colorVisuals.pColor.b = originalPColor.b;
 				myParam.colorVisuals.pColor.a = originalPColor.a;
 			}
 
-			if (ImGui::ColorPicker4("Primary Col.", (float*)&imguiPColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
+			if (ImGui::ColorPicker4("Primary Color", (float*)&imguiPColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
 				primaryColors = rlImGuiColors::Convert(imguiPColor);
 				myParam.colorVisuals.pColor.r = primaryColors.r;
 				myParam.colorVisuals.pColor.g = primaryColors.g;
@@ -280,7 +257,9 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			ImVec4 imguiSColor = rlImGuiColors::Convert(secondaryColors);
 			static Color originalSColor = secondaryColors;
 
-			if (ImGui::Button("Reset Secondary Colors", ImVec2(240.0f, 30.0f))) {
+			bool placeholderS = false;
+
+			if (buttonHelper("Reset Secondary Col.", "Resets the primary color picker", placeholderS, 240.0f, 30.0f, true, enabled)) {
 				myParam.colorVisuals.sColor.r = originalSColor.r;
 				myParam.colorVisuals.sColor.g = originalSColor.g;
 				myParam.colorVisuals.sColor.b = originalSColor.b;
@@ -295,60 +274,22 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				myParam.colorVisuals.sColor.a = secondaryColors.a;
 			}
 
-			for (size_t i = 0; i < visualSliders.size(); i++) {
+			sliderHelper("Density Radius", "Controls the neighbor search radius", myParam.neighborSearch.densityRadius, 0.0f, 7.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Max Neighbors", "Controls the maximum neighbor count range", myParam.colorVisuals.maxNeighbors, 1, 500, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Max Color Force", "Controls the acceleration threshold to use the secondary color", myParam.colorVisuals.maxColorAcc, 1.0f, 400.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Max Size Force", "Controls the acceleration threshold to map the particle size", myParam.densitySize.sizeAcc, 1.0f, 400.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Max Shockwave Accel", "Controls the acceleration threshold to map the particle color in Shockwave color mode", myParam.colorVisuals.ShockwaveMaxAcc, 1.0f, 120.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Max Velocity Color", "Controls the max velocity used to map the colors in the velocity color mode", myParam.colorVisuals.maxVel, 10.0f, 10000.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Max Pressure Color", "Controls the max pressure used to map the colors in the pressure color mode", myParam.colorVisuals.maxPress, 100.0f, 100000.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Max Temperature Color", "Controls the max temperature used to map the colors in the temperature color mode", myParam.colorVisuals.tempColorMaxTemp, 10.0f, 50000.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Max Constraint Stress", "Controls the max constraint stress used to map the colors in the constraints stress color mode. If set to 0, it will set the max stress to the material's breaking limit", myVar.constraintMaxStressColor, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Particles Size", "Controls the size of all particles", myVar.particleSizeMultiplier, 0.1f, 5.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Trails Length", "Controls how long should the trails be. This feature is computationally expensive", myVar.trailMaxLength, 0, 1500, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Trails Thickness", "Controls the trails thickness", myParam.trails.trailThickness, 0.007f, 0.5f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Path Prediction Length", "Controls how long is the predicted path", myParam.particlesSpawning.predictPathLength, 100, 2000, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Visible P. Amount Multiplier", "Controls the spawn amount of visible particles", myParam.particlesSpawning.particleAmountMultiplier, 0.1f, 100.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("DM P. Amount Multiplier", "Controls the spawn amount of dark matter particles", myParam.particlesSpawning.DMAmountMultiplier, 0.1f, 100.0f, parametersSliderX, parametersSliderY, enabled);
 
-				std::visit([&](auto& s) {
-					using T = std::decay_t<decltype(s)>;
-					if constexpr (std::is_same_v<T, visualSlidersParams<float>>) {
-						ImGui::Text("%s", s.text.c_str());
-
-						if (s.min > 0.0f) {
-							ImGui::SliderFloat(
-								("##" + s.text).c_str(),
-								&s.parameter,
-								s.min,
-								s.max,
-								"%.3f", ImGuiSliderFlags_Logarithmic
-							);
-						}
-						else {
-							ImGui::SliderFloat(
-								("##" + s.text).c_str(),
-								&s.parameter,
-								s.min,
-								s.max
-							);
-						}
-
-						if (ImGui::IsItemHovered()) {
-							ImGui::SetTooltip("%s", s.tooltip.c_str());
-						}
-
-						if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-							s.parameter = s.defaultVal;
-						}
-					}
-					else if constexpr (std::is_same_v<T, visualSlidersParams<int>>) {
-						ImGui::Text("%s", s.text.c_str());
-
-						ImGui::SliderInt(
-							("##" + s.text).c_str(),
-							&s.parameter,
-							s.min,
-							s.max
-						);
-
-						if (ImGui::IsItemHovered()) {
-							ImGui::SetTooltip("%s", s.tooltip.c_str());
-						}
-
-						if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-							s.parameter = s.defaultVal;
-						}
-					}
-					}, visualSliders[i]);
-
-			}
 			bool massMultiplierButtonEnable = true;
 			if (myVar.isSPHEnabled) {
 				myParam.particlesSpawning.massMultiplierEnabled = false;
@@ -359,54 +300,35 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 		if (bPhysicsSliders) {
 
-			for (size_t i = 0; i < physicsSliders.size(); i++) {
+			sliderHelper("Softening", "Controls the smoothness of the gravity forces", myVar.softening, 1.0f, 30.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Theta", "Controls the quality of the gravity calculation. Higher means lower quality", myVar.theta, 0.1f, 5.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Time Scale", "Controls how fast time passes", myVar.timeStepMultiplier, 0.0f, 15.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Gravity Strength", "Controls how much particles attract eachother", myVar.gravityMultiplier, 0.0f, 100.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Heavy Particle Init Mass", "Controls the mass of the heavy particles when spawned", myParam.particlesSpawning.heavyParticleWeightMultiplier, 0.005f, 15.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Domain Width", "Controls the width of the global container", myVar.domainSize.x, 200.0f, 3840.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Domain Height", "Controls the height of the global container", myVar.domainSize.y, 200.0f, 2160.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Threads Amount", "Controls the amount of threads used by the simulation. Half your total amount of threads is usually the sweet spot", myVar.threadsAmount, 1, 32, parametersSliderX, parametersSliderY, enabled);
 
-				std::visit([&](auto& s) {
-					using T = std::decay_t<decltype(s)>;
-					if constexpr (std::is_same_v<T, physicsSlidersParams<float>>) {
-						ImGui::Text("%s", s.text.c_str());
+			sliderHelper("Ambient Temperature", "Controls the desired temperature of the scene in Kelvin. 1 is near absolute zero. The default value is set just high enough to allow liquid water", myVar.ambientTemp, 1.0f, 2500.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Ambient Heat Rate", "Controls how fast particles' temperature try to match ambient temperature", myVar.globalAmbientHeatRate, 0.0f, 10.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Heat Conductivity Multiplier", "Controls the global heat conductivity of particles", myVar.globalHeatConductivity, 0.001f, 1.0f, parametersSliderX, parametersSliderY, enabled);
 
-						ImGui::SliderFloat(
-							("##" + s.text).c_str(),
-							&s.parameter,
-							s.min,
-							s.max
-						);
+			sliderHelper("Constraints Stiffness Multiplier", "Controls the global stiffness multiplier for constraints", myVar.globalConstraintStiffnessMult, 0.001f, 3.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Constraints Resistance Multiplier", "Controls the global resistance multiplier for constraints", myVar.globalConstraintResistance, 0.001f, 30.0f, parametersSliderX, parametersSliderY, enabled);
 
-						if (ImGui::IsItemHovered()) {
-							ImGui::SetTooltip("%s", s.tooltip.c_str());
-						}
-
-						if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-							s.parameter = s.defaultVal;
-						}
-					}
-					else if constexpr (std::is_same_v<T, physicsSlidersParams<int>>) {
-						ImGui::Text("%s", s.text.c_str());
-
-						ImGui::SliderInt(
-							("##" + s.text).c_str(),
-							&s.parameter,
-							s.min,
-							s.max
-						);
-
-						if (ImGui::IsItemHovered()) {
-							ImGui::SetTooltip("%s", s.tooltip.c_str());
-						}
-
-						if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-							s.parameter = s.defaultVal;
-						}
-					}
-					}, physicsSliders[i]);
-			}
+			sliderHelper("Fluid Vertical Gravity", "Controls the vertical gravity strength in Fluid Ground Mode", sph.verticalGravity, 0.0f, 10.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Fluid Mass Multiplier", "Controls the fluid mass of particles", sph.mass, 0.005f, 0.15f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Fluid Viscosity", "Controls how viscous particles are", sph.viscosity, 0.01f, 15.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Fluid Stiffness", "Controls how stiff particles are", sph.stiffMultiplier, 0.01f, 15.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Fluid Cohesion", "Controls how sticky particles are", sph.cohesionCoefficient, 0.0f, 10.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Fluid Delta", "Controls the scaling factor in the pressure solver to enforce fluid incompressibility", sph.delta, 500.0f, 20000.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Fluid Max Velocity", "Controls the maximum velocity a particle can have in Fluid mode", myVar.sphMaxVel, 0.0f, 2000.0f, parametersSliderX, parametersSliderY, enabled);
 
 			std::vector<SimilarTypeButton::Mode> sphMats{
 				{ "Water", "Water", &myParam.brush.SPHWater},
 				{ "Rock", "Rock", &myParam.brush.SPHRock},
 				{ "Iron", "Iron", &myParam.brush.SPHIron},
-			    {"Sand", "Sand", &myParam.brush.SPHSand},
+				{"Sand", "Sand", &myParam.brush.SPHSand},
 				{"Soil", "Soil", &myParam.brush.SPHSoil},
 				{"Ice", "Ice", &myParam.brush.SPHIce},
 				{"Mud", "Mud", &myParam.brush.SPHMud},
@@ -421,6 +343,23 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 			ImGui::GetStyle().ItemSpacing.y = oldSpacingY;
 
+		}
+
+		if (bSoundWindow) {
+
+			bool enabled = true;
+
+			sliderHelper("Global Volume", "Controls global sound volume", geSound.globalVolume, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Menu Volume", "Controls menu sounds volume", geSound.menuVolume, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Music Volume", "Controls soundtrack volume", geSound.musicVolume, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled);
+
+			if (buttonHelper("<- Previous Track", "Plays the previous track in the playlist", geSound.hasTrackChanged, -1.0f, settingsButtonY, true, enabled)) {
+				geSound.currentSongIndex--;
+			}
+
+			if (buttonHelper("Next Track ->", "Plays the next track in the playlist", geSound.hasTrackChanged, -1.0f, settingsButtonY, true, enabled)) {
+				geSound.currentSongIndex++;
+			}
 		}
 
 		if (bRecordingSettings) {
@@ -438,21 +377,11 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 			ImGui::Separator(); // Add a separator
 
-			// Recording Timer Slider
-			ImGui::Text("Recording Timer (seconds)");
-			if (ImGui::IsItemHovered()) {
-				ImGui::SetTooltip("Set a time limit for the recording. 0 means no limit.");
-			}
+			bool isEnabled = true;
 			if (myVar.isRecording) { // Check if recording is active
-				ImGui::BeginDisabled(); // Disable the slider
+				isEnabled = false; // Disable the slider
 			}
-			ImGui::SliderFloat("##RecordingTimeLimit", &myVar.recordingTimeLimit, 0.0f, 60.0f, "%.1f s");
-			if (myVar.isRecording) { // If recording was active
-				ImGui::EndDisabled(); // Re-enable the slider
-			}
-			if (ImGui::IsItemEdited() && myVar.recordingTimeLimit < 0) {
-				myVar.recordingTimeLimit = 0; // Ensure it doesn't go below 0
-			}
+			sliderHelper("RecordingTimeLimit", "Set a time limit for the recording. 0 means no limit.", myVar.recordingTimeLimit, 0.0f, 60.0f, parametersSliderX, parametersSliderY, isEnabled);
 
 
 			ImGui::GetStyle().ItemSpacing.y =
@@ -813,7 +742,13 @@ void UI::plotLinesHelper(const float& timeFactor, std::string label,
 	}
 }
 
-bool UI::buttonHelper(std::string label, std::string tooltip, bool& parameter, float sizeX, float sizeY, bool canSelfDeactivate, bool& isEnabled) {
+static bool wasHovered = false;
+
+bool UI::buttonHelper(std::string label, std::string tooltip, bool& parameter,
+	float sizeX, float sizeY, bool canSelfDeactivate, bool& isEnabled) {
+
+	ImGuiID buttonId = ImGui::GetID(label.c_str());
+	static std::unordered_map<ImGuiID, bool> hoverStates;
 
 	if (!isEnabled) {
 		ImGui::BeginDisabled();
@@ -828,76 +763,469 @@ bool UI::buttonHelper(std::string label, std::string tooltip, bool& parameter, f
 	}
 
 	bool hasBeenPressed = false;
+	ImVec2 buttonSize;
 
-	// Set the passed value to -1.0f if you want the button size to be as big as the window
 	if (sizeX > 0.0f && sizeY > 0.0f) {
-		if (ImGui::Button(label.c_str(), ImVec2(sizeX, sizeY))) {
-			if (canSelfDeactivate) {
-				parameter = !parameter;
-				hasBeenPressed = true;
-			}
-			else {
-				if (!parameter) {
-					parameter = true;
-					hasBeenPressed = true;
-				}
-			}
-		}
+		buttonSize = ImVec2(sizeX, sizeY);
 	}
 	else if (sizeX < 0.0f && sizeY > 0.0f) {
-		if (ImGui::Button(label.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, sizeY))) {
-			if (canSelfDeactivate) {
-				parameter = !parameter;
-				hasBeenPressed = true;
-			}
-			else {
-				if (!parameter) {
-					parameter = true;
-					hasBeenPressed = true;
-				}
-			}
-		}
+		buttonSize = ImVec2(ImGui::GetContentRegionAvail().x, sizeY);
 	}
 	else if (sizeX > 0.0f && sizeY < 0.0f) {
-		if (ImGui::Button(label.c_str(), ImVec2(sizeX, ImGui::GetContentRegionAvail().y))) {
-			if (canSelfDeactivate) {
-				parameter = !parameter;
-				hasBeenPressed = true;
-			}
-			else {
-				if (!parameter) {
-					parameter = true;
-					hasBeenPressed = true;
-				}
-			}
-		}
+		buttonSize = ImVec2(sizeX, ImGui::GetContentRegionAvail().y);
 	}
-	else if (sizeX < 0.0f && sizeY < 0.0f) {
-		if (ImGui::Button(label.c_str(), ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y))) {
-			if (canSelfDeactivate) {
-				parameter = !parameter;
-				hasBeenPressed = true;
-			}
-			else {
-				if (!parameter) {
-					parameter = true;
-					hasBeenPressed = true;
+	else {
+		buttonSize = ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
+	}
+
+	std::vector<Sound>* soundPool = nullptr;
+
+	if (ImGui::Button(label.c_str(), buttonSize)) {
+
+		if (!parameter) {
+
+			soundPool = &GESound::soundButtonEnablePool;
+
+			if (soundPool && !soundPool->empty()) {
+				bool played = false;
+
+				for (Sound& sound : *soundPool) {
+					if (!IsSoundPlaying(sound)) {
+						PlaySound(sound);
+						played = true;
+						break;
+					}
+				}
+
+				if (!played) {
+					PlaySound(soundPool->back());
 				}
 			}
 		}
+		else {
+			soundPool = &GESound::soundButtonDisablePool;
+
+			if (soundPool && !soundPool->empty()) {
+				bool played = false;
+
+				for (Sound& sound : *soundPool) {
+					if (!IsSoundPlaying(sound)) {
+						PlaySound(sound);
+						played = true;
+						break;
+					}
+				}
+
+				if (!played) {
+					PlaySound(soundPool->back());
+				}
+			}
+		}
+
+		if (canSelfDeactivate) {
+			parameter = !parameter;
+		}
+		else if (!parameter) {
+			parameter = true;
+		}
+		hasBeenPressed = true;
 	}
 
 	if (pushedColor) {
 		ImGui::PopStyleColor(3);
 	}
 
-	if (ImGui::IsItemHovered()) {
+	bool isHovered = ImGui::IsItemHovered();
+
+	if (isHovered) {
 		ImGui::SetTooltip("%s", tooltip.c_str());
+
+		int randSoundNum = rand() % 3;
+
+		if (!hoverStates[buttonId]) {
+			std::vector<Sound>* soundPool = nullptr;
+
+			switch (randSoundNum) {
+			case 0:
+				soundPool = &GESound::soundButtonHover1Pool;
+				break;
+			case 1:
+				soundPool = &GESound::soundButtonHover2Pool;
+				break;
+			case 2:
+				soundPool = &GESound::soundButtonHover3Pool;
+				break;
+			}
+
+			if (soundPool && !soundPool->empty()) {
+				bool played = false;
+
+				for (Sound& sound : *soundPool) {
+					if (!IsSoundPlaying(sound)) {
+						PlaySound(sound);
+						played = true;
+						break;
+					}
+				}
+
+				if (!played) {
+					PlaySound(soundPool->back());
+				}
+			}
+		}
 	}
+
+	hoverStates[buttonId] = isHovered;
 
 	if (!isEnabled) {
 		ImGui::EndDisabled();
 	}
 
 	return hasBeenPressed;
+}
+
+
+
+void UI::sliderHelper(std::string label, std::string tooltip, float& parameter, float minVal, float maxVal,
+	float sizeX, float sizeY, bool& isEnabled) {
+
+	ImGuiID sliderId = ImGui::GetID(label.c_str());
+	static std::unordered_map<ImGuiID, bool> hoverStates;
+	static std::unordered_map<ImGuiID, float> defaultValues;
+
+	if (!isEnabled) {
+		ImGui::BeginDisabled();
+	}
+
+	if (defaultValues.find(sliderId) == defaultValues.end()) {
+		defaultValues[sliderId] = parameter;
+	}
+
+	ImVec2 sliderSize;
+
+	if (sizeX > 0.0f && sizeY > 0.0f) {
+		sliderSize = ImVec2(sizeX, sizeY);
+	}
+	else if (sizeX < 0.0f && sizeY > 0.0f) {
+		sliderSize = ImVec2(ImGui::GetContentRegionAvail().x, sizeY);
+	}
+	else if (sizeX > 0.0f && sizeY < 0.0f) {
+		sliderSize = ImVec2(sizeX, ImGui::GetContentRegionAvail().y);
+	}
+	else {
+		sliderSize = ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
+	}
+
+	ImGui::Text("%s", label.c_str());
+
+	ImGui::SliderFloat(("##" + label).c_str(), &parameter, minVal, maxVal, "%.3f", ImGuiSliderFlags_Logarithmic);
+
+	std::vector<Sound>* soundPool = nullptr;
+
+	static bool hasBeenPressed = false;
+
+	if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+
+		hasBeenPressed = true;
+
+		soundPool = &GESound::soundButtonEnablePool;
+
+		if (soundPool && !soundPool->empty()) {
+			bool played = false;
+
+			for (Sound& sound : *soundPool) {
+				if (!IsSoundPlaying(sound)) {
+					PlaySound(sound);
+					played = true;
+					break;
+				}
+			}
+
+			if (!played) {
+				PlaySound(soundPool->back());
+			}
+		}
+	}
+
+	if (hasBeenPressed && ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
+
+		soundPool = &GESound::soundButtonDisablePool;
+
+		if (soundPool && !soundPool->empty()) {
+			bool played = false;
+
+			for (Sound& sound : *soundPool) {
+				if (!IsSoundPlaying(sound)) {
+					PlaySound(sound);
+					played = true;
+					break;
+				}
+			}
+
+			if (!played) {
+				PlaySound(soundPool->back());
+			}
+		}
+
+		hasBeenPressed = false;
+	}
+
+	static float prevValue = parameter;
+	static bool wasPlaying = false;
+	static ImVec2 lastMousePos = ImGui::GetMousePos();
+
+	if (ImGui::IsItemActive()) {
+		ImVec2 currentMousePos = ImGui::GetMousePos();
+		float mouseDelta = abs(currentMousePos.x - lastMousePos.x) + abs(currentMousePos.y - lastMousePos.y);
+
+		if (mouseDelta > 2.0f) {
+			if (!wasPlaying || parameter != prevValue) {
+				soundPool = &GESound::soundSliderSlidePool;
+				if (soundPool && !soundPool->empty()) {
+					bool played = false;
+					for (Sound& sound : *soundPool) {
+						if (!IsSoundPlaying(sound)) {
+							PlaySound(sound);
+							played = true;
+							wasPlaying = true;
+							lastMousePos = currentMousePos;
+							break;
+						}
+					}
+					if (!played) {
+						PlaySound(soundPool->back());
+						wasPlaying = true;
+						lastMousePos = currentMousePos;
+					}
+				}
+			}
+		}
+		prevValue = parameter;
+	}
+	else {
+		wasPlaying = false;
+	}
+
+	bool isHovered = ImGui::IsItemHovered();
+
+	if (isHovered) {
+		ImGui::SetTooltip("%s", tooltip.c_str());
+
+		int randSoundNum = rand() % 3;
+
+		if (!hoverStates[sliderId]) {
+			std::vector<Sound>* soundPool = nullptr;
+
+			switch (randSoundNum) {
+			case 0:
+				soundPool = &GESound::soundButtonHover1Pool;
+				break;
+			case 1:
+				soundPool = &GESound::soundButtonHover2Pool;
+				break;
+			case 2:
+				soundPool = &GESound::soundButtonHover3Pool;
+				break;
+			}
+
+			if (soundPool && !soundPool->empty()) {
+				bool played = false;
+
+				for (Sound& sound : *soundPool) {
+					if (!IsSoundPlaying(sound)) {
+						PlaySound(sound);
+						played = true;
+						break;
+					}
+				}
+
+				if (!played) {
+					PlaySound(soundPool->back());
+				}
+			}
+		}
+	}
+
+	hoverStates[sliderId] = isHovered;
+
+	if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+		parameter = defaultValues[sliderId];
+	}
+
+	if (!isEnabled) {
+		ImGui::EndDisabled();
+	}
+}
+
+void UI::sliderHelper(std::string label, std::string tooltip, int& parameter, int minVal, int maxVal,
+	float sizeX, float sizeY, bool& isEnabled) {
+
+	ImGuiID sliderId = ImGui::GetID(label.c_str());
+	static std::unordered_map<ImGuiID, bool> hoverStates;
+	static std::unordered_map<ImGuiID, float> defaultValues;
+
+	if (!isEnabled) {
+		ImGui::BeginDisabled();
+	}
+
+	if (defaultValues.find(sliderId) == defaultValues.end()) {
+		defaultValues[sliderId] = parameter;
+	}
+
+	ImVec2 sliderSize;
+
+	if (sizeX > 0.0f && sizeY > 0.0f) {
+		sliderSize = ImVec2(sizeX, sizeY);
+	}
+	else if (sizeX < 0.0f && sizeY > 0.0f) {
+		sliderSize = ImVec2(ImGui::GetContentRegionAvail().x, sizeY);
+	}
+	else if (sizeX > 0.0f && sizeY < 0.0f) {
+		sliderSize = ImVec2(sizeX, ImGui::GetContentRegionAvail().y);
+	}
+	else {
+		sliderSize = ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
+	}
+
+	ImGui::Text("%s", label.c_str());
+
+	ImGui::SliderInt(("##" + label).c_str(), &parameter, minVal, maxVal);
+
+	std::vector<Sound>* soundPool = nullptr;
+
+	static bool hasBeenPressed = false;
+
+	if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+
+		hasBeenPressed = true;
+
+		soundPool = &GESound::soundButtonEnablePool;
+
+		if (soundPool && !soundPool->empty()) {
+			bool played = false;
+
+			for (Sound& sound : *soundPool) {
+				if (!IsSoundPlaying(sound)) {
+					PlaySound(sound);
+					played = true;
+					break;
+				}
+			}
+
+			if (!played) {
+				PlaySound(soundPool->back());
+			}
+		}
+	}
+
+	if (hasBeenPressed && ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
+
+		soundPool = &GESound::soundButtonDisablePool;
+
+		if (soundPool && !soundPool->empty()) {
+			bool played = false;
+
+			for (Sound& sound : *soundPool) {
+				if (!IsSoundPlaying(sound)) {
+					PlaySound(sound);
+					played = true;
+					break;
+				}
+			}
+
+			if (!played) {
+				PlaySound(soundPool->back());
+			}
+		}
+
+		hasBeenPressed = false;
+	}
+
+	static int prevValue = parameter;
+	static bool wasPlaying = false;
+	static ImVec2 lastMousePos = ImGui::GetMousePos();
+
+	if (ImGui::IsItemActive()) {
+		ImVec2 currentMousePos = ImGui::GetMousePos();
+		int mouseDelta = abs(currentMousePos.x - lastMousePos.x) + abs(currentMousePos.y - lastMousePos.y);
+
+		if (mouseDelta > 2.0f) {
+			if (!wasPlaying || parameter != prevValue) {
+				soundPool = &GESound::soundSliderSlidePool;
+				if (soundPool && !soundPool->empty()) {
+					bool played = false;
+					for (Sound& sound : *soundPool) {
+						if (!IsSoundPlaying(sound)) {
+							PlaySound(sound);
+							played = true;
+							wasPlaying = true;
+							lastMousePos = currentMousePos;
+							break;
+						}
+					}
+					if (!played) {
+						PlaySound(soundPool->back());
+						wasPlaying = true;
+						lastMousePos = currentMousePos;
+					}
+				}
+			}
+		}
+		prevValue = parameter;
+	}
+	else {
+		wasPlaying = false;
+	}
+
+	bool isHovered = ImGui::IsItemHovered();
+
+	if (isHovered) {
+		ImGui::SetTooltip("%s", tooltip.c_str());
+
+		int randSoundNum = rand() % 3;
+
+		if (!hoverStates[sliderId]) {
+			std::vector<Sound>* soundPool = nullptr;
+
+			switch (randSoundNum) {
+			case 0:
+				soundPool = &GESound::soundButtonHover1Pool;
+				break;
+			case 1:
+				soundPool = &GESound::soundButtonHover2Pool;
+				break;
+			case 2:
+				soundPool = &GESound::soundButtonHover3Pool;
+				break;
+			}
+
+			if (soundPool && !soundPool->empty()) {
+				bool played = false;
+
+				for (Sound& sound : *soundPool) {
+					if (!IsSoundPlaying(sound)) {
+						PlaySound(sound);
+						played = true;
+						break;
+					}
+				}
+
+				if (!played) {
+					PlaySound(soundPool->back());
+				}
+			}
+		}
+	}
+
+	hoverStates[sliderId] = isHovered;
+
+	static int defaultVal = parameter;
+
+	if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+		parameter = defaultValues[sliderId];
+	}
+
+	if (!isEnabled) {
+		ImGui::EndDisabled();
+	}
 }

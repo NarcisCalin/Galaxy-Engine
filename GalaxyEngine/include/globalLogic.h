@@ -20,6 +20,7 @@
 #include "UI/rightClickSettings.h"
 #include "UI/controls.h"
 #include "UI/UI.h"
+#include "Sound/sound.h"
 
 #include "UX/screenCapture.h"
 #include "UX/camera.h"
@@ -34,6 +35,7 @@ extern Physics physics;
 extern ParticleSpaceship ship;
 extern SPH sph;
 extern SaveSystem save;
+extern GESound geSound;
 
 Quadtree* gridFunction(std::vector<ParticlePhysics>& pParticles,
 	std::vector<ParticleRendering>& rParticles);
@@ -45,7 +47,6 @@ struct ParticleBounds {
 	float minX, maxX, minY, maxY;
 };
 
-
 // THIS FUNCTION IS MEAN FOR QUICK DEBUGGING WHERE YOU NEED TO CHECK A SPECIFIC PARTICLE'S VARIABLES
 void selectedParticleDebug();
 
@@ -53,7 +54,7 @@ void pinParticles();
 
 void updateScene();
 
-void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture);
+void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture, RenderTexture2D& myMiscTexture, bool& fadeActive, bool& introActive);
 
 void enableMultiThreading();
 
@@ -62,3 +63,10 @@ void fullscreenToggle(int& lastScreenWidth, int& lastScreenHeight,
 	RenderTexture2D& myParticlesTexture, RenderTexture2D& myUITexture);
 
 void drawConstraints();
+
+
+void saveConfigIfChanged();
+
+void saveConfig();
+
+void loadConfig();

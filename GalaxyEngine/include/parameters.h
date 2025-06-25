@@ -71,7 +71,7 @@ struct UpdateVariables{
 	float halfDomainWidth = domainSize.x * 0.5f;
 	float halfDomainHeight = domainSize.y * 0.5f;
 
-	bool fullscreenState = true;
+	bool fullscreenState = false;
 
 	int targetFPS = 144;
 
@@ -172,7 +172,7 @@ struct UpdateVariables{
 	float recordingTimeLimit = 0.0f; 
 
 	float globalConstraintStiffnessMult = 1.0f;
-	float globalConstraintResistence = 1.0f;
+	float globalConstraintResistance = 1.0f;
 
 	bool constraintAllSolids = false;
 	bool constraintSelected = false;
@@ -192,4 +192,9 @@ struct UpdateVariables{
 	bool unPinFlag = false;
 
 	bool isBrushDrawing = false;
+
+	Font customFont = { 0 };
+	int introFontSize = 48;
+
+	bool gridExists = true;
 };

@@ -101,7 +101,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 		}
 
 
-		if (IsKeyReleased(KEY_ONE) && myVar.isDragging) {
+		if (IO::shortcutReleased(KEY_ONE) && myVar.isDragging) {
 
 			// VISIBLE MATTER
 
@@ -228,7 +228,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 			myVar.isDragging = false;
 		}
 
-		if (IsKeyReleased(KEY_TWO) && myVar.isDragging) {
+		if (IO::shortcutReleased(KEY_TWO) && myVar.isDragging) {
 
 			// VISIBLE MATTER
 
@@ -352,7 +352,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 			myVar.isDragging = false;
 		}
 
-		if (IsKeyReleased(KEY_THREE)) {
+		if (IO::shortcutReleased(KEY_THREE)) {
 
 			for (int i = 0; i < static_cast<int>(10000 * particleAmountMultiplier); i++) {
 
@@ -564,7 +564,7 @@ void ParticlesSpawning::copyPaste(std::vector<ParticlePhysics>& pParticles, std:
 
 	Slingshot slingshot = slingshot.particleSlingshot(isDragging, myCamera);
 
-	if (IsKeyReleased(KEY_J)) {
+	if (IO::shortcutReleased(KEY_J)) {
 
 		for (ParticlePhysics pCopy : pParticlesCopied) {
 
