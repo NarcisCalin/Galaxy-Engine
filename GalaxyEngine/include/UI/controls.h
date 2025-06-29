@@ -63,7 +63,7 @@ struct Controls {
 	"20. P: Constraint Solids"
 	};
 
-	std::array<std::string, 31> infoArray = {
+	std::array<std::string, 33> infoArray = {
 		"----INFORMATION----",
 		"",
 		"Galaxy Engine is a personal project done for learning purposes",
@@ -94,6 +94,8 @@ struct Controls {
 		"7. Frames Export Safe Mode: It is enabled by default when export",
 		"frames is enabled. It stores your frames directly to disk, avoiding",
 		"filling up your memory. Disabling it will make the render process",
-		"much faster, but the program might crash once you run out of memory"
+		"much faster, but the program might crash once you run out of memory",
+		"",
+		"You can report any bugs you may find on our Discord Community."
 	};
 };

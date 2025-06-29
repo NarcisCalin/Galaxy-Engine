@@ -4,6 +4,7 @@
 
 #include "Physics/quadtree.h"
 #include "Physics/SPH.h"
+#include "Physics/light.h"
 
 #include "UX/saveSystem.h"
 
@@ -41,8 +42,9 @@ public:
 	bool bRecordingSettings = false;
 	bool bStatsWindow = false;
 	bool bSoundWindow = false;
+	bool bLightingWindow = false;
 
-	void uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, SaveSystem& save, GESound& geSound);
+	void uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, SaveSystem& save, GESound& geSound, Lighting& lighting);
 
 	void statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar);
 

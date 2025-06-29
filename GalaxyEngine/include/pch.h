@@ -20,6 +20,7 @@
 #include <variant>
 #include <thread>
 #include <bitset>
+#include <random>
 
 // C stdlib
 #include <cmath>

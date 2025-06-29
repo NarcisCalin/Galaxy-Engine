@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
 
 	Shader myBloom = LoadShader(nullptr, "Shaders/bloom.fs");
 
-	RenderTexture2D myParticlesTexture = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
+	RenderTexture2D myParticlesTexture = CreateFloatRenderTexture(GetScreenWidth(), GetScreenHeight());
 	RenderTexture2D myUITexture = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
 	RenderTexture2D myMiscTexture = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
 
@@ -134,8 +134,8 @@ int main(int argc, char** argv) {
 
 	// ---- Intro ---- //
 
-	bool fadeActive = true;
-	bool introActive = true;
+	bool fadeActive = false;
+	bool introActive = false;
 
 	myVar.customFont = LoadFontEx("fonts/Unispace Bd.otf", myVar.introFontSize, 0, 250);
 

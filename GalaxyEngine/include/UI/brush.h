@@ -41,8 +41,9 @@ public:
 
 	void temperatureBrush(UpdateParameters& myParam);
 
-private:
 	float brushRadius;
+
+private:
 	SceneCamera myCamera;
 
 	float spinForce = 140.0f;

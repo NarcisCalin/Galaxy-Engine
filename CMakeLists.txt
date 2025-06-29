@@ -38,6 +38,7 @@ set(
     UX/camera.cpp
     UX/saveSystem.cpp
     UX/screenCapture.cpp
+    UX/randNum.cpp
     resources.rc)
 
 list(TRANSFORM GALAXYENGINE_SOURCES PREPEND ${CMAKE_CURRENT_LIST_DIR}/GalaxyEngine/src/)

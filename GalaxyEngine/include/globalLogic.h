@@ -15,16 +15,19 @@
 #include "Physics/morton.h"
 #include "Physics/physics.h"
 #include "Physics/SPH.h"
+#include "Physics/light.h"
 
 #include "UI/brush.h"
 #include "UI/rightClickSettings.h"
 #include "UI/controls.h"
 #include "UI/UI.h"
+
 #include "Sound/sound.h"
 
 #include "UX/screenCapture.h"
 #include "UX/camera.h"
 #include "UX/saveSystem.h"
+#include "UX/randNum.h"
 
 #include "parameters.h"
 
@@ -36,6 +39,7 @@ extern ParticleSpaceship ship;
 extern SPH sph;
 extern SaveSystem save;
 extern GESound geSound;
+extern Lighting lighting;
 
 Quadtree* gridFunction(std::vector<ParticlePhysics>& pParticles,
 	std::vector<ParticleRendering>& rParticles);
@@ -70,3 +74,5 @@ void saveConfigIfChanged();
 void saveConfig();
 
 void loadConfig();
+
+RenderTexture2D CreateFloatRenderTexture(int w, int h);

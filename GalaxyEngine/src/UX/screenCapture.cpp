@@ -64,6 +64,7 @@ void ScreenCapture::exportFrameToFile(const Image& frame,
 		return;
 	}
 
+
 	Image frameCopy = ImageCopy(frame);
 	ImageFormat(&frameCopy, PIXELFORMAT_UNCOMPRESSED_R8G8B8);
 	ImageFlipVertical(&frameCopy);
@@ -274,16 +275,22 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture,
 			}
 		}
 
-		Image renderImage = LoadImageFromTexture(myParticlesTexture.texture);
+		RenderTexture2D screenshotTexture = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
+		BeginTextureMode(screenshotTexture);
+		ClearBackground(BLACK);
+		DrawTexture(myParticlesTexture.texture, 0, 0, WHITE);
+		EndTextureMode();
+
+		Image renderImage = LoadImageFromTexture(screenshotTexture.texture);
 
 		ImageFormat(&renderImage, PIXELFORMAT_UNCOMPRESSED_R8G8B8);
-		ImageFlipVertical(&renderImage);
 
 		std::string screenshotPath =
 			"Screenshots/Screenshot_" + std::to_string(nextAvailableIndex) + ".png";
 		ExportImage(renderImage, screenshotPath.c_str());
 
 		UnloadImage(renderImage);
+		UnloadRenderTexture(screenshotTexture);
 		screenshotIndex++;
 	}
 
@@ -453,14 +460,22 @@ bool ScreenCapture::screenGrab(RenderTexture2D& myParticlesTexture,
 			return false;
 		}
 
-		Image img = LoadImageFromTexture(myParticlesTexture.texture);
+		RenderTexture2D videoTexture = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
+		BeginTextureMode(videoTexture);
+		ClearBackground(BLACK);
+		DrawTexture(myParticlesTexture.texture, 0, 0, WHITE);
+		EndTextureMode();
+
+		Image img = LoadImageFromTexture(videoTexture.texture);
+
+		UnloadRenderTexture(videoTexture);
 
 		if (!img.data) {
 			printf("Error: Failed to load image from texture\n");
 			return isFunctionRecording;
 		}
 
-		ImageFlipVertical(&img);
+		//ImageFlipVertical(&img);
 
 		int w = img.width;
 		int h = img.height;

@@ -86,7 +86,7 @@ void Controls::showInfo(bool& fullscreen) {
 
         if (UI::buttonHelper("Soundtrack by HAVA", "Check their work!", placeHolder, linkButtonSize.x, linkButtonSize.y, enabled, enabled)) {
             fullscreen = false;
-            OpenURL("https://soundcloud.com/user-150017147");
+            OpenURL("https://open.spotify.com/artist/1vrrvzYvRY27SDZp7WsMwx");
         }
 
         ImGui::End();

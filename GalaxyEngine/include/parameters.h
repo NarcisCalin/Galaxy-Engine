@@ -71,7 +71,7 @@ struct UpdateVariables{
 	float halfDomainWidth = domainSize.x * 0.5f;
 	float halfDomainHeight = domainSize.y * 0.5f;
 
-	bool fullscreenState = true;
+	bool fullscreenState = false;
 
 	int targetFPS = 144;
 
