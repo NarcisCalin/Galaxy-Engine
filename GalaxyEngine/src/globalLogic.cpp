@@ -654,13 +654,12 @@ void fullscreenToggle(int& lastScreenWidth, int& lastScreenHeight,
 	if (myVar.fullscreenState != lastScreenState) {
 		int monitor = GetCurrentMonitor();
 
-		if (!IsWindowFullscreen())
-			SetWindowSize(GetMonitorWidth(monitor), GetMonitorHeight(monitor));
+		if (!IsWindowMaximized())
+			SetWindowSize(static_cast<float>(GetMonitorWidth(monitor)) * 0.5f, static_cast<float>(GetMonitorHeight(monitor)) * 0.5f);
 		else
-			SetWindowSize(myVar.screenWidth, myVar.screenHeight);
-
-		ToggleFullscreen();
-		wasFullscreen = IsWindowFullscreen();
+			SetWindowSize(static_cast<float>(GetMonitorWidth(monitor)) * 0.5f, static_cast<float>(GetMonitorHeight(monitor)) * 0.5f);
+		ToggleBorderlessWindowed();
+		wasFullscreen = IsWindowMaximized();;
 
 		UnloadRenderTexture(myParticlesTexture);
 		UnloadRenderTexture(myUITexture);

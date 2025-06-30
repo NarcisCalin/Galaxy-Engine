@@ -65,7 +65,7 @@ int main(int argc, char** argv) {
 
 	int lastScreenWidth = GetScreenWidth();
 	int lastScreenHeight = GetScreenHeight();
-	bool wasFullscreen = IsWindowFullscreen();
+	bool wasFullscreen = IsWindowMaximized();
 
 	bool lastScreenState = false;
 

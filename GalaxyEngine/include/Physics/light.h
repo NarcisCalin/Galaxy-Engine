@@ -8,25 +8,135 @@ struct Wall {
 	glm::vec2 vB;
 
 	glm::vec2 normal;
+	glm::vec2 normalVA;
+	glm::vec2 normalVB;
 
 	bool isBeingSpawned;
 	bool vAisBeingMoved;
 	bool vBisBeingMoved;
 
-	Color color;
+	Color baseColor;
+	Color specularColor;
+	float roughness;
+	float specular;
+	float IOR;
+
+	bool isShapeWall;
 
 	Wall() = default;
-	Wall(glm::vec2 vA, glm::vec2 vB, Color color) {
+	Wall(glm::vec2 vA, glm::vec2 vB, bool isShapeWall, Color baseColor, Color specularColor, float roughness, float specular, float IOR) {
 		this->vA = vA;
 		this->vB = vB;
+		this->isShapeWall = isShapeWall;
 		this->isBeingSpawned = true;
 		this->vAisBeingMoved = false;
 		this->vBisBeingMoved = false;
-		this->color = color;
+		this->baseColor = baseColor;
+		this->specularColor = specularColor;
+		this->roughness = roughness;
+		this->specular = specular;
+		this->IOR = IOR;
 	}
 
 	void drawWall() {
-		DrawLineV({ vA.x, vA.y }, { vB.x, vB.y }, color);
+		DrawLineV({ vA.x, vA.y }, { vB.x, vB.y }, baseColor);
+	}
+};
+
+struct Shape {
+
+	glm::vec2 center;
+	std::vector<Wall>& walls;
+	std::vector<size_t> myWallIndices;
+
+	/*enum class ShapeType {
+		Circle1,
+		Circle2,
+	};*/
+
+	Color baseColor;
+	Color specularColor;
+	float roughness;
+	float specular;
+	float IOR;
+
+	Shape(glm::vec2 center, std::vector<Wall>& walls, Color baseColor, Color specularColor, float roughness, float specular, float IOR) :
+		center(center),
+		walls(walls),
+		baseColor(baseColor),
+		specularColor(specularColor),
+		roughness(roughness),
+		specular(specular),
+		IOR(IOR) {
+
+		makeCircle();
+	}
+
+	void calculateWallsNormals() {
+
+		int n = myWallIndices.size();
+		if (n == 0) return;
+
+		for (int i = 0; i < n; ++i) {
+			Wall& w = walls[myWallIndices[i]];
+
+			if (!w.isShapeWall) {
+				continue;
+			}
+
+			glm::vec2 tangent = glm::normalize(w.vB - w.vA);
+			glm::vec2 normal = glm::vec2(-tangent.y, tangent.x);
+			w.normal = normal;
+		}
+
+		for (int i = 0; i < n; ++i) {
+			int prev = (i - 1 + n) % n;
+			int next = (i + 1) % n;
+
+			Wall& wPrev = walls[myWallIndices[prev]];
+			Wall& w = walls[myWallIndices[i]];
+			Wall& wNext = walls[myWallIndices[next]];
+
+			if (!wPrev.isShapeWall || !w.isShapeWall || !wNext.isShapeWall) {
+				continue;
+			}
+
+			w.normalVA = glm::normalize(wPrev.normal + w.normal);
+
+			w.normalVB = glm::normalize(w.normal + wNext.normal);
+		}
+	}
+
+	
+
+	void makeCircle() {
+
+		float radius = 30.0f;
+		int segments = 100;
+
+		std::vector<size_t> newWallIndices;
+
+		for (int i = 0; i < segments; ++i) {
+			float theta1 = (2.0f * PI * i) / segments;
+			float theta2 = (2.0f * PI * (i + 1)) / segments;
+
+			glm::vec2 vA = {
+				center.x + cos(theta1) * radius,
+				center.y + sin(theta1) * radius
+			};
+			glm::vec2 vB = {
+				center.x + cos(theta2) * radius,
+				center.y + sin(theta2) * radius
+			};
+
+			walls.emplace_back(vA, vB, true, baseColor, specularColor, roughness, specular, IOR);
+
+			newWallIndices.push_back(walls.size() - 1);
+		}
+
+		myWallIndices = std::move(newWallIndices);
+
+		calculateWallsNormals();
 	}
 };
 
@@ -47,6 +157,8 @@ struct LightRay {
 
 	Color color;
 
+	bool reflectSpecular;
+
 	LightRay() = default;
 	LightRay(glm::vec2 source, glm::vec2 dir, int bounceLevel, Color color) {
 		this->source = source;
@@ -55,6 +167,7 @@ struct LightRay {
 		this->hasHit = false;
 		this->bounceLevel = bounceLevel;
 		this->color = color;
+		this->reflectSpecular = true;
 	}
 
 	void drawRay() {
@@ -170,6 +283,8 @@ struct Lighting {
 
 	std::vector<Wall> walls;
 
+	std::vector<Shape> shapes;
+
 	std::vector<LightRay> rays;
 
 	std::vector<PointLight> pointLights;
@@ -183,26 +298,46 @@ struct Lighting {
 	int maxSamples = 2;
 	int currentSamples = 1;
 
+	bool isDiffuseEnabled = true;
+	bool isSpecularEnabled = true;
+
 	bool shouldPileRays = true;
 
 	const float lightBias = 0.1f;
 
-	Color globalColor = { 14, 14, 14, 9 };
+	Color lightColor = { 14, 14, 14, 9 };
 
-	Color wallColor = { 200, 200, 200, 255 };
+	Color wallBaseColor = { 200, 200, 200, 255 };
+	Color wallSpecularColor = { 255, 255, 255, 255 };
+
+	float wallRoughness = 0.5f;
+	float wallSpecular = 1.0f;
+	float wallIOR = 1.5f;
+	float airIOR = 1.0f;
+
+	void calculateWallNormal(Wall& wall) {
+		Wall& w = wall;
+		glm::vec2 tangent = glm::normalize(w.vB - w.vA);
+		glm::vec2 normal = glm::vec2(-tangent.y, tangent.x);
+		w.normal = normal;
+		w.normalVA = normal;
+		w.normalVB = normal;
+	}
 
 	void createWall(UpdateParameters& myParam) {
 
 		glm::vec2 mouseWorldPos = myParam.myCamera.mouseWorldPos;
 
 		if (IO::shortcutPress(KEY_V)) {
-			walls.emplace_back(mouseWorldPos, mouseWorldPos, wallColor);
+			walls.emplace_back(mouseWorldPos, mouseWorldPos, false, wallBaseColor, wallSpecularColor, wallRoughness, wallSpecular, wallIOR);
 			shouldPileRays = false;
 		}
 
 		if (IO::shortcutDown(KEY_V)) {
 			if (walls.back().isBeingSpawned) {
 				walls.back().vB = mouseWorldPos;
+
+				calculateWallNormal(walls.back());
 			}
 		}
 
@@ -220,12 +355,21 @@ struct Lighting {
 		}
 	}
 
+	void createShape(UpdateParameters& myParam) {
+
+		glm::vec2 mouseWorldPos = myParam.myCamera.mouseWorldPos;
+
+		if (IO::shortcutPress(KEY_SEVEN)) {
+			shapes.emplace_back(mouseWorldPos, walls, wallBaseColor, wallSpecularColor, wallRoughness, wallSpecular, wallIOR);
+		}
+	}
+
 	void createPointLight(UpdateParameters& myParam) {
 
 		glm::vec2 mouseWorldPos = myParam.myCamera.mouseWorldPos;
 
 		if (IO::shortcutPress(KEY_FIVE)) {
-			pointLights.emplace_back(mouseWorldPos, globalColor);
+			pointLights.emplace_back(mouseWorldPos, lightColor);
 
 			shouldPileRays = false;
 		}
@@ -240,7 +384,7 @@ struct Lighting {
 		glm::vec2 mouseWorldPos = myParam.myCamera.mouseWorldPos;
 
 		if (IO::shortcutPress(KEY_SIX)) {
-			areaLights.emplace_back(mouseWorldPos, mouseWorldPos, globalColor);
+			areaLights.emplace_back(mouseWorldPos, mouseWorldPos, lightColor);
 			shouldPileRays = false;
 		}
 
@@ -379,6 +523,12 @@ struct Lighting {
 				if (wall.vBisBeingMoved) {
 					wall.vB += scaledDelta;
 				}
+
+				calculateWallNormal(wall);
+			}
+
+			for (Shape& shape : shapes) {
+				shape.calculateWallsNormals();
 			}
 		}
 
@@ -432,15 +582,15 @@ struct Lighting {
 
 		if (hitWallIdx >= 0) {
 			Wall& w = walls[hitWallIdx];
-			glm::vec2 tangent = glm::normalize(w.vB - w.vA);
-			glm::vec2 normal = glm::vec2(-tangent.y, tangent.x);
-			if (glm::dot(normal, ray.dir) > 0.0f)
-				normal = -normal;
+			if (glm::dot(w.normal, ray.dir) > 0.0f) {
+				w.normal = -w.normal;
+				w.normalVA = -w.normalVA;
+				w.normalVB = -w.normalVB;
+			}
 			ray.hasHit = true;
 			ray.length = minLength;
 			ray.hitPoint = hitPt;
 			ray.wall = w;
-			ray.wall.normal = normal;
 		}
 	}
 
@@ -453,33 +603,89 @@ struct Lighting {
 		);
 	}
 
-	void globalIllumination(int& currentBounce, LightRay& ray, std::vector<LightRay>& copyRays, std::vector<Wall>& walls) {
-		if (ray.hasHit && ray.bounceLevel == currentBounce) {
+	// This controls diffuse lighting
+	void diffuseLighting(int& currentBounce, LightRay& ray, std::vector<LightRay>& copyRays, std::vector<Wall>& walls) {
 
-			float spreadMultiplier = 0.95f;
-			float maxSpreadAngle = glm::radians(90.0f * spreadMultiplier);
+		glm::vec2 wallVec = ray.wall.vB - ray.wall.vA;
+		float wallLength = glm::length(wallVec);
+		float t = glm::clamp(glm::dot(ray.hitPoint - ray.wall.vA, wallVec) / (wallLength * wallLength), 0.0f, 1.0f);
 
-			float randAngle = (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * 2.0f * maxSpreadAngle - maxSpreadAngle;
+		glm::vec2 interpolatedNormal = glm::normalize(glm::mix(ray.wall.normalVA, ray.wall.normalVB, t));
 
-			glm::vec2 rayDirection = rotateVec2(ray.wall.normal, randAngle);
+		float spreadMultiplier = 0.95f;
+		float maxSpreadAngle = glm::radians(90.0f * spreadMultiplier);
 
-			float absorptionInv = 0.92f;
+		float randAngle = (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * 2.0f * maxSpreadAngle - maxSpreadAngle;
 
-			Color newColor = {
-	static_cast<unsigned char>(ray.color.r * ray.wall.color.r / 255.0f * absorptionInv),
-	static_cast<unsigned char>(ray.color.g * ray.wall.color.g / 255.0f * absorptionInv),
-	static_cast<unsigned char>(ray.color.b * ray.wall.color.b / 255.0f * absorptionInv),
-	static_cast<unsigned char>(ray.color.a * absorptionInv)
-			};
+		glm::vec2 rayDirection = rotateVec2(interpolatedNormal, randAngle);
 
-			glm::vec2 newSource = ray.hitPoint + ray.wall.normal * lightBias;
+		float absorptionInv = 0.92f;
 
-			copyRays.emplace_back(newSource, rayDirection, ray.bounceLevel + 1, newColor);
+		Color newColor = {
+static_cast<unsigned char>(ray.color.r * ray.wall.baseColor.r / 255.0f * absorptionInv),
+static_cast<unsigned char>(ray.color.g * ray.wall.baseColor.g / 255.0f * absorptionInv),
+static_cast<unsigned char>(ray.color.b * ray.wall.baseColor.b / 255.0f * absorptionInv),
+static_cast<unsigned char>(ray.color.a * absorptionInv)
+		};
 
-			LightRay& newRay = copyRays.back();
+		glm::vec2 newSource = ray.hitPoint + interpolatedNormal * lightBias;
 
-			processRayIntersection(newRay);
+		copyRays.emplace_back(newSource, rayDirection, ray.bounceLevel + 1, newColor);
+
+		LightRay& newRay = copyRays.back();
+
+		processRayIntersection(newRay);
+	}
+
+	// This controls specular lighting, meaning reflections. It uses a roughness parameter to control how smooth a surface is
+	void specularReflection(int& currentBounce, LightRay& ray, std::vector<LightRay>& copyRays, std::vector<Wall>& walls) {
+
+		ray.reflectSpecular = true;
+
+		glm::vec2 wallVec = ray.wall.vB - ray.wall.vA;
+		float wallLength = glm::length(wallVec);
+		float t = glm::clamp(glm::dot(ray.hitPoint - ray.wall.vA, wallVec) / (wallLength * wallLength), 0.0f, 1.0f);
+
+		glm::vec2 interpolatedNormal = glm::normalize(glm::mix(ray.wall.normalVA, ray.wall.normalVB, t));
+
+		float r0 = ((airIOR - ray.wall.IOR) / (airIOR + ray.wall.IOR)) * ((airIOR - ray.wall.IOR) / (airIOR + ray.wall.IOR));
+
+		float cosThetaI = -glm::dot(ray.dir, interpolatedNormal);
+
+		cosThetaI = glm::clamp(cosThetaI, 0.0f, 1.0f);
+
+		float rTheta = r0 + (1 - r0) * std::pow(1 - cosThetaI, 5.0f);
+
+		if (getRandomFloat() > rTheta) {
+			ray.reflectSpecular = false;
+			return;
 		}
+
+		float roughness = ray.wall.roughness;
+		float maxSpreadAngle = glm::radians(90.0f * roughness);
+
+		float randAngle = (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * 2.0f * maxSpreadAngle - maxSpreadAngle;
+
+		glm::vec2 perfectReflection = ray.dir - 2.0f * glm::dot(ray.dir, interpolatedNormal) * interpolatedNormal;
+		glm::vec2 mixedReflection = glm::normalize(glm::mix(perfectReflection, interpolatedNormal, roughness));
+		glm::vec2 rayDirection = rotateVec2(mixedReflection, randAngle);
+
+		float absorptionInv = 0.92f * ray.wall.specular;
+
+		Color newColor = {
+static_cast<unsigned char>(ray.color.r * ray.wall.specularColor.r / 255.0f * absorptionInv),
+static_cast<unsigned char>(ray.color.g * ray.wall.specularColor.g / 255.0f * absorptionInv),
+static_cast<unsigned char>(ray.color.b * ray.wall.specularColor.b / 255.0f * absorptionInv),
+static_cast<unsigned char>(ray.color.a * absorptionInv)
+		};
+
+		glm::vec2 newSource = ray.hitPoint + interpolatedNormal * lightBias;
+
+		copyRays.emplace_back(newSource, rayDirection, ray.bounceLevel + 1, newColor);
+
+		LightRay& newRay = copyRays.back();
+
+		processRayIntersection(newRay);
 	}
 
 	void lightRendering(UpdateParameters& myParam) {
@@ -503,18 +709,23 @@ struct Lighting {
 			for (LightRay& ray : rays) {
 				processRayIntersection(ray);
 			}
-			if (maxBounces > 0) {
-				for (int bounce = 1; bounce <= maxBounces; bounce++) {
-					std::vector<LightRay> copyRays;
-					copyRays = rays;
-					for (size_t i = 0; i < copyRays.size(); i++) {
+			for (int bounce = 1; bounce <= maxBounces; bounce++) {
+				std::vector<LightRay> nextBounceRays;
 
-						LightRay& ray = copyRays[i];
-						globalIllumination(bounce, ray, copyRays, walls);
+				for (LightRay& ray : rays) {
+					if (ray.hasHit && ray.bounceLevel == bounce) {
+						if (isSpecularEnabled) {
+							specularReflection(bounce, ray, nextBounceRays, walls);
+						}
+						if ((isDiffuseEnabled && !ray.reflectSpecular) || !isSpecularEnabled) {
+							diffuseLighting(bounce, ray, nextBounceRays, walls);
+						}
 					}
-					rays = copyRays;
 				}
+
+				rays.insert(rays.end(), nextBounceRays.begin(), nextBounceRays.end());
 			}
+
 
 			currentSamples++;
 		}
@@ -531,13 +742,12 @@ struct Lighting {
 			currentSamples = 1;
 		}
 
-		//ImGui::SliderInt("LightIntensity", &globalColor.a, 0, 255);
-
 		//rays.emplace_back(glm::vec2{ 500.0f, 500.0f }, glm::vec2{ 1.0f, 0.0f }, 1, WHITE);
 
 		createPointLight(myParam);
 		createAreaLight(myParam);
 		createWall(myParam);
+		createShape(myParam);
 
 		movePointLights(myParam);
 		moveAreaLights(myParam);
@@ -550,6 +760,7 @@ struct Lighting {
 			pointLights.clear();
 			areaLights.clear();
 			walls.clear();
+			shapes.clear();
 		}
 	}
 };

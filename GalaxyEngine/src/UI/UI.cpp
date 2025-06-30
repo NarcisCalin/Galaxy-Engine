@@ -421,6 +421,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			ImGui::Text("Hold and drag V: Create wall");
 			ImGui::Text("Press 5: Create point light");
 			ImGui::Text("Hold and drag 6: Create area light");
+			ImGui::Text("Press 7: Create circle");
 
 			ImGui::Text("Be careful with these sliders,");
 			ImGui::Text("they can make the program run very slow.");
@@ -429,21 +430,52 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			ImGui::Separator();
 			ImGui::Spacing();
 
-			ImVec4 imguiWallColor = rlImGuiColors::Convert(lighting.wallColor);
+			ImVec4 imguiLightColor = rlImGuiColors::Convert(lighting.lightColor);
 
-			Color imguiWallColorRl;
+			Color imguiLightColorRl;
 
-			if (ImGui::ColorPicker4("WallColor", (float*)&imguiWallColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
-				imguiWallColorRl = rlImGuiColors::Convert(imguiWallColor);
-				lighting.wallColor.r = imguiWallColorRl.r;
-				lighting.wallColor.g = imguiWallColorRl.g;
-				lighting.wallColor.b = imguiWallColorRl.b;
-				lighting.wallColor.a = imguiWallColorRl.a;
+			if (ImGui::ColorPicker4("Light Color", (float*)&imguiLightColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
+				imguiLightColorRl = rlImGuiColors::Convert(imguiLightColor);
+				lighting.lightColor.r = imguiLightColorRl.r;
+				lighting.lightColor.g = imguiLightColorRl.g;
+				lighting.lightColor.b = imguiLightColorRl.b;
+				lighting.lightColor.a = imguiLightColorRl.a;
 			}
+
+			ImVec4 imguiWallBaseColor = rlImGuiColors::Convert(lighting.wallBaseColor);
+
+			Color imguiWallBaseColorRl;
+
+			if (ImGui::ColorPicker4("Wall Base Color", (float*)&imguiWallBaseColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
+				imguiWallBaseColorRl = rlImGuiColors::Convert(imguiWallBaseColor);
+				lighting.wallBaseColor.r = imguiWallBaseColorRl.r;
+				lighting.wallBaseColor.g = imguiWallBaseColorRl.g;
+				lighting.wallBaseColor.b = imguiWallBaseColorRl.b;
+				lighting.wallBaseColor.a = imguiWallBaseColorRl.a;
+			}
+
+			ImVec4 imguiWallSpecularColor = rlImGuiColors::Convert(lighting.wallSpecularColor);
+
+			Color imguiWallSpecularColorRl;
+
+			if (ImGui::ColorPicker4("Wall Specular Color", (float*)&imguiWallSpecularColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
+				imguiWallSpecularColorRl = rlImGuiColors::Convert(imguiWallSpecularColor);
+				lighting.wallSpecularColor.r = imguiWallSpecularColorRl.r;
+				lighting.wallSpecularColor.g = imguiWallSpecularColorRl.g;
+				lighting.wallSpecularColor.b = imguiWallSpecularColorRl.b;
+				lighting.wallSpecularColor.a = imguiWallSpecularColorRl.a;
+			}
+
+			sliderHelper("Wall Roughness", "Controls the roughness of the next wall drawn", lighting.wallRoughness, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Wall Specular", "Controls the specular strength of the next wall drawn", lighting.wallSpecular, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Wall IOR", "Controls the IOR of the next wall drawn", lighting.wallIOR, 0.0f, 100.0f, parametersSliderX, parametersSliderY, enabled);
 
 			sliderHelper("Max Samples", "Controls the total amount of lighting iterations", lighting.maxSamples, 1, 6, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Rays Per Sample", "Controls amount of rays emitted on each sample", lighting.sampleRaysAmount, 1, 80000, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Max Bounces", "Controls how many times rays can bounce", lighting.maxBounces, 0, 8, parametersSliderX, parametersSliderY, enabled);
+
+			buttonHelper("Global Illumination", "Enables global illumination", lighting.isDiffuseEnabled, - 1.0f, settingsButtonY, enabled, enabled);
+			buttonHelper("Specular Reflections", "Enables specular reflections", lighting.isSpecularEnabled, -1.0f, settingsButtonY, enabled, enabled);
 
 		}
 	}
