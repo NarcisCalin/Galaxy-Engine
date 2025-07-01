@@ -466,8 +466,23 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				lighting.wallSpecularColor.a = imguiWallSpecularColorRl.a;
 			}
 
-			sliderHelper("Wall Roughness", "Controls the roughness of the next wall drawn", lighting.wallRoughness, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Wall Specular", "Controls the specular strength of the next wall drawn", lighting.wallSpecular, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled);
+			ImVec4 imguiWallRefractionColor = rlImGuiColors::Convert(lighting.wallRefractionColor);
+
+			Color imguiWallRefractionColorRl;
+
+			if (ImGui::ColorPicker4("Wall Refraction Color", (float*)&imguiWallRefractionColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
+				imguiWallRefractionColorRl = rlImGuiColors::Convert(imguiWallRefractionColor);
+				lighting.wallRefractionColor.r = imguiWallRefractionColorRl.r;
+				lighting.wallRefractionColor.g = imguiWallRefractionColorRl.g;
+				lighting.wallRefractionColor.b = imguiWallRefractionColorRl.b;
+				lighting.wallRefractionColor.a = imguiWallRefractionColorRl.a;
+			}
+
+			sliderHelper("Wall Specular Roughness", "Controls the specular reflections roughness of the next wall drawn", lighting.wallSpecularRoughness, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Wall Refraction Roughness", "Controls the refraction surface roughness of the next wall drawn", lighting.wallRefractionRoughness, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled);
+
+			sliderHelper("Wall Refraction Amount", "Controls how much light the next wall will refract", lighting.wallRefractionAmount, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled);
+
 			sliderHelper("Wall IOR", "Controls the IOR of the next wall drawn", lighting.wallIOR, 0.0f, 100.0f, parametersSliderX, parametersSliderY, enabled);
 
 			sliderHelper("Max Samples", "Controls the total amount of lighting iterations", lighting.maxSamples, 1, 6, parametersSliderX, parametersSliderY, enabled);
@@ -476,6 +491,9 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 			buttonHelper("Global Illumination", "Enables global illumination", lighting.isDiffuseEnabled, - 1.0f, settingsButtonY, enabled, enabled);
 			buttonHelper("Specular Reflections", "Enables specular reflections", lighting.isSpecularEnabled, -1.0f, settingsButtonY, enabled, enabled);
+			buttonHelper("Refraction", "Enables refractions", lighting.isRefractionEnabled, -1.0f, settingsButtonY, enabled, enabled);
+
+			buttonHelper("Show Normals", "Displays the direction a wall is pointing at, also know as the normal", lighting.drawNormals, -1.0f, settingsButtonY, enabled, enabled);
 
 		}
 	}

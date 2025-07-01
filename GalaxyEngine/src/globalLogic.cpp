@@ -11,6 +11,7 @@ GESound geSound;
 Lighting lighting;
 
 uint32_t globalId = 0;
+uint32_t globalShapeId = 1;
 
 std::unordered_map<unsigned int, uint64_t> NeighborSearch::idToIndex;
 

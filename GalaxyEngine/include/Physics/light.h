@@ -17,24 +17,42 @@ struct Wall {
 
 	Color baseColor;
 	Color specularColor;
-	float roughness;
-	float specular;
+	Color refractionColor;
+
+	float baseColorVal;
+	float specularColorVal;
+	float refractionColorVal;
+
+	float specularRoughness;
+	float refractionRoughness;
+	float refractionAmount;
 	float IOR;
 
 	bool isShapeWall;
+	uint32_t shapeId;
 
 	Wall() = default;
-	Wall(glm::vec2 vA, glm::vec2 vB, bool isShapeWall, Color baseColor, Color specularColor, float roughness, float specular, float IOR) {
+	Wall(glm::vec2 vA, glm::vec2 vB, bool isShapeWall, Color baseColor, Color specularColor, Color refractionColor, 
+		float specularRoughness, float refractionRoughness, float refractionAmount, float IOR) {
+
 		this->vA = vA;
 		this->vB = vB;
 		this->isShapeWall = isShapeWall;
+		this->shapeId = 0;
 		this->isBeingSpawned = true;
 		this->vAisBeingMoved = false;
 		this->vBisBeingMoved = false;
 		this->baseColor = baseColor;
 		this->specularColor = specularColor;
-		this->roughness = roughness;
-		this->specular = specular;
+		this->refractionColor = refractionColor;
+
+		this->baseColorVal = std::max({ baseColor.r, baseColor.g, baseColor.b }) * (baseColor.a / 255.0f) / 255.0f;
+		this->specularColorVal = std::max({ specularColor.r, specularColor.g, specularColor.b }) * (specularColor.a / 255.0f) / 255.0f;
+		this->refractionColorVal = std::max({refractionColor.r, refractionColor.g, refractionColor.b}) * (refractionColor.a / 255.0f) / 255.0f;
+
+		this->specularRoughness = specularRoughness;
+		this->refractionRoughness = refractionRoughness;
+		this->refractionAmount = refractionAmount;
 		this->IOR = IOR;
 	}
 
@@ -43,11 +61,15 @@ struct Wall {
 	}
 };
 
+extern uint32_t globalShapeId;
+
 struct Shape {
 
 	glm::vec2 center;
 	std::vector<Wall>& walls;
 	std::vector<size_t> myWallIndices;
+
+	std::vector<glm::vec2> polygonVerts;
 
 	/*enum class ShapeType {
 		Circle1,
@@ -56,26 +78,58 @@ struct Shape {
 
 	Color baseColor;
 	Color specularColor;
-	float roughness;
-	float specular;
+	Color refractionColor;
+
+	float specularRoughness;
+	float refractionRoughness;
+
+	float refractionAmount;
+
 	float IOR;
 
-	Shape(glm::vec2 center, std::vector<Wall>& walls, Color baseColor, Color specularColor, float roughness, float specular, float IOR) :
+	uint32_t id;
+
+	Shape(glm::vec2 center, std::vector<Wall>& walls, Color baseColor, Color specularColor, Color refractionColor, 
+		float specularRoughness, float refractionRoughness, float refractionAmount, float IOR) :
+
 		center(center),
 		walls(walls),
 		baseColor(baseColor),
 		specularColor(specularColor),
-		roughness(roughness),
-		specular(specular),
-		IOR(IOR) {
+		refractionColor(refractionColor),
+		specularRoughness(specularRoughness),
+		refractionRoughness(refractionRoughness),
+		refractionAmount(refractionAmount),
+		IOR(IOR),
+	    id(globalShapeId++) {
 
 		makeCircle();
+	}
+
+	float getSignedArea(const std::vector<glm::vec2>& vertices) {
+		float area = 0.0f;
+		int n = vertices.size();
+
+		for (int i = 0; i < n; ++i) {
+			const glm::vec2& current = vertices[i];
+			const glm::vec2& next = vertices[(i + 1) % n];
+			area += (current.x * next.y - next.x * current.y);
+		}
+
+		return 0.5f * area;
 	}
 
 	void calculateWallsNormals() {
 
 		int n = myWallIndices.size();
 		if (n == 0) return;
+
+		for (int i = 0; i < myWallIndices.size(); ++i) {
+			Wall& w = walls[myWallIndices[i]];
+			polygonVerts.push_back(w.vA);
+		}
+
+		bool flipNormals = getSignedArea(polygonVerts) > 0.0f;
 
 		for (int i = 0; i < n; ++i) {
 			Wall& w = walls[myWallIndices[i]];
@@ -85,7 +139,8 @@ struct Shape {
 			}
 
 			glm::vec2 tangent = glm::normalize(w.vB - w.vA);
-			glm::vec2 normal = glm::vec2(-tangent.y, tangent.x);
+			glm::vec2 normal = flipNormals ? glm::vec2(tangent.y, -tangent.x) : glm::vec2(-tangent.y, tangent.x);
+
 			w.normal = normal;
 		}
 
@@ -129,7 +184,9 @@ struct Shape {
 				center.y + sin(theta2) * radius
 			};
 
-			walls.emplace_back(vA, vB, true, baseColor, specularColor, roughness, specular, IOR);
+			walls.emplace_back(vA, vB, true, baseColor, specularColor, refractionColor, specularRoughness, refractionRoughness, refractionAmount, IOR);
+
+			walls.back().shapeId = id;
 
 			newWallIndices.push_back(walls.size() - 1);
 		}
@@ -158,6 +215,11 @@ struct LightRay {
 	Color color;
 
 	bool reflectSpecular;
+	bool refracted;
+
+	float prevMediumIOR;
+
+	int enterMediumCount;
 
 	LightRay() = default;
 	LightRay(glm::vec2 source, glm::vec2 dir, int bounceLevel, Color color) {
@@ -167,7 +229,10 @@ struct LightRay {
 		this->hasHit = false;
 		this->bounceLevel = bounceLevel;
 		this->color = color;
-		this->reflectSpecular = true;
+		this->reflectSpecular = false;
+		this->refracted = false;
+		this->prevMediumIOR = 1.0f;
+		this->enterMediumCount = 0;
 	}
 
 	void drawRay() {
@@ -295,23 +360,28 @@ struct Lighting {
 
 	int sampleRaysAmount = 60000;
 	int maxBounces = 3;
-	int maxSamples = 2;
+	int maxSamples = 1;
 	int currentSamples = 1;
 
 	bool isDiffuseEnabled = true;
 	bool isSpecularEnabled = true;
+	bool isRefractionEnabled = true;
 
 	bool shouldPileRays = true;
 
+	bool drawNormals = false;
+
 	const float lightBias = 0.1f;
 
-	Color lightColor = { 14, 14, 14, 9 };
+	Color lightColor = { 30, 30, 30, 10 };
 
 	Color wallBaseColor = { 200, 200, 200, 255 };
 	Color wallSpecularColor = { 255, 255, 255, 255 };
+	Color wallRefractionColor = { 255, 255, 255, 255 };
 
-	float wallRoughness = 0.5f;
-	float wallSpecular = 1.0f;
+	float wallSpecularRoughness = 0.5f;
+	float wallRefractionRoughness = 0.0f; // This controls the roughness of the refraction surface. I separate it for extra control, like V-Ray renderer
+	float wallRefractionAmount = 0.0f;
 	float wallIOR = 1.5f;
 	float airIOR = 1.0f;
 
@@ -329,7 +399,8 @@ struct Lighting {
 		glm::vec2 mouseWorldPos = myParam.myCamera.mouseWorldPos;
 
 		if (IO::shortcutPress(KEY_V)) {
-			walls.emplace_back(mouseWorldPos, mouseWorldPos, false, wallBaseColor, wallSpecularColor, wallRoughness, wallSpecular, wallIOR);
+			walls.emplace_back(mouseWorldPos, mouseWorldPos, false, wallBaseColor, wallSpecularColor, wallRefractionColor, 
+				wallSpecularRoughness, wallRefractionRoughness, wallRefractionAmount, wallIOR);
 			shouldPileRays = false;
 		}
 
@@ -360,7 +431,8 @@ struct Lighting {
 		glm::vec2 mouseWorldPos = myParam.myCamera.mouseWorldPos;
 
 		if (IO::shortcutPress(KEY_SEVEN)) {
-			shapes.emplace_back(mouseWorldPos, walls, wallBaseColor, wallSpecularColor, wallRoughness, wallSpecular, wallIOR);
+			shapes.emplace_back(mouseWorldPos, walls, wallBaseColor, wallSpecularColor, wallRefractionColor, 
+				wallSpecularRoughness, wallRefractionRoughness, wallRefractionAmount, wallIOR);
 		}
 	}
 
@@ -582,11 +654,6 @@ struct Lighting {
 
 		if (hitWallIdx >= 0) {
 			Wall& w = walls[hitWallIdx];
-			if (glm::dot(w.normal, ray.dir) > 0.0f) {
-				w.normal = -w.normal;
-				w.normalVA = -w.normalVA;
-				w.normalVB = -w.normalVB;
-			}
 			ray.hasHit = true;
 			ray.length = minLength;
 			ray.hitPoint = hitPt;
@@ -603,6 +670,146 @@ struct Lighting {
 		);
 	}
 
+	// This controls specular lighting, meaning reflections. It uses a roughness parameter to control how smooth a surface is
+	void specularReflection(int& currentBounce, LightRay& ray, std::vector<LightRay>& copyRays, std::vector<Wall>& walls) {
+
+		ray.reflectSpecular = true;
+
+		glm::vec2 wallVec = ray.wall.vB - ray.wall.vA;
+		float wallLength = glm::length(wallVec);
+		float t = glm::clamp(glm::dot(ray.hitPoint - ray.wall.vA, wallVec) / (wallLength * wallLength), 0.0f, 1.0f);
+
+		glm::vec2 interpolatedNormal = glm::normalize(glm::mix(ray.wall.normalVA, ray.wall.normalVB, t));
+
+		if (glm::dot(ray.wall.normal, ray.dir) > 0.0f) {
+			interpolatedNormal = -interpolatedNormal;
+		}
+
+		float r0 = ((airIOR - ray.wall.IOR) / (airIOR + ray.wall.IOR)) * ((airIOR - ray.wall.IOR) / (airIOR + ray.wall.IOR));
+
+		float cosThetaI = -glm::dot(ray.dir, interpolatedNormal);
+
+		cosThetaI = glm::clamp(cosThetaI, 0.0f, 1.0f);
+
+		float rTheta = r0 + (1 - r0) * std::pow(1 - cosThetaI, 5.0f);
+
+		if (getRandomFloat() > rTheta) {
+			ray.reflectSpecular = false;
+			return;
+		}
+
+		float roughness = ray.wall.specularRoughness;
+		float maxSpreadAngle = glm::radians(90.0f * roughness);
+
+		float randAngle = (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * 2.0f * maxSpreadAngle - maxSpreadAngle;
+
+		glm::vec2 perfectReflection = ray.dir - 2.0f * glm::dot(ray.dir, interpolatedNormal) * interpolatedNormal;
+		glm::vec2 mixedReflection = glm::normalize(glm::mix(perfectReflection, interpolatedNormal, roughness));
+		glm::vec2 rayDirection = rotateVec2(mixedReflection, randAngle);
+
+		float absorptionInv = 0.92f;
+
+		Color newColor = {
+static_cast<unsigned char>(ray.color.r * ray.wall.specularColor.r / 255.0f * absorptionInv),
+static_cast<unsigned char>(ray.color.g * ray.wall.specularColor.g / 255.0f * absorptionInv),
+static_cast<unsigned char>(ray.color.b * ray.wall.specularColor.b / 255.0f * absorptionInv),
+static_cast<unsigned char>(ray.color.a * absorptionInv)
+		};
+
+		glm::vec2 newSource = ray.hitPoint + interpolatedNormal * lightBias;
+
+		copyRays.emplace_back(newSource, rayDirection, ray.bounceLevel + 1, newColor);
+
+		LightRay& newRay = copyRays.back();
+
+		processRayIntersection(newRay);
+	}
+
+	// This controls refraction
+	void refraction(int& currentBounce, LightRay& ray, std::vector<LightRay>& copyRays, std::vector<Wall>& walls) {
+		ray.refracted = true;
+
+		glm::vec2 wallVec = ray.wall.vB - ray.wall.vA;
+		float wallLength = glm::length(wallVec);
+		float t = glm::clamp(glm::dot(ray.hitPoint - ray.wall.vA, wallVec) / (wallLength * wallLength), 0.0f, 1.0f);
+		glm::vec2 interpolatedNormal = glm::normalize(glm::mix(ray.wall.normalVA, ray.wall.normalVB, t));
+
+		float n1, n2;
+		bool entering;
+
+		if (!ray.wall.isShapeWall) {
+			entering = glm::dot(interpolatedNormal, ray.dir) < 0.0f;
+			if (!entering) {
+				interpolatedNormal = -interpolatedNormal;
+			}
+
+			n1 = (ray.enterMediumCount == 0) ? 1.0f : ray.prevMediumIOR;
+			n2 = ray.wall.IOR;
+		}
+		else {
+			entering = glm::dot(ray.wall.normal, ray.dir) < 0.0f;
+
+			if (entering) {
+				n1 = (ray.enterMediumCount == 0) ? 1.0f : ray.prevMediumIOR;
+				n2 = ray.wall.IOR;
+			}
+			else {
+				n1 = ray.wall.IOR;
+				n2 = (ray.enterMediumCount == 1) ? 1.0f : ray.prevMediumIOR;
+				interpolatedNormal = -interpolatedNormal;
+			}
+		}
+
+		float eta = n1 / n2;
+		float cosThetaI = -glm::dot(ray.dir, interpolatedNormal);
+		float sin2ThetaT = eta * eta * (1.0f - cosThetaI * cosThetaI);
+
+		if (sin2ThetaT > 1.0f || getRandomFloat() > ray.wall.refractionAmount) {
+			ray.refracted = false;
+			if (isSpecularEnabled) {
+				specularReflection(currentBounce, ray, copyRays, walls);
+			}
+			return;
+		}
+
+		float cosThetaT = sqrtf(1.0f - sin2ThetaT);
+		glm::vec2 refractedDir = eta * ray.dir + (eta * cosThetaI - cosThetaT) * interpolatedNormal;
+		refractedDir = glm::normalize(refractedDir);
+
+		float roughness = ray.wall.refractionRoughness;
+		float maxSpreadAngle = glm::radians(90.0f * roughness);
+		float randAngle = (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * 2.0f * maxSpreadAngle - maxSpreadAngle;
+		refractedDir = rotateVec2(refractedDir, randAngle);
+
+		Color newColor = {
+			static_cast<unsigned char>(ray.color.r * ray.wall.refractionColor.r / 255.0f * 0.92f),
+			static_cast<unsigned char>(ray.color.g * ray.wall.refractionColor.g / 255.0f * 0.92f),
+			static_cast<unsigned char>(ray.color.b * ray.wall.refractionColor.b / 255.0f * 0.92f),
+			static_cast<unsigned char>(ray.color.a * 0.92f)
+		};
+
+		glm::vec2 newSource = ray.hitPoint - interpolatedNormal * lightBias;
+		copyRays.emplace_back(newSource, refractedDir, ray.bounceLevel + 1, newColor);
+
+		LightRay& newRay = copyRays.back();
+		if (!ray.wall.isShapeWall) {
+			newRay.enterMediumCount = ray.enterMediumCount;
+			newRay.prevMediumIOR = ray.prevMediumIOR;
+		}
+		else {
+			if (entering) {
+				newRay.enterMediumCount = ray.enterMediumCount + 1;
+				newRay.prevMediumIOR = ray.wall.IOR;
+			}
+			else {
+				newRay.enterMediumCount = std::max(ray.enterMediumCount - 1, 0);
+				newRay.prevMediumIOR = (newRay.enterMediumCount == 0) ? 1.0f : ray.prevMediumIOR;
+			}
+		}
+
+		processRayIntersection(newRay);
+	}
+
 	// This controls diffuse lighting
 	void diffuseLighting(int& currentBounce, LightRay& ray, std::vector<LightRay>& copyRays, std::vector<Wall>& walls) {
 
@@ -611,6 +818,10 @@ struct Lighting {
 		float t = glm::clamp(glm::dot(ray.hitPoint - ray.wall.vA, wallVec) / (wallLength * wallLength), 0.0f, 1.0f);
 
 		glm::vec2 interpolatedNormal = glm::normalize(glm::mix(ray.wall.normalVA, ray.wall.normalVB, t));
+
+		if (glm::dot(ray.wall.normal, ray.dir) > 0.0f) {
+			interpolatedNormal = -interpolatedNormal;
+		}
 
 		float spreadMultiplier = 0.95f;
 		float maxSpreadAngle = glm::radians(90.0f * spreadMultiplier);
@@ -637,63 +848,19 @@ static_cast<unsigned char>(ray.color.a * absorptionInv)
 		processRayIntersection(newRay);
 	}
 
-	// This controls specular lighting, meaning reflections. It uses a roughness parameter to control how smooth a surface is
-	void specularReflection(int& currentBounce, LightRay& ray, std::vector<LightRay>& copyRays, std::vector<Wall>& walls) {
-
-		ray.reflectSpecular = true;
-
-		glm::vec2 wallVec = ray.wall.vB - ray.wall.vA;
-		float wallLength = glm::length(wallVec);
-		float t = glm::clamp(glm::dot(ray.hitPoint - ray.wall.vA, wallVec) / (wallLength * wallLength), 0.0f, 1.0f);
-
-		glm::vec2 interpolatedNormal = glm::normalize(glm::mix(ray.wall.normalVA, ray.wall.normalVB, t));
-
-		float r0 = ((airIOR - ray.wall.IOR) / (airIOR + ray.wall.IOR)) * ((airIOR - ray.wall.IOR) / (airIOR + ray.wall.IOR));
-
-		float cosThetaI = -glm::dot(ray.dir, interpolatedNormal);
-
-		cosThetaI = glm::clamp(cosThetaI, 0.0f, 1.0f);
-
-		float rTheta = r0 + (1 - r0) * std::pow(1 - cosThetaI, 5.0f);
-
-		if (getRandomFloat() > rTheta) {
-			ray.reflectSpecular = false;
-			return;
-		}
-
-		float roughness = ray.wall.roughness;
-		float maxSpreadAngle = glm::radians(90.0f * roughness);
-
-		float randAngle = (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * 2.0f * maxSpreadAngle - maxSpreadAngle;
-
-		glm::vec2 perfectReflection = ray.dir - 2.0f * glm::dot(ray.dir, interpolatedNormal) * interpolatedNormal;
-		glm::vec2 mixedReflection = glm::normalize(glm::mix(perfectReflection, interpolatedNormal, roughness));
-		glm::vec2 rayDirection = rotateVec2(mixedReflection, randAngle);
-
-		float absorptionInv = 0.92f * ray.wall.specular;
-
-		Color newColor = {
-static_cast<unsigned char>(ray.color.r * ray.wall.specularColor.r / 255.0f * absorptionInv),
-static_cast<unsigned char>(ray.color.g * ray.wall.specularColor.g / 255.0f * absorptionInv),
-static_cast<unsigned char>(ray.color.b * ray.wall.specularColor.b / 255.0f * absorptionInv),
-static_cast<unsigned char>(ray.color.a * absorptionInv)
-		};
-
-		glm::vec2 newSource = ray.hitPoint + interpolatedNormal * lightBias;
-
-		copyRays.emplace_back(newSource, rayDirection, ray.bounceLevel + 1, newColor);
-
-		LightRay& newRay = copyRays.back();
-
-		processRayIntersection(newRay);
-	}
-
 	void lightRendering(UpdateParameters& myParam) {
 
 		glm::vec2 mouseWorldPos = myParam.myCamera.mouseWorldPos;
 
 		for (Wall& wall : walls) {
 			wall.drawWall();
+
+			if (drawNormals) {
+				DrawLineV({ wall.vA.x, wall.vA.y }, { wall.vA.x + wall.normalVA.x * 10.0f, wall.vA.y + wall.normalVA.y * 10.0f }, RED);
+				DrawLineV({ wall.vB.x, wall.vB.y }, { wall.vB.x + wall.normalVB.x * 10.0f, wall.vB.y + wall.normalVB.y * 10.0f }, RED);
+				DrawLineV({ (wall.vA.x + wall.vB.x) * 0.5f, (wall.vA.y + wall.vB.y) * 0.5f },
+					{ (wall.vA.x + wall.vB.x) * 0.5f + wall.normal.x * 10.0f, (wall.vA.y + wall.vB.y) * 0.5f + wall.normal.y * 10.0f }, RED);
+			}
 		}
 
 		if (currentSamples <= maxSamples) {
@@ -714,10 +881,14 @@ static_cast<unsigned char>(ray.color.a * absorptionInv)
 
 				for (LightRay& ray : rays) {
 					if (ray.hasHit && ray.bounceLevel == bounce) {
-						if (isSpecularEnabled) {
+
+						if (isSpecularEnabled && ray.wall.specularColorVal > 0.0f) {
 							specularReflection(bounce, ray, nextBounceRays, walls);
 						}
-						if ((isDiffuseEnabled && !ray.reflectSpecular) || !isSpecularEnabled) {
+						if ((isRefractionEnabled && !ray.reflectSpecular && ray.wall.refractionColorVal > 0.0f)) {
+							refraction(bounce, ray, nextBounceRays, walls);
+						}
+						if ((isDiffuseEnabled && !ray.reflectSpecular && !ray.refracted)) {
 							diffuseLighting(bounce, ray, nextBounceRays, walls);
 						}
 					}
