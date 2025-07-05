@@ -417,11 +417,19 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			bool enabled = true;
 
 			ImGui::Text("Galaxy Engine 1.7.0 - Lighting Beta");
-			ImGui::Text("Beta placeholder controls:");
+			ImGui::Text("Beta placeholder controls (Will change");
+			ImGui::Text("in the final version):");
 			ImGui::Text("Hold and drag V: Create wall");
 			ImGui::Text("Press 5: Create point light");
 			ImGui::Text("Hold and drag 6: Create area light");
 			ImGui::Text("Press 7: Create circle");
+			ImGui::Text("Hold and drag 8: Draw shape");
+			ImGui::Text("Hold and drag 9: Make Lens");
+			ImGui::Text("Hold and drag 0: Move shape helper");
+			ImGui::Text("Hold and drag 0 + RSHIFT: Move both lens sides");
+			ImGui::Text("Hold and drag M: Move walls and lights");
+
+			ImGui::Text("");
 
 			ImGui::Text("Be careful with these sliders,");
 			ImGui::Text("they can make the program run very slow.");
@@ -492,6 +500,8 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			buttonHelper("Global Illumination", "Enables global illumination", lighting.isDiffuseEnabled, - 1.0f, settingsButtonY, enabled, enabled);
 			buttonHelper("Specular Reflections", "Enables specular reflections", lighting.isSpecularEnabled, -1.0f, settingsButtonY, enabled, enabled);
 			buttonHelper("Refraction", "Enables refractions", lighting.isRefractionEnabled, -1.0f, settingsButtonY, enabled, enabled);
+
+			buttonHelper("Symmetrical Lens", "Makes both sides of the next lens editable", lighting.symmetricalLens, -1.0f, settingsButtonY, enabled, enabled);
 
 			buttonHelper("Show Normals", "Displays the direction a wall is pointing at, also know as the normal", lighting.drawNormals, -1.0f, settingsButtonY, enabled, enabled);
 
