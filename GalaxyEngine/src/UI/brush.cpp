@@ -632,9 +632,9 @@ void Brush::drawBrush(glm::vec2 mouseWorldPos) {
 	DrawCircleLinesV({ mouseWorldPos.x, mouseWorldPos.y }, brushRadius, WHITE);
 }
 
-void Brush::eraseBrush(UpdateParameters& myParam) {
+void Brush::eraseBrush(UpdateVariables& myVar, UpdateParameters& myParam) {
 
-	if (IO::shortcutDown(KEY_X) && IsMouseButtonDown(2)) {
+	if ((IO::shortcutDown(KEY_X) && IO::mouseDown(2)) || IO::mouseDown(0) && myVar.toolErase) {
 		for (size_t i = 0; i < myParam.pParticles.size();) {
 			glm::vec2 distanceFromBrush = {
 				myParam.pParticles[i].pos.x - myParam.myCamera.mouseWorldPos.x,
@@ -660,7 +660,7 @@ void Brush::eraseBrush(UpdateParameters& myParam) {
 
 void Brush::particlesAttractor(UpdateVariables& myVar, UpdateParameters& myParam) {
 
-	if (IO::shortcutDown(KEY_B)) {
+	if (IO::shortcutDown(KEY_B) || (IO::mouseDown(0) && myVar.toolRadialForce)) {
 
 		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 			float dx = myParam.pParticles[i].pos.x - myParam.myCamera.mouseWorldPos.x;
@@ -706,7 +706,7 @@ void Brush::particlesAttractor(UpdateVariables& myVar, UpdateParameters& myParam
 
 void Brush::particlesSpinner(UpdateVariables& myVar, UpdateParameters& myParam) {
 
-	if (IO::shortcutDown(KEY_N)) {
+	if (IO::shortcutDown(KEY_N) || (IO::mouseDown(0) && myVar.toolSpin)) {
 		for (auto& pParticle : myParam.pParticles) {
 			glm::vec2 distanceFromBrush = { pParticle.pos.x - myParam.myCamera.mouseWorldPos.x, pParticle.pos.y - myParam.myCamera.mouseWorldPos.y };
 			float distance = sqrt(distanceFromBrush.x * distanceFromBrush.x + distanceFromBrush.y * distanceFromBrush.y);
@@ -731,14 +731,14 @@ void Brush::particlesSpinner(UpdateVariables& myVar, UpdateParameters& myParam) 
 
 }
 
-void Brush::particlesGrabber(UpdateParameters& myParam) {
+void Brush::particlesGrabber(UpdateVariables& myVar, UpdateParameters& myParam) {
 
 	glm::vec2 mouseDelta = glm::vec2(GetMouseDelta().x, GetMouseDelta().y);
 	glm::vec2 scaledDelta = mouseDelta * (1.0f / myParam.myCamera.camera.zoom);
 
 	lastMouseVelocity = scaledDelta;
 
-	if (IO::shortcutPress(KEY_M)) {
+	if (IO::shortcutPress(KEY_M) || (IO::mousePress(0) && myVar.toolMove)) {
 		dragging = true;
 
 		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
@@ -766,7 +766,7 @@ void Brush::particlesGrabber(UpdateParameters& myParam) {
 		}
 	}
 
-	if (IO::shortcutReleased(KEY_M)) {
+	if (IO::shortcutReleased(KEY_M) || (IO::mouseReleased(0) && myVar.toolMove)) {
 
 		float impulseFactor = 5.0f;
 		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
@@ -783,22 +783,22 @@ void Brush::particlesGrabber(UpdateParameters& myParam) {
 	}
 }
 
-void Brush::temperatureBrush(UpdateParameters& myParam) {
+void Brush::temperatureBrush(UpdateVariables& myVar, UpdateParameters& myParam) {
 
-	if (IO::shortcutDown(KEY_K) || IO::shortcutDown(KEY_L)) {
+	if (IO::shortcutDown(KEY_K) || IO::shortcutDown(KEY_L) || (IO::mouseDown(0) && myVar.toolRaiseTemp) || (IO::mouseDown(0) && myVar.toolLowerTemp)) {
 		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 			glm::vec2 distanceFromBrush = { myParam.pParticles[i].pos - myParam.myCamera.mouseWorldPos };
 
 			float distance = sqrt(distanceFromBrush.x * distanceFromBrush.x +
 				distanceFromBrush.y * distanceFromBrush.y);
 
-			if(IO::shortcutDown(KEY_K)){
+			if(IO::shortcutDown(KEY_K) || (IO::mouseDown(0) && myVar.toolRaiseTemp)){
 				if (distance < brushRadius) {
 					myParam.pParticles[i].temp += 40.0f;
 				}
 			}
 
-			if (IO::shortcutDown(KEY_L)) {
+			if (IO::shortcutDown(KEY_L) || (IO::mouseDown(0) && myVar.toolLowerTemp)) {
 				if (distance < brushRadius && myParam.pParticles[i].temp > 1.0f) {
 					myParam.pParticles[i].temp -= 40.0f;
 				}

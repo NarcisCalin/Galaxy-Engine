@@ -9,13 +9,14 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 
 	if (myVar.isMouseNotHoveringUI && isSpawningAllowed) {
 
-		Slingshot slingshot = slingshot.particleSlingshot(myVar.isDragging, myParam.myCamera);
+		Slingshot slingshot = slingshot.particleSlingshot(myVar, myParam.myCamera);
 
 		if (myVar.isDragging && enablePathPrediction && quadtree != nullptr) {
 			predictTrajectory(myParam.pParticles, myParam.myCamera, physics, quadtree, myVar, slingshot);
 		}
 
-		if (IsMouseButtonReleased(0) && !IsKeyDown(KEY_LEFT_CONTROL) && !IsKeyDown(KEY_LEFT_ALT) && myVar.isDragging) {
+		if (IO::mouseReleased(0) && myVar.toolSpawnHeavyParticle && !IO::shortcutDown(KEY_LEFT_CONTROL) && !IO::shortcutDown(KEY_LEFT_ALT) && myVar.isDragging) {
+			
 			myParam.pParticles.emplace_back(
 				myParam.myCamera.mouseWorldPos,
 				slingshot.norm * slingshot.length,
@@ -47,7 +48,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 			myVar.constraintAfterDrawingFlag = false;
 		}
 
-		if (IsMouseButtonDown(2) && !IsKeyDown(KEY_LEFT_CONTROL) && !IsKeyDown(KEY_LEFT_ALT) && !IsKeyDown(KEY_X)) {
+		if ((IO::mouseDown(2) || (IO::mouseDown(0) && myVar.toolDrawParticles)) && !IO::shortcutDown(KEY_LEFT_CONTROL) && !IO::shortcutDown(KEY_LEFT_ALT) && !IO::shortcutDown(KEY_X)) {
 			myVar.isBrushDrawing = true;
 
 			myParam.brush.brushLogic(myParam, myVar.isSPHEnabled, myVar.constraintAfterDrawing);
@@ -101,7 +102,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 		}
 
 
-		if (IO::shortcutReleased(KEY_ONE) && myVar.isDragging) {
+		if ((IO::shortcutReleased(KEY_ONE) || IO::mouseReleased(0) && myVar.toolSpawnBigGalaxy) && myVar.isDragging) {
 
 			// VISIBLE MATTER
 
@@ -228,7 +229,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 			myVar.isDragging = false;
 		}
 
-		if (IO::shortcutReleased(KEY_TWO) && myVar.isDragging) {
+		if ((IO::shortcutReleased(KEY_TWO) || IO::mouseReleased(0) && myVar.toolSpawnSmallGalaxy) && myVar.isDragging) {
 
 			// VISIBLE MATTER
 
@@ -352,7 +353,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 			myVar.isDragging = false;
 		}
 
-		if (IO::shortcutReleased(KEY_THREE)) {
+		if ((IO::shortcutReleased(KEY_THREE) || IO::mouseReleased(0) && myVar.toolSpawnStar)) {
 
 			for (int i = 0; i < static_cast<int>(10000 * particleAmountMultiplier); i++) {
 
@@ -403,7 +404,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 			myVar.isDragging = false;
 		}
 
-		if (IO::shortcutPress(KEY_FOUR)) {
+		if ((IO::shortcutPress(KEY_FOUR) || IO::mouseReleased(0) && myVar.toolSpawnBigBang)) {
 
 			// VISIBLE MATTER
 
@@ -521,7 +522,6 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 					);
 				}
 			}
-
 		}
 	}
 	else {
@@ -532,6 +532,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 
 	if (IsMouseButtonReleased(0)) {
 		isSpawningAllowed = true;
+		myVar.isDragging = false;
 	}
 }
 
@@ -562,7 +563,7 @@ void ParticlesSpawning::copyPaste(std::vector<ParticlePhysics>& pParticles, std:
 		avgPos /= static_cast<float>(pParticlesCopied.size());
 	}
 
-	Slingshot slingshot = slingshot.particleSlingshot(isDragging, myCamera);
+	Slingshot slingshot = slingshot.particleSlingshot(myVar, myCamera);
 
 	if (IO::shortcutReleased(KEY_J)) {
 

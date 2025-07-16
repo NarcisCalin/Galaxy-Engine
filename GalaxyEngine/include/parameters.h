@@ -71,7 +71,7 @@ struct UpdateVariables{
 	float halfDomainWidth = domainSize.x * 0.5f;
 	float halfDomainHeight = domainSize.y * 0.5f;
 
-	bool fullscreenState = true;
+	bool fullscreenState = false;
 
 	int targetFPS = 144;
 
@@ -164,7 +164,6 @@ struct UpdateVariables{
 	glm::vec2 mouseWorldPos = { 0.0f, 0.0f };
 
 	int threadsAmount = 1;
-	bool longExposure = false;
 	ImFont* robotoMediumFont = nullptr;
 
 	bool pauseAfterRecording = false;
@@ -197,4 +196,28 @@ struct UpdateVariables{
 	int introFontSize = 48;
 
 	bool gridExists = true;
+
+	bool toolSpawnHeavyParticle = false;
+	bool toolDrawParticles = true;
+	bool toolSpawnSmallGalaxy = false;
+	bool toolSpawnBigGalaxy = false;
+	bool toolSpawnStar = false;
+	bool toolSpawnBigBang = false;
+
+	bool toolErase = false;
+	bool toolRadialForce = false;
+	bool toolSpin = false;
+	bool toolMove = false;
+	bool toolRaiseTemp = false;
+	bool toolLowerTemp = false;
+
+	bool toolPointLight = false;
+	bool toolAreaLight = false;
+	bool toolCircle = false;
+	bool toolDrawShape = false;
+	bool toolLens = false;
+	bool toolWall = false;
+	bool toolMoveOptics = false;
+	bool toolEraseOptics = false;
+	bool toolSelectOptics = false;
 };

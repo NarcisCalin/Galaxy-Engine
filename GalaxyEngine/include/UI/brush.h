@@ -31,15 +31,15 @@ public:
 
 	void drawBrush(glm::vec2 mouseWorldPos);
 
-	void eraseBrush(UpdateParameters& myParam);
+	void eraseBrush(UpdateVariables& myVar, UpdateParameters& myParam);
 
 	void particlesAttractor(UpdateVariables& myVar, UpdateParameters& myParam);
 
 	void particlesSpinner(UpdateVariables& myVar, UpdateParameters& myParam);
 
-	void particlesGrabber(UpdateParameters& myParam);
+	void particlesGrabber(UpdateVariables& myVar, UpdateParameters& myParam);
 
-	void temperatureBrush(UpdateParameters& myParam);
+	void temperatureBrush(UpdateVariables& myVar, UpdateParameters& myParam);
 
 	float brushRadius;
 

@@ -2,6 +2,8 @@
 
 #include "UX/camera.h"
 
+struct UpdateVariables;
+
 class Slingshot {
 public:
 	glm::vec2 norm;
@@ -9,6 +11,6 @@ public:
 	Slingshot(glm::vec2 norm, float length);
 
 	
-	static Slingshot particleSlingshot(bool &isDragging, SceneCamera myCamera);
+	static Slingshot particleSlingshot(UpdateVariables& myVar, SceneCamera myCamera);
 };
 

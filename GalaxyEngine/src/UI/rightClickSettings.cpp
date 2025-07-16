@@ -4,8 +4,8 @@
 #include "parameters.h"
 
 void RightClickSettings::rightClickMenuSpawnLogic(bool& isMouseNotHoveringUI,
-	bool& isSpawningAllowed, bool& isDragging, bool& selectedColor)
-{
+	bool& isSpawningAllowed, bool& isDragging, bool& selectedColor) {
+
 	static bool     isMouseMoving = false;
 	static glm::vec2  dragStartPos = { 0.0f, 0.0f };
 	static bool     spawnBlocked = false;
@@ -40,8 +40,8 @@ void RightClickSettings::rightClickMenuSpawnLogic(bool& isMouseNotHoveringUI,
 	if (IsMouseButtonPressed(0) &&
 		isMouseNotHoveringUI &&
 		isMenuActive &&
-		!isMouseOnMenu)
-	{
+		!isMouseOnMenu) {
+
 		isMenuActive = false;
 		isSpawningAllowed = false;
 		isDragging = false;
@@ -49,7 +49,6 @@ void RightClickSettings::rightClickMenuSpawnLogic(bool& isMouseNotHoveringUI,
 		selectedColor = selectedColorOriginal;
 		selectedColorChanged = false;
 	}
-
 	else if (IsMouseButtonPressed(0) &&
 		isMouseNotHoveringUI &&
 		!isMenuActive &&

@@ -23,12 +23,13 @@ public:
 	glm::vec2 menuPos = { 0.0f, 0.0f };
 	glm::vec2 menuSize = { 0.0f, 0.0f };
 
+	bool isMenuActive = false;
+
 	void rightClickMenuSpawnLogic(bool& isMouseNotHoveringUI, bool& isSpawningAlone, bool& isDragging, bool& selectedColor);
 
 	void rightClickMenu(UpdateVariables& myVar, UpdateParameters& myParam);
 
 private:
-	bool isMenuActive = false;
 
 	bool isMouseOnMenu = false;
 

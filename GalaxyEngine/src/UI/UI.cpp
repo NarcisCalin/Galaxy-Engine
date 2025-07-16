@@ -2,7 +2,6 @@
 
 void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, SaveSystem& save, GESound& geSound, Lighting& lighting) {
 
-
 	if (IO::shortcutPress(KEY_U)) {
 		showSettings = !showSettings;
 	}
@@ -416,18 +415,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 			bool enabled = true;
 
-			ImGui::Text("Galaxy Engine 1.7.0 - Lighting Beta");
-			ImGui::Text("Beta placeholder controls (Will change");
-			ImGui::Text("in the final version):");
-			ImGui::Text("Hold and drag V: Create wall");
-			ImGui::Text("Press 5: Create point light");
-			ImGui::Text("Hold and drag 6: Create area light");
-			ImGui::Text("Press 7: Create circle");
-			ImGui::Text("Hold and drag 8: Draw shape");
-			ImGui::Text("Hold and drag 9: Make Lens");
-			ImGui::Text("Hold and drag 0: Move shape helper");
-			ImGui::Text("Hold and drag 0 + RSHIFT: Move both lens sides");
-			ImGui::Text("Hold and drag M: Move walls and lights");
+			ImGui::Text("Galaxy Engine 1.7.0 - Optics Update Beta");
 
 			ImGui::Text("");
 
@@ -442,64 +430,92 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 			Color imguiLightColorRl;
 
-			if (ImGui::ColorPicker4("Light Color", (float*)&imguiLightColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
+			if (ImGui::ColorPicker3("Light Color", (float*)&imguiLightColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
 				imguiLightColorRl = rlImGuiColors::Convert(imguiLightColor);
 				lighting.lightColor.r = imguiLightColorRl.r;
 				lighting.lightColor.g = imguiLightColorRl.g;
 				lighting.lightColor.b = imguiLightColorRl.b;
 				lighting.lightColor.a = imguiLightColorRl.a;
+
+				lighting.isSliderLightColor = true;
 			}
 
 			ImVec4 imguiWallBaseColor = rlImGuiColors::Convert(lighting.wallBaseColor);
 
 			Color imguiWallBaseColorRl;
 
-			if (ImGui::ColorPicker4("Wall Base Color", (float*)&imguiWallBaseColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
+			if (ImGui::ColorPicker3("Wall Base Color", (float*)&imguiWallBaseColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
 				imguiWallBaseColorRl = rlImGuiColors::Convert(imguiWallBaseColor);
 				lighting.wallBaseColor.r = imguiWallBaseColorRl.r;
 				lighting.wallBaseColor.g = imguiWallBaseColorRl.g;
 				lighting.wallBaseColor.b = imguiWallBaseColorRl.b;
 				lighting.wallBaseColor.a = imguiWallBaseColorRl.a;
+
+				lighting.isSliderBaseColor = true;
 			}
 
 			ImVec4 imguiWallSpecularColor = rlImGuiColors::Convert(lighting.wallSpecularColor);
 
 			Color imguiWallSpecularColorRl;
 
-			if (ImGui::ColorPicker4("Wall Specular Color", (float*)&imguiWallSpecularColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
+			if (ImGui::ColorPicker3("Wall Specular Color", (float*)&imguiWallSpecularColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
 				imguiWallSpecularColorRl = rlImGuiColors::Convert(imguiWallSpecularColor);
 				lighting.wallSpecularColor.r = imguiWallSpecularColorRl.r;
 				lighting.wallSpecularColor.g = imguiWallSpecularColorRl.g;
 				lighting.wallSpecularColor.b = imguiWallSpecularColorRl.b;
 				lighting.wallSpecularColor.a = imguiWallSpecularColorRl.a;
+
+				lighting.isSliderSpecularColor = true;
 			}
 
 			ImVec4 imguiWallRefractionColor = rlImGuiColors::Convert(lighting.wallRefractionColor);
 
 			Color imguiWallRefractionColorRl;
 
-			if (ImGui::ColorPicker4("Wall Refraction Color", (float*)&imguiWallRefractionColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
+			if (ImGui::ColorPicker3("Wall Refraction Color", (float*)&imguiWallRefractionColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
 				imguiWallRefractionColorRl = rlImGuiColors::Convert(imguiWallRefractionColor);
 				lighting.wallRefractionColor.r = imguiWallRefractionColorRl.r;
 				lighting.wallRefractionColor.g = imguiWallRefractionColorRl.g;
 				lighting.wallRefractionColor.b = imguiWallRefractionColorRl.b;
 				lighting.wallRefractionColor.a = imguiWallRefractionColorRl.a;
+
+				lighting.isSliderRefractionCol = true;
 			}
 
-			sliderHelper("Wall Specular Roughness", "Controls the specular reflections roughness of the next wall drawn", lighting.wallSpecularRoughness, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Wall Refraction Roughness", "Controls the refraction surface roughness of the next wall drawn", lighting.wallRefractionRoughness, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled);
+			if (sliderHelper("Wall Specular Roughness", "Controls the specular reflections roughness of the next wall drawn", lighting.wallSpecularRoughness, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled)) {
+				lighting.isSliderSpecularRough = true;
+			}
+			if (sliderHelper("Wall Refraction Roughness", "Controls the refraction surface roughness of the next wall drawn", lighting.wallRefractionRoughness, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled)) {
+				lighting.isSliderRefractionRough = true;
+			}
 
-			sliderHelper("Wall Refraction Amount", "Controls how much light the next wall will refract", lighting.wallRefractionAmount, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled);
+			if (sliderHelper("Wall Refraction Amount", "Controls how much light the next wall will refract", lighting.wallRefractionAmount, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled)) {
+				lighting.isSliderRefractionAmount = true;;
+			}
 
-			sliderHelper("Wall IOR", "Controls the IOR of the next wall drawn", lighting.wallIOR, 0.0f, 100.0f, parametersSliderX, parametersSliderY, enabled);
+			if (sliderHelper("Wall IOR", "Controls the IOR of the next wall drawn", lighting.wallIOR, 0.0f, 100.0f, parametersSliderX, parametersSliderY, enabled)) {
+				lighting.isSliderIor = true;
+			}
 
-			sliderHelper("Max Samples", "Controls the total amount of lighting iterations", lighting.maxSamples, 1, 6, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Rays Per Sample", "Controls amount of rays emitted on each sample", lighting.sampleRaysAmount, 1, 80000, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Max Bounces", "Controls how many times rays can bounce", lighting.maxBounces, 0, 8, parametersSliderX, parametersSliderY, enabled);
+			if (sliderHelper("Max Samples", "Controls the total amount of lighting iterations", lighting.maxSamples, 1, 6, parametersSliderX, parametersSliderY, enabled)) {
+				lighting.shouldRender = true;
+			}
+			if (sliderHelper("Rays Per Sample", "Controls amount of rays emitted on each sample", lighting.sampleRaysAmount, 1, 80000, parametersSliderX, parametersSliderY, enabled)) {
+				lighting.shouldRender = true;
+			}
+			if (sliderHelper("Max Bounces", "Controls how many times rays can bounce", lighting.maxBounces, 0, 8, parametersSliderX, parametersSliderY, enabled)) {
+				lighting.shouldRender = true;
+			}
 
-			buttonHelper("Global Illumination", "Enables global illumination", lighting.isDiffuseEnabled, - 1.0f, settingsButtonY, enabled, enabled);
-			buttonHelper("Specular Reflections", "Enables specular reflections", lighting.isSpecularEnabled, -1.0f, settingsButtonY, enabled, enabled);
-			buttonHelper("Refraction", "Enables refractions", lighting.isRefractionEnabled, -1.0f, settingsButtonY, enabled, enabled);
+			if (buttonHelper("Global Illumination", "Enables global illumination", lighting.isDiffuseEnabled, -1.0f, settingsButtonY, enabled, enabled)) {
+				lighting.shouldRender = true;
+			}
+			if (buttonHelper("Specular Reflections", "Enables specular reflections", lighting.isSpecularEnabled, -1.0f, settingsButtonY, enabled, enabled)) {
+				lighting.shouldRender = true;
+			}
+			if (buttonHelper("Refraction", "Enables refractions", lighting.isRefractionEnabled, -1.0f, settingsButtonY, enabled, enabled)) {
+				lighting.shouldRender = true;
+			}
 
 			buttonHelper("Symmetrical Lens", "Makes both sides of the next lens editable", lighting.symmetricalLens, -1.0f, settingsButtonY, enabled, enabled);
 
@@ -518,6 +534,8 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	myParam.controls.showInfo(myVar.fullscreenState);
 
 	ImVec2 statsSize = { 250.0f, 120.0f };
+
+	float statsPosX = screenX - statsSize.x - buttonsWindowX - 20.0f;
 
 	ImGui::SetNextWindowSize(statsSize, ImGuiCond_Always);
 	ImGui::SetNextWindowPos(ImVec2(screenX - statsSize.x - buttonsWindowX - 20.0f, 0.0f), ImGuiCond_Always);
@@ -547,6 +565,140 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 	ImGui::PopFont();
 
+	ImGui::End();
+
+	// Tools Menu //
+
+	ImVec2 toolsSize = { 200.0f, 320.0f };
+	ImGui::SetNextWindowSize(toolsSize, ImGuiCond_Once);
+	ImGui::SetNextWindowPos(ImVec2(parametersWindowSizeX + 20.0f, 0.0f), ImGuiCond_Once);
+	ImGui::Begin("Tools", nullptr);
+	ImGui::BeginTabBar("##ToolsBar", ImGuiTabBarFlags_NoTabListScrollingButtons);
+
+	struct ToolButton {
+		const char* label;
+		const char* tooltip;
+		bool* flag;
+	};
+
+	auto activateExclusiveTool = [](ToolButton* group, int count, int activeIndex) {
+		for (int i = 0; i < count; ++i) {
+			*group[i].flag = (i == activeIndex);
+		}
+		};
+
+	// Particle tab
+	if (ImGui::BeginTabItem("Particle")) {
+		ToolButton particleTools[] = {
+			{ "Draw Particles", "Draw particles with the brush", &myVar.toolDrawParticles },
+			{ "Black Hole", "Throw a black hole particle", &myVar.toolSpawnHeavyParticle },
+			{ "Big Galaxy", "Spawn a large galaxy", &myVar.toolSpawnBigGalaxy },
+			{ "Small Galaxy", "Spawn a small galaxy", &myVar.toolSpawnSmallGalaxy },
+			{ "Star", "Spawn a small star. This is not meant for fluid mode", &myVar.toolSpawnStar },
+			{ "Big Bang", "Spawn the Big Bang", &myVar.toolSpawnBigBang }
+		};
+
+		for (int i = 0; i < IM_ARRAYSIZE(particleTools); ++i) {
+			if (buttonHelper(particleTools[i].label, particleTools[i].tooltip, *particleTools[i].flag, -1.0f, settingsButtonY, enabled, enabled)) {
+				activateExclusiveTool(particleTools, IM_ARRAYSIZE(particleTools), i);
+
+				myVar.toolErase = false;
+				myVar.toolRadialForce = false;
+				myVar.toolSpin = false;
+				myVar.toolMove = false;
+				myVar.toolRaiseTemp = false;
+				myVar.toolLowerTemp = false;
+
+				myVar.toolPointLight = false;
+				myVar.toolAreaLight = false;
+				myVar.toolCircle = false;
+				myVar.toolDrawShape = false;
+				myVar.toolLens = false;
+				myVar.toolWall = false;
+				myVar.toolMoveOptics = false;
+				myVar.toolEraseOptics = false;
+				myVar.toolSelectOptics = false;
+			}
+		}
+
+		ImGui::EndTabItem();
+	}
+
+	// Brush tab
+	if (ImGui::BeginTabItem("Brush")) {
+		ToolButton brushTools[] = {
+			{ "Eraser", "Erase particles with the brush", &myVar.toolErase },
+			{ "Radial Force", "Push particles away. Hold LCTRL to invert.", &myVar.toolRadialForce },
+			{ "Spin", "Spins particles. Hold LCTRL to invert.", &myVar.toolSpin },
+			{ "Grab", "Grab particles inside the brush", &myVar.toolMove },
+			{ "Heat", "Heats the particles inside the brush", &myVar.toolRaiseTemp },
+			{ "Cool", "Cools the particles inside the brush", &myVar.toolLowerTemp }
+		};
+
+		for (int i = 0; i < IM_ARRAYSIZE(brushTools); ++i) {
+			if (buttonHelper(brushTools[i].label, brushTools[i].tooltip, *brushTools[i].flag, -1.0f, settingsButtonY, enabled, enabled)) {
+				activateExclusiveTool(brushTools, IM_ARRAYSIZE(brushTools), i);
+
+				myVar.toolDrawParticles = false;
+				myVar.toolSpawnHeavyParticle = false;
+				myVar.toolSpawnBigGalaxy = false;
+				myVar.toolSpawnSmallGalaxy = false;
+				myVar.toolSpawnStar = false;
+				myVar.toolSpawnBigBang = false;
+
+				myVar.toolPointLight = false;
+				myVar.toolAreaLight = false;
+				myVar.toolCircle = false;
+				myVar.toolDrawShape = false;
+				myVar.toolLens = false;
+				myVar.toolWall = false;
+				myVar.toolMoveOptics = false;
+				myVar.toolEraseOptics = false;
+				myVar.toolSelectOptics = false;
+			}
+		}
+
+		ImGui::EndTabItem();
+	}
+
+	// Optics tab
+	if (ImGui::BeginTabItem("Optics")) {
+		ToolButton opticTools[] = {
+			{ "Point Light", "Spawn point light", &myVar.toolPointLight },
+			{ "Area Light", "Spawn area light", &myVar.toolAreaLight },
+			{ "Wall", "Spawn a wall", &myVar.toolWall },
+			{ "Circle", "Spawn a circle", &myVar.toolCircle },
+			{ "Draw Shape", "Draw a shape", &myVar.toolDrawShape },
+			{ "Lens", "Spawn a lens", &myVar.toolLens },
+			{ "Move", "Move optics elements inside the brush", &myVar.toolMoveOptics },
+			{ "Erase", "Erase optics elements like walls and lights", &myVar.toolEraseOptics},
+			{ "Select", "Select optics elements like walls and lights to modify them. LCTRL adds to selection. LALT removes from selection. LSHIFT selects entire shapes.", &myVar.toolSelectOptics}
+		};
+
+		for (int i = 0; i < IM_ARRAYSIZE(opticTools); ++i) {
+			if (buttonHelper(opticTools[i].label, opticTools[i].tooltip, *opticTools[i].flag, -1.0f, settingsButtonY, enabled, enabled)) {
+				activateExclusiveTool(opticTools, IM_ARRAYSIZE(opticTools), i);
+
+				myVar.toolDrawParticles = false;
+				myVar.toolSpawnHeavyParticle = false;
+				myVar.toolSpawnBigGalaxy = false;
+				myVar.toolSpawnSmallGalaxy = false;
+				myVar.toolSpawnStar = false;
+				myVar.toolSpawnBigBang = false;
+
+				myVar.toolErase = false;
+				myVar.toolRadialForce = false;
+				myVar.toolSpin = false;
+				myVar.toolMove = false;
+				myVar.toolRaiseTemp = false;
+				myVar.toolLowerTemp = false;
+			}
+		}
+
+		ImGui::EndTabItem();
+	}
+
+	ImGui::EndTabBar();
 	ImGui::End();
 }
 
@@ -1001,8 +1153,10 @@ bool UI::buttonHelper(std::string label, std::string tooltip, bool& parameter,
 
 
 
-void UI::sliderHelper(std::string label, std::string tooltip, float& parameter, float minVal, float maxVal,
+bool UI::sliderHelper(std::string label, std::string tooltip, float& parameter, float minVal, float maxVal,
 	float sizeX, float sizeY, bool& isEnabled) {
+
+	bool isSliderUsed = false;
 
 	ImGuiID sliderId = ImGui::GetID(label.c_str());
 	static std::unordered_map<ImGuiID, bool> hoverStates;
@@ -1033,7 +1187,9 @@ void UI::sliderHelper(std::string label, std::string tooltip, float& parameter, 
 
 	ImGui::Text("%s", label.c_str());
 
-	ImGui::SliderFloat(("##" + label).c_str(), &parameter, minVal, maxVal, "%.3f", ImGuiSliderFlags_Logarithmic);
+	if (ImGui::SliderFloat(("##" + label).c_str(), &parameter, minVal, maxVal, "%.3f", ImGuiSliderFlags_Logarithmic)) {
+		isSliderUsed = true;
+	}
 
 	std::vector<Sound>* soundPool = nullptr;
 
@@ -1165,15 +1321,21 @@ void UI::sliderHelper(std::string label, std::string tooltip, float& parameter, 
 
 	if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
 		parameter = defaultValues[sliderId];
+
+		isSliderUsed = true;
 	}
 
 	if (!isEnabled) {
 		ImGui::EndDisabled();
 	}
+
+	return isSliderUsed;
 }
 
-void UI::sliderHelper(std::string label, std::string tooltip, int& parameter, int minVal, int maxVal,
+bool UI::sliderHelper(std::string label, std::string tooltip, int& parameter, int minVal, int maxVal,
 	float sizeX, float sizeY, bool& isEnabled) {
+
+	bool isSliderUsed = false;
 
 	ImGuiID sliderId = ImGui::GetID(label.c_str());
 	static std::unordered_map<ImGuiID, bool> hoverStates;
@@ -1204,7 +1366,9 @@ void UI::sliderHelper(std::string label, std::string tooltip, int& parameter, in
 
 	ImGui::Text("%s", label.c_str());
 
-	ImGui::SliderInt(("##" + label).c_str(), &parameter, minVal, maxVal);
+	if (ImGui::SliderInt(("##" + label).c_str(), &parameter, minVal, maxVal)) {
+		isSliderUsed = true;
+	}
 
 	std::vector<Sound>* soundPool = nullptr;
 
@@ -1338,9 +1502,13 @@ void UI::sliderHelper(std::string label, std::string tooltip, int& parameter, in
 
 	if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
 		parameter = defaultValues[sliderId];
+
+		isSliderUsed = true;
 	}
 
 	if (!isEnabled) {
 		ImGui::EndDisabled();
 	}
+
+	return isSliderUsed;
 }

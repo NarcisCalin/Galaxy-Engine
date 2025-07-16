@@ -14,15 +14,14 @@ struct Controls {
 
 	void showInfo(bool& fullscreen);
 
-	std::array<std::string, 52> controlsArray = {
+	std::array<std::string, 51> controlsArray = {
 	"----PARTICLES CREATION----",
-	"1. Hold LMB and Drag: Throw heavy particle",
-	"2. Hold MMB: Paint particles",
-	"3. Hold 1 and Drag: Create big galaxy",
-	"4. Hold 2 and Drag: Create small galaxy",
-	"5. Hold 3 and Drag: Create star",
-	"6. Press 4: Create Big Bang",
-	"7. C: Clear all particles",
+	"1. Hold MMB: Paint particles",
+	"2. Hold 1 and Drag: Create big galaxy",
+	"3. Hold 2 and Drag: Create small galaxy",
+	"4. Hold 3 and Drag: Create star",
+	"5. Press 4: Create Big Bang",
+	"6. C: Clear all particles",
 	"",
 	"----CAMERA AND SELECTION----",
 	"1. Move with RMB",
@@ -31,8 +30,8 @@ struct Controls {
 	"4. LALT + RMB on particle to follow it",
 	"5. LCTRL + LMB on cluster to select it",
 	"6. LALT + LMB on particle to select it",
-	"7. LCTRL + hold and drag MMB to box select",
-	"8. LALT + hold and drag MMB to box deselect",
+	"7. LCTRL + hold and drag MMB to particle box select",
+	"8. LALT + hold and drag MMB to particle box deselect",
 	"9. Select on empty space to deselect all",
 	"10. Hold SHIFT to add to selection",
 	"11. I: Invert selection",

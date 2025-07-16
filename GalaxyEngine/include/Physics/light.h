@@ -15,6 +15,8 @@ struct Wall {
 	bool vAisBeingMoved;
 	bool vBisBeingMoved;
 
+	Color aparentColor; // This is the color used to visualize the wall
+
 	Color baseColor;
 	Color specularColor;
 	Color refractionColor;
@@ -29,7 +31,10 @@ struct Wall {
 	float IOR;
 
 	bool isShapeWall;
+	bool isShapeClosed;
 	uint32_t shapeId;
+
+	bool isSelected;
 
 	Wall() = default;
 	Wall(glm::vec2 vA, glm::vec2 vB, bool isShapeWall, Color baseColor, Color specularColor, Color refractionColor,
@@ -38,6 +43,8 @@ struct Wall {
 		this->vA = vA;
 		this->vB = vB;
 		this->isShapeWall = isShapeWall;
+		this->isShapeClosed = false;
+		this->isSelected = false;
 		this->shapeId = 0;
 		this->isBeingSpawned = true;
 		this->vAisBeingMoved = false;
@@ -45,6 +52,8 @@ struct Wall {
 		this->baseColor = baseColor;
 		this->specularColor = specularColor;
 		this->refractionColor = refractionColor;
+
+		this->aparentColor = WHITE;
 
 		this->baseColorVal = std::max({ baseColor.r, baseColor.g, baseColor.b }) * (baseColor.a / 255.0f) / 255.0f;
 		this->specularColorVal = std::max({ specularColor.r, specularColor.g, specularColor.b }) * (specularColor.a / 255.0f) / 255.0f;
@@ -56,8 +65,12 @@ struct Wall {
 		this->IOR = IOR;
 	}
 
+	void drawHelper(glm::vec2& helper) {
+		DrawCircleV({ helper.x, helper.y }, 5.0f, PURPLE);
+	}
+
 	void drawWall() {
-		DrawLineV({ vA.x, vA.y }, { vB.x, vB.y }, baseColor);
+		DrawLineV({ vA.x, vA.y }, { vB.x, vB.y }, aparentColor);
 	}
 };
 
@@ -71,7 +84,7 @@ enum ShapeType {
 
 struct Shape {
 
-	std::vector<Wall>& walls;
+	std::vector<Wall>* walls;
 	std::vector<size_t> myWallIndices;
 
 	std::vector<glm::vec2> polygonVerts;
@@ -100,9 +113,11 @@ struct Shape {
 	bool isBeingSpawned;
 	bool isBeingMoved;
 
+	bool isShapeClosed;
+
 	ShapeType shapeType;
 
-	Shape(ShapeType shapeType, glm::vec2 h1, glm::vec2 h2, std::vector<Wall>& walls, Color baseColor, Color specularColor, Color refractionColor,
+	Shape(ShapeType shapeType, glm::vec2 h1, glm::vec2 h2, std::vector<Wall>* walls, Color baseColor, Color specularColor, Color refractionColor,
 		float specularRoughness, float refractionRoughness, float refractionAmount, float IOR) :
 
 		shapeType(shapeType),
@@ -118,7 +133,8 @@ struct Shape {
 		IOR(IOR),
 		id(globalShapeId++),
 		isBeingSpawned(true),
-		isBeingMoved(false) {
+		isBeingMoved(false),
+		isShapeClosed(true) {
 	}
 
 	float getSignedArea(const std::vector<glm::vec2>& vertices) {
@@ -134,6 +150,8 @@ struct Shape {
 		return 0.5f * area;
 	}
 
+
+
 	void calculateWallsNormals() {
 
 		int n = myWallIndices.size();
@@ -142,14 +160,14 @@ struct Shape {
 		polygonVerts.clear();
 
 		for (int i = 0; i < myWallIndices.size(); ++i) {
-			Wall& w = walls[myWallIndices[i]];
+			Wall& w = (*walls)[myWallIndices[i]];
 			polygonVerts.push_back(w.vA);
 		}
 
 		bool flipNormals = getSignedArea(polygonVerts) > 0.0f;
 
 		for (int i = 0; i < n; ++i) {
-			Wall& w = walls[myWallIndices[i]];
+			Wall& w = (*walls)[myWallIndices[i]];
 
 			if (!w.isShapeWall) {
 				continue;
@@ -167,9 +185,9 @@ struct Shape {
 			int prev = (i - 1 + n) % n;
 			int next = (i + 1) % n;
 
-			Wall& wPrev = walls[myWallIndices[prev]];
-			Wall& w = walls[myWallIndices[i]];
-			Wall& wNext = walls[myWallIndices[next]];
+			Wall& wPrev = (*walls)[myWallIndices[prev]];
+			Wall& w = (*walls)[myWallIndices[i]];
+			Wall& wNext = (*walls)[myWallIndices[next]];
 
 			if (!wPrev.isShapeWall || !w.isShapeWall || !wNext.isShapeWall) {
 				continue;
@@ -179,15 +197,27 @@ struct Shape {
 			float len = glm::length(w.vB - w.vA);
 			float lenNext = glm::length(wNext.vB - wNext.vA);
 
-			if (glm::dot(wPrev.normal, w.normal) >= smoothingAngleThreshold) {
+			bool smoothWithPrev = glm::dot(wPrev.normal, w.normal) >= smoothingAngleThreshold;
+			bool smoothWithNext = glm::dot(w.normal, wNext.normal) >= smoothingAngleThreshold;
+
+			glm::vec2 tangent = glm::normalize(w.vB - w.vA);
+
+			if (smoothWithPrev) {
 				w.normalVA = glm::normalize(wPrev.normal * lenPrev + w.normal * len);
+			}
+			else if (smoothWithNext) {
+				glm::vec2 normalVB = glm::normalize(w.normal * len + wNext.normal * lenNext);
+				w.normalVA = normalVB - 2.0f * glm::dot(normalVB, tangent) * tangent;
 			}
 			else {
 				w.normalVA = w.normal;
 			}
 
-			if (glm::dot(w.normal, wNext.normal) >= smoothingAngleThreshold) {
-				w.normalVB = glm::normalize(w.normal * lenPrev + wNext.normal * len);
+			if (smoothWithNext) {
+				w.normalVB = glm::normalize(w.normal * len + wNext.normal * lenNext);
+			}
+			else if (smoothWithPrev) {
+				w.normalVB = w.normalVA - 2.0f * glm::dot(w.normalVA, tangent) * tangent;
 			}
 			else {
 				w.normalVB = w.normal;
@@ -218,14 +248,14 @@ struct Shape {
 		polygonVerts.clear();
 
 		for (int i = 0; i < myWallIndices.size(); ++i) {
-			Wall& w = walls[myWallIndices[i]];
+			Wall& w = (*walls)[myWallIndices[i]];
 			polygonVerts.push_back(w.vA);
 		}
 
 		relaxGeometryLogic(polygonVerts);
 
 		for (int i = 0; i < myWallIndices.size(); ++i) {
-			Wall& w = walls[myWallIndices[i]];
+			Wall& w = (*walls)[myWallIndices[i]];
 			w.vA = polygonVerts[i];
 			w.vB = polygonVerts[(i + 1) % polygonVerts.size()];
 		}
@@ -248,9 +278,7 @@ struct Shape {
 
 	void makeCircle() {
 
-		float radius = 30.0f;
-
-		radius = glm::length(h2 - h1);
+		float radius = glm::length(h2 - h1);
 
 		int segments = 100;
 
@@ -270,14 +298,15 @@ struct Shape {
 			};
 
 			if (!isBeingSpawned) {
-				walls.emplace_back(vA, vB, true, baseColor, specularColor, refractionColor, specularRoughness, refractionRoughness, refractionAmount, IOR);
+				(*walls).emplace_back(vA, vB, true, baseColor, specularColor, refractionColor, specularRoughness, refractionRoughness, refractionAmount, IOR);
 
-				walls.back().shapeId = id;
+				(*walls).back().shapeId = id;
+				(*walls).back().isShapeClosed = true;
 
-				newWallIndices.push_back(walls.size() - 1);
+				newWallIndices.push_back((*walls).size() - 1);
 			}
 			else {
-				DrawLineV({ vA.x, vA.y }, { vB.x, vB.y }, baseColor);
+				DrawLineV({ vA.x, vA.y }, { vB.x, vB.y }, WHITE);
 			}
 		}
 
@@ -303,15 +332,16 @@ struct Shape {
 		while (dist >= maxSegmentLength) {
 			glm::vec2 nextPoint = prevPoint + dirNorm * maxSegmentLength;
 
-			walls.emplace_back(prevPoint, nextPoint, true, baseColor, specularColor, refractionColor,
+			(*walls).emplace_back(prevPoint, nextPoint, true, baseColor, specularColor, refractionColor,
 				specularRoughness, refractionRoughness, refractionAmount, IOR);
 
 			prevPoint = nextPoint;
 			dist = glm::length(h2 - prevPoint);
 
-			walls.back().shapeId = id;
+			(*walls).back().shapeId = id;
+			(*walls).back().isShapeClosed = true;
 
-			myWallIndices.push_back(walls.size() - 1);
+			myWallIndices.push_back((*walls).size() - 1);
 		}
 	}
 
@@ -338,6 +368,8 @@ struct Shape {
 	void drawHelper(glm::vec2& helper) {
 		DrawCircleV({ helper.x, helper.y }, 5.0f, PURPLE);
 	}
+
+	// The lens code is huge and can be improved in many apsects, but I honestly don't care much about it so I'm leaving it as it is
 
 	void makeLens() {
 
@@ -472,8 +504,6 @@ struct Shape {
 
 				Tempsh2Length = h2Length;
 
-				// Fift below
-
 				h2LengthSymmetry = h2Length;
 
 				Tempsh2LengthSymmetry = h2Length;
@@ -538,7 +568,6 @@ struct Shape {
 			float angleDiff = endAngle - startAngle;
 
 
-
 			glm::vec2 centerSymmetry;
 			float radiusSymmetry;
 
@@ -599,23 +628,25 @@ struct Shape {
 
 				if (!isBeingMoved) {
 					if (!symmetricalLens) {
-						walls.emplace_back(helpers.at(0), helpers.at(1), true, baseColor, specularColor, refractionColor, specularRoughness, refractionRoughness, refractionAmount, IOR);
-						walls.back().shapeId = id;
-						newWallIndices.push_back(walls.size() - 1);
+						(*walls).emplace_back(helpers.at(0), helpers.at(1), true, baseColor, specularColor, refractionColor, specularRoughness, refractionRoughness, refractionAmount, IOR);
+						(*walls).back().shapeId = id;
+						(*walls).back().isShapeClosed = true;
+						newWallIndices.push_back((*walls).size() - 1);
 					}
 
-					walls.emplace_back(helpers.at(1), helpers.at(2), true, baseColor, specularColor, refractionColor, specularRoughness, refractionRoughness, refractionAmount, IOR);
-					walls.back().shapeId = id;
-					newWallIndices.push_back(walls.size() - 1);
+					(*walls).emplace_back(helpers.at(1), helpers.at(2), true, baseColor, specularColor, refractionColor, specularRoughness, refractionRoughness, refractionAmount, IOR);
+					(*walls).back().shapeId = id;
+					(*walls).back().isShapeClosed = true;
+					newWallIndices.push_back((*walls).size() - 1);
 				}
 				else {
 					if (!symmetricalLens) {
-						walls[myWallIndices[0]].vA = helpers[0];
-						walls[myWallIndices[0]].vB = helpers[1];
+						(*walls)[myWallIndices[0]].vA = helpers[0];
+						(*walls)[myWallIndices[0]].vB = helpers[1];
 					}
 
-					walls[myWallIndices[0 + !symmetricalLens]].vA = helpers[1];
-					walls[myWallIndices[0 + !symmetricalLens]].vB = helpers[2];
+					(*walls)[myWallIndices[0 + !symmetricalLens]].vA = helpers[1];
+					(*walls)[myWallIndices[0 + !symmetricalLens]].vB = helpers[2];
 				}
 			}
 
@@ -634,13 +665,14 @@ struct Shape {
 				}
 				else if (fourthHelper || isBeingMoved) {
 					if (!isBeingMoved) {
-						walls.emplace_back(arcP1, arcP2, true, baseColor, specularColor, refractionColor, specularRoughness, refractionRoughness, refractionAmount, IOR);
-						walls.back().shapeId = id;
-						newWallIndices.push_back(walls.size() - 1);
+						(*walls).emplace_back(arcP1, arcP2, true, baseColor, specularColor, refractionColor, specularRoughness, refractionRoughness, refractionAmount, IOR);
+						(*walls).back().shapeId = id;
+						(*walls).back().isShapeClosed = true;
+						newWallIndices.push_back((*walls).size() - 1);
 					}
 					else {
-						walls[myWallIndices[1 + !symmetricalLens + i]].vA = arcP1;
-						walls[myWallIndices[1 + !symmetricalLens + i]].vB = arcP2;
+						(*walls)[myWallIndices[1 + !symmetricalLens + i]].vA = arcP1;
+						(*walls)[myWallIndices[1 + !symmetricalLens + i]].vB = arcP2;
 					}
 				}
 			}
@@ -648,15 +680,16 @@ struct Shape {
 			if (fourthHelper || isBeingMoved) {
 
 				if (!isBeingMoved) {
-					walls.emplace_back(arcEnd, helpers.at(0), true, baseColor, specularColor, refractionColor, specularRoughness, refractionRoughness, refractionAmount, IOR);
+					(*walls).emplace_back(arcEnd, helpers.at(0), true, baseColor, specularColor, refractionColor, specularRoughness, refractionRoughness, refractionAmount, IOR);
 
-					walls.back().shapeId = id;
+					(*walls).back().shapeId = id;
+					(*walls).back().isShapeClosed = true;
 
-					newWallIndices.push_back(walls.size() - 1);
+					newWallIndices.push_back((*walls).size() - 1);
 				}
 				else {
-					walls[myWallIndices[1 + !symmetricalLens + segments]].vA = arcEnd;
-					walls[myWallIndices[1 + !symmetricalLens + segments]].vB = helpers[0];
+					(*walls)[myWallIndices[1 + !symmetricalLens + segments]].vA = arcEnd;
+					(*walls)[myWallIndices[1 + !symmetricalLens + segments]].vB = helpers[0];
 				}
 			}
 
@@ -676,13 +709,14 @@ struct Shape {
 					}
 					else if (fourthHelper || isBeingMoved) {
 						if (!isBeingMoved) {
-							walls.emplace_back(arcP1Symmetry, arcP2Symmetry, true, baseColor, specularColor, refractionColor, specularRoughness, refractionRoughness, refractionAmount, IOR);
-							walls.back().shapeId = id;
-							newWallIndices.push_back(walls.size() - 1);
+							(*walls).emplace_back(arcP1Symmetry, arcP2Symmetry, true, baseColor, specularColor, refractionColor, specularRoughness, refractionRoughness, refractionAmount, IOR);
+							(*walls).back().shapeId = id;
+							(*walls).back().isShapeClosed = true;
+							newWallIndices.push_back((*walls).size() - 1);
 						}
 						else {
-							walls[myWallIndices[2 + !symmetricalLens + segments + i]].vA = arcP1Symmetry;
-							walls[myWallIndices[2 + !symmetricalLens + segments + i]].vB = arcP2Symmetry;
+							(*walls)[myWallIndices[2 + !symmetricalLens + segments + i]].vA = arcP1Symmetry;
+							(*walls)[myWallIndices[2 + !symmetricalLens + segments + i]].vB = arcP2Symmetry;
 						}
 					}
 				}
@@ -768,13 +802,26 @@ struct PointLight {
 
 	Color color;
 
+	Color aparentColor;
+
+	bool isSelected;
+
 	PointLight(glm::vec2 pos, Color color) {
 		this->pos = pos;
 		this->isBeingMoved = false;
 		this->color = color;
+
+		this->aparentColor = WHITE;
+
+		this->isSelected = false;
+	}
+
+	void drawHelper(glm::vec2& helper) {
+		DrawCircleV({ helper.x, helper.y }, 25.0f, aparentColor);
 	}
 
 	void pointLightLogic(int& sampleRaysAmount, std::vector<LightRay>& rays) {
+
 		float radius = 100.0f;
 
 		for (int i = 0; i < sampleRaysAmount; i++) {
@@ -814,6 +861,10 @@ struct AreaLight {
 
 	Color color;
 
+	Color aparentColor;
+
+	bool isSelected;
+
 	AreaLight() = default;
 	AreaLight(glm::vec2 vA, glm::vec2 vB, Color color) {
 		this->vA = vA;
@@ -822,6 +873,13 @@ struct AreaLight {
 		this->vAisBeingMoved = false;
 		this->vBisBeingMoved = false;
 		this->color = color;
+		this->aparentColor = WHITE;
+
+		this->isSelected = false;
+	}
+
+	void drawHelper(glm::vec2& helper) {
+		DrawCircleV({ helper.x, helper.y }, 5.0f, PURPLE);
 	}
 
 	glm::vec2 rotateVec2(glm::vec2 v, float angle) {
@@ -833,11 +891,13 @@ struct AreaLight {
 		);
 	}
 
+	void drawAreaLight() {
+		DrawLineV({ vA.x, vA.y }, { vB.x, vB.y }, aparentColor);
+	}
+
 	void areaLightLogic(UpdateParameters& myParam, int& sampleRaysAmount, std::vector<LightRay>& rays) {
 
 		glm::vec2 mouseWorldPos = myParam.myCamera.mouseWorldPos;
-
-		DrawLineV({ vA.x, vA.y }, { vB.x, vB.y }, color);
 
 		for (int i = 0; i < sampleRaysAmount; i++) {
 			float spreadMultiplier = 0.7f;
@@ -896,7 +956,7 @@ struct Lighting {
 
 	const float lightBias = 0.1f;
 
-	Color lightColor = { 30, 30, 30, 10 };
+	Color lightColor = { 255, 255, 255, 1 };
 
 	Color wallBaseColor = { 200, 200, 200, 255 };
 	Color wallSpecularColor = { 255, 255, 255, 255 };
@@ -919,16 +979,16 @@ struct Lighting {
 		w.normalVB = normal;
 	}
 
-	void createWall(UpdateParameters& myParam) {
+	void createWall(UpdateVariables& myVar, UpdateParameters& myParam) {
 
 		glm::vec2 mouseWorldPos = myParam.myCamera.mouseWorldPos;
 
-		if (IO::shortcutPress(KEY_V)) {
+		if (IO::mousePress(0) && myVar.toolWall) {
 			walls.emplace_back(mouseWorldPos, mouseWorldPos, false, wallBaseColor, wallSpecularColor, wallRefractionColor,
 				wallSpecularRoughness, wallRefractionRoughness, wallRefractionAmount, wallIOR);
 		}
 
-		if (IO::shortcutDown(KEY_V)) {
+		if (IO::mouseDown(0) && myVar.toolWall) {
 			if (walls.back().isBeingSpawned) {
 				walls.back().vB = mouseWorldPos;
 
@@ -938,7 +998,7 @@ struct Lighting {
 			}
 		}
 
-		if (IO::shortcutReleased(KEY_V)) {
+		if (IO::mouseReleased(0) && myVar.toolWall) {
 			if (!walls.empty() && walls.back().isBeingSpawned) {
 				if (glm::length(walls.back().vB - walls.back().vA) == 0.0f) {
 					walls.pop_back();
@@ -957,17 +1017,19 @@ struct Lighting {
 	int selectedHelper = -1;
 	size_t selectedShape = -1;
 
-	void createShape(UpdateParameters& myParam) {
+	const float helperMinDist = 20.0f;
+
+	void createShape(UpdateVariables& myVar, UpdateParameters& myParam) {
 
 		glm::vec2 mouseWorldPos = myParam.myCamera.mouseWorldPos;
 
 		// ---- Circle ---- //
-		if (IO::shortcutPress(KEY_SEVEN)) {
-			shapes.emplace_back(circle, mouseWorldPos, mouseWorldPos, walls, wallBaseColor, wallSpecularColor, wallRefractionColor,
+		if (IO::mousePress(0) && myVar.toolCircle) {
+			shapes.emplace_back(circle, mouseWorldPos, mouseWorldPos, &walls, wallBaseColor, wallSpecularColor, wallRefractionColor,
 				wallSpecularRoughness, wallRefractionRoughness, wallRefractionAmount, wallIOR);
 		}
 
-		if (IO::shortcutDown(KEY_SEVEN)) {
+		if (IO::mouseDown(0) && myVar.toolCircle) {
 			if (shapes.back().isBeingSpawned) {
 				shapes.back().h2 = mouseWorldPos;
 
@@ -977,7 +1039,7 @@ struct Lighting {
 			}
 		}
 
-		if (IO::shortcutReleased(KEY_SEVEN)) {
+		if (IO::mouseReleased(0) && myVar.toolCircle) {
 			if (!shapes.empty() && shapes.back().isBeingSpawned) {
 				if (glm::length(shapes.back().h2 - shapes.back().h1) == 0.0f) {
 					shapes.pop_back();
@@ -992,12 +1054,12 @@ struct Lighting {
 		}
 
 		// ---- Draw Shape ---- //
-		if (IO::shortcutPress(KEY_EIGHT)) {
-			shapes.emplace_back(draw, mouseWorldPos, mouseWorldPos, walls, wallBaseColor, wallSpecularColor, wallRefractionColor,
+		if (IO::mousePress(0) && myVar.toolDrawShape) {
+			shapes.emplace_back(draw, mouseWorldPos, mouseWorldPos, &walls, wallBaseColor, wallSpecularColor, wallRefractionColor,
 				wallSpecularRoughness, wallRefractionRoughness, wallRefractionAmount, wallIOR);
 		}
 
-		if (IO::shortcutDown(KEY_EIGHT)) {
+		if (IO::mouseDown(0) && myVar.toolDrawShape) {
 			if (shapes.back().isBeingSpawned) {
 				shapes.back().h2 = mouseWorldPos;
 
@@ -1007,7 +1069,7 @@ struct Lighting {
 			}
 		}
 
-		if (IO::shortcutReleased(KEY_EIGHT)) {
+		if (IO::mouseReleased(0) && myVar.toolDrawShape) {
 			if (!shapes.empty() && shapes.back().isBeingSpawned) {
 				if (glm::length(shapes.back().h2 - shapes.back().h1) == 0.0f) {
 					shapes.pop_back();
@@ -1035,15 +1097,15 @@ struct Lighting {
 		}
 
 		// ---- Lens ---- //
-		if (IO::shortcutPress(KEY_NINE) && firstHelper) {
-			shapes.emplace_back(lens, mouseWorldPos, mouseWorldPos, walls, wallBaseColor, wallSpecularColor, wallRefractionColor,
+		if (IO::mousePress(0) && myVar.toolLens && firstHelper) {
+			shapes.emplace_back(lens, mouseWorldPos, mouseWorldPos, &walls, wallBaseColor, wallSpecularColor, wallRefractionColor,
 				wallSpecularRoughness, wallRefractionRoughness, wallRefractionAmount, wallIOR);
 
 			shapes.back().symmetricalLens = symmetricalLens;
 
 			isCreatingLens = true;
 		}
-		else if (IO::shortcutPress(KEY_NINE)) {
+		else if (IO::mousePress(0) && myVar.toolLens) {
 
 			if (shapes.back().helpers.size() == 2) {
 				shapes.back().thirdHelper = true;
@@ -1055,7 +1117,7 @@ struct Lighting {
 			}
 		}
 
-		if (IO::shortcutDown(KEY_NINE) && firstHelper) {
+		if (IO::mouseDown(0) && myVar.toolLens && firstHelper) {
 			if (shapes.back().isBeingSpawned) {
 				shapes.back().h2 = mouseWorldPos;
 			}
@@ -1066,7 +1128,7 @@ struct Lighting {
 			}
 		}
 
-		if (IO::shortcutReleased(KEY_NINE)) {
+		if (IO::mouseReleased(0) && myVar.toolLens) {
 			if (!shapes.empty() && shapes.back().isBeingSpawned) {
 				if (glm::length(shapes.back().h2 - shapes.back().h1) == 0.0f) {
 					shapes.pop_back();
@@ -1088,129 +1150,32 @@ struct Lighting {
 			if (shapes.back().isBeingSpawned && shapes.back().shapeType == lens) {
 				shapes.back().makeShape();
 			}
-
-			minHelperLength = FLT_MAX;
-
-			bool isAnyShapeBeingSpawned = false;
-
-			for (size_t i = 0; i < shapes.size(); i++) {
-				bool drawThisShape = false;
-
-				for (size_t j = 0; j < shapes[i].helpers.size(); j++) {
-					float helperDist = glm::length(mouseWorldPos - shapes[i].helpers[j]);
-
-					if (helperDist <= 20.0f) {
-						if (!shapes[i].isBeingSpawned) {
-							drawThisShape = true;
-						}
-
-						if (helperDist < minHelperLength) {
-							minHelperLength = helperDist;
-
-							if (IO::shortcutPress(KEY_ZERO)) {
-								selectedShape = i;
-								selectedHelper = j;
-							}
-						}
-					}
-				}
-
-				if ((drawThisShape || selectedHelper != -1 && selectedShape != -1) && !isAnyShapeBeingSpawned) {
-					for (glm::vec2& helper : shapes[i].helpers) {
-						shapes[i].drawHelper(helper);
-					}
-				}
-			}
-
-			if (IO::shortcutDown(KEY_ZERO)) {
-
-				for (Shape& shape : shapes) {
-					if (shape.isBeingSpawned) {
-						isAnyShapeBeingSpawned = true;
-						break;
-					}
-				}
-
-				if (selectedHelper != -1 && selectedShape != -1 && !isAnyShapeBeingSpawned) {
-
-					shapes.at(selectedShape).isBeingMoved = true;
-
-					if (selectedHelper != 2 || selectedHelper != 3) {
-						shapes.at(selectedShape).helpers.at(selectedHelper) = mouseWorldPos;
-					}
-
-					if (selectedHelper == 2) {
-						shapes.at(selectedShape).isThirdBeingMoved = true;
-						shapes.at(selectedShape).moveH2 = mouseWorldPos;
-					}
-
-					if (selectedHelper == 3) {
-						shapes.at(selectedShape).isFourthBeingMoved = true;
-						shapes.at(selectedShape).moveH2 = mouseWorldPos;
-					}
-
-					if (shapes[selectedShape].symmetricalLens) {
-						if (selectedHelper == 4) {
-							shapes.at(selectedShape).isFifthBeingMoved = true;
-							shapes.at(selectedShape).moveH2 = mouseWorldPos;
-						}
-					}
-
-					if (shapes[selectedShape].symmetricalLens) {
-						if ((selectedHelper == 3 || selectedHelper == 4) && IO::shortcutDown(KEY_RIGHT_SHIFT)) {
-							shapes.at(selectedShape).isFifthFourthMoved = true;
-							shapes.at(selectedShape).moveH2 = mouseWorldPos;
-						}
-					}
-
-
-					shapes.at(selectedShape).makeShape();
-				}
-			}
-
-			if (IO::shortcutReleased(KEY_ZERO)) {
-
-				if (selectedHelper != -1 && selectedShape != -1 && !isAnyShapeBeingSpawned) {
-					shapes.at(selectedShape).isBeingMoved = false;
-
-					shapes.at(selectedShape).isThirdBeingMoved = false;
-					shapes.at(selectedShape).isFourthBeingMoved = false;
-					shapes.at(selectedShape).isFifthBeingMoved = false;
-					shapes.at(selectedShape).isFifthFourthMoved = false;
-				}
-
-				shouldRender = true;
-
-				minHelperLength = FLT_MAX;
-				selectedShape = -1;
-				selectedHelper = -1;
-			}
 		}
 		else {
 			firstHelper = true;
 		}
 	}
 
-	void createPointLight(UpdateParameters& myParam) {
+	void createPointLight(UpdateVariables& myVar, UpdateParameters& myParam) {
 
 		glm::vec2 mouseWorldPos = myParam.myCamera.mouseWorldPos;
 
-		if (IO::shortcutPress(KEY_FIVE)) {
+		if (IO::mousePress(0) && myVar.toolPointLight) {
 			pointLights.emplace_back(mouseWorldPos, lightColor);
 
 			shouldRender = true;
 		}
 	}
 
-	void createAreaLight(UpdateParameters& myParam) {
+	void createAreaLight(UpdateVariables& myVar, UpdateParameters& myParam) {
 
 		glm::vec2 mouseWorldPos = myParam.myCamera.mouseWorldPos;
 
-		if (IO::shortcutPress(KEY_SIX)) {
+		if (IO::mousePress(0) && myVar.toolAreaLight) {
 			areaLights.emplace_back(mouseWorldPos, mouseWorldPos, lightColor);
 		}
 
-		if (IO::shortcutDown(KEY_SIX)) {
+		if (IO::mouseDown(0) && myVar.toolAreaLight) {
 			if (areaLights.back().isBeingSpawned) {
 				areaLights.back().vB = mouseWorldPos;
 
@@ -1218,7 +1183,7 @@ struct Lighting {
 			}
 		}
 
-		if (IO::shortcutReleased(KEY_SIX)) {
+		if (IO::mouseReleased(0) && myVar.toolAreaLight) {
 			if (!areaLights.empty() && areaLights.back().isBeingSpawned) {
 				if (glm::length(areaLights.back().vB - areaLights.back().vA) == 0.0f) {
 					areaLights.pop_back();
@@ -1230,9 +1195,9 @@ struct Lighting {
 		}
 	}
 
-	void movePointLights(UpdateParameters& myParam) {
+	void movePointLights(UpdateVariables& myVar, UpdateParameters& myParam) {
 
-		if (IO::shortcutPress(KEY_M)) {
+		if (IO::mousePress(0) && myVar.toolMoveOptics) {
 			glm::vec2 mouseWorldPos = myParam.myCamera.mouseWorldPos;
 
 			glm::vec2 mouseDelta = glm::vec2(GetMouseDelta().x, GetMouseDelta().y);
@@ -1262,20 +1227,20 @@ struct Lighting {
 			}
 		}
 
-		if (IO::shortcutReleased(KEY_M)) {
+		if (IO::mouseReleased(0) && myVar.toolMoveOptics) {
 			for (PointLight& pointLight : pointLights) {
 				pointLight.isBeingMoved = false;
 			}
 		}
 	}
 
-	void moveAreaLights(UpdateParameters& myParam) {
+	void moveAreaLights(UpdateVariables& myVar, UpdateParameters& myParam) {
 		glm::vec2 mouseWorldPos = myParam.myCamera.mouseWorldPos;
 
 		glm::vec2 mouseDelta = glm::vec2(GetMouseDelta().x, GetMouseDelta().y);
 		glm::vec2 scaledDelta = mouseDelta * (1.0f / myParam.myCamera.camera.zoom);
 
-		if (IO::shortcutPress(KEY_M)) {
+		if (IO::mousePress(0) && myVar.toolMoveOptics) {
 			for (AreaLight& areaLight : areaLights) {
 				glm::vec2 dA = areaLight.vA - mouseWorldPos;
 				glm::vec2 dB = areaLight.vB - mouseWorldPos;
@@ -1292,7 +1257,7 @@ struct Lighting {
 			}
 		}
 
-		if (IO::shortcutDown(KEY_M)) {
+		if (IO::mouseDown(0) && myVar.toolMoveOptics) {
 			for (AreaLight& areaLight : areaLights) {
 				if (areaLight.vAisBeingMoved) {
 					areaLight.vA += scaledDelta;
@@ -1307,21 +1272,38 @@ struct Lighting {
 			}
 		}
 
-		if (IO::shortcutReleased(KEY_M)) {
+		if (IO::mouseReleased(0) && myVar.toolMoveOptics) {
 			for (AreaLight& areaLight : areaLights) {
 				areaLight.vAisBeingMoved = false;
 				areaLight.vBisBeingMoved = false;
 			}
 		}
+
+		if (myVar.toolMoveOptics) {
+			for (AreaLight& areaLight : areaLights) {
+				glm::vec2 dA = areaLight.vA - mouseWorldPos;
+				glm::vec2 dB = areaLight.vB - mouseWorldPos;
+
+				float distA = glm::length(dA);
+				float distB = glm::length(dB);
+
+				if (distA <= helperMinDist) {
+					areaLight.drawHelper(areaLight.vA);
+				}
+				if (distB <= helperMinDist) {
+					areaLight.drawHelper(areaLight.vB);
+				}
+			}
+		}
 	}
 
-	void moveWalls(UpdateParameters& myParam) {
+	void moveWalls(UpdateVariables& myVar, UpdateParameters& myParam) {
 		glm::vec2 mouseWorldPos = myParam.myCamera.mouseWorldPos;
 
 		glm::vec2 mouseDelta = glm::vec2(GetMouseDelta().x, GetMouseDelta().y);
 		glm::vec2 scaledDelta = mouseDelta * (1.0f / myParam.myCamera.camera.zoom);
 
-		if (IO::shortcutPress(KEY_M)) {
+		if (IO::mousePress(0) && myVar.toolMoveOptics) {
 			for (Wall& wall : walls) {
 				glm::vec2 dA = wall.vA - mouseWorldPos;
 				glm::vec2 dB = wall.vB - mouseWorldPos;
@@ -1338,7 +1320,7 @@ struct Lighting {
 			}
 		}
 
-		if (IO::shortcutDown(KEY_M)) {
+		if (IO::mouseDown(0) && myVar.toolMoveOptics) {
 			for (Wall& wall : walls) {
 				if (wall.vAisBeingMoved) {
 					wall.vA += scaledDelta;
@@ -1357,13 +1339,892 @@ struct Lighting {
 			}
 		}
 
-		if (IO::shortcutReleased(KEY_M)) {
+		if (IO::mouseReleased(0) && myVar.toolMoveOptics) {
 			for (Wall& wall : walls) {
 				wall.vAisBeingMoved = false;
 				wall.vBisBeingMoved = false;
 			}
 		}
+
+		if (myVar.toolMoveOptics) {
+			for (Wall& wall : walls) {
+				glm::vec2 dA = wall.vA - mouseWorldPos;
+				glm::vec2 dB = wall.vB - mouseWorldPos;
+
+				float distA = glm::length(dA);
+				float distB = glm::length(dB);
+
+				if (distA <= helperMinDist && !wall.isShapeWall) {
+					wall.drawHelper(wall.vA);
+				}
+				if (distB <= helperMinDist && !wall.isShapeWall) {
+					wall.drawHelper(wall.vB);
+				}
+			}
+		}
 	}
+
+	void moveLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
+
+		glm::vec2 mouseWorldPos = myParam.myCamera.mouseWorldPos;
+
+
+
+		minHelperLength = FLT_MAX;
+
+		bool isAnyShapeBeingSpawned = false;
+
+		if (!shapes.empty()) {
+			for (size_t i = 0; i < shapes.size(); i++) {
+				bool drawThisShape = false;
+
+				for (size_t j = 0; j < shapes[i].helpers.size(); j++) {
+					float helperDist = glm::length(mouseWorldPos - shapes[i].helpers[j]);
+
+					if (helperDist <= helperMinDist) {
+						if (!shapes[i].isBeingSpawned) {
+							drawThisShape = true;
+						}
+
+						if (helperDist < minHelperLength) {
+							minHelperLength = helperDist;
+
+							if (IO::mousePress(0) && myVar.toolMoveOptics) {
+								selectedShape = i;
+								selectedHelper = j;
+							}
+						}
+					}
+				}
+
+				if ((drawThisShape || selectedHelper != -1 && selectedShape != -1) && !isAnyShapeBeingSpawned) {
+					for (glm::vec2& helper : shapes[i].helpers) {
+						shapes[i].drawHelper(helper);
+					}
+				}
+			}
+		}
+
+		if (selectedHelper == -1 && selectedShape == -1 && !isAnyShapeBeingSpawned) {
+			movePointLights(myVar, myParam);
+			moveAreaLights(myVar, myParam);
+			moveWalls(myVar, myParam);
+
+			return; // We are not moving helpers, so get out of the function
+		}
+
+		if (IO::mouseDown(0) && myVar.toolMoveOptics) {
+
+			for (Shape& shape : shapes) {
+				if (shape.isBeingSpawned) {
+					isAnyShapeBeingSpawned = true;
+					break;
+				}
+			}
+
+			if (selectedHelper != -1 && selectedShape != -1 && !isAnyShapeBeingSpawned) {
+
+				shapes.at(selectedShape).isBeingMoved = true;
+
+				if (selectedHelper != 2 || selectedHelper != 3) {
+					shapes.at(selectedShape).helpers.at(selectedHelper) = mouseWorldPos;
+				}
+
+				if (selectedHelper == 2) {
+					shapes.at(selectedShape).isThirdBeingMoved = true;
+					shapes.at(selectedShape).moveH2 = mouseWorldPos;
+				}
+
+				if (selectedHelper == 3) {
+					shapes.at(selectedShape).isFourthBeingMoved = true;
+					shapes.at(selectedShape).moveH2 = mouseWorldPos;
+				}
+
+				if (shapes[selectedShape].symmetricalLens) {
+					if (selectedHelper == 4) {
+						shapes.at(selectedShape).isFifthBeingMoved = true;
+						shapes.at(selectedShape).moveH2 = mouseWorldPos;
+					}
+				}
+
+				if (shapes[selectedShape].symmetricalLens) {
+					if ((selectedHelper == 3 || selectedHelper == 4) && IO::shortcutDown(KEY_RIGHT_SHIFT)) {
+						shapes.at(selectedShape).isFifthFourthMoved = true;
+						shapes.at(selectedShape).moveH2 = mouseWorldPos;
+					}
+				}
+
+
+				shapes.at(selectedShape).makeShape();
+			}
+		}
+
+		if (IO::mouseReleased(0) && myVar.toolMoveOptics) {
+
+			if (selectedHelper != -1 && selectedShape != -1 && !isAnyShapeBeingSpawned) {
+				shapes.at(selectedShape).isBeingMoved = false;
+
+				shapes.at(selectedShape).isThirdBeingMoved = false;
+				shapes.at(selectedShape).isFourthBeingMoved = false;
+				shapes.at(selectedShape).isFifthBeingMoved = false;
+				shapes.at(selectedShape).isFifthFourthMoved = false;
+			}
+
+			shouldRender = true;
+
+			minHelperLength = FLT_MAX;
+			selectedShape = -1;
+			selectedHelper = -1;
+		}
+	}
+
+	void eraseLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
+
+		bool anySelectedWalls = false;
+
+		for (Wall& wall : walls) {
+			if (wall.isSelected) {
+				anySelectedWalls = true;
+				break;
+			}
+		}
+
+		glm::vec2 mouseWorldPos = myParam.myCamera.mouseWorldPos;
+
+		if (IO::mouseDown(0) && myVar.toolEraseOptics) {
+			for (int i = static_cast<int>(walls.size()) - 1; i >= 0; --i) {
+
+				Wall& wall = walls[i];
+
+				glm::vec2 dA = wall.vA - mouseWorldPos;
+				glm::vec2 dB = wall.vB - mouseWorldPos;
+
+				float distA = glm::length(dA);
+				float distB = glm::length(dB);
+
+				if (distA <= myParam.brush.brushRadius || distB <= myParam.brush.brushRadius) {
+
+					if (wall.isShapeWall) {
+						for (size_t shapeIdx = 0; shapeIdx < shapes.size(); shapeIdx++) {
+
+							Shape& shape = shapes[shapeIdx];
+
+							if (shape.id == wall.shapeId) {
+								std::vector<size_t>& myIndices = shape.myWallIndices;
+
+								myIndices.erase(
+									std::remove(myIndices.begin(), myIndices.end(), i),
+									myIndices.end()
+								);
+
+								shape.isShapeClosed = false;
+
+								for (size_t idx : myIndices) {
+									Wall& shapeWall = (*shape.walls)[idx];
+									shapeWall.isShapeClosed = false;
+								}
+							}
+						}
+					}
+
+					walls.erase(walls.begin() + i);
+
+					for (Shape& shape : shapes) {
+						for (size_t& idx : shape.myWallIndices) {
+							if (idx > i) {
+								--idx;
+							}
+						}
+					}
+				}
+			}
+
+			for (int i = static_cast<int>(shapes.size()) - 1; i >= 0; --i) {
+				if (shapes[i].myWallIndices.empty()) {
+					shapes.erase(shapes.begin() + i);
+				}
+			}
+
+			for (int i = static_cast<int>(pointLights.size()) - 1; i >= 0; --i) {
+
+				PointLight& pointLight = pointLights[i];
+
+				glm::vec2 d = pointLight.pos - mouseWorldPos;
+
+				float dist = glm::length(d);
+
+				if (dist <= myParam.brush.brushRadius) {
+
+					pointLights.erase(pointLights.begin() + i);
+
+					shouldRender = true;
+				}
+			}
+
+			for (int i = static_cast<int>(areaLights.size()) - 1; i >= 0; --i) {
+
+				AreaLight& areaLight = areaLights[i];
+
+				glm::vec2 dA = areaLight.vA - mouseWorldPos;
+				glm::vec2 dB = areaLight.vB - mouseWorldPos;
+
+				float distA = glm::length(dA);
+				float distB = glm::length(dB);
+
+				if (distA <= myParam.brush.brushRadius || distB <= myParam.brush.brushRadius) {
+
+					areaLights.erase(areaLights.begin() + i);
+
+					shouldRender = true;
+				}
+			}
+		}
+
+		if (IO::shortcutPress(KEY_DELETE)) {
+			for (int i = static_cast<int>(walls.size()) - 1; i >= 0; --i) {
+
+				Wall& wall = walls[i];
+
+				if (wall.isSelected) {
+					if (wall.isShapeWall) {
+						for (Shape& shape : shapes) {
+							if (shape.id == wall.shapeId) {
+								for (size_t& wallIdx : shape.myWallIndices) {
+									Wall& shapeWall = walls[wallIdx];
+
+									shapeWall.isShapeClosed = false;
+								}
+							}
+						}
+					}
+
+					walls.erase(walls.begin() + i);
+				}
+			}
+		}
+
+		if ((IO::mouseReleased(0) && myVar.toolEraseOptics) || (anySelectedWalls && IO::shortcutPress(KEY_DELETE))) {
+			shouldRender = true;
+		}
+	}
+
+	Color lightColorAvg = { 0, 0, 0, 0 };
+	bool isSliderLightColor = false;
+
+	Color baseColorAvg = { 0, 0, 0, 0 };
+	bool isSliderBaseColor = false;
+
+	Color specularColorAvg = { 0, 0, 0, 0 };
+	bool isSliderSpecularColor = false;
+
+	Color refractionColorAvg = { 0, 0, 0, 0 };
+	bool isSliderRefractionCol = false;
+
+	float specularRoughAvg = 0.0f;
+	bool isSliderSpecularRough = false;
+
+	float refractionRoughAvg = 0.0f;
+	bool isSliderRefractionRough = false;
+
+	float refractionAmountAvg = 0.0f;
+	bool isSliderRefractionAmount = false;
+
+	float iorAvg = 0.0f;
+	bool isSliderIor = false;
+
+	// Add the UI bools for optics in here
+	std::vector<bool*> uiOpticElements = {
+
+		&isSliderLightColor,
+		&isSliderBaseColor,
+		&isSliderSpecularColor,
+		&isSliderRefractionCol,
+		&isSliderSpecularRough,
+		&isSliderRefractionRough,
+		&isSliderRefractionAmount,
+		&isSliderIor
+
+	};
+
+	glm::vec2 boxInitialPos{ 0.0f, 0.0f };
+
+	bool isBoxSelecting = false;
+	bool isBoxDeselecting = false;
+
+	// I'm also sorry for this large chunk of ugly code, but I really hate working on anything that involves UI or UX stuff (:
+
+	void selectLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
+
+		int selectedWalls = 0;
+
+		int selectedAreaLights = 0;
+
+		int selectedPointLights = 0;
+
+		bool isHoveringAnything = false;
+
+		if (myVar.toolSelectOptics) {
+
+			glm::vec2 mouseWorldPos = myParam.myCamera.mouseWorldPos;
+
+			if (IO::mousePress(0)) {
+				boxInitialPos = mouseWorldPos;
+				isBoxSelecting = true;
+
+				isBoxDeselecting = IO::shortcutDown(KEY_LEFT_ALT);
+			}
+
+			if (IO::mouseDown(0) && isBoxSelecting) {
+				float boxX = fmin(boxInitialPos.x, mouseWorldPos.x);
+				float boxY = fmin(boxInitialPos.y, mouseWorldPos.y);
+				float boxWidth = fabs(mouseWorldPos.x - boxInitialPos.x);
+				float boxHeight = fabs(mouseWorldPos.y - boxInitialPos.y);
+
+				DrawRectangleV({ boxX, boxY }, { boxWidth, boxHeight }, { 40, 40, 40, 80 });
+				DrawRectangleLinesEx({ boxX, boxY, boxWidth, boxHeight }, 0.6f, WHITE);
+			}
+
+			if (IO::mouseReleased(0) && isBoxSelecting) {
+				float boxX1 = fmin(boxInitialPos.x, mouseWorldPos.x);
+				float boxX2 = fmax(boxInitialPos.x, mouseWorldPos.x);
+				float boxY1 = fmin(boxInitialPos.y, mouseWorldPos.y);
+				float boxY2 = fmax(boxInitialPos.y, mouseWorldPos.y);
+
+				for (Wall& wall : walls) {
+					bool vAInBox = wall.vA.x >= boxX1 && wall.vA.x <= boxX2 &&
+						wall.vA.y >= boxY1 && wall.vA.y <= boxY2;
+
+					bool vBInBox = wall.vB.x >= boxX1 && wall.vB.x <= boxX2 &&
+						wall.vB.y >= boxY1 && wall.vB.y <= boxY2;
+
+					if (vAInBox || vBInBox) {
+						if (isBoxDeselecting && wall.isSelected) {
+							wall.isSelected = false;
+						}
+						else if (!isBoxDeselecting) {
+							wall.isSelected = true;
+						}
+					}
+				}
+
+				for (AreaLight& areaLight : areaLights) {
+					bool vAInBox = areaLight.vA.x >= boxX1 && areaLight.vA.x <= boxX2 &&
+						areaLight.vA.y >= boxY1 && areaLight.vA.y <= boxY2;
+
+					bool vBInBox = areaLight.vB.x >= boxX1 && areaLight.vB.x <= boxX2 &&
+						areaLight.vB.y >= boxY1 && areaLight.vB.y <= boxY2;
+
+					if (vAInBox || vBInBox) {
+						if (isBoxDeselecting && areaLight.isSelected) {
+							areaLight.isSelected = false;
+						}
+						else if (!isBoxDeselecting) {
+							areaLight.isSelected = true;
+						}
+					}
+				}
+
+				for (PointLight& pointLight : pointLights) {
+					bool pointInBox = pointLight.pos.x >= boxX1 && pointLight.pos.x <= boxX2 &&
+						pointLight.pos.y >= boxY1 && pointLight.pos.y <= boxY2;
+
+					if (pointInBox) {
+						if (isBoxDeselecting && pointLight.isSelected) {
+							pointLight.isSelected = false;
+						}
+						else if (!isBoxDeselecting) {
+							pointLight.isSelected = true;
+						}
+					}
+				}
+
+				isBoxSelecting = false;
+				isBoxDeselecting = false;
+			}
+
+			for (Wall& wall : walls) {
+
+				glm::vec2 wallLine = wall.vB - wall.vA;
+				glm::vec2 mouseToA = mouseWorldPos - wall.vA;
+
+				float lineLenSquared = glm::dot(wallLine, wallLine);
+
+				if (lineLenSquared == 0.0f) {
+
+					float dist = glm::length(mouseToA);
+					continue;
+				}
+
+				float t = glm::dot(mouseToA, wallLine) / lineLenSquared;
+				t = glm::clamp(t, 0.0f, 1.0f);
+
+				glm::vec2 closestPoint = wall.vA + wallLine * t;
+
+				glm::vec2 diff = mouseWorldPos - closestPoint;
+				float distance = glm::length(diff);
+
+				if (distance < 5.0f) {
+
+					isHoveringAnything = true;
+
+					if (IO::mousePress(0)) {
+
+						if (!IO::shortcutDown(KEY_LEFT_CONTROL) && !IO::shortcutDown(KEY_LEFT_ALT)) {
+							for (Wall& wallToDeselect : walls) {
+								wallToDeselect.isSelected = false;
+							}
+
+							for (AreaLight& areaLightToDeselect : areaLights) {
+								areaLightToDeselect.isSelected = false;
+							}
+
+							for (PointLight& pointLight : pointLights) {
+								pointLight.isSelected = false;
+							}
+						}
+
+						if (!IO::shortcutDown(KEY_LEFT_ALT)) {
+							wall.isSelected = true;
+						}
+
+						if (IO::shortcutDown(KEY_LEFT_ALT) && !IO::shortcutDown(KEY_LEFT_SHIFT) && wall.isShapeWall) {
+							wall.isSelected = false;
+						}
+
+						if (wall.isShapeWall) {
+
+							if (IO::shortcutDown(KEY_LEFT_SHIFT)) {
+								for (Shape& shape : shapes) {
+									if (shape.id == wall.shapeId) {
+										for (size_t& shapeWallIdx : shape.myWallIndices) {
+											walls[shapeWallIdx].isSelected = true;
+										}
+									}
+								}
+							}
+						}
+
+						if (IO::shortcutDown(KEY_LEFT_ALT) && IO::shortcutDown(KEY_LEFT_SHIFT) && wall.isShapeWall) {
+							for (Shape& shape : shapes) {
+								if (shape.id == wall.shapeId) {
+									for (size_t& shapeWallIdx : shape.myWallIndices) {
+										walls[shapeWallIdx].isSelected = false;
+									}
+								}
+							}
+						}
+					}
+
+					wall.aparentColor = RED;
+				}
+				else {
+
+					if (!wall.isSelected) {
+						wall.aparentColor = WHITE;
+					}
+				}
+			}
+
+			for (AreaLight& areaLight : areaLights) {
+
+				glm::vec2 areaLightLine = areaLight.vB - areaLight.vA;
+				glm::vec2 mouseToA = mouseWorldPos - areaLight.vA;
+
+				float lineLenSquared = glm::dot(areaLightLine, areaLightLine);
+
+				if (lineLenSquared == 0.0f) {
+
+					float dist = glm::length(mouseToA);
+					continue;
+				}
+
+				float t = glm::dot(mouseToA, areaLightLine) / lineLenSquared;
+				t = glm::clamp(t, 0.0f, 1.0f);
+
+				glm::vec2 closestPoint = areaLight.vA + areaLightLine * t;
+
+				glm::vec2 diff = mouseWorldPos - closestPoint;
+				float distance = glm::length(diff);
+
+				if (distance < 5.0f) {
+
+					isHoveringAnything = true;
+
+					if (IO::mousePress(0)) {
+
+						if (!IO::shortcutDown(KEY_LEFT_CONTROL) && !IO::shortcutDown(KEY_LEFT_ALT)) {
+							for (AreaLight& areaLightToDeselect : areaLights) {
+								areaLightToDeselect.isSelected = false;
+							}
+
+							for (PointLight& pointLight : pointLights) {
+								pointLight.isSelected = false;
+							}
+
+							for (Wall& wall : walls) {
+								wall.isSelected = false;
+							}
+						}
+
+						if (!IO::shortcutDown(KEY_LEFT_ALT)) {
+							areaLight.isSelected = true;
+						}
+
+						if (IO::shortcutDown(KEY_LEFT_ALT) && !IO::shortcutDown(KEY_LEFT_SHIFT)) {
+							areaLight.isSelected = false;
+						}
+					}
+
+					areaLight.aparentColor = RED;
+				}
+				else {
+
+					if (!areaLight.isSelected) {
+						areaLight.aparentColor = WHITE;
+					}
+				}
+			}
+
+			for (PointLight& pointLight : pointLights) {
+
+				glm::vec2 mouseToA = mouseWorldPos - pointLight.pos;
+
+				float distance = glm::length(mouseToA);
+
+				if (distance < 5.0f) {
+
+					isHoveringAnything = true;
+
+					if (IO::mousePress(0)) {
+
+						if (!IO::shortcutDown(KEY_LEFT_CONTROL) && !IO::shortcutDown(KEY_LEFT_ALT)) {
+
+							for (PointLight& pointLight : pointLights) {
+								pointLight.isSelected = false;
+							}
+
+							for (AreaLight& areaLightToDeselect : areaLights) {
+								areaLightToDeselect.isSelected = false;
+							}
+
+							for (Wall& wall : walls) {
+								wall.isSelected = false;
+							}
+						}
+
+						if (!IO::shortcutDown(KEY_LEFT_ALT)) {
+							pointLight.isSelected = true;
+						}
+
+						if (IO::shortcutDown(KEY_LEFT_ALT) && !IO::shortcutDown(KEY_LEFT_SHIFT)) {
+							pointLight.isSelected = false;
+						}
+					}
+
+					pointLight.aparentColor = RED;
+				}
+				else {
+
+					if (!pointLight.isSelected) {
+						pointLight.aparentColor = WHITE;
+					}
+				}
+			}
+
+			if (!isHoveringAnything && !IO::shortcutDown(KEY_LEFT_CONTROL) && !IO::shortcutDown(KEY_LEFT_ALT)) {
+				if (IO::mousePress(0)) {
+
+					for (Wall& wall : walls) {
+						wall.isSelected = false;
+					}
+
+					for (AreaLight& areaLight : areaLights) {
+						areaLight.isSelected = false;
+					}
+
+					for (PointLight& pointLight : pointLights) {
+						pointLight.isSelected = false;
+					}
+				}
+			}
+
+			for (Wall& wall : walls) {
+				if (wall.isSelected) {
+					wall.aparentColor = RED;
+
+					selectedWalls++;
+				}
+			}
+
+			for (AreaLight& areaLight : areaLights) {
+				if (areaLight.isSelected) {
+					areaLight.aparentColor = RED;
+
+					selectedAreaLights++;
+				}
+			}
+
+			for (PointLight& pointLight : pointLights) {
+				if (pointLight.isSelected) {
+					pointLight.aparentColor = RED;
+
+					pointLight.drawHelper(pointLight.pos);
+
+					selectedPointLights++;
+				}
+			}
+
+			if (IO::mouseReleased(0)) {
+
+				if (selectedWalls > 0) {
+
+					baseColorAvg = { 0, 0, 0, 0 };
+					ImVec4 baseColorAvgImgui = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+					specularColorAvg = { 0, 0, 0, 0 };
+					ImVec4 specularColorAvgImgui = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+					refractionColorAvg = { 0, 0, 0, 0 };
+					ImVec4 refractionColAvgImgui = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+					specularRoughAvg = 0.0f;
+
+					refractionRoughAvg = 0.0f;
+
+					refractionAmountAvg = 0.0f;
+
+					iorAvg = 0.0f;
+
+					for (Wall& wall : walls) {
+						if (wall.isSelected) {
+
+							// Base Color
+							ImVec4 wallBaseColImgui = rlImGuiColors::Convert(wall.baseColor);
+
+							baseColorAvgImgui.x += wallBaseColImgui.x;
+							baseColorAvgImgui.y += wallBaseColImgui.y;
+							baseColorAvgImgui.z += wallBaseColImgui.z;
+							baseColorAvgImgui.w += wallBaseColImgui.w;
+
+							// Specular Color
+							ImVec4 wallSpecularColImgui = rlImGuiColors::Convert(wall.specularColor);
+
+							specularColorAvgImgui.x += wallSpecularColImgui.x;
+							specularColorAvgImgui.y += wallSpecularColImgui.y;
+							specularColorAvgImgui.z += wallSpecularColImgui.z;
+							specularColorAvgImgui.w += wallSpecularColImgui.w;
+
+							// Refraction Color
+							ImVec4 wallRefractionColImgui = rlImGuiColors::Convert(wall.refractionColor);
+
+							refractionColAvgImgui.x += wallRefractionColImgui.x;
+							refractionColAvgImgui.y += wallRefractionColImgui.y;
+							refractionColAvgImgui.z += wallRefractionColImgui.z;
+							refractionColAvgImgui.w += wallRefractionColImgui.w;
+
+							// Specular Roughness
+							specularRoughAvg += wall.specularRoughness;
+
+							// Refraction Surface Roughness
+							refractionRoughAvg += wall.refractionRoughness;
+
+							// Refraction Amount
+							refractionAmountAvg += wall.refractionAmount;
+
+							// IOR
+							iorAvg += wall.IOR;
+						}
+					}
+
+					// Base Color
+					baseColorAvgImgui.x /= selectedWalls;
+					baseColorAvgImgui.y /= selectedWalls;
+					baseColorAvgImgui.z /= selectedWalls;
+					baseColorAvgImgui.w /= selectedWalls;
+					wallBaseColor = rlImGuiColors::Convert(baseColorAvgImgui);
+
+					// Specular Color
+					specularColorAvgImgui.x /= selectedWalls;
+					specularColorAvgImgui.y /= selectedWalls;
+					specularColorAvgImgui.z /= selectedWalls;
+					specularColorAvgImgui.w /= selectedWalls;
+					wallSpecularColor = rlImGuiColors::Convert(specularColorAvgImgui);
+
+					// Refraction Color
+					refractionColAvgImgui.x /= selectedWalls;
+					refractionColAvgImgui.y /= selectedWalls;
+					refractionColAvgImgui.z /= selectedWalls;
+					refractionColAvgImgui.w /= selectedWalls;
+					wallRefractionColor = rlImGuiColors::Convert(refractionColAvgImgui);
+
+					// Specular Roughness
+					specularRoughAvg /= selectedWalls;
+					wallSpecularRoughness = specularRoughAvg;
+
+					// Refraction Surface Roughness
+					refractionRoughAvg /= selectedWalls;
+					wallRefractionRoughness = refractionRoughAvg;
+
+					// Refraction Amount
+					refractionAmountAvg /= selectedWalls;
+					wallRefractionAmount = refractionAmountAvg;
+
+					// IOR
+					iorAvg /= selectedWalls;
+					wallIOR = iorAvg;
+				}
+
+				if (selectedAreaLights > 0 || selectedPointLights > 0) {
+
+					lightColorAvg = { 0, 0, 0, 0 };
+					ImVec4 lightColorAvgImgui = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+					if (selectedAreaLights > 0) {
+
+						for (AreaLight& arealight : areaLights) {
+							if (arealight.isSelected) {
+
+								// Light Color
+								ImVec4 lightColImgui = rlImGuiColors::Convert(arealight.color);
+
+								lightColorAvgImgui.x += lightColImgui.x;
+								lightColorAvgImgui.y += lightColImgui.y;
+								lightColorAvgImgui.z += lightColImgui.z;
+								lightColorAvgImgui.w += lightColImgui.w;
+							}
+						}
+					}
+
+					if (selectedPointLights > 0) {
+
+						for (PointLight& pointLight : pointLights) {
+							if (pointLight.isSelected) {
+
+								// Light Color
+								ImVec4 lightColImgui = rlImGuiColors::Convert(pointLight.color);
+
+								lightColorAvgImgui.x += lightColImgui.x;
+								lightColorAvgImgui.y += lightColImgui.y;
+								lightColorAvgImgui.z += lightColImgui.z;
+								lightColorAvgImgui.w += lightColImgui.w;
+							}
+						}
+					}
+
+					// Light Color
+					lightColorAvgImgui.x /= selectedAreaLights + selectedPointLights;
+					lightColorAvgImgui.y /= selectedAreaLights + selectedPointLights;
+					lightColorAvgImgui.z /= selectedAreaLights + selectedPointLights;
+					lightColorAvgImgui.w /= selectedAreaLights + selectedPointLights;
+					lightColor = rlImGuiColors::Convert(lightColorAvgImgui);
+				}
+			}
+		}
+
+		if (IO::mouseReleased(0) && !myVar.toolSelectOptics) {
+			for (Wall& wall : walls) {
+				wall.isSelected = false;
+				wall.aparentColor = WHITE;
+			}
+
+			for (AreaLight& areaLight : areaLights) {
+				areaLight.isSelected = false;
+				areaLight.aparentColor = WHITE;
+			}
+
+			for (PointLight& pointLight : pointLights) {
+				pointLight.isSelected = false;
+				pointLight.aparentColor = WHITE;
+			}
+		}
+
+		bool isAnyActive = false;
+
+		for (bool* param : uiOpticElements) {
+			if (*param) {
+				isAnyActive = true;
+			}
+		}
+
+		if (isAnyActive && selectedWalls > 0) {
+
+			for (Wall& wall : walls) {
+				if (wall.isSelected) {
+
+					if (isSliderBaseColor) {
+						wall.baseColor = wallBaseColor;
+					}
+					if (isSliderSpecularColor) {
+						wall.specularColor = wallSpecularColor;
+					}
+					if (isSliderRefractionCol) {
+						wall.refractionColor = wallRefractionColor;
+					}
+
+					if (isSliderSpecularRough) {
+						wall.specularRoughness = wallSpecularRoughness;
+					}
+
+					if (isSliderRefractionRough) {
+						wall.refractionRoughness = wallRefractionRoughness;
+					}
+
+					if (isSliderRefractionAmount) {
+						wall.refractionAmount = wallRefractionAmount;
+					}
+
+					if (isSliderIor) {
+						wall.IOR = wallIOR;
+					}
+				}
+			}
+
+			shouldRender = true;
+		}
+
+		if (isAnyActive && (selectedAreaLights > 0 || selectedPointLights > 0)) {
+
+			if (selectedAreaLights > 0) {
+				for (AreaLight& areaLight : areaLights) {
+					if (areaLight.isSelected) {
+
+						if (isSliderLightColor) {
+							areaLight.color = lightColor;
+						}
+					}
+				}
+			}
+
+			if (selectedPointLights > 0) {
+				for (PointLight& pointLight : pointLights) {
+					if (pointLight.isSelected) {
+
+						if (isSliderLightColor) {
+							pointLight.color = lightColor;
+						}
+					}
+				}
+			}
+
+			shouldRender = true;
+		}
+
+		isSliderLightColor = false;
+
+		isSliderBaseColor = false;
+		isSliderSpecularColor = false;
+		isSliderRefractionCol = false;
+
+		isSliderSpecularRough = false;
+
+		isSliderRefractionRough = false;
+
+		isSliderRefractionAmount = false;
+
+		isSliderIor = false;
+	}
+
+
 
 	float checkIntersect(const LightRay& ray, const Wall& w) {
 
@@ -1463,7 +2324,7 @@ struct Lighting {
 static_cast<unsigned char>(ray.color.r * ray.wall.specularColor.r / 255.0f * absorptionInvBias),
 static_cast<unsigned char>(ray.color.g * ray.wall.specularColor.g / 255.0f * absorptionInvBias),
 static_cast<unsigned char>(ray.color.b * ray.wall.specularColor.b / 255.0f * absorptionInvBias),
-static_cast<unsigned char>(ray.color.a * absorptionInvBias)
+static_cast<unsigned char>(ray.color.a)
 		};
 
 		glm::vec2 newSource = ray.hitPoint + interpolatedNormal * lightBias;
@@ -1535,14 +2396,14 @@ static_cast<unsigned char>(ray.color.a * absorptionInvBias)
 			static_cast<unsigned char>(ray.color.r * ray.wall.refractionColor.r / 255.0f * absorptionInvBias),
 			static_cast<unsigned char>(ray.color.g * ray.wall.refractionColor.g / 255.0f * absorptionInvBias),
 			static_cast<unsigned char>(ray.color.b * ray.wall.refractionColor.b / 255.0f * absorptionInvBias),
-			static_cast<unsigned char>(ray.color.a * absorptionInvBias)
+			static_cast<unsigned char>(ray.color.a)
 		};
 
 		glm::vec2 newSource = ray.hitPoint - interpolatedNormal * lightBias;
 		copyRays.emplace_back(newSource, refractedDir, ray.bounceLevel + 1, newColor);
 
 		LightRay& newRay = copyRays.back();
-		if (!ray.wall.isShapeWall) {
+		if (!ray.wall.isShapeWall || (ray.wall.isShapeWall && !ray.wall.isShapeClosed)) {
 			newRay.enterMediumCount = ray.enterMediumCount;
 			newRay.prevMediumIOR = ray.prevMediumIOR;
 		}
@@ -1584,7 +2445,7 @@ static_cast<unsigned char>(ray.color.a * absorptionInvBias)
 static_cast<unsigned char>(ray.color.r * ray.wall.baseColor.r / 255.0f * absorptionInvBias),
 static_cast<unsigned char>(ray.color.g * ray.wall.baseColor.g / 255.0f * absorptionInvBias),
 static_cast<unsigned char>(ray.color.b * ray.wall.baseColor.b / 255.0f * absorptionInvBias),
-static_cast<unsigned char>(ray.color.a * absorptionInvBias)
+static_cast<unsigned char>(ray.color.a)
 		};
 
 		glm::vec2 newSource = ray.hitPoint + interpolatedNormal * lightBias;
@@ -1609,6 +2470,10 @@ static_cast<unsigned char>(ray.color.a * absorptionInvBias)
 				DrawLineV({ (wall.vA.x + wall.vB.x) * 0.5f, (wall.vA.y + wall.vB.y) * 0.5f },
 					{ (wall.vA.x + wall.vB.x) * 0.5f + wall.normal.x * 10.0f, (wall.vA.y + wall.vB.y) * 0.5f + wall.normal.y * 10.0f }, RED);
 			}
+		}
+
+		for (AreaLight& areaLight : areaLights) {
+			areaLight.drawAreaLight();
 		}
 
 		if (currentSamples <= maxSamples) {
@@ -1654,7 +2519,7 @@ static_cast<unsigned char>(ray.color.a * absorptionInvBias)
 		}
 	}
 
-	void rayLogic(UpdateParameters& myParam) {
+	void rayLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 
 		if (shouldRender) {
 			rays.clear();
@@ -1665,14 +2530,16 @@ static_cast<unsigned char>(ray.color.a * absorptionInvBias)
 
 		//rays.emplace_back(glm::vec2{ 500.0f, 500.0f }, glm::vec2{ 1.0f, 0.0f }, 1, WHITE);
 
-		createPointLight(myParam);
-		createAreaLight(myParam);
-		createWall(myParam);
-		createShape(myParam);
+		createPointLight(myVar, myParam);
+		createAreaLight(myVar, myParam);
+		createWall(myVar, myParam);
+		createShape(myVar, myParam);
 
-		movePointLights(myParam);
-		moveAreaLights(myParam);
-		moveWalls(myParam);
+		moveLogic(myVar, myParam);
+
+		eraseLogic(myVar, myParam);
+
+		selectLogic(myVar, myParam);
 
 		lightRendering(myParam);
 

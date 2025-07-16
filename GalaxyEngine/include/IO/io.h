@@ -7,7 +7,7 @@ namespace IO {
     static inline bool shortcutPress(int key) {
         ImGuiIO& io = ImGui::GetIO();
         if (io.WantCaptureKeyboard) {
-            return false; // Don't process shortcuts when ImGui wants keyboard
+            return false;
         }
         return IsKeyPressed(key);
     }
@@ -15,7 +15,7 @@ namespace IO {
     static inline bool shortcutDown(int key) {
         ImGuiIO& io = ImGui::GetIO();
         if (io.WantCaptureKeyboard) {
-            return false; // Don't process shortcuts when ImGui wants keyboard
+            return false;
         }
         return IsKeyDown(key);
     }
@@ -23,9 +23,33 @@ namespace IO {
     static inline bool shortcutReleased(int key) {
         ImGuiIO& io = ImGui::GetIO();
         if (io.WantCaptureKeyboard) {
-            return false; // Don't process shortcuts when ImGui wants keyboard
+            return false;
         }
         return IsKeyReleased(key);
+    }
+
+    static inline bool mousePress(int key) {
+        ImGuiIO& io = ImGui::GetIO();
+        if (io.WantCaptureMouse) {
+            return false;
+        }
+        return IsMouseButtonPressed(key);
+    }
+
+    static inline bool mouseDown(int key) {
+        ImGuiIO& io = ImGui::GetIO();
+        if (io.WantCaptureMouse) {
+            return false;
+        }
+        return IsMouseButtonDown(key);
+    }
+
+    static inline bool mouseReleased(int key) {
+        ImGuiIO& io = ImGui::GetIO();
+        if (io.WantCaptureMouse) {
+            return false;
+        }
+        return IsMouseButtonReleased(key);
     }
 
     // Additional IO utility functions can be added here in the future

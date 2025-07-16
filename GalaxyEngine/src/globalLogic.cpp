@@ -83,7 +83,12 @@ void pinParticles() {
 
 void updateScene() {
 
-	lighting.rayLogic(myParam);
+	// If menu is active, do not use mouse input for non-menu stuff. I keep raylib's own mouse input for the menu but the custom IO for non-menu stuff
+	if (myParam.rightClickSettings.isMenuActive) {
+		ImGui::GetIO().WantCaptureMouse = true;
+	}
+
+	lighting.rayLogic(myVar, myParam);
 
 	Quadtree* grid = nullptr;
 
@@ -120,20 +125,6 @@ void updateScene() {
 	if (grid != nullptr && myVar.drawQuadtree) {
 		grid->drawQuadtree();
 	}
-
-	/*for (int i = 0; i < 20; i++) {
-
-		float angle = 2 * PI * i / 20;
-		float length = 100.0f;
-
-		float dx = std::cos(angle) * length;
-		float dy = std::sin(angle) * length;
-
-		glm::vec2 mousePos = myParam.myCamera.mouseWorldPos;
-		glm::vec2 endPoint = { mousePos.x + dx, mousePos.y + dy };
-
-		DrawLineV({ mousePos.x, mousePos.y }, { endPoint.x, endPoint.y }, WHITE);
-	}*/
 
 
 	for (ParticleRendering& rParticle : myParam.rParticles) {
@@ -237,11 +228,11 @@ void updateScene() {
 
 	myParam.brush.particlesSpinner(myVar, myParam);
 
-	myParam.brush.particlesGrabber(myParam);
+	myParam.brush.particlesGrabber(myVar, myParam);
 
-	myParam.brush.temperatureBrush(myParam);
+	myParam.brush.temperatureBrush(myVar, myParam);
 
-	myParam.brush.eraseBrush(myParam);
+	myParam.brush.eraseBrush(myVar, myParam);
 
 	const float boundsX = 3840.0f;
 	const float boundsY = 2160.0f;

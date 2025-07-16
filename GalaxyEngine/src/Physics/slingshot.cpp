@@ -1,6 +1,7 @@
 #include "IO/io.h"
 
 #include "Physics/slingshot.h"
+#include "parameters.h"
 
 glm::vec2 slingshotPos = { 0, 0 };
 
@@ -10,26 +11,26 @@ Slingshot::Slingshot(glm::vec2 norm, float length) {
 }
 
 
-Slingshot Slingshot::particleSlingshot(bool &isDragging, SceneCamera myCamera) {
+Slingshot Slingshot::particleSlingshot(UpdateVariables& myVar, SceneCamera myCamera) {
 
 	if (IsMouseButtonPressed(1)) {
-		isDragging = false;
+		myVar.isDragging = false;
 	}
 
 	glm::vec2 mouseWorldPos = glm::vec2(GetScreenToWorld2D(GetMousePosition(), myCamera.camera).x, GetScreenToWorld2D(GetMousePosition(), myCamera.camera).y);
 
-	if ((IsMouseButtonPressed(0) && !IsKeyDown(KEY_LEFT_CONTROL) && 
-		!IsKeyDown(KEY_LEFT_ALT)) || 
+	if ((IsMouseButtonPressed(0) && !IO::shortcutDown(KEY_LEFT_CONTROL) && !IO::shortcutDown(KEY_LEFT_ALT) &&
+		(myVar.toolSpawnHeavyParticle || myVar.toolSpawnBigGalaxy || myVar.toolSpawnSmallGalaxy || myVar.toolSpawnStar)) || 
 		IO::shortcutPress(KEY_ONE) ||
 		IO::shortcutPress(KEY_TWO) || 
 		IO::shortcutPress(KEY_THREE) ||
 		IO::shortcutPress(KEY_J)
-	)
-	{   
-		isDragging = true;
+	) {   
+		myVar.isDragging = true;
 		slingshotPos = mouseWorldPos;
 	}
-	if (isDragging) {
+
+	if (myVar.isDragging) {
 
 		glm::vec2 slingshotDist = slingshotPos - mouseWorldPos;
 

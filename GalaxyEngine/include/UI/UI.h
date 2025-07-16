@@ -56,11 +56,11 @@ public:
 	static bool buttonHelper(std::string label, std::string tooltip, bool& parameter, float sizeX, float sizeY, bool canDeactivateSelf, 
 		bool& isEnabled);
 
-	static void sliderHelper(std::string label, std::string tooltip, float& parameter, float minVal, float maxVal,
+	static bool sliderHelper(std::string label, std::string tooltip, float& parameter, float minVal, float maxVal,
 		float sizeX, float sizeY, bool& isEnabled);
 
 	// Int Overload
-	void sliderHelper(std::string label, std::string tooltip, int& parameter, int minVal, int maxVal,
+	static bool sliderHelper(std::string label, std::string tooltip, int& parameter, int minVal, int maxVal,
 		float sizeX, float sizeY, bool& isEnabled);
 
 	bool showSettings = true;
