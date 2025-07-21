@@ -519,7 +519,7 @@ void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myRayTracingTexture,
 		myUI.uiLogic(myParam, myVar, sph, save, geSound, lighting);
 	}
 
-	save.saveLoadLogic(myVar, myParam, sph, physics);
+	save.saveLoadLogic(myVar, myParam, sph, physics, lighting);
 
 	myParam.subdivision.subdivideParticles(myVar, myParam);
 

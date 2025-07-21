@@ -217,6 +217,7 @@ struct UpdateVariables{
 
 	bool toolPointLight = false;
 	bool toolAreaLight = false;
+	bool toolConeLight = false;
 	bool toolCircle = false;
 	bool toolDrawShape = false;
 	bool toolLens = false;

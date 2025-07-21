@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Particles/particle.h"
+#include "Physics/light.h"
 
 #include "Physics/SPH.h"
 #include "Physics/physics.h"
@@ -26,7 +27,7 @@ public:
 	bool loadFlag = false;
 
 	const uint32_t version160 = 160;
-	const uint32_t version170 = 160;
+	const uint32_t version170 = 170;
 	const uint32_t currentVersion = version170; // VERY IMPORTANT. CHANGE THIS IF YOU MAKE ANY CHANGES TO THE SAVE SYSTEM. VERSION "1.6.0" = 160, VERSION "1.6.12" = 1612
 
 	template <typename T>
@@ -106,7 +107,7 @@ public:
 		}
 	}
 
-	void saveSystem(const std::string& filename, UpdateVariables& myVar, UpdateParameters& myParam, SPH& sph, Physics& physics);
+	void saveSystem(const std::string& filename, UpdateVariables& myVar, UpdateParameters& myParam, SPH& sph, Physics& physics, Lighting& lighting);
 
 	bool deserializeParticleSystem(const std::string& filename,
 		std::string& yamlString,
@@ -114,6 +115,7 @@ public:
 		UpdateParameters& myParam,
 		SPH& sph,
 		Physics& physics,
+		Lighting& lighting,
 		bool loadFlag) {
 		if (!loadFlag) return false;
 
@@ -149,34 +151,35 @@ public:
 		uint32_t loadedVersion;
 		file.read(reinterpret_cast<char*>(&loadedVersion), sizeof(loadedVersion));
 		if (loadedVersion != currentVersion) {
-			std::cerr << "Version mismatch! Expected version: " << currentVersion << " Loaded version: " << loadedVersion << std::endl;
+			std::cerr << "Loaded file from older version! Expected version: " << currentVersion << " Loaded version: " << loadedVersion << std::endl;
 		}
 		else {
 			std::cout << "File version: " << loadedVersion << std::endl;
 		}
 
 		if (loadedVersion == currentVersion) {
-			deserializeVersion170(file, myParam);
+			deserializeVersion170(file, myParam, physics, lighting);
 		}
 		else if (loadedVersion == version160) {
+
 			deserializeVersion160(file, myParam);
-		}
 
-		physics.particleConstraints.clear();
-		uint32_t numConstraints = 0;
-		file.read(reinterpret_cast<char*>(&numConstraints), sizeof(numConstraints));
-		if (numConstraints > 0) {
-			
-			physics.particleConstraints.resize(numConstraints);
-			file.read(
-				reinterpret_cast<char*>(physics.particleConstraints.data()),
-				numConstraints * sizeof(ParticleConstraint)
-			);
+			physics.particleConstraints.clear();
+			uint32_t numConstraints = 0;
+			file.read(reinterpret_cast<char*>(&numConstraints), sizeof(numConstraints));
+			if (numConstraints > 0) {
 
-			physics.constraintMap.clear();
-			for (auto& constraint : physics.particleConstraints) {
-				uint64_t key = physics.makeKey(constraint.id1, constraint.id2);
-				physics.constraintMap[key] = &constraint;
+				physics.particleConstraints.resize(numConstraints);
+				file.read(
+					reinterpret_cast<char*>(physics.particleConstraints.data()),
+					numConstraints * sizeof(ParticleConstraint)
+				);
+
+				physics.constraintMap.clear();
+				for (auto& constraint : physics.particleConstraints) {
+					uint64_t key = physics.makeKey(constraint.id1, constraint.id2);
+					physics.constraintMap[key] = &constraint;
+				}
 			}
 		}
 
@@ -191,7 +194,11 @@ public:
 		return true;
 	}
 
-	bool deserializeVersion170(std::istream& file, UpdateParameters& myParam) {
+	bool deserializeVersion170(std::istream& file, UpdateParameters& myParam, Physics& physics, Lighting& lighting) {
+
+		file.read(reinterpret_cast<char*>(&globalId), sizeof(globalId));
+		file.read(reinterpret_cast<char*>(&globalShapeId), sizeof(globalShapeId));
+		file.read(reinterpret_cast<char*>(&globalWallId), sizeof(globalWallId));
 
 		uint32_t particleCount;
 		file.read(reinterpret_cast<char*>(&particleCount), sizeof(particleCount));
@@ -263,6 +270,221 @@ public:
 			myParam.pParticles.push_back(p);
 			myParam.rParticles.push_back(r);
 		}
+
+		physics.particleConstraints.clear();
+		uint32_t numConstraints = 0;
+		file.read(reinterpret_cast<char*>(&numConstraints), sizeof(numConstraints));
+		if (numConstraints > 0) {
+
+			physics.particleConstraints.resize(numConstraints);
+			file.read(
+				reinterpret_cast<char*>(physics.particleConstraints.data()),
+				numConstraints * sizeof(ParticleConstraint)
+			);
+
+			physics.constraintMap.clear();
+			for (auto& constraint : physics.particleConstraints) {
+				uint64_t key = physics.makeKey(constraint.id1, constraint.id2);
+				physics.constraintMap[key] = &constraint;
+			}
+		}
+
+		uint32_t wallCount = 0;
+		file.read(reinterpret_cast<char*>(&wallCount), sizeof(wallCount));
+		lighting.walls.clear();
+		lighting.walls.reserve(wallCount);
+
+		for (uint32_t i = 0; i < wallCount; i++) {
+			Wall w;
+
+			file.read(reinterpret_cast<char*>(&w.vA), sizeof(w.vA));
+			file.read(reinterpret_cast<char*>(&w.vB), sizeof(w.vB));
+			file.read(reinterpret_cast<char*>(&w.normal), sizeof(w.normal));
+			file.read(reinterpret_cast<char*>(&w.normalVA), sizeof(w.normalVA));
+			file.read(reinterpret_cast<char*>(&w.normalVB), sizeof(w.normalVB));
+
+			file.read(reinterpret_cast<char*>(&w.isBeingSpawned), sizeof(w.isBeingSpawned));
+			file.read(reinterpret_cast<char*>(&w.vAisBeingMoved), sizeof(w.vAisBeingMoved));
+			file.read(reinterpret_cast<char*>(&w.vBisBeingMoved), sizeof(w.vBisBeingMoved));
+
+			file.read(reinterpret_cast<char*>(&w.apparentColor), sizeof(w.apparentColor));
+			file.read(reinterpret_cast<char*>(&w.baseColor), sizeof(w.baseColor));
+			file.read(reinterpret_cast<char*>(&w.specularColor), sizeof(w.specularColor));
+			file.read(reinterpret_cast<char*>(&w.refractionColor), sizeof(w.refractionColor));
+
+			file.read(reinterpret_cast<char*>(&w.baseColorVal), sizeof(w.baseColorVal));
+			file.read(reinterpret_cast<char*>(&w.specularColorVal), sizeof(w.specularColorVal));
+			file.read(reinterpret_cast<char*>(&w.refractionColorVal), sizeof(w.refractionColorVal));
+
+			file.read(reinterpret_cast<char*>(&w.specularRoughness), sizeof(w.specularRoughness));
+			file.read(reinterpret_cast<char*>(&w.refractionRoughness), sizeof(w.refractionRoughness));
+			file.read(reinterpret_cast<char*>(&w.refractionAmount), sizeof(w.refractionAmount));
+			file.read(reinterpret_cast<char*>(&w.IOR), sizeof(w.IOR));
+			file.read(reinterpret_cast<char*>(&w.dispersionStrength), sizeof(w.dispersionStrength));
+
+			file.read(reinterpret_cast<char*>(&w.isShapeWall), sizeof(w.isShapeWall));
+			file.read(reinterpret_cast<char*>(&w.isShapeClosed), sizeof(w.isShapeClosed));
+			file.read(reinterpret_cast<char*>(&w.shapeId), sizeof(w.shapeId));
+
+			file.read(reinterpret_cast<char*>(&w.id), sizeof(w.id));
+			file.read(reinterpret_cast<char*>(&w.isSelected), sizeof(w.isSelected));
+
+			lighting.walls.push_back(w);
+		}
+
+		lighting.shapes.clear();
+		uint32_t numShapes = 0;
+		file.read(reinterpret_cast<char*>(&numShapes), sizeof(numShapes));
+		if (numShapes > 0) {
+
+			for (uint32_t i = 0; i < numShapes; i++) {
+				Shape s;
+
+				uint32_t wallIdCount = 0;
+				file.read(reinterpret_cast<char*>(&wallIdCount), sizeof(wallIdCount));
+				s.myWallIds.resize(wallIdCount);
+				file.read(reinterpret_cast<char*>(s.myWallIds.data()), wallIdCount * sizeof(uint32_t));
+
+				uint32_t vertCount = 0;
+				file.read(reinterpret_cast<char*>(&vertCount), sizeof(vertCount));
+				s.polygonVerts.resize(vertCount);
+				file.read(reinterpret_cast<char*>(s.polygonVerts.data()), vertCount * sizeof(glm::vec2));
+
+				uint32_t helpersCount = 0;
+				file.read(reinterpret_cast<char*>(&helpersCount), sizeof(helpersCount));
+				s.helpers.resize(helpersCount);
+				file.read(reinterpret_cast<char*>(s.helpers.data()), helpersCount * sizeof(glm::vec2));
+
+
+				file.read(reinterpret_cast<char*>(&s.baseColor), sizeof(s.baseColor));
+				file.read(reinterpret_cast<char*>(&s.specularColor), sizeof(s.specularColor));
+				file.read(reinterpret_cast<char*>(&s.refractionColor), sizeof(s.refractionColor));
+
+				file.read(reinterpret_cast<char*>(&s.specularRoughness), sizeof(s.specularRoughness));
+				file.read(reinterpret_cast<char*>(&s.refractionRoughness), sizeof(s.refractionRoughness));
+				file.read(reinterpret_cast<char*>(&s.refractionAmount), sizeof(s.refractionAmount));
+				file.read(reinterpret_cast<char*>(&s.IOR), sizeof(s.IOR));
+				file.read(reinterpret_cast<char*>(&s.dispersionStrength), sizeof(s.dispersionStrength));
+
+				file.read(reinterpret_cast<char*>(&s.id), sizeof(s.id));
+
+				file.read(reinterpret_cast<char*>(&s.h1), sizeof(s.h1));
+				file.read(reinterpret_cast<char*>(&s.h2), sizeof(s.h2));
+
+				file.read(reinterpret_cast<char*>(&s.isBeingSpawned), sizeof(s.isBeingSpawned));
+				file.read(reinterpret_cast<char*>(&s.isBeingMoved), sizeof(s.isBeingMoved));
+				file.read(reinterpret_cast<char*>(&s.isShapeClosed), sizeof(s.isShapeClosed));
+
+				file.read(reinterpret_cast<char*>(&s.shapeType), sizeof(s.shapeType));
+
+				file.read(reinterpret_cast<char*>(&s.drawHoverHelpers), sizeof(s.drawHoverHelpers));
+
+				file.read(reinterpret_cast<char*>(&s.oldHelperPos), sizeof(s.oldHelperPos));
+
+				// Lens variables
+				file.read(reinterpret_cast<char*>(&s.secondHelper), sizeof(s.secondHelper));
+				file.read(reinterpret_cast<char*>(&s.thirdHelper), sizeof(s.thirdHelper));
+				file.read(reinterpret_cast<char*>(&s.fourthHelper), sizeof(s.fourthHelper));
+
+				file.read(reinterpret_cast<char*>(&s.Tempsh2Length), sizeof(s.Tempsh2Length));
+				file.read(reinterpret_cast<char*>(&s.Tempsh2LengthSymmetry), sizeof(s.Tempsh2LengthSymmetry));
+				file.read(reinterpret_cast<char*>(&s.tempDist), sizeof(s.tempDist));
+
+				file.read(reinterpret_cast<char*>(&s.moveH2), sizeof(s.moveH2));
+
+				file.read(reinterpret_cast<char*>(&s.isThirdBeingMoved), sizeof(s.isThirdBeingMoved));
+				file.read(reinterpret_cast<char*>(&s.isFourthBeingMoved), sizeof(s.isFourthBeingMoved));
+				file.read(reinterpret_cast<char*>(&s.isFifthBeingMoved), sizeof(s.isFifthBeingMoved));
+
+				file.read(reinterpret_cast<char*>(&s.isFifthFourthMoved), sizeof(s.isFifthFourthMoved));
+
+				file.read(reinterpret_cast<char*>(&s.symmetricalLens), sizeof(s.symmetricalLens));
+
+				file.read(reinterpret_cast<char*>(&s.wallAId), sizeof(s.wallAId));
+				file.read(reinterpret_cast<char*>(&s.wallBId), sizeof(s.wallBId));
+				file.read(reinterpret_cast<char*>(&s.wallCId), sizeof(s.wallCId));
+
+				file.read(reinterpret_cast<char*>(&s.lensSegments), sizeof(s.lensSegments));
+
+				file.read(reinterpret_cast<char*>(&s.startAngle), sizeof(s.startAngle));
+				file.read(reinterpret_cast<char*>(&s.endAngle), sizeof(s.endAngle));
+
+				file.read(reinterpret_cast<char*>(&s.startAngleSymmetry), sizeof(s.startAngleSymmetry));
+				file.read(reinterpret_cast<char*>(&s.endAngleSymmetry), sizeof(s.endAngleSymmetry));
+
+				file.read(reinterpret_cast<char*>(&s.center), sizeof(s.center));
+				file.read(reinterpret_cast<char*>(&s.radius), sizeof(s.radius));
+
+				file.read(reinterpret_cast<char*>(&s.centerSymmetry), sizeof(s.centerSymmetry));
+				file.read(reinterpret_cast<char*>(&s.radiusSymmetry), sizeof(s.radiusSymmetry));
+
+				file.read(reinterpret_cast<char*>(&s.arcEnd), sizeof(s.arcEnd));
+
+				s.walls = &lighting.walls;
+
+				lighting.shapes.push_back(s);
+			}
+		}
+
+		uint32_t pointLightCount = 0;
+		file.read(reinterpret_cast<char*>(&pointLightCount), sizeof(pointLightCount));
+		lighting.pointLights.resize(pointLightCount);
+
+		for (uint32_t i = 0; i < pointLightCount; i++) {
+
+			PointLight p = lighting.pointLights[i];
+
+			file.read(reinterpret_cast<char*>(&p.pos), sizeof(p.pos));
+			file.read(reinterpret_cast<char*>(&p.isBeingMoved), sizeof(p.isBeingMoved));
+			file.read(reinterpret_cast<char*>(&p.color), sizeof(p.color));
+			file.read(reinterpret_cast<char*>(&p.apparentColor), sizeof(p.apparentColor));
+			file.read(reinterpret_cast<char*>(&p.isSelected), sizeof(p.isSelected));
+
+			lighting.pointLights.push_back(p);
+		}
+
+		uint32_t areaLightCount = 0;
+		file.read(reinterpret_cast<char*>(&areaLightCount), sizeof(areaLightCount));
+		lighting.areaLights.resize(areaLightCount);
+
+		for (uint32_t i = 0; i < areaLightCount; i++) {
+
+			AreaLight a = lighting.areaLights[i];
+
+			file.read(reinterpret_cast<char*>(&a.vA), sizeof(a.vA));
+			file.read(reinterpret_cast<char*>(&a.vB), sizeof(a.vB));
+			file.read(reinterpret_cast<char*>(&a.isBeingSpawned), sizeof(a.isBeingSpawned));
+			file.read(reinterpret_cast<char*>(&a.vAisBeingMoved), sizeof(a.vAisBeingMoved));
+			file.read(reinterpret_cast<char*>(&a.vBisBeingMoved), sizeof(a.vBisBeingMoved));
+			file.read(reinterpret_cast<char*>(&a.color), sizeof(a.color));
+			file.read(reinterpret_cast<char*>(&a.apparentColor), sizeof(a.apparentColor));
+			file.read(reinterpret_cast<char*>(&a.isSelected), sizeof(a.isSelected));
+
+			lighting.areaLights.push_back(a);
+		}
+
+		uint32_t coneLightCount = 0;
+		file.read(reinterpret_cast<char*>(&coneLightCount), sizeof(coneLightCount));
+		lighting.coneLights.resize(coneLightCount);
+
+		for (uint32_t i = 0; i < coneLightCount; i++) {
+
+			ConeLight l = lighting.coneLights[i];
+
+			file.read(reinterpret_cast<char*>(&l.vA), sizeof(l.vA));
+			file.read(reinterpret_cast<char*>(&l.vB), sizeof(l.vB));
+			file.read(reinterpret_cast<char*>(&l.isBeingSpawned), sizeof(l.isBeingSpawned));
+			file.read(reinterpret_cast<char*>(&l.vAisBeingMoved), sizeof(l.vAisBeingMoved));
+			file.read(reinterpret_cast<char*>(&l.vBisBeingMoved), sizeof(l.vBisBeingMoved));
+			file.read(reinterpret_cast<char*>(&l.color), sizeof(l.color));
+			file.read(reinterpret_cast<char*>(&l.apparentColor), sizeof(l.apparentColor));
+			file.read(reinterpret_cast<char*>(&l.isSelected), sizeof(l.isSelected));
+
+			lighting.coneLights.push_back(l);
+		}
+
+		lighting.shouldRender = true;
+
 		return true;
 	}
 
@@ -342,7 +564,7 @@ public:
 	}
 
 
-	void saveLoadLogic(UpdateVariables& myVar, UpdateParameters& myParam, SPH& sph, Physics& physics);
+	void saveLoadLogic(UpdateVariables& myVar, UpdateParameters& myParam, SPH& sph, Physics& physics, Lighting& lighting);
 
 private:
 

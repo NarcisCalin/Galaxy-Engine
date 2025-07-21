@@ -1,6 +1,6 @@
 #include "UX/saveSystem.h"
 
-void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar, UpdateParameters& myParam, SPH& sph, Physics& physics) {
+void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar, UpdateParameters& myParam, SPH& sph, Physics& physics, Lighting& lighting) {
 
 	YAML::Emitter out;
 	/*out << YAML::BeginMap;*/
@@ -138,6 +138,10 @@ void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar,
 
 		file.write(reinterpret_cast<const char*>(&currentVersion), sizeof(currentVersion));
 
+		file.write(reinterpret_cast<const char*>(&globalId), sizeof(globalId));
+		file.write(reinterpret_cast<const char*>(&globalShapeId), sizeof(globalShapeId));
+		file.write(reinterpret_cast<const char*>(&globalWallId), sizeof(globalWallId));
+
 		uint32_t particleCount = myParam.pParticles.size();
 		file.write(reinterpret_cast<const char*>(&particleCount), sizeof(particleCount));
 
@@ -209,13 +213,177 @@ void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar,
 			);
 		}
 
+		uint32_t wallCount = lighting.walls.size();
+		file.write(reinterpret_cast<const char*>(&wallCount), sizeof(wallCount));
+
+		for (size_t i = 0; i < lighting.walls.size(); i++) {
+			const Wall& w = lighting.walls[i];
+
+			// Write all glm::vec2 fields
+			file.write(reinterpret_cast<const char*>(&w.vA), sizeof(w.vA));
+			file.write(reinterpret_cast<const char*>(&w.vB), sizeof(w.vB));
+			file.write(reinterpret_cast<const char*>(&w.normal), sizeof(w.normal));
+			file.write(reinterpret_cast<const char*>(&w.normalVA), sizeof(w.normalVA));
+			file.write(reinterpret_cast<const char*>(&w.normalVB), sizeof(w.normalVB));
+
+			// Write booleans
+			file.write(reinterpret_cast<const char*>(&w.isBeingSpawned), sizeof(w.isBeingSpawned));
+			file.write(reinterpret_cast<const char*>(&w.vAisBeingMoved), sizeof(w.vAisBeingMoved));
+			file.write(reinterpret_cast<const char*>(&w.vBisBeingMoved), sizeof(w.vBisBeingMoved));
+
+			// Write Color structs
+			file.write(reinterpret_cast<const char*>(&w.apparentColor), sizeof(w.apparentColor));
+			file.write(reinterpret_cast<const char*>(&w.baseColor), sizeof(w.baseColor));
+			file.write(reinterpret_cast<const char*>(&w.specularColor), sizeof(w.specularColor));
+			file.write(reinterpret_cast<const char*>(&w.refractionColor), sizeof(w.refractionColor));
+
+			// Write float color values
+			file.write(reinterpret_cast<const char*>(&w.baseColorVal), sizeof(w.baseColorVal));
+			file.write(reinterpret_cast<const char*>(&w.specularColorVal), sizeof(w.specularColorVal));
+			file.write(reinterpret_cast<const char*>(&w.refractionColorVal), sizeof(w.refractionColorVal));
+
+			// Write material floats
+			file.write(reinterpret_cast<const char*>(&w.specularRoughness), sizeof(w.specularRoughness));
+			file.write(reinterpret_cast<const char*>(&w.refractionRoughness), sizeof(w.refractionRoughness));
+			file.write(reinterpret_cast<const char*>(&w.refractionAmount), sizeof(w.refractionAmount));
+			file.write(reinterpret_cast<const char*>(&w.IOR), sizeof(w.IOR));
+			file.write(reinterpret_cast<const char*>(&w.dispersionStrength), sizeof(w.dispersionStrength));
+
+			// Write shape metadata
+			file.write(reinterpret_cast<const char*>(&w.isShapeWall), sizeof(w.isShapeWall));
+			file.write(reinterpret_cast<const char*>(&w.isShapeClosed), sizeof(w.isShapeClosed));
+			file.write(reinterpret_cast<const char*>(&w.shapeId), sizeof(w.shapeId));
+
+			// Write wall ID and selection flag
+			file.write(reinterpret_cast<const char*>(&w.id), sizeof(w.id));
+			file.write(reinterpret_cast<const char*>(&w.isSelected), sizeof(w.isSelected));
+		}
+
+		uint32_t numShapes = lighting.shapes.size();
+		file.write(reinterpret_cast<const char*>(&numShapes), sizeof(numShapes));
+		if (numShapes > 0) {
+			for (const Shape& s : lighting.shapes) {
+				uint32_t wallIdCount = s.myWallIds.size();
+				file.write(reinterpret_cast<const char*>(&wallIdCount), sizeof(wallIdCount));
+				file.write(reinterpret_cast<const char*>(s.myWallIds.data()), wallIdCount * sizeof(uint32_t));
+
+				uint32_t vertCount = s.polygonVerts.size();
+				file.write(reinterpret_cast<const char*>(&vertCount), sizeof(vertCount));
+				file.write(reinterpret_cast<const char*>(s.polygonVerts.data()), vertCount * sizeof(glm::vec2));
+
+				uint32_t helpersCount = s.helpers.size();
+				file.write(reinterpret_cast<const char*>(&helpersCount), sizeof(helpersCount));
+				if (helpersCount > 0) {
+					file.write(reinterpret_cast<const char*>(s.helpers.data()), helpersCount * sizeof(glm::vec2));
+				}
+
+				file.write(reinterpret_cast<const char*>(&s.baseColor), sizeof(s.baseColor));
+				file.write(reinterpret_cast<const char*>(&s.specularColor), sizeof(s.specularColor));
+				file.write(reinterpret_cast<const char*>(&s.refractionColor), sizeof(s.refractionColor));
+
+				file.write(reinterpret_cast<const char*>(&s.specularRoughness), sizeof(s.specularRoughness));
+				file.write(reinterpret_cast<const char*>(&s.refractionRoughness), sizeof(s.refractionRoughness));
+				file.write(reinterpret_cast<const char*>(&s.refractionAmount), sizeof(s.refractionAmount));
+				file.write(reinterpret_cast<const char*>(&s.IOR), sizeof(s.IOR));
+				file.write(reinterpret_cast<const char*>(&s.dispersionStrength), sizeof(s.dispersionStrength));
+
+				file.write(reinterpret_cast<const char*>(&s.id), sizeof(s.id));
+				file.write(reinterpret_cast<const char*>(&s.h1), sizeof(s.h1));
+				file.write(reinterpret_cast<const char*>(&s.h2), sizeof(s.h2));
+				file.write(reinterpret_cast<const char*>(&s.isBeingSpawned), sizeof(s.isBeingSpawned));
+				file.write(reinterpret_cast<const char*>(&s.isBeingMoved), sizeof(s.isBeingMoved));
+				file.write(reinterpret_cast<const char*>(&s.isShapeClosed), sizeof(s.isShapeClosed));
+				file.write(reinterpret_cast<const char*>(&s.shapeType), sizeof(s.shapeType));
+				file.write(reinterpret_cast<const char*>(&s.drawHoverHelpers), sizeof(s.drawHoverHelpers));
+				file.write(reinterpret_cast<const char*>(&s.oldHelperPos), sizeof(s.oldHelperPos));
+
+				// Lens variables
+				file.write(reinterpret_cast<const char*>(&s.secondHelper), sizeof(s.secondHelper));
+				file.write(reinterpret_cast<const char*>(&s.thirdHelper), sizeof(s.thirdHelper));
+				file.write(reinterpret_cast<const char*>(&s.fourthHelper), sizeof(s.fourthHelper));
+
+				file.write(reinterpret_cast<const char*>(&s.Tempsh2Length), sizeof(s.Tempsh2Length));
+				file.write(reinterpret_cast<const char*>(&s.Tempsh2LengthSymmetry), sizeof(s.Tempsh2LengthSymmetry));
+				file.write(reinterpret_cast<const char*>(&s.tempDist), sizeof(s.tempDist));
+
+				file.write(reinterpret_cast<const char*>(&s.moveH2), sizeof(s.moveH2));
+
+				file.write(reinterpret_cast<const char*>(&s.isThirdBeingMoved), sizeof(s.isThirdBeingMoved));
+				file.write(reinterpret_cast<const char*>(&s.isFourthBeingMoved), sizeof(s.isFourthBeingMoved));
+				file.write(reinterpret_cast<const char*>(&s.isFifthBeingMoved), sizeof(s.isFifthBeingMoved));
+
+				file.write(reinterpret_cast<const char*>(&s.isFifthFourthMoved), sizeof(s.isFifthFourthMoved));
+
+				file.write(reinterpret_cast<const char*>(&s.symmetricalLens), sizeof(s.symmetricalLens));
+
+				file.write(reinterpret_cast<const char*>(&s.wallAId), sizeof(s.wallAId));
+				file.write(reinterpret_cast<const char*>(&s.wallBId), sizeof(s.wallBId));
+				file.write(reinterpret_cast<const char*>(&s.wallCId), sizeof(s.wallCId));
+
+				file.write(reinterpret_cast<const char*>(&s.lensSegments), sizeof(s.lensSegments));
+
+				file.write(reinterpret_cast<const char*>(&s.startAngle), sizeof(s.startAngle));
+				file.write(reinterpret_cast<const char*>(&s.endAngle), sizeof(s.endAngle));
+
+				file.write(reinterpret_cast<const char*>(&s.startAngleSymmetry), sizeof(s.startAngleSymmetry));
+				file.write(reinterpret_cast<const char*>(&s.endAngleSymmetry), sizeof(s.endAngleSymmetry));
+
+				file.write(reinterpret_cast<const char*>(&s.center), sizeof(s.center));
+				file.write(reinterpret_cast<const char*>(&s.radius), sizeof(s.radius));
+
+				file.write(reinterpret_cast<const char*>(&s.centerSymmetry), sizeof(s.centerSymmetry));
+				file.write(reinterpret_cast<const char*>(&s.radiusSymmetry), sizeof(s.radiusSymmetry));
+
+				file.write(reinterpret_cast<const char*>(&s.arcEnd), sizeof(s.arcEnd));
+			}
+		}
+
+		uint32_t pointLightCount = lighting.pointLights.size();
+		file.write(reinterpret_cast<const char*>(&pointLightCount), sizeof(pointLightCount));
+
+		for (const PointLight& pl : lighting.pointLights) {
+			file.write(reinterpret_cast<const char*>(&pl.pos), sizeof(pl.pos));
+			file.write(reinterpret_cast<const char*>(&pl.isBeingMoved), sizeof(pl.isBeingMoved));
+			file.write(reinterpret_cast<const char*>(&pl.color), sizeof(pl.color));
+			file.write(reinterpret_cast<const char*>(&pl.apparentColor), sizeof(pl.apparentColor));
+			file.write(reinterpret_cast<const char*>(&pl.isSelected), sizeof(pl.isSelected));
+		}
+
+		uint32_t areaLightCount = lighting.areaLights.size();
+		file.write(reinterpret_cast<const char*>(&areaLightCount), sizeof(areaLightCount));
+
+		for (const AreaLight& al : lighting.areaLights) {
+			file.write(reinterpret_cast<const char*>(&al.vA), sizeof(al.vA));
+			file.write(reinterpret_cast<const char*>(&al.vB), sizeof(al.vB));
+			file.write(reinterpret_cast<const char*>(&al.isBeingSpawned), sizeof(al.isBeingSpawned));
+			file.write(reinterpret_cast<const char*>(&al.vAisBeingMoved), sizeof(al.vAisBeingMoved));
+			file.write(reinterpret_cast<const char*>(&al.vBisBeingMoved), sizeof(al.vBisBeingMoved));
+			file.write(reinterpret_cast<const char*>(&al.color), sizeof(al.color));
+			file.write(reinterpret_cast<const char*>(&al.apparentColor), sizeof(al.apparentColor));
+			file.write(reinterpret_cast<const char*>(&al.isSelected), sizeof(al.isSelected));
+		}
+
+		uint32_t coneLightCount = lighting.coneLights.size();
+		file.write(reinterpret_cast<const char*>(&coneLightCount), sizeof(coneLightCount));
+
+		for (const ConeLight& ll : lighting.coneLights) {
+			file.write(reinterpret_cast<const char*>(&ll.vA), sizeof(ll.vA));
+			file.write(reinterpret_cast<const char*>(&ll.vB), sizeof(ll.vB));
+			file.write(reinterpret_cast<const char*>(&ll.isBeingSpawned), sizeof(ll.isBeingSpawned));
+			file.write(reinterpret_cast<const char*>(&ll.vAisBeingMoved), sizeof(ll.vAisBeingMoved));
+			file.write(reinterpret_cast<const char*>(&ll.vBisBeingMoved), sizeof(ll.vBisBeingMoved));
+			file.write(reinterpret_cast<const char*>(&ll.color), sizeof(ll.color));
+			file.write(reinterpret_cast<const char*>(&ll.apparentColor), sizeof(ll.apparentColor));
+			file.write(reinterpret_cast<const char*>(&ll.isSelected), sizeof(ll.isSelected));
+		}
+
 		file.close();
 	}
 
-	deserializeParticleSystem(filename, yamlString, myVar, myParam, sph, physics, loadFlag);
+	deserializeParticleSystem(filename, yamlString, myVar, myParam, sph, physics, lighting, loadFlag);
 }
 
-void SaveSystem::saveLoadLogic(UpdateVariables& myVar, UpdateParameters& myParam, SPH& sph, Physics& physics) {
+void SaveSystem::saveLoadLogic(UpdateVariables& myVar, UpdateParameters& myParam, SPH& sph, Physics& physics, Lighting& lighting) {
 	if (saveFlag) {
 		if (!std::filesystem::exists("Saves")) {
 			std::filesystem::create_directory("Saves");
@@ -239,7 +407,7 @@ void SaveSystem::saveLoadLogic(UpdateVariables& myVar, UpdateParameters& myParam
 
 		std::string savePath = "Saves/Save_" + std::to_string(nextAvailableIndex) + ".bin";
 
-		saveSystem(savePath.c_str(), myVar, myParam, sph, physics);
+		saveSystem(savePath.c_str(), myVar, myParam, sph, physics, lighting);
 
 		saveIndex++;
 
@@ -334,7 +502,7 @@ void SaveSystem::saveLoadLogic(UpdateVariables& myVar, UpdateParameters& myParam
 			bool enabled = true;
 
 			if (UI::buttonHelper(fullPath.c_str(), "Select scene file", placeHolder, ImGui::GetContentRegionAvail().x, buttonHeight, enabled, enabled)) {
-				saveSystem(fullPath.c_str(), myVar, myParam, sph, physics);
+				saveSystem(fullPath.c_str(), myVar, myParam, sph, physics, lighting);
 				loadFlag = false;
 			}
 

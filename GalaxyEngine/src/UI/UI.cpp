@@ -482,6 +482,10 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				lighting.isSliderRefractionCol = true;
 			}
 
+			if (sliderHelper("Light Spread", "Controls the spread of area and cone lights", lighting.lightSpread, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled)) {
+				lighting.isSliderlightSpread = true;
+			}
+
 			if (sliderHelper("Wall Specular Roughness", "Controls the specular reflections roughness of walls", lighting.wallSpecularRoughness, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled)) {
 				lighting.isSliderSpecularRough = true;
 			}
@@ -576,7 +580,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 	// Tools Menu //
 
-	ImVec2 toolsSize = { 200.0f, 320.0f };
+	ImVec2 toolsSize = { 200.0f, 370.0f };
 	ImGui::SetNextWindowSize(toolsSize, ImGuiCond_Once);
 	ImGui::SetNextWindowPos(ImVec2(parametersWindowSizeX + 20.0f, 0.0f), ImGuiCond_Once);
 	ImGui::Begin("Tools", nullptr);
@@ -618,6 +622,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 				myVar.toolPointLight = false;
 				myVar.toolAreaLight = false;
+				myVar.toolConeLight = false;
 				myVar.toolCircle = false;
 				myVar.toolDrawShape = false;
 				myVar.toolLens = false;
@@ -657,6 +662,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 				myVar.toolPointLight = false;
 				myVar.toolAreaLight = false;
+				myVar.toolConeLight = false;
 				myVar.toolCircle = false;
 				myVar.toolDrawShape = false;
 				myVar.toolLens = false;
@@ -677,6 +683,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		ToolButton opticTools[] = {
 			{ "Point Light", "Spawn point light", &myVar.toolPointLight },
 			{ "Area Light", "Spawn area light", &myVar.toolAreaLight },
+			{ "Cone Light", "Spawn cone light", &myVar.toolConeLight },
 			{ "Wall", "Spawn a wall", &myVar.toolWall },
 			{ "Circle", "Spawn a circle", &myVar.toolCircle },
 			{ "Draw Shape", "Draw a shape", &myVar.toolDrawShape },
@@ -737,6 +744,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 				myVar.toolPointLight = false;
 				myVar.toolAreaLight = false;
+				myVar.toolConeLight = false;
 				myVar.toolCircle = false;
 				myVar.toolDrawShape = false;
 				myVar.toolLens = false;
