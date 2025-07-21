@@ -58,7 +58,8 @@ void pinParticles();
 
 void updateScene();
 
-void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture, RenderTexture2D& myMiscTexture, bool& fadeActive, bool& introActive);
+void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myRayTracingTexture,
+	RenderTexture2D& myUITexture, RenderTexture2D& myMiscTexture, bool& fadeActive, bool& introActive);
 
 void enableMultiThreading();
 

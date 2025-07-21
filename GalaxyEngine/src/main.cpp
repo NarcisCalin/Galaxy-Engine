@@ -56,6 +56,7 @@ int main(int argc, char** argv) {
 	Shader myBloom = LoadShader(nullptr, "Shaders/bloom.fs");
 
 	RenderTexture2D myParticlesTexture = CreateFloatRenderTexture(GetScreenWidth(), GetScreenHeight());
+	RenderTexture2D myRayTracingTexture = CreateFloatRenderTexture(GetScreenWidth(), GetScreenHeight());
 	RenderTexture2D myUITexture = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
 	RenderTexture2D myMiscTexture = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
 
@@ -150,6 +151,81 @@ int main(int argc, char** argv) {
 		myVar.screenHeight = GetMonitorHeight(GetCurrentMonitor()) * 0.5f;
 	}
 
+	// ---- Shader Experimenting Below ---- //
+
+	const char* vertexShader = R"(
+    #version 330 core
+
+layout(location = 0) in vec3 vertexPosition;
+layout(location = 1) in vec2 vertexTexCoord;
+layout(location = 3) in vec4 vertexColor;
+
+out vec2 fragTexCoord;
+out vec4 fragColor;
+
+uniform mat4 mvp;
+
+void main()
+{
+
+    gl_Position = mvp * vec4(vertexPosition, 1.0);
+
+
+    fragTexCoord = vertexTexCoord;
+    fragColor = vertexColor;
+
+}
+    )";
+
+	const char* fragmentShader = R"(
+
+#version 330
+
+precision highp float;
+precision highp sampler2D;
+
+in vec2 fragTexCoord;
+out vec4 finalColor;
+
+uniform sampler2D currentFrame;
+uniform sampler2D accumulatedFrame;
+uniform float sampleCount;
+
+void main() {
+
+    highp vec4 newColor = texture(currentFrame, fragTexCoord);
+    highp vec4 oldColor = texture(accumulatedFrame, fragTexCoord);
+
+    finalColor = (oldColor * (sampleCount - 1.0) + newColor) / sampleCount;
+
+    finalColor = clamp(finalColor, 0.0, 1.0);
+}
+)";
+
+	Shader testShader = LoadShaderFromMemory(vertexShader, fragmentShader);
+
+	int screenSizeLoc = GetShaderLocation(testShader, "screenSize");
+	float screenSize[2] = {
+		(float)myVar.screenWidth,
+		(float)myVar.screenHeight
+	};
+	SetShaderValue(testShader, screenSizeLoc, screenSize, SHADER_UNIFORM_VEC2);
+
+	int rayTextureLoc = GetShaderLocation(testShader, "rayTexture");
+
+	RenderTexture2D accumulatedTexture = CreateFloatRenderTexture(GetScreenWidth(), GetScreenHeight());
+	RenderTexture2D pingPongTexture = CreateFloatRenderTexture(GetScreenWidth(), GetScreenHeight());
+
+	int currentFrameLoc = GetShaderLocation(testShader, "currentFrame");
+	int accumulatedFrameLoc = GetShaderLocation(testShader, "accumulatedFrame");
+	int sampleCountLoc = GetShaderLocation(testShader, "sampleCount");
+	RenderTexture2D testSampleTexture = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
+
+	bool prevLongExpFlag = false;
+
+
+	// ---- Shader Experimenting Above ---- //
+
 	while (!WindowShouldClose()) {
 
 		fullscreenToggle(lastScreenWidth, lastScreenHeight, wasFullscreen, lastScreenState, myParticlesTexture, myUITexture);
@@ -185,7 +261,7 @@ int main(int argc, char** argv) {
 
 		updateScene();
 
-		drawScene(particleBlurTex, myUITexture, myMiscTexture, fadeActive, introActive);
+		drawScene(particleBlurTex, myRayTracingTexture, myUITexture, myMiscTexture, fadeActive, introActive);
 
 		EndMode2D();
 
@@ -202,16 +278,74 @@ int main(int argc, char** argv) {
 
 		//BeginBlendMode(BLEND_ALPHA_PREMULTIPLY);
 
-		DrawTextureRec(
+		/*DrawTextureRec(
 			myParticlesTexture.texture,
 			Rectangle{ 0, 0, static_cast<float>(GetScreenWidth()), -static_cast<float>(GetScreenHeight()) },
 			Vector2{ 0, 0 },
 			WHITE
-		);
+		);*/
+
+		/*DrawTextureRec(
+			myRayTracingTexture.texture,
+			Rectangle{ 0, 0, static_cast<float>(GetScreenWidth()), -static_cast<float>(GetScreenHeight()) },
+			Vector2{ 0, 0 },
+			WHITE
+		);*/
 
 		if (myVar.isGlowEnabled) {
 			EndShaderMode();
 		}
+
+		// ---------- EXPERIMENT SHADER BELOW ---------- //
+
+
+		if (myParam.myCamera.cameraChangedThisFrame || myVar.longExposureFlag) {
+			lighting.shouldRender = true;
+		}
+
+		if (lighting.shouldRender && myVar.longExposureFlag && !prevLongExpFlag) {
+			myVar.longExposureCurrent = 0;
+		}
+
+		prevLongExpFlag = myVar.longExposureFlag;
+
+		if (lighting.currentSamples <= lighting.maxSamples) {
+
+			BeginTextureMode(pingPongTexture);
+
+			BeginShaderMode(testShader);
+
+			SetShaderValueTexture(testShader, currentFrameLoc, myParticlesTexture.texture);
+			SetShaderValueTexture(testShader, accumulatedFrameLoc, accumulatedTexture.texture);
+			float sampleCount = static_cast<float>(lighting.currentSamples);
+			SetShaderValue(testShader, sampleCountLoc, &sampleCount, SHADER_UNIFORM_FLOAT);
+
+			DrawTextureRec(
+				accumulatedTexture.texture,
+				Rectangle{ 0, 0, (float)GetScreenWidth(), -((float)GetScreenHeight()) },
+				Vector2{ 0, 0 },
+				WHITE
+			);
+
+			EndShaderMode();
+
+			EndTextureMode();
+
+			std::swap(accumulatedTexture, pingPongTexture);
+
+			if (myVar.longExposureFlag) {
+				myVar.longExposureCurrent++;
+			}
+		}
+
+		DrawTextureRec(
+			accumulatedTexture.texture,
+			Rectangle{ 0, 0, (float)GetScreenWidth(), -((float)GetScreenHeight()) },
+			Vector2{ 0, 0 },
+			WHITE
+		);
+
+		// ---------- EXPERIMENT SHADER ABOVE ---------- //
 
 		DrawTextureRec(
 			myUITexture.texture,
@@ -222,8 +356,9 @@ int main(int argc, char** argv) {
 
 		EndBlendMode();
 
+
 		// Detects if the user is recording the screen
-		myVar.isRecording = myParam.screenCapture.screenGrab(myParticlesTexture, myVar, myParam);
+		myVar.isRecording = myParam.screenCapture.screenGrab(accumulatedTexture, myVar, myParam);
 
 		if (myVar.isRecording) {
 			DrawRectangleLinesEx({ 0,0, static_cast<float>(GetScreenWidth()), static_cast<float>(GetScreenHeight()) }, 3, RED);
@@ -253,12 +388,16 @@ int main(int argc, char** argv) {
 	UnloadTexture(particleBlurTex);
 
 	UnloadRenderTexture(myParticlesTexture);
+	UnloadRenderTexture(myRayTracingTexture);
 	UnloadRenderTexture(myUITexture);
 	UnloadRenderTexture(myMiscTexture);
 
 	UnloadImage(icon);
 
 	geSound.unloadSounds();
+
+	// Unload experiment shader
+	UnloadShader(testShader);
 
 	CloseWindow();
 

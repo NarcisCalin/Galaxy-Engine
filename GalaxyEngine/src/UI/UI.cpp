@@ -482,28 +482,32 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				lighting.isSliderRefractionCol = true;
 			}
 
-			if (sliderHelper("Wall Specular Roughness", "Controls the specular reflections roughness of the next wall drawn", lighting.wallSpecularRoughness, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled)) {
+			if (sliderHelper("Wall Specular Roughness", "Controls the specular reflections roughness of walls", lighting.wallSpecularRoughness, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled)) {
 				lighting.isSliderSpecularRough = true;
 			}
-			if (sliderHelper("Wall Refraction Roughness", "Controls the refraction surface roughness of the next wall drawn", lighting.wallRefractionRoughness, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled)) {
+			if (sliderHelper("Wall Refraction Roughness", "Controls the refraction surface roughness of walls", lighting.wallRefractionRoughness, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled)) {
 				lighting.isSliderRefractionRough = true;
 			}
 
-			if (sliderHelper("Wall Refraction Amount", "Controls how much light the next wall will refract", lighting.wallRefractionAmount, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled)) {
+			if (sliderHelper("Wall Refraction Amount", "Controls how much light walls will refract", lighting.wallRefractionAmount, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled)) {
 				lighting.isSliderRefractionAmount = true;;
 			}
 
-			if (sliderHelper("Wall IOR", "Controls the IOR of the next wall drawn", lighting.wallIOR, 0.0f, 100.0f, parametersSliderX, parametersSliderY, enabled)) {
+			if (sliderHelper("Wall IOR", "Controls the IOR of walls", lighting.wallIOR, 0.0f, 100.0f, parametersSliderX, parametersSliderY, enabled)) {
 				lighting.isSliderIor = true;
 			}
 
-			if (sliderHelper("Max Samples", "Controls the total amount of lighting iterations", lighting.maxSamples, 1, 6, parametersSliderX, parametersSliderY, enabled)) {
+			if (sliderHelper("Wall Dispersion", "Controls how much light gets dispersed after refracting from this wall", lighting.wallDispersion, 0.0f, 0.2f, parametersSliderX, parametersSliderY, enabled)) {
+				lighting.isSliderDispersion = true;
+			}
+
+			if (sliderHelper("Max Samples", "Controls the total amount of lighting iterations", lighting.maxSamples, 1, 2048, parametersSliderX, parametersSliderY, enabled)) {
 				lighting.shouldRender = true;
 			}
-			if (sliderHelper("Rays Per Sample", "Controls amount of rays emitted on each sample", lighting.sampleRaysAmount, 1, 80000, parametersSliderX, parametersSliderY, enabled)) {
+			if (sliderHelper("Rays Per Sample", "Controls amount of rays emitted on each sample", lighting.sampleRaysAmount, 1, 8192, parametersSliderX, parametersSliderY, enabled)) {
 				lighting.shouldRender = true;
 			}
-			if (sliderHelper("Max Bounces", "Controls how many times rays can bounce", lighting.maxBounces, 0, 8, parametersSliderX, parametersSliderY, enabled)) {
+			if (sliderHelper("Max Bounces", "Controls how many times rays can bounce", lighting.maxBounces, 0, 16, parametersSliderX, parametersSliderY, enabled)) {
 				lighting.shouldRender = true;
 			}
 
@@ -513,7 +517,10 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			if (buttonHelper("Specular Reflections", "Enables specular reflections", lighting.isSpecularEnabled, -1.0f, settingsButtonY, enabled, enabled)) {
 				lighting.shouldRender = true;
 			}
-			if (buttonHelper("Refraction", "Enables refractions", lighting.isRefractionEnabled, -1.0f, settingsButtonY, enabled, enabled)) {
+			if (buttonHelper("Refraction", "Enables refraction", lighting.isRefractionEnabled, -1.0f, settingsButtonY, enabled, enabled)) {
+				lighting.shouldRender = true;
+			}
+			if (buttonHelper("Dispersion", "Enables light dispersion with refraction", lighting.isDispersionEnabled, -1.0f, settingsButtonY, enabled, enabled)) {
 				lighting.shouldRender = true;
 			}
 
@@ -618,6 +625,8 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				myVar.toolMoveOptics = false;
 				myVar.toolEraseOptics = false;
 				myVar.toolSelectOptics = false;
+
+				myVar.longExposureFlag = false;
 			}
 		}
 
@@ -655,6 +664,8 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				myVar.toolMoveOptics = false;
 				myVar.toolEraseOptics = false;
 				myVar.toolSelectOptics = false;
+
+				myVar.longExposureFlag = false;
 			}
 		}
 
@@ -692,7 +703,52 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				myVar.toolMove = false;
 				myVar.toolRaiseTemp = false;
 				myVar.toolLowerTemp = false;
+
+				myVar.longExposureFlag = false;
 			}
+		}
+
+		ImGui::EndTabItem();
+	}
+
+	// Fun tools tab
+	if (ImGui::BeginTabItem("Fun")) {
+		ToolButton funTools[] = {
+			{ "Take Long Exposure", "Accumulates frames for the duration set", &myVar.longExposureFlag },
+		};
+
+		for (int i = 0; i < IM_ARRAYSIZE(funTools); ++i) {
+			if (buttonHelper(funTools[i].label, funTools[i].tooltip, *funTools[i].flag, -1.0f, settingsButtonY, enabled, enabled)) {
+				//activateExclusiveTool(funTools, IM_ARRAYSIZE(funTools), i);
+
+				myVar.toolDrawParticles = false;
+				myVar.toolSpawnHeavyParticle = false;
+				myVar.toolSpawnBigGalaxy = false;
+				myVar.toolSpawnSmallGalaxy = false;
+				myVar.toolSpawnStar = false;
+				myVar.toolSpawnBigBang = false;
+
+				myVar.toolErase = false;
+				myVar.toolRadialForce = false;
+				myVar.toolSpin = false;
+				myVar.toolMove = false;
+				myVar.toolRaiseTemp = false;
+				myVar.toolLowerTemp = false;
+
+				myVar.toolPointLight = false;
+				myVar.toolAreaLight = false;
+				myVar.toolCircle = false;
+				myVar.toolDrawShape = false;
+				myVar.toolLens = false;
+				myVar.toolWall = false;
+				myVar.toolMoveOptics = false;
+				myVar.toolEraseOptics = false;
+				myVar.toolSelectOptics = false;
+			}
+		}
+
+		if (sliderHelper("Long Exposure Duration", "Controls the duration of the long exposure shot", myVar.longExposureDuration, 2, 1000, parametersSliderX, parametersSliderY, enabled)) {
+			myVar.longExposureFlag = true;
 		}
 
 		ImGui::EndTabItem();

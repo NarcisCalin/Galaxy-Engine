@@ -11,6 +11,7 @@ SceneCamera::SceneCamera() {
 	panFollowingOffset = { 0.0f, 0.0f };
 	isFollowing = false;
 	centerCamera = false;
+	cameraChangedThisFrame = false;
 	previousColor = { 128,128,128,255 };
 	followPosition = { 0.0f, 0.0f };
 	delta = { 0.0f, 0.0f };
@@ -60,6 +61,7 @@ Camera2D SceneCamera::cameraLogic(bool& loadFlag, bool& isMouseNotHoveringUI) {
 		camera.offset = { 0.0f, 0.0f };
 		panFollowingOffset = { 0.0f, 0.0f };
 	}
+
 	return camera;
 }
 
@@ -186,7 +188,26 @@ void SceneCamera::cameraFollowObject(UpdateVariables& myVar, UpdateParameters& m
 			panFollowingOffset = { 0.0f, 0.0f };
 		}
 	}
+}
 
+void SceneCamera::hasCamMoved() {
+
+	cameraChangedThisFrame = false;
+
+	if (lastTarget.x != camera.target.x || lastTarget.y != camera.target.y ||
+		lastOffset.x != camera.offset.x || lastOffset.y != camera.offset.y ||
+		lastZoom != camera.zoom || lastRotation != camera.rotation) {
+
+		cameraChangedThisFrame = true;
+	}
+	else {
+		cameraChangedThisFrame = false;
+	}
+
+	lastTarget = camera.target;
+	lastOffset = camera.offset;
+	lastZoom = camera.zoom;
+	lastRotation = camera.rotation;
 }
 
 

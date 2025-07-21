@@ -12,6 +12,7 @@ Lighting lighting;
 
 uint32_t globalId = 0;
 uint32_t globalShapeId = 1;
+uint32_t globalWallId = 1;
 
 std::unordered_map<unsigned int, uint64_t> NeighborSearch::idToIndex;
 
@@ -266,6 +267,8 @@ void updateScene() {
 	if (grid != nullptr) {
 		delete grid;
 	}
+
+	myParam.myCamera.hasCamMoved();
 }
 
 void drawConstraints() {
@@ -426,7 +429,8 @@ std::vector<std::pair<std::string, int>> introMessages = {
 	{"Farewell", 42},
 };
 
-void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture, RenderTexture2D& myMiscTexture, bool& fadeActive, bool& introActive) {
+void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myRayTracingTexture,
+	RenderTexture2D& myUITexture, RenderTexture2D& myMiscTexture, bool& fadeActive, bool& introActive) {
 
 	for (int i = 0; i < myParam.pParticles.size(); ++i) {
 
@@ -456,6 +460,21 @@ void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture, RenderT
 	myParam.trails.drawTrail(myParam.rParticles, particleBlurTex);
 
 	EndTextureMode();
+
+
+	// Ray Tracing
+
+	BeginTextureMode(myRayTracingTexture);
+
+	ClearBackground({ 0,0,0,0 });
+
+	BeginMode2D(myParam.myCamera.camera);
+
+	EndMode2D();
+
+	EndTextureMode();
+
+
 	//EVERYTHING INTENDED TO APPEAR WHILE RECORDING ABOVE
 
 
@@ -486,6 +505,9 @@ void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myUITexture, RenderT
 			DrawText(TextFormat("%i", i), static_cast<int>(myParam.pParticles[i].pos.x), static_cast<int>(myParam.pParticles[i].pos.y) - 10, 10, { 128,128,128,128 });
 		}
 	}
+
+	lighting.drawScene();
+	lighting.drawMisc(myVar, myParam);
 
 	EndMode2D();
 
@@ -684,7 +706,7 @@ RenderTexture2D CreateFloatRenderTexture(int w, int h) {
 	RenderTexture2D fbo = { 0 };
 	glGenTextures(1, &fbo.texture.id);
 	glBindTexture(GL_TEXTURE_2D, fbo.texture.id);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, w, h, 0, GL_RGBA, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, w, h, 0, GL_RGBA, GL_HALF_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);

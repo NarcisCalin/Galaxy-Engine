@@ -111,6 +111,10 @@ struct UpdateVariables{
 	bool isTempEnabled = false;
 	bool constraintsEnabled = false;
 
+	bool longExposureFlag = false;
+	int longExposureDuration = 50;
+	int longExposureCurrent = 0;
+
 	bool isSpawningAllowed = true;
 
 	float particleTextureHalfSize = 16.0f;
