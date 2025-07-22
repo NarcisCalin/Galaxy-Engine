@@ -33,6 +33,9 @@ ImVec4 UpdateVariables::colPlotBg = ImVec4(0.05f, 0.05f, 0.1f, 1.0f);
 ImVec4 UpdateVariables::colPlotBorder = ImVec4(1.0f, 0.0f, 1.0f, 1.0f);
 ImVec4 UpdateVariables::colLegendBg = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
 
+// Text Colors
+ImVec4 UpdateVariables::colMenuInformation = ImVec4(0.77f, 0.77f, 0.97f, 1.0f);
+
 // SPH Materials vector definition
 std::vector<std::unique_ptr<SPHMaterial>> SPHMaterials::materials;
 std::unordered_map<uint32_t, SPHMaterial*> SPHMaterials::idToMaterial;

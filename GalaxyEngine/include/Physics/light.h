@@ -24,6 +24,7 @@ struct Wall {
 	Color baseColor;
 	Color specularColor;
 	Color refractionColor;
+	Color emissionColor;
 
 	float baseColorVal;
 	float specularColorVal;
@@ -44,7 +45,7 @@ struct Wall {
 	bool isSelected;
 
 	Wall() = default;
-	Wall(glm::vec2 vA, glm::vec2 vB, bool isShapeWall, Color baseColor, Color specularColor, Color refractionColor,
+	Wall(glm::vec2 vA, glm::vec2 vB, bool isShapeWall, Color baseColor, Color specularColor, Color refractionColor, Color emissionColor,
 		float specularRoughness, float refractionRoughness, float refractionAmount, float IOR, float dispersionStrength) {
 
 		this->vA = vA;
@@ -59,6 +60,7 @@ struct Wall {
 		this->baseColor = baseColor;
 		this->specularColor = specularColor;
 		this->refractionColor = refractionColor;
+		this->emissionColor = emissionColor;
 
 		this->apparentColor = WHITE;
 
@@ -107,6 +109,7 @@ struct Shape {
 	Color baseColor;
 	Color specularColor;
 	Color refractionColor;
+	Color emissionColor;
 
 	float specularRoughness;
 	float refractionRoughness;
@@ -132,7 +135,8 @@ struct Shape {
 
 	Shape() = default;
 
-	Shape(ShapeType shapeType, glm::vec2 h1, glm::vec2 h2, std::vector<Wall>* walls, Color baseColor, Color specularColor, Color refractionColor,
+	Shape(ShapeType shapeType, glm::vec2 h1, glm::vec2 h2, std::vector<Wall>* walls,
+		Color baseColor, Color specularColor, Color refractionColor, Color emissionColor,
 		float specularRoughness, float refractionRoughness, float refractionAmount, float IOR, float dispersionStrength) :
 
 		shapeType(shapeType),
@@ -142,6 +146,7 @@ struct Shape {
 		baseColor(baseColor),
 		specularColor(specularColor),
 		refractionColor(refractionColor),
+		emissionColor(emissionColor),
 		specularRoughness(specularRoughness),
 		refractionRoughness(refractionRoughness),
 		refractionAmount(refractionAmount),
@@ -262,25 +267,25 @@ struct Shape {
 		}
 	}
 
-	void relaxGeometryLogic(std::vector<glm::vec2>& vertices, int iterations = 15, float relaxationFactor = 0.65f) {
+	void relaxGeometryLogic(std::vector<glm::vec2>& vertices, int& shapeRelaxiter, float& shapeRelaxFactor) {
 		if (vertices.size() < 3) return;
 
 		std::vector<glm::vec2> temp = vertices;
 
-		for (int iter = 0; iter < iterations; ++iter) {
+		for (int iter = 0; iter < shapeRelaxiter; ++iter) {
 			for (size_t i = 0; i < vertices.size(); ++i) {
 				size_t prev = (i - 1 + vertices.size()) % vertices.size();
 				size_t next = (i + 1) % vertices.size();
 
 				glm::vec2 average = (temp[prev] + temp[next]) * 0.5f;
 
-				vertices[i] = glm::mix(temp[i], average, relaxationFactor);
+				vertices[i] = glm::mix(temp[i], average, shapeRelaxFactor);
 			}
 			temp = vertices;
 		}
 	}
 
-	void relaxShape() {
+	void relaxShape(int& shapeRelaxiter, float& shapeRelaxFactor) {
 
 		polygonVerts.clear();
 
@@ -291,7 +296,7 @@ struct Shape {
 			}
 		}
 
-		relaxGeometryLogic(polygonVerts);
+		relaxGeometryLogic(polygonVerts, shapeRelaxiter, shapeRelaxFactor);
 
 		for (size_t i = 0; i < myWallIds.size(); ++i) {
 			uint32_t wallId = myWallIds[i];
@@ -343,7 +348,7 @@ struct Shape {
 			float theta1 = (2.0f * PI * i) / circleSegments;
 			float theta2 = (2.0f * PI * (i + 1)) / circleSegments;
 
-			if(!isBeingSpawned){
+			if (!isBeingSpawned) {
 				h1 = helpers[0];
 			}
 
@@ -357,28 +362,29 @@ struct Shape {
 			};
 
 			if (createShapeFlag) {
-				(*walls).emplace_back(vA, vB, true, baseColor, specularColor, refractionColor, specularRoughness, refractionRoughness, refractionAmount, IOR, dispersionStrength);
+				walls->emplace_back(vA, vB, true, baseColor, specularColor, refractionColor, emissionColor,
+					specularRoughness, refractionRoughness, refractionAmount, IOR, dispersionStrength);
 
-				(*walls).back().shapeId = id;
-				(*walls).back().isShapeClosed = true;
+				Wall& newWall = walls->back();
+				newWall.shapeId = id;
+				newWall.isShapeClosed = true;
 
-				newWallIds.push_back((*walls).back().id);
+				newWallIds.push_back(newWall.id);
 			}
-			
-			if (isBeingMoved) {
-				if (i < myWallIds.size()) {
-					uint32_t wId = myWallIds[i];
-					Wall* w = getWallById(*walls, wId);
 
-					if (w) {
-						w->vA = vA;
-						w->vB = vB;
-					}
+			if (isBeingMoved && i < myWallIds.size()) {
+				uint32_t wId = myWallIds[i];
+				if (Wall* w = getWallById(*walls, wId)) {
+					w->vA = vA;
+					w->vB = vB;
 				}
-
-				calculateWallsNormals();
 			}
 		}
+
+		if (isBeingMoved) {
+			calculateWallsNormals();
+		}
+
 
 		if (createShapeFlag) {
 			myWallIds = std::move(newWallIds);
@@ -391,7 +397,7 @@ struct Shape {
 
 	glm::vec2 prevPoint = h1;
 
-	glm::vec2 oldHelperPos{ 0.0f, 0.0f };
+	glm::vec2 oldDrawHelperPos{ 0.0f, 0.0f };
 
 	void drawShape() {
 		float maxSegmentLength = 4.0f;
@@ -409,7 +415,7 @@ struct Shape {
 			while (dist >= maxSegmentLength) {
 				glm::vec2 nextPoint = prevPoint + dirNorm * maxSegmentLength;
 
-				(*walls).emplace_back(prevPoint, nextPoint, true, baseColor, specularColor, refractionColor,
+				(*walls).emplace_back(prevPoint, nextPoint, true, baseColor, specularColor, refractionColor, emissionColor,
 					specularRoughness, refractionRoughness, refractionAmount, IOR, dispersionStrength);
 
 				prevPoint = nextPoint;
@@ -435,17 +441,17 @@ struct Shape {
 
 			helpers[0] /= static_cast<float>(myWallIds.size()) * 2.0f;
 
-			oldHelperPos = helpers[0];
+			oldDrawHelperPos = helpers[0];
 		}
 
 		if (isBeingMoved) {
-			glm::vec2 delta = helpers[0] - oldHelperPos;
+			glm::vec2 delta = helpers[0] - oldDrawHelperPos;
 
-			
+
 
 			if (delta != glm::vec2(0.0f)) {
 
-				
+
 
 				for (auto& wallId : myWallIds) {
 					Wall* w = getWallById(*walls, wallId);
@@ -456,7 +462,7 @@ struct Shape {
 					}
 				}
 
-				oldHelperPos = helpers[0];
+				oldDrawHelperPos = helpers[0];
 			}
 		}
 	}
@@ -722,14 +728,16 @@ struct Shape {
 
 				if (!isBeingMoved) {
 					if (!symmetricalLens) {
-						(*walls).emplace_back(helpers.at(0), helpers.at(1), true, baseColor, specularColor, refractionColor, specularRoughness, refractionRoughness, refractionAmount, IOR, dispersionStrength);
+						(*walls).emplace_back(helpers.at(0), helpers.at(1), true, baseColor, specularColor, refractionColor, emissionColor,
+							specularRoughness, refractionRoughness, refractionAmount, IOR, dispersionStrength);
 						(*walls).back().shapeId = id;
 						(*walls).back().isShapeClosed = true;
 						newWallIds.push_back((*walls).back().id);
 						wallAId = (*walls).back().id;
 					}
 
-					(*walls).emplace_back(helpers.at(1), helpers.at(2), true, baseColor, specularColor, refractionColor, specularRoughness, refractionRoughness, refractionAmount, IOR, dispersionStrength);
+					(*walls).emplace_back(helpers.at(1), helpers.at(2), true, baseColor, specularColor, refractionColor, emissionColor,
+						specularRoughness, refractionRoughness, refractionAmount, IOR, dispersionStrength);
 					(*walls).back().shapeId = id;
 					(*walls).back().isShapeClosed = true;
 					newWallIds.push_back((*walls).back().id);
@@ -774,7 +782,8 @@ struct Shape {
 
 				if (fourthHelper || isBeingMoved) {
 					if (!isBeingMoved) {
-						(*walls).emplace_back(arcP1, arcP2, true, baseColor, specularColor, refractionColor, specularRoughness, refractionRoughness, refractionAmount, IOR, dispersionStrength);
+						(*walls).emplace_back(arcP1, arcP2, true, baseColor, specularColor, refractionColor, emissionColor,
+							specularRoughness, refractionRoughness, refractionAmount, IOR, dispersionStrength);
 						(*walls).back().shapeId = id;
 						(*walls).back().isShapeClosed = true;
 						newWallIds.push_back((*walls).back().id);
@@ -798,7 +807,8 @@ struct Shape {
 			if (fourthHelper || isBeingMoved) {
 
 				if (!isBeingMoved) {
-					(*walls).emplace_back(arcEnd, helpers.at(0), true, baseColor, specularColor, refractionColor, specularRoughness, refractionRoughness, refractionAmount, IOR, dispersionStrength);
+					(*walls).emplace_back(arcEnd, helpers.at(0), true, baseColor, specularColor, refractionColor, emissionColor,
+						specularRoughness, refractionRoughness, refractionAmount, IOR, dispersionStrength);
 
 					(*walls).back().shapeId = id;
 					(*walls).back().isShapeClosed = true;
@@ -834,7 +844,8 @@ struct Shape {
 
 					if (fourthHelper || isBeingMoved) {
 						if (!isBeingMoved) {
-							(*walls).emplace_back(arcP1Symmetry, arcP2Symmetry, true, baseColor, specularColor, refractionColor, specularRoughness, refractionRoughness, refractionAmount, IOR, dispersionStrength);
+							(*walls).emplace_back(arcP1Symmetry, arcP2Symmetry, true, baseColor, specularColor, refractionColor, emissionColor,
+								specularRoughness, refractionRoughness, refractionAmount, IOR, dispersionStrength);
 							(*walls).back().shapeId = id;
 							(*walls).back().isShapeClosed = true;
 							newWallIds.push_back((*walls).back().id);
@@ -897,6 +908,9 @@ struct LightRay {
 	std::vector<float> mediumIORStack;
 
 	bool hasBeenDispersed;
+	bool hasBeenScattered;
+
+	glm::vec2 scatterSource;
 
 	LightRay() = default;
 	LightRay(glm::vec2 source, glm::vec2 dir, int bounceLevel, Color color) {
@@ -910,6 +924,8 @@ struct LightRay {
 		this->refracted = false;
 		this->mediumIORStack = { 1.0f };
 		this->hasBeenDispersed = false;
+		this->hasBeenScattered = false;
+		this->scatterSource = { 0.0f, 0.0f };
 	}
 
 	void drawRay() {
@@ -1017,12 +1033,10 @@ struct AreaLight {
 		DrawLineV({ vA.x, vA.y }, { vB.x, vB.y }, apparentColor);
 	}
 
-	void areaLightLogic(UpdateParameters& myParam, int& sampleRaysAmount, std::vector<LightRay>& rays) {
-
-		glm::vec2 mouseWorldPos = myParam.myCamera.mouseWorldPos;
+	void areaLightLogic(int& sampleRaysAmount, std::vector<LightRay>& rays) {
 
 		for (int i = 0; i < sampleRaysAmount; i++) {
-			
+
 			float maxSpreadAngle = glm::radians(90.0f * spread);
 
 			float randAngle = getRandomFloat() * 2.0f * maxSpreadAngle - maxSpreadAngle;
@@ -1030,9 +1044,9 @@ struct AreaLight {
 			glm::vec2 d = vB - vA;
 			float length = glm::length(d);
 			glm::vec2 dNormal = d / length;
-			float separation = length / static_cast<float>(sampleRaysAmount);
 
-			glm::vec2 source = vA + dNormal * (separation * i);
+			float t = getRandomFloat();
+			glm::vec2 source = vA + d * t;
 
 			glm::vec2 rayDirection = rotateVec2(dNormal, randAngle);
 			rayDirection = glm::vec2(rayDirection.y, -rayDirection.x);
@@ -1093,9 +1107,7 @@ struct ConeLight {
 		);
 	}
 
-	void coneLightLogic(UpdateParameters& myParam, int& sampleRaysAmount, std::vector<LightRay>& rays) {
-
-		glm::vec2 mouseWorldPos = myParam.myCamera.mouseWorldPos;
+	void coneLightLogic(int& sampleRaysAmount, std::vector<LightRay>& rays) {
 
 		for (int i = 0; i < sampleRaysAmount; i++) {
 			float maxSpreadAngle = glm::radians(90.0f * spread);
@@ -1105,12 +1117,6 @@ struct ConeLight {
 			glm::vec2 d = vB - vA;
 			float length = glm::length(d);
 			glm::vec2 dNormal = d / length;
-			float separation = length / static_cast<float>(sampleRaysAmount);
-
-			glm::vec2 source = vA + dNormal * (separation * i);
-
-			glm::vec2 rayDirection = rotateVec2(dNormal, randAngle);
-			rayDirection = glm::vec2(rayDirection.y, -rayDirection.x);
 
 			glm::vec2 direction = glm::normalize(vB - vA);
 
@@ -1129,20 +1135,21 @@ struct ConeLight {
 struct AABB2D {
 	glm::vec2 min;
 	glm::vec2 max;
-
 	AABB2D() : min(0), max(0) {}
 	AABB2D(glm::vec2 a, glm::vec2 b) {
 		min = glm::min(a, b);
 		max = glm::max(a, b);
 	}
-
 	void expand(const AABB2D& other) {
 		min = glm::min(min, other.min);
 		max = glm::max(max, other.max);
 	}
-
 	bool intersectsRay(const glm::vec2& origin, const glm::vec2& dir, float maxDist = FLT_MAX) const {
-		glm::vec2 invDir = 1.0f / dir;
+		const float epsilon = 1e-8f;
+		glm::vec2 invDir;
+		invDir.x = (std::abs(dir.x) < epsilon) ? (dir.x >= 0 ? 1e8f : -1e8f) : 1.0f / dir.x;
+		invDir.y = (std::abs(dir.y) < epsilon) ? (dir.y >= 0 ? 1e8f : -1e8f) : 1.0f / dir.y;
+
 		glm::vec2 t0s = (min - origin) * invDir;
 		glm::vec2 t1s = (max - origin) * invDir;
 		glm::vec2 tMin = glm::min(t0s, t1s);
@@ -1158,22 +1165,25 @@ struct BVHNode {
 	BVHNode* left = nullptr;
 	BVHNode* right = nullptr;
 	Wall* wall = nullptr;
-
 	bool isLeaf() const { return wall != nullptr; }
 };
 
 class BVH {
 public:
 	BVHNode* root = nullptr;
-
 	BVH() = default;
+	~BVH() {
+		destroyBVH(root);
+	}
 
 	void build(std::vector<Wall*>& walls) {
+		destroyBVH(root);
+		root = nullptr;
+
 		if (walls.empty()) {
-			root = nullptr;
 			return;
 		}
-		root = buildBVH(walls, 0, walls.size());
+		root = buildBVH(walls, 0, walls.size(), 0);
 	}
 
 	bool traverse(const LightRay& ray, float& closestT, Wall*& hitWall, glm::vec2& hitPoint) {
@@ -1182,8 +1192,17 @@ public:
 	}
 
 private:
-	BVHNode* buildBVH(std::vector<Wall*>& walls, int start, int end) {
-		BVHNode* node = new BVHNode();
+	void destroyBVH(BVHNode* node) {
+		if (!node) return;
+		destroyBVH(node->left);
+		destroyBVH(node->right);
+		delete node;
+	}
+
+	BVHNode* buildBVH(std::vector<Wall*>& walls, int start, int end, int depth) {
+		if (start >= end) return nullptr;
+
+		BVHNode* node = new BVHNode{};
 
 		AABB2D bounds = AABB2D(walls[start]->vA, walls[start]->vB);
 		for (int i = start + 1; i < end; ++i) {
@@ -1193,7 +1212,8 @@ private:
 		node->bounds = bounds;
 
 		int count = end - start;
-		if (count == 1) {
+
+		if (count <= 1 || depth >= 20) {
 			node->wall = walls[start];
 			return node;
 		}
@@ -1208,8 +1228,13 @@ private:
 			});
 
 		int mid = start + count / 2;
-		node->left = buildBVH(walls, start, mid);
-		node->right = buildBVH(walls, mid, end);
+
+		if (mid == start) mid = start + 1;
+		if (mid >= end) mid = end - 1;
+
+		node->left = buildBVH(walls, start, mid, depth + 1);
+		node->right = buildBVH(walls, mid, end, depth + 1);
+
 		return node;
 	}
 
@@ -1220,7 +1245,8 @@ private:
 		glm::vec2 s = wall.vB - wall.vA;
 
 		float rxs = r.x * s.y - r.y * s.x;
-		if (rxs == 0.0f) return false;
+		const float epsilon = 1e-8f;
+		if (std::abs(rxs) < epsilon) return false;
 
 		glm::vec2 qp = q - p;
 		float t1 = (qp.x * s.y - qp.y * s.x) / rxs;
@@ -1231,30 +1257,38 @@ private:
 			hitPoint = p + t * r;
 			return true;
 		}
-
 		return false;
 	}
 
-	bool traverseBVH(const BVHNode* node, const LightRay& ray, float& closestT, Wall*& hitWall, glm::vec2& hitPoint) {
-		if (!node->bounds.intersectsRay(ray.source, ray.dir, closestT)) return false;
+	bool traverseBVH(const BVHNode* root, const LightRay& ray, float& closestT, Wall*& hitWall, glm::vec2& hitPoint) {
+		if (!root) return false;
 
+		std::stack<const BVHNode*> stack;
+		stack.push(root);
 		bool hit = false;
 
-		if (node->isLeaf()) {
-			float t;
-			glm::vec2 pt;
-			if (intersectWall(ray, *node->wall, t, pt) && t < closestT) {
-				closestT = t;
-				hitWall = node->wall;
-				hitPoint = pt;
-				hit = true;
+		while (!stack.empty()) {
+			const BVHNode* node = stack.top();
+			stack.pop();
+
+			if (!node->bounds.intersectsRay(ray.source, ray.dir, closestT))
+				continue;
+
+			if (node->isLeaf()) {
+				float t;
+				glm::vec2 pt;
+				if (intersectWall(ray, *node->wall, t, pt) && t < closestT) {
+					closestT = t;
+					hitWall = node->wall;
+					hitPoint = pt;
+					hit = true;
+				}
+			}
+			else {
+				if (node->right) stack.push(node->right);
+				if (node->left) stack.push(node->left);
 			}
 		}
-		else {
-			hit |= traverseBVH(node->left, ray, closestT, hitWall, hitPoint);
-			hit |= traverseBVH(node->right, ray, closestT, hitWall, hitPoint);
-		}
-
 		return hit;
 	}
 };
@@ -1292,6 +1326,8 @@ struct Lighting {
 
 	bool drawNormals = false;
 
+	bool relaxMove = false;
+
 	const float lightBias = 0.1f;
 
 	Color lightColor = { 255, 255, 255, 64 };
@@ -1299,6 +1335,9 @@ struct Lighting {
 	Color wallBaseColor = { 200, 200, 200, 255 };
 	Color wallSpecularColor = { 255, 255, 255, 255 };
 	Color wallRefractionColor = { 255, 255, 255, 255 };
+	Color wallEmissionColor = { 255, 255, 255, 0 };
+
+	float lightGain = 0.25f;
 
 	float lightSpread = 0.85f;
 
@@ -1309,6 +1348,11 @@ struct Lighting {
 	float airIOR = 1.0f;
 
 	float wallDispersion = 0.0f;
+
+	float wallEmissionGain = 0.0f;
+
+	int shapeRelaxIter = 15;
+	float shapeRelaxFactor = 0.65f;
 
 	float absorptionInvBias = 0.99f;
 
@@ -1362,6 +1406,9 @@ struct Lighting {
 
 	void eraseLogic(UpdateVariables& myVar, UpdateParameters& myParam);
 
+	float lightGainAvg = 0.0f;
+	bool isSliderLightGain = false;
+
 	float lightSpreadAvg = 0.0f;
 	bool isSliderlightSpread = false;
 
@@ -1376,6 +1423,9 @@ struct Lighting {
 
 	Color refractionColorAvg = { 0, 0, 0, 0 };
 	bool isSliderRefractionCol = false;
+
+	Color emissionColorAvg = { 0, 0, 0, 0 };
+	bool isSliderEmissionCol = false;
 
 	float specularRoughAvg = 0.0f;
 	bool isSliderSpecularRough = false;
@@ -1392,19 +1442,25 @@ struct Lighting {
 	float dispersionAvg = 0.0f;
 	bool isSliderDispersion = false;
 
+	float emissionGainAvg = 0.0f;
+	bool isSliderEmissionGain = false;
+
 	// Add the UI bools for optics in here
 	std::vector<bool*> uiOpticElements = {
 
+		&isSliderLightGain,
 		&isSliderlightSpread,
 		&isSliderLightColor,
 		&isSliderBaseColor,
 		&isSliderSpecularColor,
 		&isSliderRefractionCol,
+		&isSliderEmissionCol,
 		&isSliderSpecularRough,
 		&isSliderRefractionRough,
 		&isSliderRefractionAmount,
 		&isSliderIor,
-		&isSliderDispersion
+		&isSliderDispersion,
+		&isSliderEmissionGain
 
 	};
 
@@ -1437,14 +1493,16 @@ struct Lighting {
 		);
 	}
 
-	// This controls specular lighting, meaning reflections. It uses a roughness parameter to control how smooth a surface is
 	void specularReflection(int& currentBounce, LightRay& ray, std::vector<LightRay>& copyRays, std::vector<Wall>& walls);
 
-	// This controls refraction
 	void refraction(int& currentBounce, LightRay& ray, std::vector<LightRay>& copyRays, std::vector<Wall>& walls);
 
-	// This controls diffuse lighting
+	// Currently unfinished and unused. Might work on it some time in the future
+	//void volumeScatter(int& currentBounce, LightRay& ray, std::vector<LightRay>& copyRays, std::vector<Wall>& walls);
+
 	void diffuseLighting(int& currentBounce, LightRay& ray, std::vector<LightRay>& copyRays, std::vector<Wall>& walls);
+
+	void emission();
 
 	void lightRendering(UpdateParameters& myParam);
 
@@ -1476,18 +1534,68 @@ struct Lighting {
 
 	void drawMisc(UpdateVariables& myVar, UpdateParameters& myParam);
 
+	inline Color glmVec4ToColor(const glm::vec4& v) {
+		float r = glm::clamp(v.x, 0.0f, 1.0f);
+		float g = glm::clamp(v.y, 0.0f, 1.0f);
+		float b = glm::clamp(v.z, 0.0f, 1.0f);
+		float a = glm::clamp(v.w, 0.0f, 1.0f);
+
+		return Color{
+			static_cast<unsigned char>(r * 255.0f),
+			static_cast<unsigned char>(g * 255.0f),
+			static_cast<unsigned char>(b * 255.0f),
+			static_cast<unsigned char>(a * 255.0f)
+		};
+	}
+
+	inline glm::vec4 ColorToGlmVec4(const Color& c) {
+		return glm::vec4{
+			static_cast<float>(c.r) / 255.0f,
+			static_cast<float>(c.g) / 255.0f,
+			static_cast<float>(c.b) / 255.0f,
+			static_cast<float>(c.a) / 255.0f
+		};
+	}
+
+	void processApparentColor() {
+
+		for (Wall& w : walls) {
+			if (w.isSelected) {
+				continue;
+			}
+
+			float emissionGain = static_cast<float>(w.emissionColor.a) / 255.0f;
+
+			float baseWeight = 1.0f - w.refractionAmount;
+			float specularWeight = 0.2f * w.IOR * (1.0f - w.refractionAmount * 0.5f);
+
+			glm::vec4 baseCol = { 0.0f, 0.0f, 0.0f, 0.0f };
+			baseCol += ColorToGlmVec4(w.baseColor) * baseWeight;
+			baseCol += ColorToGlmVec4(w.specularColor) * specularWeight;
+			baseCol += ColorToGlmVec4(w.refractionColor) * w.refractionAmount * 0.6f;
+
+			float totalWeight = baseWeight + specularWeight + w.refractionAmount;
+			if (totalWeight > 0.0f) {
+				baseCol /= totalWeight;
+			}
+
+			glm::vec4 emissionVec = ColorToGlmVec4(w.emissionColor);
+			glm::vec4 finalCol = glm::mix(baseCol, emissionVec, emissionGain);
+
+			w.apparentColor = glmVec4ToColor(finalCol);
+		}
+
+		for (AreaLight& al : areaLights) {
+			al.apparentColor = al.color;
+		}
+
+	}
+
 	void rayLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 
 		if (shouldRender) {
 			rays.clear();
 			currentSamples = 0;
-
-			wallPointers.clear();
-			for (Wall& wall : walls) {
-				wallPointers.push_back(&wall);
-			}
-
-			bvh.build(wallPointers);
 
 			shouldRender = false;
 		}
@@ -1496,13 +1604,19 @@ struct Lighting {
 			shouldRender = true;
 		}
 
-		//rays.emplace_back(glm::vec2{ 500.0f, 500.0f }, glm::vec2{ 1.0f, 0.0f }, 1, WHITE);
-
 		createPointLight(myVar, myParam);
 		createAreaLight(myVar, myParam);
 		createConeLight(myVar, myParam);
 		createWall(myVar, myParam);
 		createShape(myVar, myParam);
+
+		if (!walls.empty()) {
+			wallPointers.clear();
+			for (Wall& wall : walls) {
+				wallPointers.push_back(&wall);
+			}
+			bvh.build(wallPointers);
+		}
 
 		moveLogic(myVar, myParam);
 
@@ -1518,8 +1632,15 @@ struct Lighting {
 			rays.clear();
 			pointLights.clear();
 			areaLights.clear();
+			coneLights.clear();
 			walls.clear();
 			shapes.clear();
+
+			wallPointers.clear();
+			for (Wall& wall : walls) {
+				wallPointers.push_back(&wall);
+			}
+			bvh.build(wallPointers);
 		}
 	}
 };

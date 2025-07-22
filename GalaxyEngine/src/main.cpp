@@ -151,7 +151,7 @@ int main(int argc, char** argv) {
 		myVar.screenHeight = GetMonitorHeight(GetCurrentMonitor()) * 0.5f;
 	}
 
-	// ---- Shader Experimenting Below ---- //
+	// ---- Ray Tracing and Long Exposure ---- //
 
 	const char* vertexShader = R"(
     #version 330 core
@@ -223,8 +223,7 @@ void main() {
 
 	bool prevLongExpFlag = false;
 
-
-	// ---- Shader Experimenting Above ---- //
+	bool accumulationCondition = false;
 
 	while (!WindowShouldClose()) {
 
@@ -296,20 +295,28 @@ void main() {
 			EndShaderMode();
 		}
 
-		// ---------- EXPERIMENT SHADER BELOW ---------- //
 
-
-		if (myParam.myCamera.cameraChangedThisFrame || myVar.longExposureFlag) {
+		if (myParam.myCamera.cameraChangedThisFrame) {
 			lighting.shouldRender = true;
 		}
 
-		if (lighting.shouldRender && myVar.longExposureFlag && !prevLongExpFlag) {
-			myVar.longExposureCurrent = 0;
+		if (myVar.longExposureFlag != prevLongExpFlag) {
+			myVar.longExposureCurrent = 1;
+
+			prevLongExpFlag = myVar.longExposureFlag;
 		}
 
-		prevLongExpFlag = myVar.longExposureFlag;
+		if (myVar.isOpticsEnabled) {
+			accumulationCondition = lighting.currentSamples <= lighting.maxSamples;
+		}
+		else if (myVar.longExposureFlag) {
+			accumulationCondition = myVar.longExposureCurrent <= myVar.longExposureDuration;
+		}
+		else {
+			accumulationCondition = true;
+		}
 
-		if (lighting.currentSamples <= lighting.maxSamples) {
+		if (accumulationCondition) {
 
 			BeginTextureMode(pingPongTexture);
 
@@ -317,7 +324,23 @@ void main() {
 
 			SetShaderValueTexture(testShader, currentFrameLoc, myParticlesTexture.texture);
 			SetShaderValueTexture(testShader, accumulatedFrameLoc, accumulatedTexture.texture);
-			float sampleCount = static_cast<float>(lighting.currentSamples);
+
+			float sampleCount = 1.0f;
+
+			if (myVar.isOpticsEnabled) {
+				sampleCount = static_cast<float>(lighting.currentSamples);
+			}
+			else {
+				lighting.currentSamples = 0;
+			}
+
+			if (myVar.longExposureFlag) {
+				sampleCount = static_cast<float>(myVar.longExposureCurrent);
+			}
+			else {
+				myVar.longExposureCurrent = 0;
+			}
+
 			SetShaderValue(testShader, sampleCountLoc, &sampleCount, SHADER_UNIFORM_FLOAT);
 
 			DrawTextureRec(
@@ -333,6 +356,7 @@ void main() {
 
 			std::swap(accumulatedTexture, pingPongTexture);
 
+
 			if (myVar.longExposureFlag) {
 				myVar.longExposureCurrent++;
 			}
@@ -345,7 +369,6 @@ void main() {
 			WHITE
 		);
 
-		// ---------- EXPERIMENT SHADER ABOVE ---------- //
 
 		DrawTextureRec(
 			myUITexture.texture,

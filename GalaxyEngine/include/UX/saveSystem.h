@@ -379,7 +379,7 @@ public:
 
 				file.read(reinterpret_cast<char*>(&s.drawHoverHelpers), sizeof(s.drawHoverHelpers));
 
-				file.read(reinterpret_cast<char*>(&s.oldHelperPos), sizeof(s.oldHelperPos));
+				file.read(reinterpret_cast<char*>(&s.oldDrawHelperPos), sizeof(s.oldDrawHelperPos));
 
 				// Lens variables
 				file.read(reinterpret_cast<char*>(&s.secondHelper), sizeof(s.secondHelper));
@@ -426,6 +426,7 @@ public:
 			}
 		}
 
+		lighting.pointLights.clear();
 		uint32_t pointLightCount = 0;
 		file.read(reinterpret_cast<char*>(&pointLightCount), sizeof(pointLightCount));
 		lighting.pointLights.resize(pointLightCount);
@@ -443,6 +444,7 @@ public:
 			lighting.pointLights.push_back(p);
 		}
 
+		lighting.areaLights.clear();
 		uint32_t areaLightCount = 0;
 		file.read(reinterpret_cast<char*>(&areaLightCount), sizeof(areaLightCount));
 		lighting.areaLights.resize(areaLightCount);
@@ -459,10 +461,12 @@ public:
 			file.read(reinterpret_cast<char*>(&a.color), sizeof(a.color));
 			file.read(reinterpret_cast<char*>(&a.apparentColor), sizeof(a.apparentColor));
 			file.read(reinterpret_cast<char*>(&a.isSelected), sizeof(a.isSelected));
+			file.read(reinterpret_cast<char*>(&a.spread), sizeof(a.spread));
 
 			lighting.areaLights.push_back(a);
 		}
 
+		lighting.coneLights.clear();
 		uint32_t coneLightCount = 0;
 		file.read(reinterpret_cast<char*>(&coneLightCount), sizeof(coneLightCount));
 		lighting.coneLights.resize(coneLightCount);
@@ -479,6 +483,7 @@ public:
 			file.read(reinterpret_cast<char*>(&l.color), sizeof(l.color));
 			file.read(reinterpret_cast<char*>(&l.apparentColor), sizeof(l.apparentColor));
 			file.read(reinterpret_cast<char*>(&l.isSelected), sizeof(l.isSelected));
+			file.read(reinterpret_cast<char*>(&l.spread), sizeof(l.spread));
 
 			lighting.coneLights.push_back(l);
 		}

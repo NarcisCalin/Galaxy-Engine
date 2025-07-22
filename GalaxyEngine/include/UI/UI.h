@@ -70,8 +70,6 @@ private:
 
 	static std::unordered_map<std::string, PlotData> plotDataMap;
 
-	ImVec4 statsNamesCol = { 0.6f, 0.6f, 0.8f, 1.0f };
-
 	ImVec2 graphDefaultSize = { 340.0f, 250.0f };
 
 	int graphHistoryLimit = 1000;

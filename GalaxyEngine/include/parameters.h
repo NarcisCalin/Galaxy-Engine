@@ -110,6 +110,7 @@ struct UpdateVariables{
 	bool sphGround = false;
 	bool isTempEnabled = false;
 	bool constraintsEnabled = false;
+	bool isOpticsEnabled = false;
 
 	bool longExposureFlag = false;
 	int longExposureDuration = 50;
@@ -152,6 +153,9 @@ struct UpdateVariables{
 	static ImVec4 colPlotBg;
 	static ImVec4 colPlotBorder;
 	static ImVec4 colLegendBg;
+
+	// Text colors
+	static ImVec4 colMenuInformation;
 
 	bool isRecording = false;
 

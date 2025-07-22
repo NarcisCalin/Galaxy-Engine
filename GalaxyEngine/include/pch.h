@@ -21,6 +21,7 @@
 #include <thread>
 #include <bitset>
 #include <random>
+#include <stack>
 
 // C stdlib
 #include <cmath>

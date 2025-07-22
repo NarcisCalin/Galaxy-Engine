@@ -5,7 +5,14 @@ void Lighting::createWall(UpdateVariables& myVar, UpdateParameters& myParam) {
 	glm::vec2 mouseWorldPos = myParam.myCamera.mouseWorldPos;
 
 	if (IO::mousePress(0) && myVar.toolWall) {
-		walls.emplace_back(mouseWorldPos, mouseWorldPos, false, wallBaseColor, wallSpecularColor, wallRefractionColor,
+
+		ImVec4 colorConvert = rlImGuiColors::Convert(wallEmissionColor);
+
+		colorConvert.w = wallEmissionGain;
+
+		Color emissionColorFinal = rlImGuiColors::Convert(colorConvert);
+
+		walls.emplace_back(mouseWorldPos, mouseWorldPos, false, wallBaseColor, wallSpecularColor, wallRefractionColor, emissionColorFinal,
 			wallSpecularRoughness, wallRefractionRoughness, wallRefractionAmount, wallIOR, wallDispersion);
 	}
 
@@ -37,7 +44,14 @@ void Lighting::createShape(UpdateVariables& myVar, UpdateParameters& myParam) {
 
 	// ---- Circle ---- //
 	if (IO::mousePress(0) && myVar.toolCircle) {
-		shapes.emplace_back(circle, mouseWorldPos, mouseWorldPos, &walls, wallBaseColor, wallSpecularColor, wallRefractionColor,
+
+		ImVec4 colorConvert = rlImGuiColors::Convert(wallEmissionColor);
+
+		colorConvert.w = wallEmissionGain;
+
+		Color emissionColorFinal = rlImGuiColors::Convert(colorConvert);
+
+		shapes.emplace_back(circle, mouseWorldPos, mouseWorldPos, &walls, wallBaseColor, wallSpecularColor, wallRefractionColor, emissionColorFinal,
 			wallSpecularRoughness, wallRefractionRoughness, wallRefractionAmount, wallIOR, wallDispersion);
 	}
 
@@ -72,7 +86,14 @@ void Lighting::createShape(UpdateVariables& myVar, UpdateParameters& myParam) {
 
 	// ---- Draw Shape ---- //
 	if (IO::mousePress(0) && myVar.toolDrawShape) {
-		shapes.emplace_back(draw, mouseWorldPos, mouseWorldPos, &walls, wallBaseColor, wallSpecularColor, wallRefractionColor,
+
+		ImVec4 colorConvert = rlImGuiColors::Convert(wallEmissionColor);
+
+		colorConvert.w = wallEmissionGain;
+
+		Color emissionColorFinal = rlImGuiColors::Convert(colorConvert);
+
+		shapes.emplace_back(draw, mouseWorldPos, mouseWorldPos, &walls, wallBaseColor, wallSpecularColor, wallRefractionColor, emissionColorFinal,
 			wallSpecularRoughness, wallRefractionRoughness, wallRefractionAmount, wallIOR, wallDispersion);
 
 		shapes.back().helpers.push_back(mouseWorldPos);
@@ -111,13 +132,19 @@ void Lighting::createShape(UpdateVariables& myVar, UpdateParameters& myParam) {
 			const glm::vec2& lastPoint = lastWall->vB;
 			const glm::vec2& firstPoint = firstWall->vA;
 
-			walls.emplace_back(lastPoint, firstPoint, true, wallBaseColor, wallSpecularColor, wallRefractionColor,
+			ImVec4 colorConvert = rlImGuiColors::Convert(wallEmissionColor);
+
+			colorConvert.w = wallEmissionGain;
+
+			Color emissionColorFinal = rlImGuiColors::Convert(colorConvert);
+
+			walls.emplace_back(lastPoint, firstPoint, true, wallBaseColor, wallSpecularColor, wallRefractionColor, emissionColorFinal,
 				wallSpecularRoughness, wallRefractionRoughness, wallRefractionAmount, wallIOR, wallDispersion);
 
 			walls.back().shapeId = shapes.back().id;
 			shapes.back().myWallIds.push_back(walls.back().id);
 
-			shapes.back().relaxShape();
+			shapes.back().relaxShape(shapeRelaxIter, shapeRelaxFactor);
 
 			shapes.back().calculateWallsNormals();
 		}
@@ -126,7 +153,14 @@ void Lighting::createShape(UpdateVariables& myVar, UpdateParameters& myParam) {
 
 	// ---- Lens ---- //
 	if (IO::mousePress(0) && myVar.toolLens && firstHelper) {
-		shapes.emplace_back(lens, mouseWorldPos, mouseWorldPos, &walls, wallBaseColor, wallSpecularColor, wallRefractionColor,
+
+		ImVec4 colorConvert = rlImGuiColors::Convert(wallEmissionColor);
+
+		colorConvert.w = wallEmissionGain;
+
+		Color emissionColorFinal = rlImGuiColors::Convert(colorConvert);
+
+		shapes.emplace_back(lens, mouseWorldPos, mouseWorldPos, &walls, wallBaseColor, wallSpecularColor, wallRefractionColor, emissionColorFinal,
 			wallSpecularRoughness, wallRefractionRoughness, wallRefractionAmount, wallIOR, wallDispersion);
 
 		shapes.back().symmetricalLens = symmetricalLens;
@@ -189,7 +223,14 @@ void Lighting::createPointLight(UpdateVariables& myVar, UpdateParameters& myPara
 	glm::vec2 mouseWorldPos = myParam.myCamera.mouseWorldPos;
 
 	if (IO::mousePress(0) && myVar.toolPointLight) {
-		pointLights.emplace_back(mouseWorldPos, lightColor);
+
+		ImVec4 colorConvert = rlImGuiColors::Convert(lightColor);
+
+		colorConvert.w = lightGain;
+
+		Color lightColorFinal = rlImGuiColors::Convert(colorConvert);
+
+		pointLights.emplace_back(mouseWorldPos, lightColorFinal);
 
 		shouldRender = true;
 	}
@@ -200,7 +241,14 @@ void Lighting::createAreaLight(UpdateVariables& myVar, UpdateParameters& myParam
 	glm::vec2 mouseWorldPos = myParam.myCamera.mouseWorldPos;
 
 	if (IO::mousePress(0) && myVar.toolAreaLight) {
-		areaLights.emplace_back(mouseWorldPos, mouseWorldPos, lightColor, lightSpread);
+
+		ImVec4 colorConvert = rlImGuiColors::Convert(lightColor);
+
+		colorConvert.w = lightGain;
+
+		Color lightColorFinal = rlImGuiColors::Convert(colorConvert);
+
+		areaLights.emplace_back(mouseWorldPos, mouseWorldPos, lightColorFinal, lightSpread);
 	}
 
 	if (IO::mouseDown(0) && myVar.toolAreaLight) {
@@ -228,7 +276,14 @@ void Lighting::createConeLight(UpdateVariables& myVar, UpdateParameters& myParam
 	glm::vec2 mouseWorldPos = myParam.myCamera.mouseWorldPos;
 
 	if (IO::mousePress(0) && myVar.toolConeLight) {
-		coneLights.emplace_back(mouseWorldPos, mouseWorldPos, lightColor, lightSpread);
+
+		ImVec4 colorConvert = rlImGuiColors::Convert(lightColor);
+
+		colorConvert.w = lightGain;
+
+		Color lightColorFinal = rlImGuiColors::Convert(colorConvert);
+
+		coneLights.emplace_back(mouseWorldPos, mouseWorldPos, lightColorFinal, lightSpread);
 	}
 
 	if (IO::mouseDown(0) && myVar.toolConeLight) {
@@ -406,13 +461,35 @@ void Lighting::moveWalls(UpdateVariables& myVar, UpdateParameters& myParam) {
 	}
 
 	if (IO::mouseDown(0) && myVar.toolMoveOptics) {
+
+		float moveRelaxFactor = shapeRelaxFactor * 0.06f;
+
 		for (Wall& wall : walls) {
 			if (wall.vAisBeingMoved) {
 				wall.vA += scaledDelta;
+
+				if (wall.isShapeWall && relaxMove) {
+					for (Shape& shape : shapes) {
+						if (shape.id == wall.shapeId) {
+
+							shape.relaxShape(shapeRelaxIter, moveRelaxFactor);
+						}
+					}
+				}
+
 				shouldRender = true;
 			}
 			if (wall.vBisBeingMoved) {
 				wall.vB += scaledDelta;
+
+				if (wall.isShapeWall && relaxMove) {
+					for (Shape& shape : shapes) {
+						if (shape.id == wall.shapeId) {
+							shape.relaxShape(shapeRelaxIter, moveRelaxFactor);
+						}
+					}
+				}
+
 				shouldRender = true;
 			}
 
@@ -532,7 +609,7 @@ void Lighting::moveLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 			}
 
 			if (shapes[selectedShape].symmetricalLens) {
-				if ((selectedHelper == 3 || selectedHelper == 4) && IO::shortcutDown(KEY_RIGHT_SHIFT)) {
+				if ((selectedHelper == 3 || selectedHelper == 4) && IO::shortcutDown(KEY_LEFT_CONTROL)) {
 					shapes.at(selectedShape).isFifthFourthMoved = true;
 					shapes.at(selectedShape).moveH2 = mouseWorldPos;
 				}
@@ -954,12 +1031,6 @@ void Lighting::selectLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 
 				wall.apparentColor = RED;
 			}
-			else {
-
-				if (!wall.isSelected) {
-					wall.apparentColor = WHITE;
-				}
-			}
 		}
 
 		for (AreaLight& areaLight : areaLights) {
@@ -1017,12 +1088,6 @@ void Lighting::selectLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 				}
 
 				areaLight.apparentColor = RED;
-			}
-			else {
-
-				if (!areaLight.isSelected) {
-					areaLight.apparentColor = WHITE;
-				}
 			}
 		}
 
@@ -1082,12 +1147,6 @@ void Lighting::selectLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 
 				coneLight.apparentColor = RED;
 			}
-			else {
-
-				if (!coneLight.isSelected) {
-					coneLight.apparentColor = WHITE;
-				}
-			}
 		}
 
 		for (PointLight& pointLight : pointLights) {
@@ -1131,12 +1190,6 @@ void Lighting::selectLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 				}
 
 				pointLight.apparentColor = RED;
-			}
-			else {
-
-				if (!pointLight.isSelected) {
-					pointLight.apparentColor = WHITE;
-				}
 			}
 		}
 
@@ -1206,6 +1259,9 @@ void Lighting::selectLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 				refractionColorAvg = { 0, 0, 0, 0 };
 				ImVec4 refractionColAvgImgui = { 0.0f, 0.0f, 0.0f, 0.0f };
 
+				emissionColorAvg = { 0, 0, 0, 0 };
+				ImVec4 emissionColAvgImgui = { 0.0f, 0.0f, 0.0f, 0.0f };
+
 				specularRoughAvg = 0.0f;
 
 				refractionRoughAvg = 0.0f;
@@ -1215,6 +1271,8 @@ void Lighting::selectLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 				iorAvg = 0.0f;
 
 				dispersionAvg = 0.0f;
+
+				emissionGainAvg = 0.0f;
 
 				for (Wall& wall : walls) {
 					if (wall.isSelected) {
@@ -1243,6 +1301,14 @@ void Lighting::selectLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 						refractionColAvgImgui.z += wallRefractionColImgui.z;
 						refractionColAvgImgui.w += wallRefractionColImgui.w;
 
+						// Emission Color
+						ImVec4 wallEmissionColImgui = rlImGuiColors::Convert(wall.emissionColor);
+
+						emissionColAvgImgui.x += wallEmissionColImgui.x;
+						emissionColAvgImgui.y += wallEmissionColImgui.y;
+						emissionColAvgImgui.z += wallEmissionColImgui.z;
+						emissionColAvgImgui.w += wallEmissionColImgui.w;
+
 						// Specular Roughness
 						specularRoughAvg += wall.specularRoughness;
 
@@ -1257,6 +1323,9 @@ void Lighting::selectLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 
 						// Dispersion
 						dispersionAvg += wall.dispersionStrength;
+
+						// Emission
+						emissionGainAvg = wallEmissionColImgui.w;
 					}
 				}
 
@@ -1281,6 +1350,13 @@ void Lighting::selectLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 				refractionColAvgImgui.w /= selectedWalls;
 				wallRefractionColor = rlImGuiColors::Convert(refractionColAvgImgui);
 
+				// Emission Color
+				emissionColAvgImgui.x /= selectedWalls;
+				emissionColAvgImgui.y /= selectedWalls;
+				emissionColAvgImgui.z /= selectedWalls;
+				emissionColAvgImgui.w /= selectedWalls;
+				wallEmissionColor = rlImGuiColors::Convert(emissionColAvgImgui);
+
 				// Specular Roughness
 				specularRoughAvg /= selectedWalls;
 				wallSpecularRoughness = specularRoughAvg;
@@ -1300,6 +1376,10 @@ void Lighting::selectLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 				// Dispersion
 				dispersionAvg /= selectedWalls;
 				wallDispersion = dispersionAvg;
+
+				// Emission
+				emissionGainAvg = emissionColAvgImgui.w;
+				wallEmissionGain = emissionGainAvg;
 			}
 
 			if (selectedAreaLights > 0 || selectedPointLights > 0 || selectedConeLights > 0) {
@@ -1308,6 +1388,8 @@ void Lighting::selectLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 				ImVec4 lightColorAvgImgui = { 0.0f, 0.0f, 0.0f, 0.0f };
 
 				lightSpreadAvg = 0.0f;
+
+				lightGainAvg = 0.0f;
 
 				if (selectedAreaLights > 0) {
 
@@ -1324,6 +1406,9 @@ void Lighting::selectLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 
 							// Light Spread
 							lightSpreadAvg += arealight.spread;
+
+							// Light Gain
+							lightGainAvg = lightColorAvgImgui.w;
 						}
 					}
 				}
@@ -1343,6 +1428,9 @@ void Lighting::selectLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 
 							// Light Spread
 							lightSpreadAvg += coneLight.spread;
+
+							// Light Gain
+							lightGainAvg = lightColorAvgImgui.w;
 						}
 					}
 				}
@@ -1359,6 +1447,9 @@ void Lighting::selectLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 							lightColorAvgImgui.y += lightColImgui.y;
 							lightColorAvgImgui.z += lightColImgui.z;
 							lightColorAvgImgui.w += lightColImgui.w;
+
+							// Light Gain
+							lightGainAvg = lightColorAvgImgui.w;
 						}
 					}
 				}
@@ -1371,7 +1462,14 @@ void Lighting::selectLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 				lightColor = rlImGuiColors::Convert(lightColorAvgImgui);
 
 				// Light Spread
-				lightSpreadAvg /= selectedAreaLights + selectedConeLights;
+				if (selectedAreaLights + selectedConeLights > 0) {
+					lightSpreadAvg /= selectedAreaLights + selectedConeLights;
+					lightSpread = lightSpreadAvg;
+				}
+
+				// Light Gain
+				lightGainAvg = lightColorAvgImgui.w;
+				lightGain = lightGainAvg;
 			}
 		}
 	}
@@ -1379,22 +1477,18 @@ void Lighting::selectLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 	if (IO::mouseReleased(0) && !myVar.toolSelectOptics) {
 		for (Wall& wall : walls) {
 			wall.isSelected = false;
-			wall.apparentColor = WHITE;
 		}
 
 		for (AreaLight& areaLight : areaLights) {
 			areaLight.isSelected = false;
-			areaLight.apparentColor = WHITE;
 		}
 
 		for (ConeLight& coneLight : coneLights) {
 			coneLight.isSelected = false;
-			coneLight.apparentColor = WHITE;
 		}
 
 		for (PointLight& pointLight : pointLights) {
 			pointLight.isSelected = false;
-			pointLight.apparentColor = WHITE;
 		}
 	}
 
@@ -1420,6 +1514,9 @@ void Lighting::selectLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 				if (isSliderRefractionCol) {
 					wall.refractionColor = wallRefractionColor;
 				}
+				if (isSliderEmissionCol) {
+					wall.emissionColor = wallEmissionColor;
+				}
 
 				if (isSliderSpecularRough) {
 					wall.specularRoughness = wallSpecularRoughness;
@@ -1440,6 +1537,12 @@ void Lighting::selectLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 				if (isSliderDispersion) {
 					wall.dispersionStrength = wallDispersion;
 				}
+
+				if (isSliderEmissionGain) {
+					ImVec4 convertedColor = rlImGuiColors::Convert(wall.emissionColor);
+
+					wall.emissionColor = rlImGuiColors::Convert(ImVec4{ convertedColor.x, convertedColor.y, convertedColor.z, wallEmissionGain });
+				}
 			}
 		}
 
@@ -1451,6 +1554,12 @@ void Lighting::selectLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 		if (selectedAreaLights > 0) {
 			for (AreaLight& areaLight : areaLights) {
 				if (areaLight.isSelected) {
+
+					if (isSliderLightGain) {
+						ImVec4 convertedColor = rlImGuiColors::Convert(areaLight.color);
+
+						areaLight.color = rlImGuiColors::Convert(ImVec4{ convertedColor.x, convertedColor.y, convertedColor.z, lightGain });
+					}
 
 					if (isSliderlightSpread) {
 						areaLight.spread = lightSpread;
@@ -1467,6 +1576,12 @@ void Lighting::selectLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 			for (ConeLight& coneLight : coneLights) {
 				if (coneLight.isSelected) {
 
+					if (isSliderLightGain) {
+						ImVec4 convertedColor = rlImGuiColors::Convert(coneLight.color);
+
+						coneLight.color = rlImGuiColors::Convert(ImVec4{ convertedColor.x, convertedColor.y, convertedColor.z, lightGain });
+					}
+
 					if (isSliderlightSpread) {
 						coneLight.spread = lightSpread;
 					}
@@ -1482,6 +1597,12 @@ void Lighting::selectLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 			for (PointLight& pointLight : pointLights) {
 				if (pointLight.isSelected) {
 
+					if (isSliderLightGain) {
+						ImVec4 convertedColor = rlImGuiColors::Convert(pointLight.color);
+
+						pointLight.color = rlImGuiColors::Convert(ImVec4{ convertedColor.x, convertedColor.y, convertedColor.z, lightGain });
+					}
+
 					if (isSliderLightColor) {
 						pointLight.color = lightColor;
 					}
@@ -1492,6 +1613,8 @@ void Lighting::selectLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 		shouldRender = true;
 	}
 
+	isSliderLightGain = false;
+
 	isSliderlightSpread = false;
 
 	isSliderLightColor = false;
@@ -1499,6 +1622,7 @@ void Lighting::selectLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 	isSliderBaseColor = false;
 	isSliderSpecularColor = false;
 	isSliderRefractionCol = false;
+	isSliderEmissionCol = false;
 
 	isSliderSpecularRough = false;
 
@@ -1509,6 +1633,8 @@ void Lighting::selectLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 	isSliderIor = false;
 
 	isSliderDispersion = false;
+
+	isSliderEmissionGain = false;
 }
 
 
@@ -1539,12 +1665,11 @@ float Lighting::checkIntersect(const LightRay& ray, const Wall& w) {
 void Lighting::processRayIntersection(LightRay& ray) {
 	ray.hasHit = false;
 	ray.length = ray.maxLength;
-
 	float closestT = ray.maxLength;
 	Wall* hitWall = nullptr;
 	glm::vec2 hitPt;
 
-	if (bvh.traverse(ray, closestT, hitWall, hitPt)) {
+	if (bvh.traverse(ray, closestT, hitWall, hitPt) && hitWall != nullptr) {
 		ray.hasHit = true;
 		ray.length = closestT;
 		ray.hitPoint = hitPt;
@@ -1721,6 +1846,77 @@ void Lighting::refraction(int& currentBounce, LightRay& ray, std::vector<LightRa
 	}
 }
 
+// UNFINISHED VOLUME SCATTERING CODE. I might work on it sometime in the future
+
+//void Lighting::volumeScatter(int& currentBounce, LightRay& ray, std::vector<LightRay>& copyRays, std::vector<Wall>& walls) {
+//
+//	glm::vec2 wallVec = ray.wall.vB - ray.wall.vA;
+//	float wallLength = glm::length(wallVec);
+//	float t = glm::clamp(glm::dot(ray.hitPoint - ray.wall.vA, wallVec) / (wallLength * wallLength), 0.0f, 1.0f);
+//
+//	glm::vec2 interpolatedNormal = glm::normalize(glm::mix(ray.wall.normalVA, ray.wall.normalVB, t));
+//
+//	bool entering = glm::dot(interpolatedNormal, ray.dir) < 0.0f;
+//
+//	if (glm::dot(ray.wall.normal, ray.dir) > 0.0f) {
+//		interpolatedNormal = -interpolatedNormal;
+//	}
+//
+//	float spreadMultiplier = 0.55f;
+//	float maxSpreadAngle = glm::radians(90.0f * spreadMultiplier);
+//
+//	float randAngle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * PI;
+//
+//	glm::vec2 rayDirection = glm::vec2(cos(randAngle), sin(randAngle));
+//
+//	bool enterAfterBounce = glm::dot(rayDirection, ray.dir) < 0.0f;
+//
+//	if (enterAfterBounce) {
+//		interpolatedNormal = -interpolatedNormal;
+//	}
+//
+//	Color newColor = {
+//static_cast<unsigned char>(ray.color.r * ray.wall.baseColor.r / 255.0f),
+//static_cast<unsigned char>(ray.color.g * ray.wall.baseColor.g / 255.0f),
+//static_cast<unsigned char>(ray.color.b * ray.wall.baseColor.b / 255.0f),
+//static_cast<unsigned char>(ray.color.a)
+//	};
+//
+//	glm::vec2 newSource = ray.hitPoint - interpolatedNormal * lightBias;
+//
+//	if (ray.hasBeenScattered && !ray.hasHit) {
+//		newSource = ray.scatterSource + ray.maxLength * ray.dir;
+//	}
+//
+//	copyRays.emplace_back(newSource, rayDirection, ray.bounceLevel + 1, newColor);
+//
+//	LightRay& newRay = copyRays.back();
+//
+//	if (!enterAfterBounce) {
+//		newRay.hasBeenScattered = true;
+//		newRay.maxLength = 50.0f;
+//	}
+//	else {
+//		newRay.hasBeenScattered = false;
+//		newRay.maxLength = 10000.0f;
+//	}
+//
+//	if (glm::dot(ray.wall.normal, ray.dir) > 0.0f && ray.hasBeenScattered && ray.hasHit) {
+//		newRay.hasBeenScattered = false;
+//		newRay.maxLength = 10000.0f;
+//	}
+//
+//
+//	if (!ray.hasBeenScattered) {
+//		newRay.scatterSource = ray.hitPoint;
+//	}
+//	else {
+//		newRay.scatterSource = newSource;
+//	}
+//
+//	processRayIntersection(newRay);
+//}
+
 // This controls diffuse lighting
 void Lighting::diffuseLighting(int& currentBounce, LightRay& ray, std::vector<LightRay>& copyRays, std::vector<Wall>& walls) {
 
@@ -1757,6 +1953,54 @@ static_cast<unsigned char>(ray.color.a)
 	processRayIntersection(newRay);
 }
 
+int emissionWallsAmount = 0;
+
+void Lighting::emission() {
+	int emissionWallsAmount = 0;
+
+	for (Wall& w : walls) {
+		if (w.emissionColor.a > 0.0f) {
+			emissionWallsAmount++;
+		}
+	}
+
+	if (emissionWallsAmount == 0) {
+		return;
+	}
+
+	int totalRays = sampleRaysAmount / emissionWallsAmount;
+
+	totalRays = std::max(totalRays, 3);
+
+	for (Wall& w : walls) {
+		if (w.emissionColor.a <= 0.0f) continue;
+
+		for (int i = 0; i < totalRays; i++) {
+			float maxSpreadAngle = glm::radians(90.0f * 0.99f);
+			float randAngle = getRandomFloat() * 2.0f * maxSpreadAngle - maxSpreadAngle;
+
+			glm::vec2 d = w.vB - w.vA;
+			float length = glm::length(d);
+			glm::vec2 dNormal = d / length;
+
+			float t = getRandomFloat();
+			float bias = 0.01f;
+
+			glm::vec2 source = w.vA + d * t + w.normal * bias;
+
+			glm::vec2 rayDirection = rotateVec2(dNormal, randAngle);
+			rayDirection = glm::vec2(rayDirection.y, -rayDirection.x);
+
+			rays.emplace_back(
+				source,
+				rayDirection,
+				1,
+				w.emissionColor
+			);
+		}
+	}
+}
+
 void Lighting::lightRendering(UpdateParameters& myParam) {
 
 	if (currentSamples <= maxSamples) {
@@ -1768,12 +2012,14 @@ void Lighting::lightRendering(UpdateParameters& myParam) {
 		}
 
 		for (AreaLight& areaLight : areaLights) {
-			areaLight.areaLightLogic(myParam, sampleRaysAmount, rays);
+			areaLight.areaLightLogic(sampleRaysAmount, rays);
 		}
 
 		for (ConeLight& coneLight : coneLights) {
-			coneLight.coneLightLogic(myParam, sampleRaysAmount, rays);
+			coneLight.coneLightLogic(sampleRaysAmount, rays);
 		}
+
+		emission();
 
 #pragma omp parallel for
 		for (LightRay& ray : rays) {
@@ -1784,7 +2030,7 @@ void Lighting::lightRendering(UpdateParameters& myParam) {
 			std::vector<LightRay> nextBounceRays;
 
 			for (LightRay& ray : rays) {
-				if (ray.hasHit && ray.bounceLevel == bounce) {
+				if ((ray.hasHit || ray.hasBeenScattered) && ray.bounceLevel == bounce) {
 
 					if (isSpecularEnabled && ray.wall.specularColorVal > 0.0f) {
 						specularReflection(bounce, ray, nextBounceRays, walls);
@@ -1809,6 +2055,8 @@ void Lighting::lightRendering(UpdateParameters& myParam) {
 void Lighting::drawMisc(UpdateVariables& myVar, UpdateParameters& myParam) {
 
 	glm::vec2 mouseWorldPos = myParam.myCamera.mouseWorldPos;
+
+	processApparentColor();
 
 	//Draw selection box
 	if (IO::mouseDown(0) && isBoxSelecting) {

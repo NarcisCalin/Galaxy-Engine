@@ -9,10 +9,12 @@ SPH sph;
 SaveSystem save;
 GESound geSound;
 Lighting lighting;
+CopyPaste copyPaste;
 
 uint32_t globalId = 0;
 uint32_t globalShapeId = 1;
 uint32_t globalWallId = 1;
+// If someday light id gets added, don't forget to add the id to the copy paste code too
 
 std::unordered_map<unsigned int, uint64_t> NeighborSearch::idToIndex;
 
@@ -89,7 +91,9 @@ void updateScene() {
 		ImGui::GetIO().WantCaptureMouse = true;
 	}
 
-	lighting.rayLogic(myVar, myParam);
+	if (myVar.isOpticsEnabled) {
+		lighting.rayLogic(myVar, myParam);
+	}
 
 	Quadtree* grid = nullptr;
 
@@ -153,8 +157,8 @@ void updateScene() {
 		physics.particleConstraints.clear();
 	}
 
-	myParam.particlesSpawning.copyPaste(myParam.pParticles, myParam.rParticles, myVar.isDragging, myParam.myCamera, myParam.pParticlesSelected,
-		physics, myVar, myParam);
+	copyPaste.copyPasteParticles(myVar, myParam, physics);
+	copyPaste.copyPasteOptics(myParam, lighting);
 
 	myVar.gridExists = grid != nullptr;
 
@@ -506,8 +510,10 @@ void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myRayTracingTexture,
 		}
 	}
 
-	lighting.drawScene();
-	lighting.drawMisc(myVar, myParam);
+	if (myVar.isOpticsEnabled) {
+		lighting.drawScene();
+		lighting.drawMisc(myVar, myParam);
+	}
 
 	EndMode2D();
 

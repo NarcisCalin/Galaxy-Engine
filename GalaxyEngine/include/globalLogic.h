@@ -28,6 +28,7 @@
 #include "UX/camera.h"
 #include "UX/saveSystem.h"
 #include "UX/randNum.h"
+#include "UX/copyPaste.h"
 
 #include "parameters.h"
 
@@ -40,6 +41,7 @@ extern SPH sph;
 extern SaveSystem save;
 extern GESound geSound;
 extern Lighting lighting;
+extern CopyPaste copyPaste;
 
 Quadtree* gridFunction(std::vector<ParticlePhysics>& pParticles,
 	std::vector<ParticleRendering>& rParticles);

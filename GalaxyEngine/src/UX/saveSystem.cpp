@@ -119,6 +119,66 @@ void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar,
 	paramIO(filename, out, "ConstraintsStiffMultiplier", myVar.globalConstraintStiffnessMult);
 	paramIO(filename, out, "ConstraintsResistMultiplier", myVar.globalConstraintResistance);
 
+	// ----- Optics ----- 
+	paramIO(filename, out, "Optics", myVar.isOpticsEnabled);
+
+	// ----- Optics Colors ----- 
+	paramIO(filename, out, "LColorR", lighting.lightColor.r);
+	paramIO(filename, out, "LColorG", lighting.lightColor.g);
+	paramIO(filename, out, "LColorB", lighting.lightColor.b);
+	paramIO(filename, out, "LColorA", lighting.lightColor.a);
+
+	paramIO(filename, out, "BaseColorR", lighting.wallBaseColor.r);
+	paramIO(filename, out, "BaseColorG", lighting.wallBaseColor.g);
+	paramIO(filename, out, "BaseColorB", lighting.wallBaseColor.b);
+	paramIO(filename, out, "BaseColorA", lighting.wallBaseColor.a);
+
+	paramIO(filename, out, "SpecularColorR", lighting.wallSpecularColor.r);
+	paramIO(filename, out, "SpecularColorG", lighting.wallSpecularColor.g);
+	paramIO(filename, out, "SpecularColorB", lighting.wallSpecularColor.b);
+	paramIO(filename, out, "SpecularColorA", lighting.wallSpecularColor.a);
+
+	paramIO(filename, out, "RefractionColorR", lighting.wallRefractionColor.r);
+	paramIO(filename, out, "RefractionColorG", lighting.wallRefractionColor.g);
+	paramIO(filename, out, "RefractionColorB", lighting.wallRefractionColor.b);
+	paramIO(filename, out, "RefractionColorA", lighting.wallRefractionColor.a);
+
+	paramIO(filename, out, "EmissionColorR", lighting.wallEmissionColor.r);
+	paramIO(filename, out, "EmissionColorG", lighting.wallEmissionColor.g);
+	paramIO(filename, out, "EmissionColorB", lighting.wallEmissionColor.b);
+	paramIO(filename, out, "EmissionColorA", lighting.wallEmissionColor.a);
+
+	// ----- Optics Lights ----- 
+	paramIO(filename, out, "LightGain", lighting.lightGain);
+	paramIO(filename, out, "LightSpread", lighting.lightSpread);
+
+	// ----- Optics Walls ----- 
+	paramIO(filename, out, "WallSpecularRough", lighting.wallSpecularRoughness);
+	paramIO(filename, out, "WallRefractionRough", lighting.wallRefractionRoughness);
+	paramIO(filename, out, "WallRefractionAmount", lighting.wallRefractionAmount);
+	paramIO(filename, out, "WallIOR", lighting.wallIOR);
+	paramIO(filename, out, "WallEmissionGain", lighting.wallEmissionGain);
+
+	// ----- Optics Shapes -----
+	paramIO(filename, out, "ShapeRelaxIter", lighting.shapeRelaxIter);
+	paramIO(filename, out, "ShapeRelaxFactor", lighting.shapeRelaxFactor);
+
+	// ----- Optics Render -----
+	paramIO(filename, out, "MaxSamples", lighting.maxSamples);
+	paramIO(filename, out, "RaysPerSample", lighting.sampleRaysAmount);
+	paramIO(filename, out, "MaxBounces", lighting.maxBounces);
+
+	// ----- Optics Render Passes -----
+	paramIO(filename, out, "GI", lighting.isDiffuseEnabled);
+	paramIO(filename, out, "Specular", lighting.isSpecularEnabled);
+	paramIO(filename, out, "Refraction", lighting.isRefractionEnabled);
+	paramIO(filename, out, "Dispersion", lighting.isDispersionEnabled);
+
+	// ----- Optics Misc -----
+	paramIO(filename, out, "SymmetricalLens", lighting.symmetricalLens);
+	paramIO(filename, out, "ShowNormals", lighting.drawNormals);
+	paramIO(filename, out, "RelaxMove", lighting.relaxMove);
+
 	/*out << YAML::EndMap;*/
 
 	std::string yamlString = out.c_str();
@@ -295,7 +355,7 @@ void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar,
 				file.write(reinterpret_cast<const char*>(&s.isShapeClosed), sizeof(s.isShapeClosed));
 				file.write(reinterpret_cast<const char*>(&s.shapeType), sizeof(s.shapeType));
 				file.write(reinterpret_cast<const char*>(&s.drawHoverHelpers), sizeof(s.drawHoverHelpers));
-				file.write(reinterpret_cast<const char*>(&s.oldHelperPos), sizeof(s.oldHelperPos));
+				file.write(reinterpret_cast<const char*>(&s.oldDrawHelperPos), sizeof(s.oldDrawHelperPos));
 
 				// Lens variables
 				file.write(reinterpret_cast<const char*>(&s.secondHelper), sizeof(s.secondHelper));
@@ -361,6 +421,7 @@ void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar,
 			file.write(reinterpret_cast<const char*>(&al.color), sizeof(al.color));
 			file.write(reinterpret_cast<const char*>(&al.apparentColor), sizeof(al.apparentColor));
 			file.write(reinterpret_cast<const char*>(&al.isSelected), sizeof(al.isSelected));
+			file.write(reinterpret_cast<const char*>(&al.spread), sizeof(al.spread));
 		}
 
 		uint32_t coneLightCount = lighting.coneLights.size();
@@ -375,6 +436,7 @@ void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar,
 			file.write(reinterpret_cast<const char*>(&ll.color), sizeof(ll.color));
 			file.write(reinterpret_cast<const char*>(&ll.apparentColor), sizeof(ll.apparentColor));
 			file.write(reinterpret_cast<const char*>(&ll.isSelected), sizeof(ll.isSelected));
+			file.write(reinterpret_cast<const char*>(&ll.spread), sizeof(ll.spread));
 		}
 
 		file.close();
