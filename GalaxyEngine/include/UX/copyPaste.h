@@ -92,7 +92,7 @@ struct CopyPaste {
 
 	void copyPasteOptics(UpdateParameters& myParam, Lighting& lighting) {
 
-		if (IO::shortcutPress(KEY_H) && (!lighting.walls.empty() || !lighting.pointLights.empty())) {
+		if (IO::shortcutPress(KEY_H) && (!lighting.walls.empty() || !lighting.pointLights.empty() || !lighting.areaLights.empty() || !lighting.coneLights.empty())) {
 
 			pointLightCopies.clear();
 			areaLightCopies.clear();
@@ -121,7 +121,7 @@ struct CopyPaste {
 				}
 			}
 
-			if (!pointLightCopies.empty()) {
+			if (!areaLightCopies.empty()) {
 				for (const AreaLight& al : areaLightCopies) {
 					avgOpticsPos += al.vA;
 					avgOpticsPos += al.vB;
@@ -306,6 +306,8 @@ struct CopyPaste {
 					if (itA != oldToNewWallIds.end()) {
 						newShape.wallAId = itA->second;
 					}
+
+					newShape.globalLensPrev = newShape.helpers.back();
 				}
 
 				lighting.shapes.push_back(newShape);

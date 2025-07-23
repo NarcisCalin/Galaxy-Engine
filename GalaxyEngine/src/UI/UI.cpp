@@ -550,13 +550,6 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 			bool enabled = true;
 
-			ImGui::Text("Galaxy Engine 1.7.0 - Optics Update Beta");
-
-			ImGui::Text("");
-
-			ImGui::Text("Be careful with these sliders,");
-			ImGui::Text("they can make the program run very slow.");
-
 			ImVec4 imguiLightColor = rlImGuiColors::Convert(lighting.lightColor);
 
 			Color imguiLightColorRl;
@@ -723,6 +716,9 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			if (buttonHelper("Dispersion", "Enables light dispersion with refraction", lighting.isDispersionEnabled, -1.0f, settingsButtonY, enabled, enabled)) {
 				lighting.shouldRender = true;
 			}
+			if (buttonHelper("Emission", "Allows walls to emit light", lighting.isEmissionEnabled, -1.0f, settingsButtonY, enabled, enabled)) {
+				lighting.shouldRender = true;
+			}
 
 			ImGui::Spacing();
 			ImGui::Separator();
@@ -750,7 +746,15 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	myParam.controls.showControls();
 	myParam.controls.showInfo(myVar.fullscreenState);
 
-	ImVec2 statsSize = { 250.0f, 120.0f };
+	ImVec2 statsSize = { 250.0f, myVar.isOpticsEnabled ? 230.0f : 120.0f };
+
+	if (lighting.selectedWalls > 0) {
+		statsSize.y += 25.0f;
+	}
+
+	if (lighting.selectedLights > 0) {
+		statsSize.y += 25.0f;
+	}
 
 	float statsPosX = screenX - statsSize.x - buttonsWindowX - 20.0f;
 
@@ -766,9 +770,9 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	int particlesAmout = static_cast<int>(myParam.pParticles.size());
 	int selecParticlesAmout = static_cast<int>(myParam.pParticlesSelected.size());
 
-	ImGui::Text("%s%d", "Total Particles: ", particlesAmout);
+	ImGui::TextColored(UpdateVariables::colMenuInformation, "%s%d", "Total Particles: ", particlesAmout);
 
-	ImGui::Text("%s%d", "Selected Particles: ", selecParticlesAmout);
+	ImGui::TextColored(UpdateVariables::colMenuInformation, "%s%d", "Selected Particles: ", selecParticlesAmout);
 
 	if (GetFPS() >= 60) {
 		ImGui::TextColored(ImVec4(0.0f, 0.8f, 0.0f, 1.0f), "%s%d", "FPS: ", GetFPS());
@@ -778,6 +782,69 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	}
 	else {
 		ImGui::TextColored(ImVec4(0.8f, 0.0f, 0.0f, 1.0f), "%s%d", "FPS: ", GetFPS());
+	}
+
+	if (myVar.isOpticsEnabled) {
+
+		ImGui::Spacing();
+		ImGui::Separator();
+
+		ImGui::TextColored(UpdateVariables::colMenuInformation, "%s%d", "Total Walls: ", static_cast<int>(lighting.walls.size()));
+
+		if (lighting.selectedWalls > 0) {
+			ImGui::TextColored(UpdateVariables::colButtonHover, "%s%d", "Selected Walls: ", lighting.selectedWalls);
+		}
+
+		
+		ImGui::TextColored(UpdateVariables::colMenuInformation, "%s%d", "Total Lights: ", lighting.totalLights);
+
+		if (lighting.selectedLights > 0) {
+			ImGui::TextColored(UpdateVariables::colButtonHover, "%s%d", "Selected Lights: ", lighting.selectedLights);
+		}
+
+		ImGui::TextColored(UpdateVariables::colMenuInformation, "%s%d", "Total Rays: ", lighting.accumulatedRays);
+
+		ImGui::Spacing();
+
+		float samplesPorgress = static_cast<float>(lighting.currentSamples) / static_cast<float>(lighting.maxSamples);
+		
+		ImGui::PushStyleColor(ImGuiCol_PlotHistogram, UpdateVariables::colButtonHover);
+		float progress = samplesPorgress;
+		ImVec2 size = ImVec2(ImGui::GetContentRegionAvail().x, 22.0f);
+		float radius = 8.0f;
+
+		ImVec2 pos = ImGui::GetCursorScreenPos();
+		ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+		draw_list->AddRectFilled(pos, ImVec2(pos.x + size.x, pos.y + size.y),
+			ImGui::GetColorU32(ImVec4(0.2f, 0.2f, 0.2f, 1.0f)), radius);
+
+		draw_list->AddRectFilled(pos, ImVec2(pos.x + size.x * progress, pos.y + size.y),
+			ImGui::GetColorU32(UpdateVariables::colButtonHover), radius);
+
+		char buffer[128];
+		snprintf(buffer, sizeof(buffer), "Samples %d / %d", lighting.currentSamples - 1, lighting.maxSamples);
+
+		float fontScale = 0.85f;
+		ImFont* font = ImGui::GetFont();
+		float fontSize = ImGui::GetFontSize() * fontScale;
+
+		ImVec2 text_size = font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, buffer);
+		ImVec2 text_pos = ImVec2(
+			pos.x + (size.x - text_size.x) * 0.5f,
+			pos.y + (size.y - text_size.y) * 0.5f
+		);
+
+		draw_list->AddText(
+			font,
+			fontSize,
+			text_pos,
+			ImGui::GetColorU32(ImVec4(1, 1, 1, 1)),
+			buffer
+		);
+
+		ImGui::Dummy(size);
+		ImGui::PopStyleColor();
 	}
 
 	ImGui::PopFont();

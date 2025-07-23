@@ -11,9 +11,9 @@ struct Wall {
 	glm::vec2 vA;
 	glm::vec2 vB;
 
-	glm::vec2 normal;
-	glm::vec2 normalVA;
-	glm::vec2 normalVB;
+	glm::vec2 normal{ 0.0f,0.0f };
+	glm::vec2 normalVA{ 0.0f, 0.0f };
+	glm::vec2 normalVB{ 0.0f, 0.0f };
 
 	bool isBeingSpawned;
 	bool vAisBeingMoved;
@@ -451,8 +451,6 @@ struct Shape {
 
 			if (delta != glm::vec2(0.0f)) {
 
-
-
 				for (auto& wallId : myWallIds) {
 					Wall* w = getWallById(*walls, wallId);
 
@@ -480,6 +478,10 @@ struct Shape {
 	bool isThirdBeingMoved = false;
 	bool isFourthBeingMoved = false;
 	bool isFifthBeingMoved = false;
+
+	bool isGlobalHelperMoved = false;
+
+	glm::vec2 globalLensPrev = { 0.0f, 0.0f };
 
 	bool isFifthFourthMoved = false;
 
@@ -871,6 +873,40 @@ struct Shape {
 
 				if (!isBeingMoved) {
 					myWallIds = std::move(newWallIds);
+
+					glm::vec2 averageHelper = { 0.0f, 0.0f };
+
+					for (glm::vec2& h : helpers) {
+						averageHelper += h;
+					}
+
+					averageHelper /= helpers.size();
+
+					helpers.push_back(averageHelper);
+
+					globalLensPrev = helpers.back();
+				}
+				else if(isBeingMoved && !isGlobalHelperMoved) {
+					helpers.back() = {0.0f, 0.0f};
+
+					for (size_t i = 0; i < helpers.size() - 1; i++) {
+						helpers.back() += helpers[i];
+					}
+
+					helpers.back() /= helpers.size() - 1;
+
+					globalLensPrev = helpers.back();
+				}
+				else if (isBeingMoved && isGlobalHelperMoved) {
+					glm::vec2 delta = helpers.back() - globalLensPrev;
+
+					if (delta != glm::vec2(0.0f)) {
+						for (size_t i = 0; i < helpers.size() - 1; i++) {
+							helpers[i] += delta;
+						}
+
+						globalLensPrev = helpers.back();
+					}
 				}
 
 				calculateWallsNormals();
@@ -1318,7 +1354,8 @@ struct Lighting {
 	bool isDiffuseEnabled = true;
 	bool isSpecularEnabled = true;
 	bool isRefractionEnabled = true;
-	bool isDispersionEnabled = false;
+	bool isDispersionEnabled = true;
+	bool isEmissionEnabled = true;
 
 	bool symmetricalLens = false;
 
@@ -1469,12 +1506,13 @@ struct Lighting {
 	bool isBoxSelecting = false;
 	bool isBoxDeselecting = false;
 
-	// I'm also sorry for this large chunk of ugly code, but I really hate working on anything that involves UI or UX stuff (:
-
 	float boxX = 0.0f;
 	float boxY = 0.0f;
 	float boxWidth = 0.0f;
 	float boxHeight = 0.0f;
+
+	int selectedWalls = 0;
+	int selectedLights = 0;
 
 	void selectLogic(UpdateVariables& myVar, UpdateParameters& myParam);
 
@@ -1591,12 +1629,17 @@ struct Lighting {
 
 	}
 
+	int accumulatedRays = 0;
+
+	int totalLights = 0;
+
 	void rayLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 
 		if (shouldRender) {
 			rays.clear();
 			currentSamples = 0;
 
+			accumulatedRays = 0;
 			shouldRender = false;
 		}
 
@@ -1627,6 +1670,12 @@ struct Lighting {
 		lightRendering(myParam);
 
 		drawRays();
+
+		totalLights = static_cast<int>(pointLights.size()) + static_cast<int>(areaLights.size()) + static_cast<int>(coneLights.size());
+
+		if (currentSamples <= maxSamples) {
+			accumulatedRays += static_cast<int>(rays.size());
+		}
 
 		if (IO::shortcutPress(KEY_C)) {
 			rays.clear();

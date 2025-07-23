@@ -463,6 +463,14 @@ void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myRayTracingTexture,
 
 	myParam.trails.drawTrail(myParam.rParticles, particleBlurTex);
 
+	drawConstraints();
+
+	if (myVar.isOpticsEnabled) {
+		for (Wall& wall : lighting.walls) {
+			wall.drawWall();
+		}
+	}
+
 	EndTextureMode();
 
 
@@ -498,8 +506,6 @@ void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myRayTracingTexture,
 		GetScreenToWorld2D(GetMousePosition(), myParam.myCamera.camera).y);
 	myParam.brush.drawBrush(myVar.mouseWorldPos);
 	DrawRectangleLinesEx({ 0,0, static_cast<float>(myVar.domainSize.x), static_cast<float>(myVar.domainSize.y) }, 3, GRAY);
-
-	drawConstraints();
 
 	// Z-Curves debug toggle
 	if (myParam.pParticles.size() > 1 && myVar.drawZCurves) {

@@ -157,6 +157,7 @@ void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar,
 	paramIO(filename, out, "WallRefractionRough", lighting.wallRefractionRoughness);
 	paramIO(filename, out, "WallRefractionAmount", lighting.wallRefractionAmount);
 	paramIO(filename, out, "WallIOR", lighting.wallIOR);
+	paramIO(filename, out, "WallDispersion", lighting.wallDispersion);
 	paramIO(filename, out, "WallEmissionGain", lighting.wallEmissionGain);
 
 	// ----- Optics Shapes -----
@@ -173,6 +174,7 @@ void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar,
 	paramIO(filename, out, "Specular", lighting.isSpecularEnabled);
 	paramIO(filename, out, "Refraction", lighting.isRefractionEnabled);
 	paramIO(filename, out, "Dispersion", lighting.isDispersionEnabled);
+	paramIO(filename, out, "Emission", lighting.isEmissionEnabled);
 
 	// ----- Optics Misc -----
 	paramIO(filename, out, "SymmetricalLens", lighting.symmetricalLens);
@@ -296,6 +298,7 @@ void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar,
 			file.write(reinterpret_cast<const char*>(&w.baseColor), sizeof(w.baseColor));
 			file.write(reinterpret_cast<const char*>(&w.specularColor), sizeof(w.specularColor));
 			file.write(reinterpret_cast<const char*>(&w.refractionColor), sizeof(w.refractionColor));
+			file.write(reinterpret_cast<const char*>(&w.emissionColor), sizeof(w.emissionColor));
 
 			// Write float color values
 			file.write(reinterpret_cast<const char*>(&w.baseColorVal), sizeof(w.baseColorVal));
@@ -340,6 +343,7 @@ void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar,
 				file.write(reinterpret_cast<const char*>(&s.baseColor), sizeof(s.baseColor));
 				file.write(reinterpret_cast<const char*>(&s.specularColor), sizeof(s.specularColor));
 				file.write(reinterpret_cast<const char*>(&s.refractionColor), sizeof(s.refractionColor));
+				file.write(reinterpret_cast<const char*>(&s.emissionColor), sizeof(s.emissionColor));
 
 				file.write(reinterpret_cast<const char*>(&s.specularRoughness), sizeof(s.specularRoughness));
 				file.write(reinterpret_cast<const char*>(&s.refractionRoughness), sizeof(s.refractionRoughness));
@@ -395,6 +399,8 @@ void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar,
 				file.write(reinterpret_cast<const char*>(&s.radiusSymmetry), sizeof(s.radiusSymmetry));
 
 				file.write(reinterpret_cast<const char*>(&s.arcEnd), sizeof(s.arcEnd));
+
+				file.write(reinterpret_cast<const char*>(&s.globalLensPrev), sizeof(s.globalLensPrev));
 			}
 		}
 
@@ -427,16 +433,16 @@ void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar,
 		uint32_t coneLightCount = lighting.coneLights.size();
 		file.write(reinterpret_cast<const char*>(&coneLightCount), sizeof(coneLightCount));
 
-		for (const ConeLight& ll : lighting.coneLights) {
-			file.write(reinterpret_cast<const char*>(&ll.vA), sizeof(ll.vA));
-			file.write(reinterpret_cast<const char*>(&ll.vB), sizeof(ll.vB));
-			file.write(reinterpret_cast<const char*>(&ll.isBeingSpawned), sizeof(ll.isBeingSpawned));
-			file.write(reinterpret_cast<const char*>(&ll.vAisBeingMoved), sizeof(ll.vAisBeingMoved));
-			file.write(reinterpret_cast<const char*>(&ll.vBisBeingMoved), sizeof(ll.vBisBeingMoved));
-			file.write(reinterpret_cast<const char*>(&ll.color), sizeof(ll.color));
-			file.write(reinterpret_cast<const char*>(&ll.apparentColor), sizeof(ll.apparentColor));
-			file.write(reinterpret_cast<const char*>(&ll.isSelected), sizeof(ll.isSelected));
-			file.write(reinterpret_cast<const char*>(&ll.spread), sizeof(ll.spread));
+		for (const ConeLight& cl : lighting.coneLights) {
+			file.write(reinterpret_cast<const char*>(&cl.vA), sizeof(cl.vA));
+			file.write(reinterpret_cast<const char*>(&cl.vB), sizeof(cl.vB));
+			file.write(reinterpret_cast<const char*>(&cl.isBeingSpawned), sizeof(cl.isBeingSpawned));
+			file.write(reinterpret_cast<const char*>(&cl.vAisBeingMoved), sizeof(cl.vAisBeingMoved));
+			file.write(reinterpret_cast<const char*>(&cl.vBisBeingMoved), sizeof(cl.vBisBeingMoved));
+			file.write(reinterpret_cast<const char*>(&cl.color), sizeof(cl.color));
+			file.write(reinterpret_cast<const char*>(&cl.apparentColor), sizeof(cl.apparentColor));
+			file.write(reinterpret_cast<const char*>(&cl.isSelected), sizeof(cl.isSelected));
+			file.write(reinterpret_cast<const char*>(&cl.spread), sizeof(cl.spread));
 		}
 
 		file.close();

@@ -203,9 +203,8 @@ void Lighting::createShape(UpdateVariables& myVar, UpdateParameters& myParam) {
 
 			firstHelper = false;
 		}
-		if (!shapes.back().isBeingSpawned) {
-			shouldRender = true;
-		}
+
+		shouldRender = true;
 	}
 
 	if (!shapes.empty()) {
@@ -615,6 +614,13 @@ void Lighting::moveLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 				}
 			}
 
+			if (shapes[selectedShape].shapeType == lens) {
+				if (selectedHelper == shapes[selectedShape].helpers.size() - 1) {
+					shapes.at(selectedShape).isGlobalHelperMoved = true;
+					shapes.at(selectedShape).helpers.back() = mouseWorldPos;
+				}
+			}
+
 
 			shapes.at(selectedShape).makeShape();
 		}
@@ -631,6 +637,7 @@ void Lighting::moveLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 			shapes.at(selectedShape).isFourthBeingMoved = false;
 			shapes.at(selectedShape).isFifthBeingMoved = false;
 			shapes.at(selectedShape).isFifthFourthMoved = false;
+			shapes.at(selectedShape).isGlobalHelperMoved = false;
 		}
 
 		shouldRender = true;
@@ -802,6 +809,14 @@ void Lighting::eraseLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 			}
 		}
 
+		for (int i = static_cast<int>(shapes.size()) - 1; i >= 0; --i) {
+			Shape& shape = shapes[i];
+
+			if (shape.myWallIds.size() == 0) {
+				shapes.erase(shapes.begin() + i);
+			}
+		}
+
 		for (int i = static_cast<int>(pointLights.size()) - 1; i >= 0; --i) {
 			PointLight& pointLight = pointLights[i];
 
@@ -826,6 +841,14 @@ void Lighting::eraseLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 			}
 		}
 
+		wallPointers.clear();
+		for (Wall& wall : walls) {
+			wallPointers.push_back(&wall);
+		}
+		bvh.build(wallPointers);
+	}
+
+	if (IO::mouseReleased(0) && myVar.toolEraseOptics) {
 		for (int i = static_cast<int>(shapes.size()) - 1; i >= 0; --i) {
 			if (shapes[i].myWallIds.empty()) {
 				shapes.erase(shapes.begin() + i);
@@ -836,13 +859,21 @@ void Lighting::eraseLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 
 	if ((IO::mouseReleased(0) && myVar.toolEraseOptics) || ((anySelectedWalls || anySelectedLights) && IO::shortcutPress(KEY_DELETE))) {
 		shouldRender = true;
+
+		wallPointers.clear();
+		for (Wall& wall : walls) {
+			wallPointers.push_back(&wall);
+		}
+		bvh.build(wallPointers);
 	}
 }
 
-
+// I'm also sorry for this large chunk of ugly code, but I really hate working on anything that involves UI or UX stuff (:
 void Lighting::selectLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 
-	int selectedWalls = 0;
+	selectedWalls = 0;
+
+	selectedLights = 0;
 
 	int selectedAreaLights = 0;
 
@@ -1515,7 +1546,10 @@ void Lighting::selectLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 					wall.refractionColor = wallRefractionColor;
 				}
 				if (isSliderEmissionCol) {
-					wall.emissionColor = wallEmissionColor;
+
+					ImVec4 convertedColor = rlImGuiColors::Convert(wallEmissionColor);
+
+					wall.emissionColor = rlImGuiColors::Convert(ImVec4{ convertedColor.x, convertedColor.y, convertedColor.z, wallEmissionGain });
 				}
 
 				if (isSliderSpecularRough) {
@@ -1566,7 +1600,10 @@ void Lighting::selectLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 					}
 
 					if (isSliderLightColor) {
-						areaLight.color = lightColor;
+
+						ImVec4 convertedColor = rlImGuiColors::Convert(lightColor);
+
+						areaLight.color = rlImGuiColors::Convert(ImVec4{ convertedColor.x, convertedColor.y, convertedColor.z, lightGain });
 					}
 				}
 			}
@@ -1612,6 +1649,8 @@ void Lighting::selectLogic(UpdateVariables& myVar, UpdateParameters& myParam) {
 
 		shouldRender = true;
 	}
+
+	selectedLights = selectedPointLights + selectedAreaLights + selectedConeLights;
 
 	isSliderLightGain = false;
 
@@ -2019,7 +2058,9 @@ void Lighting::lightRendering(UpdateParameters& myParam) {
 			coneLight.coneLightLogic(sampleRaysAmount, rays);
 		}
 
-		emission();
+		if (isEmissionEnabled) {
+			emission();
+		}
 
 #pragma omp parallel for
 		for (LightRay& ray : rays) {

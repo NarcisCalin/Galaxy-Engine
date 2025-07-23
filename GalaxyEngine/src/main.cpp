@@ -135,8 +135,8 @@ int main(int argc, char** argv) {
 
 	// ---- Intro ---- //
 
-	bool fadeActive = false;
-	bool introActive = false;
+	bool fadeActive = true;
+	bool introActive = true;
 
 	myVar.customFont = LoadFontEx("fonts/Unispace Bd.otf", myVar.introFontSize, 0, 250);
 
@@ -153,7 +153,7 @@ int main(int argc, char** argv) {
 
 	// ---- Ray Tracing and Long Exposure ---- //
 
-	const char* vertexShader = R"(
+	const char* accumulationVs = R"(
     #version 330 core
 
 layout(location = 0) in vec3 vertexPosition;
@@ -177,7 +177,7 @@ void main()
 }
     )";
 
-	const char* fragmentShader = R"(
+	const char* accumulationFs = R"(
 
 #version 330
 
@@ -202,7 +202,7 @@ void main() {
 }
 )";
 
-	Shader testShader = LoadShaderFromMemory(vertexShader, fragmentShader);
+	Shader testShader = LoadShaderFromMemory(accumulationVs, accumulationFs);
 
 	int screenSizeLoc = GetShaderLocation(testShader, "screenSize");
 	float screenSize[2] = {
@@ -273,28 +273,9 @@ void main() {
 			BeginShaderMode(myBloom);
 		}
 
-		//ClearBackground(BLACK);
-
-		//BeginBlendMode(BLEND_ALPHA_PREMULTIPLY);
-
-		/*DrawTextureRec(
-			myParticlesTexture.texture,
-			Rectangle{ 0, 0, static_cast<float>(GetScreenWidth()), -static_cast<float>(GetScreenHeight()) },
-			Vector2{ 0, 0 },
-			WHITE
-		);*/
-
-		/*DrawTextureRec(
-			myRayTracingTexture.texture,
-			Rectangle{ 0, 0, static_cast<float>(GetScreenWidth()), -static_cast<float>(GetScreenHeight()) },
-			Vector2{ 0, 0 },
-			WHITE
-		);*/
-
 		if (myVar.isGlowEnabled) {
 			EndShaderMode();
 		}
-
 
 		if (myParam.myCamera.cameraChangedThisFrame) {
 			lighting.shouldRender = true;
@@ -316,6 +297,7 @@ void main() {
 			accumulationCondition = true;
 		}
 
+		// Ray Tracing and Long Exposure
 		if (accumulationCondition) {
 
 			BeginTextureMode(pingPongTexture);

@@ -181,7 +181,27 @@ public:
 					physics.constraintMap[key] = &constraint;
 				}
 			}
+
+			lighting.walls.clear();
+			lighting.shapes.clear();
+			lighting.pointLights.clear();
+			lighting.areaLights.clear();
+			lighting.coneLights.clear();
+
+			myVar.isOpticsEnabled = false;
 		}
+
+		if (myVar.isOpticsEnabled) {
+			lighting.shouldRender = true;
+		}
+
+		lighting.wallPointers.clear();
+		for (Wall& wall : lighting.walls) {
+			lighting.wallPointers.push_back(&wall);
+		}
+		lighting.bvh.build(lighting.wallPointers);
+
+		myVar.longExposureFlag = false;
 
 		file.close();
 
@@ -311,6 +331,7 @@ public:
 			file.read(reinterpret_cast<char*>(&w.baseColor), sizeof(w.baseColor));
 			file.read(reinterpret_cast<char*>(&w.specularColor), sizeof(w.specularColor));
 			file.read(reinterpret_cast<char*>(&w.refractionColor), sizeof(w.refractionColor));
+			file.read(reinterpret_cast<char*>(&w.emissionColor), sizeof(w.emissionColor));
 
 			file.read(reinterpret_cast<char*>(&w.baseColorVal), sizeof(w.baseColorVal));
 			file.read(reinterpret_cast<char*>(&w.specularColorVal), sizeof(w.specularColorVal));
@@ -332,9 +353,12 @@ public:
 			lighting.walls.push_back(w);
 		}
 
-		lighting.shapes.clear();
 		uint32_t numShapes = 0;
 		file.read(reinterpret_cast<char*>(&numShapes), sizeof(numShapes));
+
+		lighting.shapes.clear();
+		lighting.shapes.reserve(numShapes);
+
 		if (numShapes > 0) {
 
 			for (uint32_t i = 0; i < numShapes; i++) {
@@ -359,6 +383,7 @@ public:
 				file.read(reinterpret_cast<char*>(&s.baseColor), sizeof(s.baseColor));
 				file.read(reinterpret_cast<char*>(&s.specularColor), sizeof(s.specularColor));
 				file.read(reinterpret_cast<char*>(&s.refractionColor), sizeof(s.refractionColor));
+				file.read(reinterpret_cast<char*>(&s.emissionColor), sizeof(s.emissionColor));
 
 				file.read(reinterpret_cast<char*>(&s.specularRoughness), sizeof(s.specularRoughness));
 				file.read(reinterpret_cast<char*>(&s.refractionRoughness), sizeof(s.refractionRoughness));
@@ -420,16 +445,19 @@ public:
 
 				file.read(reinterpret_cast<char*>(&s.arcEnd), sizeof(s.arcEnd));
 
+				file.read(reinterpret_cast<char*>(&s.globalLensPrev), sizeof(s.globalLensPrev));
+
 				s.walls = &lighting.walls;
 
 				lighting.shapes.push_back(s);
 			}
 		}
 
-		lighting.pointLights.clear();
 		uint32_t pointLightCount = 0;
 		file.read(reinterpret_cast<char*>(&pointLightCount), sizeof(pointLightCount));
-		lighting.pointLights.resize(pointLightCount);
+
+		lighting.pointLights.clear();
+		lighting.pointLights.reserve(pointLightCount);
 
 		for (uint32_t i = 0; i < pointLightCount; i++) {
 
@@ -444,10 +472,11 @@ public:
 			lighting.pointLights.push_back(p);
 		}
 
-		lighting.areaLights.clear();
 		uint32_t areaLightCount = 0;
 		file.read(reinterpret_cast<char*>(&areaLightCount), sizeof(areaLightCount));
-		lighting.areaLights.resize(areaLightCount);
+
+		lighting.areaLights.clear();
+		lighting.areaLights.reserve(areaLightCount);
 
 		for (uint32_t i = 0; i < areaLightCount; i++) {
 
@@ -466,10 +495,11 @@ public:
 			lighting.areaLights.push_back(a);
 		}
 
-		lighting.coneLights.clear();
 		uint32_t coneLightCount = 0;
 		file.read(reinterpret_cast<char*>(&coneLightCount), sizeof(coneLightCount));
-		lighting.coneLights.resize(coneLightCount);
+
+		lighting.coneLights.clear();
+		lighting.coneLights.reserve(coneLightCount);
 
 		for (uint32_t i = 0; i < coneLightCount; i++) {
 
@@ -487,8 +517,6 @@ public:
 
 			lighting.coneLights.push_back(l);
 		}
-
-		lighting.shouldRender = true;
 
 		return true;
 	}
