@@ -64,6 +64,7 @@ void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar,
 	paramIO(filename, out, "ForceSize", myVar.isForceSizeEnabled);
 	paramIO(filename, out, "Glow", myVar.isGlowEnabled);
 	paramIO(filename, out, "ShipGas", myVar.isShipGasEnabled);
+	paramIO(filename, out, "Merger", myVar.isMergerEnabled);
 
 	// ----- SPH Materials -----
 	paramIO(filename, out, "SPHWater", myParam.brush.SPHWater);

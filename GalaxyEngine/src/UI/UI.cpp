@@ -56,59 +56,374 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 { "Selected Trails", "Enables trails for selected particles", &myVar.isSelectedTrailsEnabled }
 	};
 
-	std::vector<SimilarTypeButton::Mode> color{
-	{ "Solid Color",     "Particles will only use the primary color",           &myParam.colorVisuals.solidColor },
-	{ "Density Color",   "Maps particle neighbor amount to primary and secondary colors",            &myParam.colorVisuals.densityColor },
-	{ "Force Color",     "Maps particle acceleration to primary and secondary colors",               &myParam.colorVisuals.forceColor },
-	{ "Velocity Color",  "Maps particle velocity to color",                    &myParam.colorVisuals.velocityColor },
-	{ "Shockwave Color", "Maps particle acceleration to color",                &myParam.colorVisuals.shockwaveColor },
-	{ "Pressure Color",  "Maps particle pressure to color",                    &myParam.colorVisuals.pressureColor },
-	{ "Temperature Color",  "Maps particle temperature to color",                    &myParam.colorVisuals.temperatureColor },
-	{ "Temperature Gas Color",  "Maps particle temperature to primary and secondary colors",                    &myParam.colorVisuals.gasTempColor },
-	{ "Material Color",       "Uses materials colors",                      &myParam.colorVisuals.SPHColor }
-	};
-
 	std::vector<SimilarTypeButton::Mode> size{
 { "Density Size", "Maps particle neighbor amount to size", &myVar.isDensitySizeEnabled },
 { "Force Size", "Maps particle acceleration to size", &myVar.isForceSizeEnabled }
 	};
 
+	ImGui::Spacing();
+	ImGui::Separator();
+
+	ImGui::TextColored(UpdateVariables::colMenuInformation, "General");
+
+	ImGui::Separator();
+	ImGui::Spacing();
+
 	buttonHelper("Fullscreen", "Toggles fulscreen", myVar.fullscreenState, -1.0f, settingsButtonY, true, enabled);
 
 	SimilarTypeButton::buttonIterator(controlsAndInfo, -1.0f, settingsButtonY, true, enabled);
+
+	buttonHelper("Multi-Threading", "Distributes the simulation across multiple threads", myVar.isMultiThreadingEnabled, -1.0f, settingsButtonY, true, enabled);
+
+	ImGui::Spacing();
+	ImGui::Separator();
+
+	ImGui::TextColored(UpdateVariables::colMenuInformation, "Exit");
+
+	ImGui::Separator();
+	ImGui::Spacing();
+
+	buttonHelper("Exit Galaxy Engine", "Are you sure you don't want to play a little more?", myVar.exitGame, -1.0f, settingsButtonY, true, enabled);
+
+	ImGui::Spacing();
+	ImGui::Separator();
+
+	ImGui::TextColored(UpdateVariables::colMenuInformation, "Save/Load");
+
+	ImGui::Separator();
+	ImGui::Spacing();
+
+	buttonHelper("Save Scene", "Save current scene to disk", save.saveFlag, -1.0f, settingsButtonY, true, enabled);
+	buttonHelper("Load Scene", "Load a scene from disk", save.loadFlag, -1.0f, settingsButtonY, true, enabled);
+
+	ImGui::Spacing();
+	ImGui::Separator();
+
+	ImGui::TextColored(UpdateVariables::colMenuInformation, "Trails");
+
+	ImGui::Separator();
+	ImGui::Spacing();
 
 	SimilarTypeButton::buttonIterator(trails, -1.0f, settingsButtonY, true, enabled);
 
 	buttonHelper("Local Trails", "Enables trails moving relative to particles average position", myVar.isLocalTrailsEnabled, -1.0f, settingsButtonY, true, enabled);
 	buttonHelper("White Trails", "Makes all trails white", myParam.trails.whiteTrails, -1.0f, settingsButtonY, true, enabled);
 
-	SimilarTypeButton::buttonIterator(color, -1.0f, settingsButtonY, false, enabled);
+	ImGui::Spacing();
+	ImGui::Separator();
 
-	buttonHelper("Selected Color", "Highlight selected particles", myParam.colorVisuals.selectedColor, -1.0f, settingsButtonY, true, enabled);
-	buttonHelper("Dark Matter", "Enables dark matter particles. This works for galaxies and Big Bang", myVar.isDarkMatterEnabled, -1.0f, settingsButtonY, true, enabled);
-	buttonHelper("Show Dark Matter", "Unhides dark matter particles", myParam.colorVisuals.showDarkMatterEnabled, -1.0f, settingsButtonY, true, enabled);
-	buttonHelper("Looping Space", "Particles disappearing on one side will appear on the other side", myVar.isPeriodicBoundaryEnabled, -1.0f, settingsButtonY, true, enabled);
-	buttonHelper("Multi-Threading", "Distributes the simulation across multiple threads", myVar.isMultiThreadingEnabled, -1.0f, settingsButtonY, true, enabled);
+	ImGui::TextColored(UpdateVariables::colMenuInformation, "Visuals");
 
-	bool wasEnabled = myVar.isSPHEnabled;
+	ImGui::Separator();
+	ImGui::Spacing();
 
-	if (buttonHelper("Fluid Mode", "Enables SPH fluids", myVar.isSPHEnabled, -1.0f, settingsButtonY, true, enabled)) {
-		if (!wasEnabled && myVar.isSPHEnabled) {
-			for (size_t i = 0; i < color.size(); i++) {
-				if (color[i].flag == &myParam.colorVisuals.SPHColor) {
+	bool* colorModesArray[] = {
+		&myParam.colorVisuals.solidColor,
+		&myParam.colorVisuals.densityColor,
+		&myParam.colorVisuals.forceColor,
+		&myParam.colorVisuals.velocityColor,
+		&myParam.colorVisuals.shockwaveColor,
+		&myParam.colorVisuals.pressureColor,
+		&myParam.colorVisuals.temperatureColor,
+		&myParam.colorVisuals.gasTempColor,
+		&myParam.colorVisuals.SPHColor
+	};
 
-					*color[i].flag = true;
-				}
-				else {
-					*color[i].flag = false;
-				}
+	const char* colorModes[] = { "Solid Color", "Density Color", "Force Color", "Velocity Color", "Shockwave Color", "Pressure Color", "Temperature Color",
+	"Temperature Gas Color", "Material Color" };
+
+	const char* colorModeTips[] = {
+		"Particles will only use the primary color",
+		"Maps particle neighbor amount to primary and secondary colors",
+		"Maps particle acceleration to primary and secondary colors",
+		"Maps particle velocity to color",
+		"Maps particle acceleration to color",
+		"Maps particle pressure to color",
+		"Maps particle temperature to color",
+		"Maps particle temperature to primary and secondary colors",
+		"Uses materials colors",
+	};
+	static int currentColorMode = 1;
+
+	if (myVar.loadDropDownMenus) {
+		for (int i = 0; i < IM_ARRAYSIZE(colorModesArray); i++) {
+
+			if (*colorModesArray[i]) {
+				currentColorMode = i;
+				break;
 			}
 		}
 	}
 
+	ImGui::PushItemWidth(-FLT_MIN);
+
+	if (ImGui::BeginCombo("##Color", colorModes[currentColorMode])) {
+		for (int i = 0; i < IM_ARRAYSIZE(colorModes); i++) {
+
+			bool isSelected = (currentColorMode == i);
+
+			if (ImGui::Selectable(colorModes[i], isSelected)) {
+				currentColorMode = i;
+			}
+
+			if (isSelected) {
+				ImGui::SetItemDefaultFocus();
+			}
+
+			if (ImGui::IsItemHovered()) {
+				ImGui::BeginTooltip();
+				ImGui::TextUnformatted(colorModeTips[i]);
+				ImGui::EndTooltip();
+			}
+
+
+		}
+		ImGui::EndCombo();
+
+		for (int i = 0; i < IM_ARRAYSIZE(colorModesArray); ++i) {
+			*colorModesArray[i] = false;
+		}
+
+		*colorModesArray[currentColorMode] = true;
+	}
+
+	ImGui::Spacing();
+
+	SimilarTypeButton::buttonIterator(size, -1.0f, settingsButtonY, true, enabled);
+
+	ImGui::PopItemWidth();
+
+	ImGui::Spacing();
+	ImGui::Separator();
+
+	ImGui::TextColored(UpdateVariables::colMenuInformation, "Simulation");
+
+	ImGui::Separator();
+	ImGui::Spacing();
+
+	static bool galaxyModeDummy = false;
+
+	bool* simModesArray[] = {
+		&galaxyModeDummy,
+		&myVar.isSPHEnabled,
+		&myVar.isMergerEnabled
+	};
+
+	const char* simModes[] = { "Galaxy Mode", "Fluid Mode", "Merger" };
+
+	const char* simModeTips[] = {
+		"Default simulation mode. Used for very large scale objects like galaxies or the Big Bang",
+		"Enables SPH fluids. Used for planets or small scale simulations",
+		"Colliding particles will merge together"
+	};
+	static int currentSimMode = 0;
+
+	bool foundSimMode = false;
+	if (myVar.loadDropDownMenus) {
+		bool anyEnabled = false;
+
+		for (int i = 1; i < IM_ARRAYSIZE(simModesArray); i++) {
+			if (*simModesArray[i]) {
+				currentSimMode = i;
+				anyEnabled = true;
+				break;
+			}
+		}
+
+		galaxyModeDummy = !anyEnabled;
+		if (!anyEnabled) {
+			currentSimMode = 0;
+		}
+	}
+
+	ImGui::PushItemWidth(-FLT_MIN);
+
+	bool wasSPHEnabled = myVar.isSPHEnabled;
+	bool wasMergerEnabled = myVar.isMergerEnabled;
+
+	if (ImGui::BeginCombo("##Simulation", simModes[currentSimMode])) {
+		for (int i = 0; i < IM_ARRAYSIZE(simModes); i++) {
+
+			bool isSelected = (currentSimMode == i);
+
+			if (ImGui::Selectable(simModes[i], isSelected)) {
+				currentSimMode = i;
+			}
+
+			if (isSelected) {
+				ImGui::SetItemDefaultFocus();
+			}
+
+			if (ImGui::IsItemHovered()) {
+				ImGui::BeginTooltip();
+				ImGui::TextUnformatted(simModeTips[i]);
+				ImGui::EndTooltip();
+			}
+
+
+		}
+		ImGui::EndCombo();
+
+		for (int i = 0; i < IM_ARRAYSIZE(simModesArray); ++i) {
+			*simModesArray[i] = false;
+		}
+
+		*simModesArray[currentSimMode] = true;
+
+		bool anyModeActive = false;
+		for (int i = 0; i < IM_ARRAYSIZE(simModesArray); ++i) {
+			if (*simModesArray[i]) {
+				anyModeActive = true;
+				break;
+			}
+		}
+		if (!anyModeActive) {
+			galaxyModeDummy = true;
+			currentSimMode = 0;
+		}
+
+		if (!wasSPHEnabled && myVar.isSPHEnabled) {
+			for (size_t i = 0; i < IM_ARRAYSIZE(colorModesArray); i++) {
+				*colorModesArray[i] = (colorModesArray[i] == &myParam.colorVisuals.SPHColor);
+				if (colorModesArray[i] == &myParam.colorVisuals.SPHColor) {
+					currentColorMode = i;
+
+					myParam.brush.SPHWater = true;
+				}
+			}
+		}
+
+		if (!wasMergerEnabled && myVar.isMergerEnabled) {
+			for (size_t i = 0; i < IM_ARRAYSIZE(colorModesArray); i++) {
+				*colorModesArray[i] = (colorModesArray[i] == &myParam.colorVisuals.solidColor);
+				if (colorModesArray[i] == &myParam.colorVisuals.solidColor) {
+					currentColorMode = i;
+
+					myParam.colorVisuals.pColor = { 255,255,255,255 };
+				}
+			}
+		}
+
+		foundSimMode = false;
+		for (int i = 0; i < IM_ARRAYSIZE(simModesArray); i++) {
+			if (*simModesArray[i]) {
+				currentSimMode = i;
+				foundSimMode = true;
+				break;
+			}
+		}
+		if (!foundSimMode) {
+			galaxyModeDummy = true;
+			currentSimMode = 0;
+		}
+	}
+
+	ImGui::PopItemWidth();
+
+	ImGui::Spacing();
+	ImGui::Separator();
+
+	ImGui::TextColored(UpdateVariables::colMenuInformation, "Fluid Mode Material");
+
+	ImGui::Separator();
+	ImGui::Spacing();
+
+	bool* materialsArray[] = {
+		&myParam.brush.SPHWater,
+		&myParam.brush.SPHRock,
+		&myParam.brush.SPHIron,
+		&myParam.brush.SPHSand,
+		&myParam.brush.SPHSoil,
+		&myParam.brush.SPHIce,
+		&myParam.brush.SPHMud,
+		&myParam.brush.SPHRubber,
+		&myParam.brush.SPHGas
+	};
+
+	const char* materials[] = { "Water", "Rock", "Iron", "Sand", "Soil", "Ice", "Mud", "Rubber", "Gas" };
+
+	static int currentMat = 0;
+
+	if (myVar.loadDropDownMenus) {
+		for (int i = 0; i < IM_ARRAYSIZE(materialsArray); i++) {
+
+			if (*materialsArray[i]) {
+				currentMat = i;
+				break;
+			}
+		}
+	}
+
+	ImGui::PushItemWidth(-FLT_MIN);
+
+	ImGui::BeginDisabled(!myVar.isSPHEnabled);
+
+	if (ImGui::BeginCombo("##Materials", materials[currentMat])) {
+		for (int i = 0; i < IM_ARRAYSIZE(materials); i++) {
+
+			bool isSelected = (currentMat == i);
+
+			if (ImGui::Selectable(materials[i], isSelected)) {
+				currentMat = i;
+			}
+
+			if (isSelected) {
+				ImGui::SetItemDefaultFocus();
+			}
+		}
+		ImGui::EndCombo();
+
+		for (int i = 0; i < IM_ARRAYSIZE(materialsArray); ++i) {
+			*materialsArray[i] = false;
+		}
+
+		*materialsArray[currentMat] = true;
+	}
+
+
+	ImGui::PopItemWidth();
+
+	ImGui::EndDisabled();
+
+	ImGui::Spacing();
+	ImGui::Separator();
+
+	ImGui::TextColored(UpdateVariables::colMenuInformation, "Dark Matter");
+
+	ImGui::Separator();
+	ImGui::Spacing();
+
+	buttonHelper("Dark Matter", "Enables dark matter particles. This works for galaxies and Big Bang", myVar.isDarkMatterEnabled, -1.0f, settingsButtonY, true, enabled);
+	buttonHelper("Show Dark Matter", "Unhides dark matter particles", myParam.colorVisuals.showDarkMatterEnabled, -1.0f, settingsButtonY, true, enabled);
+
+	ImGui::Spacing();
+	ImGui::Separator();
+
+	ImGui::TextColored(UpdateVariables::colMenuInformation, "Space Modifiers");
+
+	ImGui::Separator();
+	ImGui::Spacing();
+
 	buttonHelper("Fluid Ground Mode", "Adds vertical gravity and makes particles collide with the domain walls", myVar.sphGround, -1.0f, settingsButtonY, true, myVar.isSPHEnabled);
+	buttonHelper("Looping Space", "Particles disappearing on one side will appear on the other side", myVar.isPeriodicBoundaryEnabled, -1.0f, settingsButtonY, true, enabled);
+
+	ImGui::Spacing();
+	ImGui::Separator();
+
+	ImGui::TextColored(UpdateVariables::colMenuInformation, "Temperature");
+
+	ImGui::Separator();
+	ImGui::Spacing();
 
 	buttonHelper("Temperature Simulation", "Enables temperature simulation", myVar.isTempEnabled, -1.0f, settingsButtonY, true, enabled);
+
+	ImGui::Spacing();
+	ImGui::Separator();
+
+	ImGui::TextColored(UpdateVariables::colMenuInformation, "Constraints");
+
+	ImGui::Separator();
+	ImGui::Spacing();
 
 	buttonHelper("Particle Constraints", "Enables particles constraints for solids and soft bodies simulation. Works best with Fluid Mode enabled", myVar.constraintsEnabled, -1.0f, settingsButtonY, true, enabled);
 	buttonHelper("Unbreakable Constraints", "Makes all constraints unbreakable", myVar.unbreakableConstraints, -1.0f, settingsButtonY, true, myVar.constraintsEnabled);
@@ -123,15 +438,28 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 	buttonHelper("Constraint Stress Color", "Maps the constraints stress to an RGB color", myVar.constraintStressColor, -1.0f, settingsButtonY, true, myVar.drawConstraints);
 
-	SimilarTypeButton::buttonIterator(size, -1.0f, settingsButtonY, true, enabled);
+	ImGui::Spacing();
+	ImGui::Separator();
+
+	ImGui::TextColored(UpdateVariables::colMenuInformation, "Optics");
+
+	ImGui::Separator();
+	ImGui::Spacing();
 
 	buttonHelper("Optics", "Enables light simulation with ray tracing. Simulate light from the Optics tab", myVar.isOpticsEnabled, -1.0f, settingsButtonY, true, enabled);
 
+	ImGui::Spacing();
+	ImGui::Separator();
+
+	ImGui::Spacing();
+	ImGui::TextColored(UpdateVariables::colMenuInformation, "Misc.");
+
+	ImGui::Separator();
+	ImGui::Spacing();
+
+	buttonHelper("Highlight Selected", "Highlight selected particles", myParam.colorVisuals.selectedColor, -1.0f, settingsButtonY, true, enabled);
 	buttonHelper("Glow", "Enables glow shader", myVar.isGlowEnabled, -1.0f, settingsButtonY, true, enabled);
 	buttonHelper("Predict Path", "Predicts the trajectory of heavy particles before launching them", myParam.particlesSpawning.enablePathPrediction, -1.0f, settingsButtonY, true, enabled);
-	buttonHelper("Ship Gas", "Enables gas particles coming from the ship when controlling particles", myVar.isShipGasEnabled, -1.0f, settingsButtonY, true, enabled);
-	buttonHelper("Save Scene", "Save current scene to disk", save.saveFlag, -1.0f, settingsButtonY, true, enabled);
-	buttonHelper("Load Scene", "Load a scene from disk", save.loadFlag, -1.0f, settingsButtonY, true, enabled);
 
 	ImGui::GetStyle().ItemSpacing.y = oldSpacingY; // End the settings buttons spacing
 
@@ -312,7 +640,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 			sliderHelper("Density Radius", "Controls the neighbor search radius", myParam.neighborSearch.densityRadius, 0.0f, 7.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Max Neighbors", "Controls the maximum neighbor count range", myParam.colorVisuals.maxNeighbors, 1, 500, parametersSliderX, parametersSliderY, enabled);
-			
+
 			ImGui::Spacing();
 			ImGui::Separator();
 
@@ -327,7 +655,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			sliderHelper("Max Pressure Color", "Controls the max pressure used to map the colors in the pressure color mode", myParam.colorVisuals.maxPress, 100.0f, 100000.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Max Temperature Color", "Controls the max temperature used to map the colors in the temperature color mode", myParam.colorVisuals.tempColorMaxTemp, 10.0f, 50000.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Max Constraint Stress", "Controls the max constraint stress used to map the colors in the constraints stress color mode. If set to 0, it will set the max stress to the material's breaking limit", myVar.constraintMaxStressColor, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled);
-			
+
 			ImGui::Spacing();
 			ImGui::Separator();
 
@@ -335,12 +663,12 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 			ImGui::Separator();
 			ImGui::Spacing();
-			
+
 			sliderHelper("Max Dynamic Size", "Controls the maximum size particles can have when chaning size dynamically", myParam.densitySize.maxSize, 0.1f, 5.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Min Dynamic Size", "Controls the minimum size particles can have when chaning size dynamically", myParam.densitySize.minSize, 0.001f, 5.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Max Size Force", "Controls the acceleration threshold to map the particle size", myParam.densitySize.sizeAcc, 1.0f, 400.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Particles Size", "Controls the size of all particles", myVar.particleSizeMultiplier, 0.1f, 5.0f, parametersSliderX, parametersSliderY, enabled);
-			
+
 			ImGui::Spacing();
 			ImGui::Separator();
 
@@ -348,10 +676,10 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 			ImGui::Separator();
 			ImGui::Spacing();
-			
+
 			sliderHelper("Trails Length", "Controls how long should the trails be. This feature is computationally expensive", myVar.trailMaxLength, 0, 1500, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Trails Thickness", "Controls the trails thickness", myParam.trails.trailThickness, 0.007f, 0.5f, parametersSliderX, parametersSliderY, enabled);
-			
+
 			ImGui::Spacing();
 			ImGui::Separator();
 
@@ -359,7 +687,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 			ImGui::Separator();
 			ImGui::Spacing();
-			
+
 			sliderHelper("Path Prediction Length", "Controls how long is the predicted path", myParam.particlesSpawning.predictPathLength, 100, 2000, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Visible P. Amount Multiplier", "Controls the spawn amount of visible particles", myParam.particlesSpawning.particleAmountMultiplier, 0.1f, 100.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("DM P. Amount Multiplier", "Controls the spawn amount of dark matter particles", myParam.particlesSpawning.DMAmountMultiplier, 0.1f, 100.0f, parametersSliderX, parametersSliderY, enabled);
@@ -386,7 +714,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			ImGui::Spacing();
 
 			sliderHelper("Threads Amount", "Controls the amount of threads used by the simulation. Half your total amount of threads is usually the sweet spot", myVar.threadsAmount, 1, 32, parametersSliderX, parametersSliderY, enabled);
-		
+
 			ImGui::Spacing();
 			ImGui::Separator();
 
@@ -411,7 +739,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			sliderHelper("Softening", "Controls the smoothness of the gravity forces", myVar.softening, 1.0f, 30.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Gravity Strength", "Controls how much particles attract eachother", myVar.gravityMultiplier, 0.0f, 100.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Black Hole Init Mass", "Controls the mass of black holes when spawned", myParam.particlesSpawning.heavyParticleWeightMultiplier, 0.005f, 15.0f, parametersSliderX, parametersSliderY, enabled);
-			
+
 			ImGui::Spacing();
 			ImGui::Separator();
 
@@ -419,7 +747,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 			ImGui::Separator();
 			ImGui::Spacing();
-			
+
 			sliderHelper("Ambient Temperature", "Controls the desired temperature of the scene in Kelvin. 1 is near absolute zero. The default value is set just high enough to allow liquid water", myVar.ambientTemp, 1.0f, 2500.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Ambient Heat Rate", "Controls how fast particles' temperature try to match ambient temperature", myVar.globalAmbientHeatRate, 0.0f, 10.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Heat Conductivity Multiplier", "Controls the global heat conductivity of particles", myVar.globalHeatConductivity, 0.001f, 1.0f, parametersSliderX, parametersSliderY, enabled);
@@ -450,34 +778,6 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			sliderHelper("Fluid Cohesion", "Controls how sticky particles are", sph.cohesionCoefficient, 0.0f, 10.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Fluid Delta", "Controls the scaling factor in the pressure solver to enforce fluid incompressibility", sph.delta, 500.0f, 20000.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Fluid Max Velocity", "Controls the maximum velocity a particle can have in Fluid mode", myVar.sphMaxVel, 0.0f, 2000.0f, parametersSliderX, parametersSliderY, enabled);
-
-			ImGui::Spacing();
-			ImGui::Separator();
-
-			ImGui::TextColored(UpdateVariables::colMenuInformation, "Materials");
-
-			ImGui::Separator();
-			ImGui::Spacing();
-
-			std::vector<SimilarTypeButton::Mode> sphMats{
-				{ "Water", "Water", &myParam.brush.SPHWater},
-				{ "Rock", "Rock", &myParam.brush.SPHRock},
-				{ "Iron", "Iron", &myParam.brush.SPHIron},
-				{"Sand", "Sand", &myParam.brush.SPHSand},
-				{"Soil", "Soil", &myParam.brush.SPHSoil},
-				{"Ice", "Ice", &myParam.brush.SPHIce},
-				{"Mud", "Mud", &myParam.brush.SPHMud},
-				{"Rubber", "Rubber", &myParam.brush.SPHRubber},
-				{"Gas", "Gas", &myParam.brush.SPHGas}
-			};
-
-			float oldSpacingY = ImGui::GetStyle().ItemSpacing.y;
-			ImGui::GetStyle().ItemSpacing.y = 5.0f; // Set the spacing only for the settings buttons
-
-			SimilarTypeButton::buttonIterator(sphMats, -1.0f, settingsButtonY, true, myVar.isSPHEnabled);
-
-			ImGui::GetStyle().ItemSpacing.y = oldSpacingY;
-
 		}
 
 		if (bSoundWindow) {
@@ -795,7 +1095,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			ImGui::TextColored(UpdateVariables::colButtonHover, "%s%d", "Selected Walls: ", lighting.selectedWalls);
 		}
 
-		
+
 		ImGui::TextColored(UpdateVariables::colMenuInformation, "%s%d", "Total Lights: ", lighting.totalLights);
 
 		if (lighting.selectedLights > 0) {
@@ -807,7 +1107,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		ImGui::Spacing();
 
 		float samplesPorgress = static_cast<float>(lighting.currentSamples) / static_cast<float>(lighting.maxSamples);
-		
+
 		ImGui::PushStyleColor(ImGuiCol_PlotHistogram, UpdateVariables::colButtonHover);
 		float progress = samplesPorgress;
 		ImVec2 size = ImVec2(ImGui::GetContentRegionAvail().x, 22.0f);
@@ -1033,11 +1333,15 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 		sliderHelper("Long Exposure Duration", "Controls the duration of the long exposure shot", myVar.longExposureDuration, 2, 1000, parametersSliderX, parametersSliderY, enabled);
 
+		buttonHelper("Ship Gas", "Enables gas particles coming from the ship when controlling particles", myVar.isShipGasEnabled, -1.0f, settingsButtonY, true, enabled);
+
 		ImGui::EndTabItem();
 	}
 
 	ImGui::EndTabBar();
 	ImGui::End();
+
+	myVar.loadDropDownMenus = false;
 }
 
 void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {

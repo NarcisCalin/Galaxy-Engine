@@ -95,6 +95,11 @@ void SceneCamera::cameraFollowObject(UpdateVariables& myVar, UpdateParameters& m
 		std::vector<int> neighborCountsSelect(myParam.pParticles.size(), 0);
 		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 			const auto& pParticle = myParam.pParticles[i];
+
+			if (myParam.rParticles[i].isDarkMatter) {
+				continue;
+			}
+
 			for (size_t j = i + 1; j < myParam.pParticles.size(); j++) {
 				if (std::abs(myParam.pParticles[j].pos.x - pParticle.pos.x) > 2.4f) break;
 
@@ -133,6 +138,10 @@ void SceneCamera::cameraFollowObject(UpdateVariables& myVar, UpdateParameters& m
 
 		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 			myParam.rParticles[i].isSelected = false;
+
+			if (myParam.rParticles[i].isDarkMatter) {
+				continue;
+			}
 
 			glm::vec2 d = myParam.pParticles[i].pos - mouseWorldPos;
 

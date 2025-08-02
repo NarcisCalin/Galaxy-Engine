@@ -49,6 +49,59 @@ struct ColorVisuals {
 
 	glm::vec2 prevVel = { 0.0f, 0.0f };
 
+	void blackbodyToRGB(float kelvin, unsigned char& r, unsigned char& g, unsigned char& b) {
+
+		float temperature = kelvin / 100.0f;
+
+		float rC, gC, bC;
+
+		if (temperature <= 66.0f) {
+			rC = 255.0f;
+		}
+		else {
+			rC = 329.698727446f * powf(temperature - 60.0f, -0.1332047592f);
+		}
+
+		if (temperature <= 66.0f) {
+			gC = 99.4708025861f * logf(temperature) - 161.1195681661f;
+		}
+		else {
+			gC = 288.1221695283f * powf(temperature - 60.0f, -0.0755148492f);
+		}
+
+		if (temperature >= 66.0f) {
+			bC = 255.0f;
+		}
+		else if (temperature <= 19.0f) {
+			bC = 0.0f;
+		}
+		else {
+			bC = 138.5177312231f * logf(temperature - 10.0f) - 305.0447927307f;
+		}
+
+		r = static_cast<unsigned char>(std::clamp(rC, 0.0f, 255.0f));
+		g = static_cast<unsigned char>(std::clamp(gC, 0.0f, 255.0f));
+		b = static_cast<unsigned char>(std::clamp(bC, 0.0f, 255.0f));
+	}
+
+
+	Color blendColors(Color base, Color emission, float glowFactor) {
+		Color result;
+		result.r = base.r * (1.0f - glowFactor) + emission.r * glowFactor;
+		result.g = base.g * (1.0f - glowFactor) + emission.g * glowFactor;
+		result.b = base.b * (1.0f - glowFactor) + emission.b * glowFactor;
+		result.a = 255;
+		return result;
+	}
+
+	float getGlowFactor(int temperature) {
+		const int minTemp = 600;
+		const int maxTemp = 6000;
+
+		float linear = std::clamp((float)(temperature - minTemp) / (maxTemp - minTemp), 0.0f, 1.0f);
+		return powf(linear, 0.3f);
+	}
+
 	void particlesColorVisuals(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, bool& isTempEnabled) {
 
 		if (solidColor) {
@@ -221,22 +274,37 @@ struct ColorVisuals {
 					if (it != SPHMaterials::idToMaterial.end()) {
 						SPHMaterial* pMat = it->second;
 
-						float normalizedTemp = (pParticles[i].temp - minTemp) / (pMat->hotPoint - minTemp);
-						normalizedTemp = std::clamp(normalizedTemp, 0.0f, 1.0f);
+						if (pMat->sphLabel != "water") {
 
-						Color lowTempColor = rParticles[i].sphColor;
+							float glowFactor = getGlowFactor(pParticles[i].temp);
 
-						Color highTempColor = { 255, 113, 33, 255 };
+							Color matColor = rParticles[i].sphColor;
 
-						highTempColor = it->second->hotColor;
+							Color glowColor;
+							blackbodyToRGB(pParticles[i].temp, glowColor.r, glowColor.g, glowColor.b);
 
+							Color finalColor = blendColors(matColor, glowColor, glowFactor);
 
-						if (pParticles[i].temp < pMat->coldPoint) {
-
-							rParticles[i].color = pMat->coldColor;
+							rParticles[i].color = finalColor;
 						}
 						else {
-							rParticles[i].color = ColorLerp(lowTempColor, highTempColor, normalizedTemp);
+							float normalizedTemp = (pParticles[i].temp - minTemp) / (pMat->hotPoint - minTemp);
+							normalizedTemp = std::clamp(normalizedTemp, 0.0f, 1.0f);
+
+							Color lowTempColor = rParticles[i].sphColor;
+
+							Color highTempColor = { 255, 113, 33, 255 };
+
+							highTempColor = it->second->hotColor;
+
+
+							if (pParticles[i].temp < pMat->coldPoint) {
+
+								rParticles[i].color = pMat->coldColor;
+							}
+							else {
+								rParticles[i].color = ColorLerp(lowTempColor, highTempColor, normalizedTemp);
+							}
 						}
 					}
 				}
@@ -247,8 +315,6 @@ struct ColorVisuals {
 
 			blendMode = 0;
 		}
-
-
 
 
 		if (selectedColor) {

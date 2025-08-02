@@ -43,7 +43,7 @@ void selectedParticleDebug() {
 		ParticlePhysics& p = myParam.pParticles[i];
 		ParticleRendering& r = myParam.rParticles[i];
 		if (r.isSelected && myVar.timeFactor != 0.0f) {
-			std::cout << "Temp: " << p.temp << std::endl;
+			std::cout << "Size: " << r.previousSize << std::endl;
 		}
 	}
 }
@@ -131,7 +131,6 @@ void updateScene() {
 		grid->drawQuadtree();
 	}
 
-
 	for (ParticleRendering& rParticle : myParam.rParticles) {
 		rParticle.totalRadius = rParticle.size * myVar.particleTextureHalfSize * myVar.particleSizeMultiplier;
 	}
@@ -142,7 +141,33 @@ void updateScene() {
 
 	myParam.brush.brushSize();
 
-	if (myVar.constraintsEnabled || myVar.drawConstraints || myVar.visualizeMesh || myVar.isBrushDrawing) {
+	if (myVar.isMergerEnabled) {
+
+		// Heuristics for performance
+		constexpr float minCellSize = 2.0f;
+		constexpr float maxCellSize = 80.0f;
+
+		myParam.neighborSearch.cellSize = 0.0f;
+
+		for (size_t i = 0; i < myParam.pParticles.size(); ++i) {
+			auto& rP = myParam.rParticles[i];
+
+			if (rP.isDarkMatter) {
+				continue;
+			}
+
+			float candidate = rP.totalRadius * 2.0f;
+
+			myParam.neighborSearch.cellSize = std::max(myParam.neighborSearch.cellSize, candidate);
+		}
+
+		myParam.neighborSearch.cellSize = std::clamp(myParam.neighborSearch.cellSize, minCellSize, maxCellSize);
+	}
+	else {
+		myParam.neighborSearch.cellSize = 3.0f;
+	}
+
+	if (myVar.constraintsEnabled || myVar.drawConstraints || myVar.visualizeMesh || myVar.isBrushDrawing || myVar.isMergerEnabled) {
 		NeighborSearch::idToI(myParam.pParticles);
 		myParam.neighborSearch.neighborSearchHash(myParam.pParticles, myParam.rParticles);
 	}
@@ -181,6 +206,9 @@ void updateScene() {
 
 			pParticle.acc = netForce / pParticle.mass;
 		}
+
+		if (myVar.isMergerEnabled)
+			physics.mergerSolver(myParam.pParticles, myParam.rParticles, myVar);
 
 		if (myVar.isSPHEnabled) {
 			sph.pcisphSolver(myParam.pParticles, myParam.rParticles, myVar.timeFactor, myVar.domainSize, myVar.sphGround);
@@ -449,7 +477,7 @@ void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myRayTracingTexture,
 
 		if (!myVar.isDensitySizeEnabled) {
 
-			if (rParticle.canBeResized) {
+			if (rParticle.canBeResized || myVar.isMergerEnabled) {
 				rParticle.size = rParticle.previousSize * myVar.particleSizeMultiplier;
 			}
 			else {

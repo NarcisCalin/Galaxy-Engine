@@ -130,13 +130,12 @@ int main(int argc, char** argv) {
 	}
 
 	io.Fonts->Build();
-	rlImGuiReloadFonts();
 	ImPlot::CreateContext();
 
 	// ---- Intro ---- //
 
-	bool fadeActive = true;
-	bool introActive = true;
+	bool fadeActive = false;
+	bool introActive = false;
 
 	myVar.customFont = LoadFontEx("fonts/Unispace Bd.otf", myVar.introFontSize, 0, 250);
 
@@ -202,30 +201,38 @@ void main() {
 }
 )";
 
-	Shader testShader = LoadShaderFromMemory(accumulationVs, accumulationFs);
+	Shader accumulationShader = LoadShaderFromMemory(accumulationVs, accumulationFs);
 
-	int screenSizeLoc = GetShaderLocation(testShader, "screenSize");
+	int screenSizeLoc = GetShaderLocation(accumulationShader, "screenSize");
 	float screenSize[2] = {
 		(float)myVar.screenWidth,
 		(float)myVar.screenHeight
 	};
-	SetShaderValue(testShader, screenSizeLoc, screenSize, SHADER_UNIFORM_VEC2);
+	SetShaderValue(accumulationShader, screenSizeLoc, screenSize, SHADER_UNIFORM_VEC2);
 
-	int rayTextureLoc = GetShaderLocation(testShader, "rayTexture");
+	int rayTextureLoc = GetShaderLocation(accumulationShader, "rayTexture");
 
 	RenderTexture2D accumulatedTexture = CreateFloatRenderTexture(GetScreenWidth(), GetScreenHeight());
 	RenderTexture2D pingPongTexture = CreateFloatRenderTexture(GetScreenWidth(), GetScreenHeight());
 
-	int currentFrameLoc = GetShaderLocation(testShader, "currentFrame");
-	int accumulatedFrameLoc = GetShaderLocation(testShader, "accumulatedFrame");
-	int sampleCountLoc = GetShaderLocation(testShader, "sampleCount");
+	int currentFrameLoc = GetShaderLocation(accumulationShader, "currentFrame");
+	int accumulatedFrameLoc = GetShaderLocation(accumulationShader, "accumulatedFrame");
+	int sampleCountLoc = GetShaderLocation(accumulationShader, "sampleCount");
 	RenderTexture2D testSampleTexture = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
+
+	int prevScreenWidth = GetScreenWidth();
+	int prevScreenHeight = GetScreenHeight();
 
 	bool prevLongExpFlag = false;
 
 	bool accumulationCondition = false;
 
 	while (!WindowShouldClose()) {
+
+		if (myVar.exitGame) {
+			CloseWindow();
+			break;
+		}
 
 		fullscreenToggle(lastScreenWidth, lastScreenHeight, wasFullscreen, lastScreenState, myParticlesTexture, myUITexture);
 
@@ -297,15 +304,41 @@ void main() {
 			accumulationCondition = true;
 		}
 
+		if (GetScreenWidth() != prevScreenWidth || GetScreenHeight() != prevScreenHeight) {
+
+			UnloadRenderTexture(accumulatedTexture);
+			UnloadRenderTexture(pingPongTexture);
+			UnloadRenderTexture(testSampleTexture);
+
+			accumulatedTexture = CreateFloatRenderTexture(GetScreenWidth(), GetScreenHeight());
+			pingPongTexture = CreateFloatRenderTexture(GetScreenWidth(), GetScreenHeight());
+			testSampleTexture = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
+
+			screenSize[0] = (float)GetScreenWidth();
+			screenSize[1] = (float)GetScreenHeight();
+			SetShaderValue(accumulationShader, screenSizeLoc, screenSize, SHADER_UNIFORM_VEC2);
+
+			prevScreenWidth = GetScreenWidth();
+			prevScreenHeight = GetScreenHeight();
+
+			if (myVar.isOpticsEnabled) {
+				lighting.shouldRender = true;
+			}
+
+			if (myVar.longExposureFlag) {
+				myVar.longExposureFlag = false;
+			}
+		}
+
 		// Ray Tracing and Long Exposure
 		if (accumulationCondition) {
 
 			BeginTextureMode(pingPongTexture);
 
-			BeginShaderMode(testShader);
+			BeginShaderMode(accumulationShader);
 
-			SetShaderValueTexture(testShader, currentFrameLoc, myParticlesTexture.texture);
-			SetShaderValueTexture(testShader, accumulatedFrameLoc, accumulatedTexture.texture);
+			SetShaderValueTexture(accumulationShader, currentFrameLoc, myParticlesTexture.texture);
+			SetShaderValueTexture(accumulationShader, accumulatedFrameLoc, accumulatedTexture.texture);
 
 			float sampleCount = 1.0f;
 
@@ -323,7 +356,7 @@ void main() {
 				myVar.longExposureCurrent = 0;
 			}
 
-			SetShaderValue(testShader, sampleCountLoc, &sampleCount, SHADER_UNIFORM_FLOAT);
+			SetShaderValue(accumulationShader, sampleCountLoc, &sampleCount, SHADER_UNIFORM_FLOAT);
 
 			DrawTextureRec(
 				accumulatedTexture.texture,
@@ -402,7 +435,7 @@ void main() {
 	geSound.unloadSounds();
 
 	// Unload experiment shader
-	UnloadShader(testShader);
+	UnloadShader(accumulationShader);
 
 	CloseWindow();
 

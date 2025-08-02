@@ -13,20 +13,22 @@ struct NeighborSearch {
 	float cellSize = 3.0f;
 	std::unordered_map<size_t, GridCellNS> grid;
 
+	int cellAmount = 3840;
+
 	size_t getGridIndex(const glm::vec2& pos) const {
 		size_t cellX = static_cast<size_t>(floor(pos.x / cellSize));
 		size_t cellY = static_cast<size_t>(floor(pos.y / cellSize));
-		return cellX * 10000 + cellY;
+		return cellX * cellAmount + cellY;
 	}
 
 	std::vector<size_t> getNeighborCells(size_t cellIndex) const {
 		std::vector<size_t> neighbors;
-		size_t cellX = cellIndex / 10000;
-		size_t cellY = cellIndex % 10000;
+		size_t cellX = cellIndex / cellAmount;
+		size_t cellY = cellIndex % cellAmount;
 
 		for (int i = -1; i <= 1; i++) {
 			for (int j = -1; j <= 1; j++) {
-				neighbors.push_back((cellX + i) * 10000 + (cellY + j));
+				neighbors.push_back((cellX + i) * cellAmount + (cellY + j));
 			}
 		}
 
@@ -85,8 +87,6 @@ struct NeighborSearch {
 					if (rSq >= h2) continue;
 
 					pi.neighborIds.push_back(pj.id);
-
-					float r = sqrtf(std::max(rSq, 1e-6f));
 				}
 			}
 		}
@@ -111,29 +111,31 @@ struct NeighborSearch {
 			}
 		}
 
-		// Heuristics for performance
-		constexpr float minCellSize = 1.0f;
-		constexpr float maxCellSize = 4.0f;
-		constexpr float totalSizeMultiplier = 1.5f;
+		//// Heuristics for performance
+		//constexpr float minCellSize = 1.0f;
+		//constexpr float maxCellSize = 4.0f;
+		//constexpr float totalSizeMultiplier = 1.5f;
 
-		const float sizeFactor = particleSizeMultiplier
-			* particleTextureHalfSize
-			* totalSizeMultiplier;
+		//const float sizeFactor = particleSizeMultiplier
+		//	* particleTextureHalfSize
+		//	* totalSizeMultiplier;
 
-		float cellSize = std::numeric_limits<float>::max();
+		//float cellSize = std::numeric_limits<float>::max();
 
-		for (size_t i = 0; i < pParticles.size(); ++i) {
-			auto& rP = rParticles[i];
-			if (rP.isDarkMatter || rP.uniqueColor || rP.isSolid) {
-				continue;
-			}
+		//for (size_t i = 0; i < pParticles.size(); ++i) {
+		//	auto& rP = rParticles[i];
+		//	if (rP.isDarkMatter || rP.uniqueColor || rP.isSolid) {
+		//		continue;
+		//	}
 
-			float candidate = rP.size * sizeFactor;
+		//	float candidate = rP.size * sizeFactor;
 
-			cellSize = std::min(cellSize, candidate);
-		}
+		//	cellSize = std::min(cellSize, candidate);
+		//}
 
-		cellSize = std::clamp(cellSize, minCellSize, maxCellSize);
+		//cellSize = std::clamp(cellSize, minCellSize, maxCellSize);
+
+		float cellSize = 2.5f; // Heuristic
 
 		float minX = std::numeric_limits<float>::max();
 		float minY = std::numeric_limits<float>::max();

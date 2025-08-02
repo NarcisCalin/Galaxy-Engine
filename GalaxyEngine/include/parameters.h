@@ -71,7 +71,9 @@ struct UpdateVariables{
 	float halfDomainWidth = domainSize.x * 0.5f;
 	float halfDomainHeight = domainSize.y * 0.5f;
 
-	bool fullscreenState = true;
+	bool fullscreenState = false;
+
+	bool exitGame = false;
 
 	int targetFPS = 144;
 
@@ -111,6 +113,8 @@ struct UpdateVariables{
 	bool isTempEnabled = false;
 	bool constraintsEnabled = false;
 	bool isOpticsEnabled = false;
+
+	bool isMergerEnabled = false;
 
 	bool longExposureFlag = false;
 	int longExposureDuration = 200;
@@ -204,6 +208,8 @@ struct UpdateVariables{
 	int introFontSize = 48;
 
 	bool gridExists = true;
+
+	bool loadDropDownMenus = false;
 
 	bool toolSpawnHeavyParticle = false;
 	bool toolDrawParticles = true;

@@ -28,7 +28,8 @@ public:
 
 	const uint32_t version160 = 160;
 	const uint32_t version170 = 170;
-	const uint32_t currentVersion = version170; // VERY IMPORTANT. CHANGE THIS IF YOU MAKE ANY CHANGES TO THE SAVE SYSTEM. VERSION "1.6.0" = 160, VERSION "1.6.12" = 1612
+	const uint32_t version171 = 171;
+	const uint32_t currentVersion = version171; // VERY IMPORTANT. CHANGE THIS IF YOU MAKE ANY CHANGES TO THE SAVE SYSTEM. VERSION "1.6.0" = 160, VERSION "1.6.12" = 1612
 
 	template <typename T>
 	void paramIO(const std::string& filename, YAML::Emitter& out, std::string key, T& value) {
@@ -160,6 +161,9 @@ public:
 		if (loadedVersion == currentVersion) {
 			deserializeVersion170(file, myParam, physics, lighting);
 		}
+		else if (loadedVersion == version170) {
+			deserializeVersion170(file, myParam, physics, lighting);
+		}
 		else if (loadedVersion == version160) {
 
 			deserializeVersion160(file, myParam);
@@ -200,8 +204,10 @@ public:
 			lighting.wallPointers.push_back(&wall);
 		}
 		lighting.bvh.build(lighting.wallPointers);
-
+		
 		myVar.longExposureFlag = false;
+
+		myVar.loadDropDownMenus = true;
 
 		file.close();
 

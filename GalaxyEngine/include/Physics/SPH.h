@@ -60,20 +60,22 @@ public:
 		return (1.0f - q) * (0.5f - q) * (0.5f - q) * 30.0f / (PI * h * h);
 	}
 
+	int cellAmountX = 3840;
+
 	size_t getGridIndex(const glm::vec2& pos) const {
 		size_t cellX = static_cast<size_t>(floor(pos.x / cellSize));
 		size_t cellY = static_cast<size_t>(floor(pos.y / cellSize));
-		return cellX * 10000 + cellY;
+		return cellX * cellAmountX + cellY;
 	}
 
 	std::vector<size_t> getNeighborCells(size_t cellIndex) const {
 		std::vector<size_t> neighbors;
-		size_t cellX = cellIndex / 10000;
-		size_t cellY = cellIndex % 10000;
+		size_t cellX = cellIndex / cellAmountX;
+		size_t cellY = cellIndex % cellAmountX;
 
 		for (int i = -1; i <= 1; i++) {
 			for (int j = -1; j <= 1; j++) {
-				neighbors.push_back((cellX + i) * 10000 + (cellY + j));
+				neighbors.push_back((cellX + i) * cellAmountX + (cellY + j));
 			}
 		}
 

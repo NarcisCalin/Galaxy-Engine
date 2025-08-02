@@ -429,6 +429,92 @@ void Physics::pausedConstraints(std::vector<ParticlePhysics>& pParticles, std::v
 	}
 }
 
+void Physics::mergerSolver(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar) {
+
+	std::unordered_set<uint32_t> particleIdsToDelete;
+	std::vector<size_t> indicesToDelete;
+
+	int originalSize = static_cast<int>(pParticles.size());
+	for (int i = originalSize - 1; i >= 0; i--) {
+		ParticlePhysics& p = pParticles[i];
+		ParticleRendering& r = rParticles[i];
+
+		if (r.isDarkMatter || particleIdsToDelete.count(p.id)) continue;
+
+		for (int j = static_cast<int>(p.neighborIds.size()) - 1; j >= 0; j--) {
+			uint32_t neighborId = p.neighborIds[j];
+			auto it = NeighborSearch::idToIndex.find(neighborId);
+			if (it == NeighborSearch::idToIndex.end()) continue;
+
+			size_t neighborIndex = it->second;
+			if (i == neighborIndex || neighborIndex >= pParticles.size()) {
+				p.neighborIds.erase(p.neighborIds.begin() + j);
+				continue;
+			}
+
+			ParticlePhysics& pn = pParticles[neighborIndex];
+			ParticleRendering& rn = rParticles[neighborIndex];
+
+			if (rn.isDarkMatter || particleIdsToDelete.count(pn.id)) continue;
+
+			glm::vec2 d = pn.pos - p.pos;
+			float distanceSq = glm::dot(d, d);
+
+			float combinedRadiusSq = (r.totalRadius + rn.totalRadius) * (r.totalRadius + rn.totalRadius);
+
+			if (distanceSq <= combinedRadiusSq) {
+				float originalMassP = p.mass;
+				float originalMassN = pn.mass;
+
+				if (originalMassP >= originalMassN) {
+					p.mass = originalMassP + originalMassN;
+					p.vel = (p.vel * originalMassP + pn.vel * originalMassN) / p.mass;
+					
+					float area1 = r.previousSize * r.previousSize;
+					float area2 = rn.previousSize * rn.previousSize;
+					float fullGrowthSize = sqrt(area1 + area2);
+					float maxOriginalSize = std::max(r.previousSize, rn.previousSize);
+					float growthFactor = 0.25f;
+
+					r.previousSize = maxOriginalSize + (fullGrowthSize - maxOriginalSize) * growthFactor;
+
+					particleIdsToDelete.insert(pn.id);
+					indicesToDelete.push_back(neighborIndex);
+				}
+				else {
+					pn.mass = originalMassP + originalMassN;
+					pn.vel = (pn.vel * originalMassN + p.vel * originalMassP) / pn.mass;
+
+					float area1 = r.previousSize * r.previousSize;
+					float area2 = rn.previousSize * rn.previousSize;
+					float fullGrowthSize = sqrt(area1 + area2);
+					float maxOriginalSize = std::max(r.previousSize, rn.previousSize);
+					float growthFactor = 0.25f;
+
+					rn.previousSize = maxOriginalSize + (fullGrowthSize - maxOriginalSize) * growthFactor;
+
+					particleIdsToDelete.insert(p.id);
+					indicesToDelete.push_back(i);
+				}
+				break;
+			}
+		}
+	}
+
+	std::sort(indicesToDelete.begin(), indicesToDelete.end());
+	indicesToDelete.erase(std::unique(indicesToDelete.begin(), indicesToDelete.end()), indicesToDelete.end());
+	std::sort(indicesToDelete.begin(), indicesToDelete.end(), std::greater<size_t>());
+
+	for (size_t index : indicesToDelete) {
+		if (index < pParticles.size()) {
+			std::swap(pParticles[index], pParticles.back());
+			std::swap(rParticles[index], rParticles.back());
+			pParticles.pop_back();
+			rParticles.pop_back();
+		}
+	}
+}
+
 void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar, bool& sphGround) {
 	if (myVar.isPeriodicBoundaryEnabled) {
 		for (size_t i = 0; i < pParticles.size(); i++) {
@@ -672,8 +758,8 @@ void Physics::buildGrid(std::vector<ParticlePhysics>& pParticles, std::vector<Pa
 
 
 #pragma omp parallel for collapse(2) schedule(dynamic)
-	for (int x = 0; x < cellAmountX; ++x) {
-		for (int y = 0; y < cellAmountY; ++y) {
+	for (int y = 0; y < cellAmountY; ++y) {
+		for (int x = 0; x < cellAmountX; ++x) {
 			int baseId = x + y * cellAmountX;
 			auto& cell = cellList[baseId];
 
