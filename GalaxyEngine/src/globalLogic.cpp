@@ -18,22 +18,16 @@ uint32_t globalWallId = 1;
 
 std::unordered_map<unsigned int, uint64_t> NeighborSearch::idToIndex;
 
-Quadtree* gridFunction(std::vector<ParticlePhysics>& pParticles,
-	std::vector<ParticleRendering>& rParticles) {
-	Quadtree* grid = Quadtree::boundingBox(pParticles, rParticles);
-	return grid;
-}
 
-
-void flattenQuadtree(Quadtree* node, std::vector<Quadtree*>& flatList) {
-	if (!node) return;
-
-	flatList.push_back(node);
-
-	for (const auto& child : node->subGrids) {
-		flattenQuadtree(child.get(), flatList);
-	}
-}
+//void flattenQuadtree(Quadtree* node, std::vector<Quadtree*>& flatList) {
+//	if (!node) return;
+//
+//	flatList.push_back(node);
+//
+//	for (const auto& child : node->subGrids) {
+//		flattenQuadtree(child.get(), flatList);
+//	}
+//}
 
 
 // THIS FUNCTION IS MEANT FOR QUICK DEBUGGING WHERE YOU NEED TO CHECK A SPECIFIC PARTICLE'S VARIABLES
@@ -84,6 +78,183 @@ void pinParticles() {
 	}
 }
 
+void exportObj() {
+
+	static bool wasExportingLastFrame = false;
+	static std::filesystem::path currentSequenceDir;
+	static int currentFrameNumber = 0;
+	static int currentSequenceNumber = -1;
+
+	if (myVar.exportObjSeqFlag) {
+		if (!wasExportingLastFrame) {
+
+			std::filesystem::path mainExportDir = "Export3D";
+
+			if (!std::filesystem::exists(mainExportDir)) {
+				if (!std::filesystem::create_directory(mainExportDir)) {
+					std::cerr << "Couldn't create Export3D directory" << std::endl;
+					return;
+				}
+			}
+
+			int maxSequence = -1;
+			for (const auto& entry : std::filesystem::directory_iterator(mainExportDir)) {
+				if (entry.is_directory()) {
+					std::string folderName = entry.path().filename().string();
+					if (folderName.rfind("GESequence_", 0) == 0) {
+						std::string numberStr = folderName.substr(11);
+						try {
+							int number = std::stoi(numberStr);
+							if (number > maxSequence) {
+								maxSequence = number;
+							}
+						}
+						catch (...) {
+						}
+					}
+				}
+			}
+
+			currentSequenceNumber = maxSequence + 1;
+			std::string subfolderName = "GESequence_" + std::to_string(currentSequenceNumber);
+			currentSequenceDir = mainExportDir / subfolderName;
+
+			if (!std::filesystem::create_directory(currentSequenceDir)) {
+				std::cerr << "Couldn't create new sequence folder: " << currentSequenceDir << std::endl;
+				return;
+			}
+
+			currentFrameNumber = 0;
+			std::cout << "Started new sequence export: " << currentSequenceDir << std::endl;
+		}
+
+		std::string customName = "GEParticles_";
+		std::ostringstream filenameStream;
+		filenameStream << customName
+			<< std::setw(3) << std::setfill('0') << currentSequenceNumber << "_"
+			<< std::setw(4) << std::setfill('0') << currentFrameNumber << ".obj";
+
+		std::filesystem::path filePath = currentSequenceDir / filenameStream.str();
+
+		std::ofstream objFile(filePath);
+		if (!objFile) {
+			std::cerr << "Couldn't write file: " << filePath << std::endl;
+			return;
+		}
+
+		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+			ParticlePhysics& p = myParam.pParticles[i];
+			ParticleRendering& r = myParam.rParticles[i];
+			if (r.isDarkMatter) continue;
+
+			float posX = ((p.pos.x / myVar.domainSize.x) * 2.0f) - 1.0f;
+			float posY = ((p.pos.y / myVar.domainSize.y) * 2.0f) - 1.0f;
+			float domainRatio = myVar.domainSize.x / myVar.domainSize.y;
+			float sizeMultiplier = 10.0f;
+
+			posX *= domainRatio * sizeMultiplier;
+			posY *= sizeMultiplier;
+
+			objFile << "v " << posX << " " << posY << " 0.000000" << std::endl;
+		}
+
+		objFile.close();
+		std::cout << "Particles at frame " << currentFrameNumber
+			<< " exported to " << filePath << std::endl;
+
+		currentFrameNumber++;
+
+		myVar.objFrameNumber = currentFrameNumber;
+	}
+	else {
+		myVar.objFrameNumber = 0;
+	}
+
+	wasExportingLastFrame = myVar.exportObjSeqFlag;
+
+	if (myVar.exportObjFlag) {
+
+		std::filesystem::path exportDir = "Export3D";
+		if (!std::filesystem::exists(exportDir)) {
+			if (!std::filesystem::create_directory(exportDir)) {
+				std::cerr << "Couldn't create Export3D directory" << std::endl;
+				return;
+			}
+		}
+
+		std::filesystem::path exportDirIndividual = exportDir / "IndividualFiles";
+		if (!std::filesystem::exists(exportDirIndividual)) {
+			if (!std::filesystem::create_directory(exportDirIndividual)) {
+				std::cerr << "Couldn't create IndividualFiles directory" << std::endl;
+				return;
+			}
+		}
+
+		std::string namePrefix = "ParticlesOut_";
+
+		int maxNumber = 0;
+		for (const auto& entry : std::filesystem::directory_iterator(exportDirIndividual)) {
+			if (entry.is_regular_file()) {
+				std::string filename = entry.path().filename().string();
+
+				if (filename.rfind(namePrefix, 0) == 0 && filename.size() > namePrefix.size() + 4 &&
+					filename.substr(filename.size() - 4) == ".obj") {
+
+					size_t startPos = namePrefix.size();
+					size_t length = filename.size() - startPos - 4;
+					std::string numberStr = filename.substr(startPos, length);
+
+					try {
+						int number = std::stoi(numberStr);
+						if (number > maxNumber) {
+							maxNumber = number;
+						}
+					}
+					catch (const std::invalid_argument&) {
+					}
+				}
+			}
+		}
+
+		int nextNumber = maxNumber + 1;
+		std::filesystem::path filePath = exportDirIndividual / (namePrefix + std::to_string(nextNumber) + ".obj");
+		std::ofstream objFile(filePath);
+
+		if (!objFile) {
+			std::cerr << "Couldn't write file" << std::endl;
+			return;
+		}
+
+		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+			ParticlePhysics& p = myParam.pParticles[i];
+			ParticleRendering& r = myParam.rParticles[i];
+
+			if (r.isDarkMatter) {
+				continue;
+			}
+
+			float posX = ((p.pos.x / myVar.domainSize.x) * 2.0f) - 1.0f;
+			float posY = ((p.pos.y / myVar.domainSize.y) * 2.0f) - 1.0f;
+
+			float domainRatio = myVar.domainSize.x / myVar.domainSize.y;
+			posX *= domainRatio;
+
+			float sizeMultiplier = 10.0f;
+
+			posX *= sizeMultiplier;
+			posY *= sizeMultiplier;
+
+			objFile << "v " << posX << " " << posY << " 0.000000" << std::endl;
+		}
+
+		objFile.close();
+		std::cout << "Obj export successful! File saved as: " << filePath << std::endl;
+
+		myVar.exportObjFlag = false;
+	}
+}
+
+
 void updateScene() {
 
 	// If menu is active, do not use mouse input for non-menu stuff. I keep raylib's own mouse input for the menu but the custom IO for non-menu stuff
@@ -95,13 +266,19 @@ void updateScene() {
 		lighting.rayLogic(myVar, myParam);
 	}
 
-	Quadtree* grid = nullptr;
+	size_t gridRootIndex = -1;
 
 	myVar.G = 6.674e-11 * myVar.gravityMultiplier;
 
 	if (IO::shortcutPress(KEY_SPACE)) {
 		myVar.isTimePlaying = !myVar.isTimePlaying;
 	}
+
+	if (myVar.timeFactor != 0.0f) {
+		gridRootIndex = Quadtree::boundingBox(myParam.pParticles, myParam.rParticles);
+	}
+
+	Quadtree& rootNode = Quadtree::globalNodes[gridRootIndex];
 
 	myVar.halfDomainWidth = myVar.domainSize.x * 0.5f;
 	myVar.halfDomainHeight = myVar.domainSize.y * 0.5f;
@@ -113,10 +290,6 @@ void updateScene() {
 	//	myParam.morton.sortParticlesByMortonKey(myParam.pParticles, myParam.rParticles);
 	//}
 
-	if (myVar.timeFactor > 0) {
-		grid = gridFunction(myParam.pParticles, myParam.rParticles);
-	}
-
 	/*std::vector<Quadtree*> flatNodes;
 
 	flattenQuadtree(grid, flatNodes);
@@ -127,8 +300,8 @@ void updateScene() {
 		Quadtree* node = flatNodes[i];
 	}*/
 
-	if (grid != nullptr && myVar.drawQuadtree) {
-		grid->drawQuadtree();
+	if (gridRootIndex != -1 && !Quadtree::globalNodes.empty() && myVar.drawQuadtree) {
+		Quadtree::globalNodes[gridRootIndex].drawQuadtree();
 	}
 
 	for (ParticleRendering& rParticle : myParam.rParticles) {
@@ -172,7 +345,7 @@ void updateScene() {
 		myParam.neighborSearch.neighborSearchHash(myParam.pParticles, myParam.rParticles);
 	}
 
-	myParam.particlesSpawning.particlesInitialConditions(grid, physics, myVar, myParam);
+	myParam.particlesSpawning.particlesInitialConditions(&rootNode, physics, myVar, myParam);
 
 	if (myVar.constraintsEnabled && !myVar.isBrushDrawing) {
 		physics.createConstraints(myParam.pParticles, myParam.rParticles, myVar.constraintAfterDrawingFlag, myVar);
@@ -185,7 +358,7 @@ void updateScene() {
 	copyPaste.copyPasteParticles(myVar, myParam, physics);
 	copyPaste.copyPasteOptics(myParam, lighting);
 
-	myVar.gridExists = grid != nullptr;
+	myVar.gridExists = gridRootIndex != -1 && !Quadtree::globalNodes.empty();
 
 	if (myVar.timeFactor > 0.0f && myVar.gridExists) {
 
@@ -202,7 +375,7 @@ void updateScene() {
 
 			ParticlePhysics& pParticle = myParam.pParticles[i];
 
-			glm::vec2 netForce = physics.calculateForceFromGrid(*grid, myParam.pParticles, myVar, pParticle);
+			glm::vec2 netForce = physics.calculateForceFromGrid(rootNode, myParam.pParticles, myVar, pParticle);
 
 			pParticle.acc = netForce / pParticle.mass;
 		}
@@ -294,11 +467,13 @@ void updateScene() {
 
 	pinParticles();
 
+	exportObj();
+
 	//selectedParticleDebug();
 
-	if (grid != nullptr) {
+	/*if (grid != nullptr) {
 		delete grid;
-	}
+	}*/
 
 	myParam.myCamera.hasCamMoved();
 }

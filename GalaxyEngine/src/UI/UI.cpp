@@ -1335,6 +1335,14 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 		buttonHelper("Ship Gas", "Enables gas particles coming from the ship when controlling particles", myVar.isShipGasEnabled, -1.0f, settingsButtonY, true, enabled);
 
+		buttonHelper("Export .obj File", "Exports particles to an obj file", myVar.exportObjFlag, -1.0f, settingsButtonY, true, enabled);
+
+		buttonHelper("Export .obj Seq.", "Exports particles to an obj file each frame, creating an obj sequence", myVar.exportObjSeqFlag, -1.0f, settingsButtonY, true, enabled);
+
+		if (myVar.objFrameNumber != 0) {
+			ImGui::TextColored(UpdateVariables::colMenuInformation, "%s%d", "Frames Exported: ", myVar.objFrameNumber);
+		}
+
 		ImGui::EndTabItem();
 	}
 

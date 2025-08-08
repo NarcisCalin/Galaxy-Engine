@@ -3,7 +3,7 @@
 glm::vec2 Physics::calculateForceFromGrid(const Quadtree& grid, std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar, ParticlePhysics& pParticle) {
 	glm::vec2 totalForce = { 0.0f, 0.0f };
 
-	if (grid.gridMass <= 0)
+	if (grid.gridMass <= 0.0f)
 		return totalForce;
 
 	glm::vec2 d = grid.centerOfMass - pParticle.pos;
@@ -41,8 +41,11 @@ glm::vec2 Physics::calculateForceFromGrid(const Quadtree& grid, std::vector<Part
 		}
 	}
 	else {
-		for (const auto& subGridPtr : grid.subGrids) {
-			glm::vec2 childForce = calculateForceFromGrid(*subGridPtr, pParticles, myVar, pParticle);
+		for (const size_t& subGridIdx : grid.subGrids) {
+
+			Quadtree& child = Quadtree::globalNodes[subGridIdx];
+
+			glm::vec2 childForce = calculateForceFromGrid(child, pParticles, myVar, pParticle);
 			totalForce += childForce;
 		}
 	}
