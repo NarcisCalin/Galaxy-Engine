@@ -254,8 +254,111 @@ void exportObj() {
 	}
 }
 
+//void naiveGravity(std::vector<float>& vData) {
+//
+//	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+//		for (size_t j = 0; j < myParam.pParticles.size(); j++) {
+//
+//			if (i == j) continue;
+//
+//			float& posIx = vData[i];
+//			float& posIy = vData[i + myParam.pParticles.size()];
+//
+//			float& posJx = vData[j];
+//			float& posJy = vData[j + myParam.pParticles.size()];
+//
+//			glm::vec2 d = glm::vec2{posJx, posJy} - glm::vec2{posIx, posIy};
+//
+//			float distSq = glm::dot(d, d) + myVar.softening * myVar.softening;
+//
+//			glm::vec2 dir = glm::normalize(d);
+//
+//			float& massI = vData[i + 6 * myParam.pParticles.size()];
+//			float& massJ = vData[j + 6 * myParam.pParticles.size()];
+//
+//			float force = (myVar.G * massI * massJ) / distSq;
+//
+//			float& accIx = vData[i + 2 * myParam.pParticles.size()];
+//			float& accIy = vData[i + 3 * myParam.pParticles.size()];
+//
+//			float& accJx = vData[j + 2 * myParam.pParticles.size()];
+//			float& accJy = vData[j + 3 * myParam.pParticles.size()];
+//
+//			accIx += force / massI * dir.x;
+//			accIy += force / massI * dir.y;
+//
+//			accJx -= force / massJ * dir.x;
+//			accJy -= force / massJ * dir.y;
+//		}
+//	}
+//
+//	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+//
+//		ParticlePhysics& p = myParam.pParticles[i];
+//
+//		float& accX = vData[i + 2 * myParam.pParticles.size()];
+//		float& accY = vData[i + 3 * myParam.pParticles.size()];
+//
+//		float& velX = vData[i + 4 * myParam.pParticles.size()];
+//		float& velY = vData[i + 5 * myParam.pParticles.size()];
+//
+//		float& posX = vData[i];
+//		float& posY = vData[i + myParam.pParticles.size()];
+//
+//		velX += myVar.timeFactor * 1.5f * accX;
+//		velY += myVar.timeFactor * 1.5f * accY;
+//
+//		posX += velX * myVar.timeFactor;
+//		posY += velY * myVar.timeFactor;
+//	}
+//
+//	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+//
+//		ParticlePhysics& p = myParam.pParticles[i];
+//
+//		p.pos = { vData[i], vData[i + myParam.pParticles.size()] };
+//
+//		p.vel = { vData[i + 4 * myParam.pParticles.size()], vData[i + 5 * myParam.pParticles.size()] };
+//	}
+//}
 
 void updateScene() {
+
+	//std::vector<float> vData(myParam.pParticles.size() * 7); // Pos, acc, vel, mass
+
+	//for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+	//	vData[i] = myParam.pParticles[i].pos.x;
+	//	vData[i + myParam.pParticles.size()] = myParam.pParticles[i].pos.y;
+
+	//	vData[i + 2 * myParam.pParticles.size()] = 0.0f; // accX
+	//	vData[i + 3 * myParam.pParticles.size()] = 0.0f; // accY
+
+	//	vData[i + 4 * myParam.pParticles.size()] = myParam.pParticles[i].vel.x;
+	//	vData[i + 5 * myParam.pParticles.size()] = myParam.pParticles[i].vel.y;
+
+	//	vData[i + 6 * myParam.pParticles.size()] = myParam.pParticles[i].mass;
+	//}
+
+	//naiveGravity(vData);
+
+	//int simdChannelSize = 5000;
+
+	//std::vector<int> simdArray(simdChannelSize * 2);
+
+	//std::vector<int> arrayA;
+
+	//std::vector<int> arrayB;
+
+	//for (int i = 0; i < simdChannelSize * 2; i++) {
+	//	arrayA.push_back(i);
+	//	arrayB.push_back(i * 10);
+	//}
+
+	//for (int i = 0; i < simdChannelSize * 2; i++) {
+
+	//	simdArray[i] = arrayA[i] + arrayB[i];
+	//}
+
 
 	// If menu is active, do not use mouse input for non-menu stuff. I keep raylib's own mouse input for the menu but the custom IO for non-menu stuff
 	if (myParam.rightClickSettings.isMenuActive) {
@@ -266,7 +369,7 @@ void updateScene() {
 		lighting.rayLogic(myVar, myParam);
 	}
 
-	size_t gridRootIndex = -1;
+	uint32_t gridRootIndex = -1;
 
 	myVar.G = 6.674e-11 * myVar.gravityMultiplier;
 
@@ -275,7 +378,8 @@ void updateScene() {
 	}
 
 	if (myVar.timeFactor != 0.0f) {
-		gridRootIndex = Quadtree::boundingBox(myParam.pParticles, myParam.rParticles);
+		Quadtree::boundingBox(myParam.pParticles, myParam.rParticles);
+		gridRootIndex = 0;
 	}
 
 	Quadtree& rootNode = Quadtree::globalNodes[gridRootIndex];
@@ -373,11 +477,9 @@ void updateScene() {
 				continue;
 			}
 
-			ParticlePhysics& pParticle = myParam.pParticles[i];
+			glm::vec2 netForce = physics.calculateForceFromGrid(rootNode, myParam.pParticles, myVar, myParam.pParticles[i]);
 
-			glm::vec2 netForce = physics.calculateForceFromGrid(rootNode, myParam.pParticles, myVar, pParticle);
-
-			pParticle.acc = netForce / pParticle.mass;
+			myParam.pParticles[i].acc = netForce / myParam.pParticles[i].mass;
 		}
 
 		if (myVar.isMergerEnabled)

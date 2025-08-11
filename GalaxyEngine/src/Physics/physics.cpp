@@ -15,7 +15,19 @@ glm::vec2 Physics::calculateForceFromGrid(const Quadtree& grid, std::vector<Part
 
 	float distanceSq = d.x * d.x + d.y * d.y + myVar.softening * myVar.softening;
 
-	if ((grid.size * grid.size < (myVar.theta * myVar.theta) * distanceSq) || grid.subGrids.empty()) {
+	bool isSubgridsEmty = true;
+
+	for (int i = 0; i < 2; ++i) {
+		for (int j = 0; j < 2; ++j) {
+			uint32_t idx = grid.subGrids[i][j];
+
+			if (idx != UINT32_MAX) {
+				isSubgridsEmty = false;
+			}
+		}
+	}
+
+	if ((grid.size * grid.size < (myVar.theta * myVar.theta) * distanceSq) || isSubgridsEmty) {
 		if ((grid.endIndex - grid.startIndex) == 1 &&
 			fabs(pParticles[grid.startIndex].pos.x - pParticle.pos.x) < 0.001f &&
 			fabs(pParticles[grid.startIndex].pos.y - pParticle.pos.y) < 0.001f) {
@@ -41,12 +53,16 @@ glm::vec2 Physics::calculateForceFromGrid(const Quadtree& grid, std::vector<Part
 		}
 	}
 	else {
-		for (const size_t& subGridIdx : grid.subGrids) {
+		for (int i = 0; i < 2; ++i) {
+			for (int j = 0; j < 2; ++j) {
+				uint32_t idx = grid.subGrids[i][j];
 
-			Quadtree& child = Quadtree::globalNodes[subGridIdx];
+				if (idx == UINT32_MAX) continue;
 
-			glm::vec2 childForce = calculateForceFromGrid(child, pParticles, myVar, pParticle);
-			totalForce += childForce;
+				glm::vec2 childForce = calculateForceFromGrid(Quadtree::globalNodes[idx], pParticles, myVar, pParticle);
+				totalForce += childForce;
+
+			}
 		}
 	}
 	return totalForce;
@@ -472,7 +488,7 @@ void Physics::mergerSolver(std::vector<ParticlePhysics>& pParticles, std::vector
 				if (originalMassP >= originalMassN) {
 					p.mass = originalMassP + originalMassN;
 					p.vel = (p.vel * originalMassP + pn.vel * originalMassN) / p.mass;
-					
+
 					float area1 = r.previousSize * r.previousSize;
 					float area2 = rn.previousSize * rn.previousSize;
 					float fullGrowthSize = sqrt(area1 + area2);
@@ -595,7 +611,7 @@ void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vecto
 			else {
 				i++;
 			}
-			
+
 		}
 	}
 }
