@@ -125,21 +125,3 @@ void Quadtree::boundingBox(const std::vector<ParticlePhysics>& pParticles,
 		pParticles, rParticles
 	);
 }
-
-void Quadtree::drawQuadtree() {
-	DrawRectangleLinesEx({ pos.x, pos.y, size, size }, 1.0f, WHITE);
-
-	if (gridMass > 0) {
-		DrawCircleV({ centerOfMass.x, centerOfMass.y }, 2.0f, {180,50,50,128});
-	}
-
-	for (int i = 0; i < 2; ++i) {
-		for (int j = 0; j < 2; ++j) {
-			uint32_t idx = subGrids[i][j];
-
-			if (idx == UINT32_MAX) continue;
-
-			globalNodes[idx].drawQuadtree();
-		}
-	}
-}

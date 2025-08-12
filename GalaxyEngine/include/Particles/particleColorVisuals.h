@@ -28,7 +28,7 @@ struct ColorVisuals {
 	float saturation = 0.8f;
 	float value = 0.5f;
 
-	int maxNeighbors = 60;
+	int maxNeighbors = 80;
 
 	float maxColorAcc = 40.0f;
 	float minColorAcc = 0.0f;

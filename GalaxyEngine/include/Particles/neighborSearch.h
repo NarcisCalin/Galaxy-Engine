@@ -8,9 +8,9 @@ struct GridCellNS {
 
 struct NeighborSearch {
 
-	float densityRadius = 4.5f;
+	float densityRadius = 4.5f; // Heuristic
 
-	float cellSize = 3.0f;
+	float cellSize = 3.0f; // Heuristic
 	std::unordered_map<size_t, GridCellNS> grid;
 
 	int cellAmount = 3840;
@@ -111,30 +111,6 @@ struct NeighborSearch {
 			}
 		}
 
-		//// Heuristics for performance
-		//constexpr float minCellSize = 1.0f;
-		//constexpr float maxCellSize = 4.0f;
-		//constexpr float totalSizeMultiplier = 1.5f;
-
-		//const float sizeFactor = particleSizeMultiplier
-		//	* particleTextureHalfSize
-		//	* totalSizeMultiplier;
-
-		//float cellSize = std::numeric_limits<float>::max();
-
-		//for (size_t i = 0; i < pParticles.size(); ++i) {
-		//	auto& rP = rParticles[i];
-		//	if (rP.isDarkMatter || rP.uniqueColor || rP.isSolid) {
-		//		continue;
-		//	}
-
-		//	float candidate = rP.size * sizeFactor;
-
-		//	cellSize = std::min(cellSize, candidate);
-		//}
-
-		//cellSize = std::clamp(cellSize, minCellSize, maxCellSize);
-
 		float cellSize = 2.5f; // Heuristic
 
 		float minX = std::numeric_limits<float>::max();
@@ -142,13 +118,32 @@ struct NeighborSearch {
 		float maxX = std::numeric_limits<float>::lowest();
 		float maxY = std::numeric_limits<float>::lowest();
 
-#pragma omp parallel for reduction(min:minX,minY) reduction(max:maxX,maxY) schedule(static)
-		for (int64_t idx = 0; idx < particlesToProcess.size(); idx++) {
-			const auto& pos = pParticles[particlesToProcess[idx]].pos;
-			minX = std::min(minX, pos.x);
-			minY = std::min(minY, pos.y);
-			maxX = std::max(maxX, pos.x);
-			maxY = std::max(maxY, pos.y);
+		std::vector<int> cellXList(particlesToProcess.size());
+		std::vector<int> cellYList(particlesToProcess.size());
+
+#pragma omp parallel
+		{
+			float localMinX = std::numeric_limits<float>::max();
+			float localMinY = std::numeric_limits<float>::max();
+			float localMaxX = std::numeric_limits<float>::lowest();
+			float localMaxY = std::numeric_limits<float>::lowest();
+
+#pragma omp for nowait
+			for (int64_t idx = 0; idx < (int64_t)particlesToProcess.size(); idx++) {
+				const auto& pos = pParticles[particlesToProcess[idx]].pos;
+				localMinX = std::min(localMinX, pos.x);
+				localMinY = std::min(localMinY, pos.y);
+				localMaxX = std::max(localMaxX, pos.x);
+				localMaxY = std::max(localMaxY, pos.y);
+			}
+
+#pragma omp critical
+			{
+				minX = std::min(minX, localMinX);
+				minY = std::min(minY, localMinY);
+				maxX = std::max(maxX, localMaxX);
+				maxY = std::max(maxY, localMaxY);
+			}
 		}
 
 		minX -= cellSize;
@@ -158,58 +153,82 @@ struct NeighborSearch {
 
 		int gridWidth = std::max(1, static_cast<int>((maxX - minX) / cellSize) + 1);
 		int gridHeight = std::max(1, static_cast<int>((maxY - minY) / cellSize) + 1);
+		int numCells = gridWidth * gridHeight;
 
-		std::vector<std::vector<size_t>> grid(gridWidth * gridHeight);
+		std::vector<size_t> cellCounts(numCells, 0);
 
-		for (const size_t i : particlesToProcess) {
-			const auto& pos = pParticles[i].pos;
+#pragma omp parallel for
+		for (int64_t idx = 0; idx < (int64_t)particlesToProcess.size(); idx++) {
+			const auto& pos = pParticles[particlesToProcess[idx]].pos;
 
-			int cellX = static_cast<int>((pos.x - minX) / cellSize);
-			int cellY = static_cast<int>((pos.y - minY) / cellSize);
+			int cx = static_cast<int>((pos.x - minX) / cellSize);
+			int cy = static_cast<int>((pos.y - minY) / cellSize);
+			cx = std::max(0, std::min(cx, gridWidth - 1));
+			cy = std::max(0, std::min(cy, gridHeight - 1));
 
-			cellX = std::max(0, std::min(cellX, gridWidth - 1));
-			cellY = std::max(0, std::min(cellY, gridHeight - 1));
+			int cellIdx = cy * gridWidth + cx;
+			cellXList[idx] = cx;
+			cellYList[idx] = cy;
 
-			int cellIdx = cellY * gridWidth + cellX;
-
-			grid[cellIdx].push_back(i);
+#pragma omp atomic
+			cellCounts[cellIdx]++;
 		}
 
+		std::vector<size_t> cellStart(numCells + 1, 0);
+		for (int i = 0; i < numCells; i++) {
+			cellStart[i + 1] = cellStart[i] + cellCounts[i];
+		}
+
+		std::vector<size_t> cellParticles(particlesToProcess.size());
+		std::vector<size_t> fillCursor = cellStart;
+
+#pragma omp parallel for
+		for (int64_t idx = 0; idx < (int64_t)particlesToProcess.size(); idx++) {
+			int cx = cellXList[idx];
+			int cy = cellYList[idx];
+			int cellIdx = cy * gridWidth + cx;
+
+			size_t writePos;
+#pragma omp atomic capture
+			writePos = fillCursor[cellIdx]++;
+
+			cellParticles[writePos] = particlesToProcess[idx];
+		}
+
+		std::vector<int> localNeighborCounts(particlesToProcess.size(), 0);
+
 #pragma omp parallel for schedule(dynamic)
-		for (int64_t idx = 0; idx < particlesToProcess.size(); idx++) {
-			const size_t i = particlesToProcess[idx];
+		for (int64_t idx = 0; idx < (int64_t)particlesToProcess.size(); idx++) {
+			size_t i = particlesToProcess[idx];
 			const auto& particle = pParticles[i];
 
-			int cellX = static_cast<int>((particle.pos.x - minX) / cellSize);
-			int cellY = static_cast<int>((particle.pos.y - minY) / cellSize);
+			int cx = cellXList[idx];
+			int cy = cellYList[idx];
 
-			cellX = std::max(0, std::min(cellX, gridWidth - 1));
-			cellY = std::max(0, std::min(cellY, gridHeight - 1));
+			for (int ny = std::max(0, cy - 1); ny <= std::min(gridHeight - 1, cy + 1); ny++) {
+				for (int nx = std::max(0, cx - 1); nx <= std::min(gridWidth - 1, cx + 1); nx++) {
+					int neighborCellIdx = nx + ny * gridWidth;
 
-			for (int ny = std::max(0, cellY - 1); ny <= std::min(gridHeight - 1, cellY + 1); ny++) {
-				for (int nx = std::max(0, cellX - 1); nx <= std::min(gridWidth - 1, cellX + 1); nx++) {
-					int cellIdx = ny * gridWidth + nx;
+					size_t start = cellStart[neighborCellIdx];
+					size_t end = cellStart[neighborCellIdx + 1];
 
-					const auto& cellParticles = grid[cellIdx];
-
-					const size_t* neighborIdxPtr = cellParticles.data();
-					const size_t cellSize = cellParticles.size();
-
-					for (size_t n = 0; n < cellSize; n++) {
-						const size_t neighborIdx = neighborIdxPtr[n];
-
+					for (size_t p = start; p < end; p++) {
+						size_t neighborIdx = cellParticles[p];
 						if (neighborIdx == i) continue;
 
 						glm::vec2 d = particle.pos - pParticles[neighborIdx].pos;
-						const float distSq = d.x * d.x + d.y * d.y;
+						float distSq = d.x * d.x + d.y * d.y;
 
 						if (distSq < densityRadiusSq) {
-#pragma omp atomic
-							rParticles[i].neighbors++;
+							localNeighborCounts[idx]++;
 						}
 					}
 				}
 			}
+		}
+
+		for (size_t k = 0; k < particlesToProcess.size(); k++) {
+			rParticles[particlesToProcess[k]].neighbors = localNeighborCounts[k];
 		}
 	}
 };

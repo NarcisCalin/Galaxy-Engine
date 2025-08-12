@@ -32,7 +32,6 @@ glm::vec2 Physics::calculateForceFromGrid(const Quadtree& grid, std::vector<Part
 			fabs(pParticles[grid.startIndex].pos.x - pParticle.pos.x) < 0.001f &&
 			fabs(pParticles[grid.startIndex].pos.y - pParticle.pos.y) < 0.001f) {
 
-
 			return totalForce;
 		}
 

@@ -394,18 +394,19 @@ void updateScene() {
 	//	myParam.morton.sortParticlesByMortonKey(myParam.pParticles, myParam.rParticles);
 	//}
 
-	/*std::vector<Quadtree*> flatNodes;
+	if (myVar.drawQuadtree) {
+		for (uint32_t i = 0; i < Quadtree::globalNodes.size(); i++) {
 
-	flattenQuadtree(grid, flatNodes);
+			Quadtree& q = Quadtree::globalNodes[i];
 
-	size_t index = 0;
+			DrawRectangleLinesEx({ q.pos.x, q.pos.y, q.size, q.size }, 1.0f, WHITE);
 
-	for (size_t i = 0; i < flatNodes.size(); i++) {
-		Quadtree* node = flatNodes[i];
-	}*/
+			if (q.gridMass > 0) {
+				DrawCircleV({ q.centerOfMass.x, q.centerOfMass.y }, 2.0f, { 180,50,50,128 });
+			}
 
-	if (gridRootIndex != -1 && !Quadtree::globalNodes.empty() && myVar.drawQuadtree) {
-		Quadtree::globalNodes[gridRootIndex].drawQuadtree();
+			//DrawText(TextFormat("%i", i), q.pos.x + q.size * 0.5f, q.pos.y + q.size * 0.5f, 5.0f, {255, 255, 255, 128});
+		}
 	}
 
 	for (ParticleRendering& rParticle : myParam.rParticles) {
@@ -503,7 +504,7 @@ void updateScene() {
 		physics.constraints(myParam.pParticles, myParam.rParticles, myVar);
 	}
 
-	if (myVar.isDensitySizeEnabled || myParam.colorVisuals.densityColor) {
+	if ((myVar.isDensitySizeEnabled || myParam.colorVisuals.densityColor) && myVar.timeFactor > 0.0f) {
 		myParam.neighborSearch.neighborSearch(myParam.pParticles, myParam.rParticles, myVar.particleSizeMultiplier, myVar.particleTextureHalfSize);
 	}
 

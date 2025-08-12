@@ -33,8 +33,6 @@ struct Quadtree {
 	static void boundingBox(const std::vector<ParticlePhysics>& pParticles,
 		const std::vector<ParticleRendering>& rParticles);
 
-	void drawQuadtree();
-
 private:
 	inline void computeLeafMass(const std::vector<ParticlePhysics>& pParticles) {
 		gridMass = 0.0f;
