@@ -114,6 +114,8 @@ struct UpdateVariables{
 	bool constraintsEnabled = false;
 	bool isOpticsEnabled = false;
 
+	bool isGPUEnabled = true;
+
 	bool isMergerEnabled = false;
 
 	bool longExposureFlag = false;

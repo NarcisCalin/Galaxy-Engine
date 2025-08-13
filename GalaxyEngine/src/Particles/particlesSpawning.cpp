@@ -11,7 +11,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 
 		Slingshot slingshot = slingshot.particleSlingshot(myVar, myParam.myCamera);
 
-		if (myVar.isDragging && enablePathPrediction && quadtree != nullptr) {
+		if (myVar.isDragging && enablePathPrediction && myVar.gridExists) {
 			predictTrajectory(myParam.pParticles, myParam.myCamera, physics, quadtree, myVar, slingshot);
 		}
 

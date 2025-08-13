@@ -75,6 +75,8 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 	buttonHelper("Multi-Threading", "Distributes the simulation across multiple threads", myVar.isMultiThreadingEnabled, -1.0f, settingsButtonY, true, enabled);
 
+	buttonHelper("GPU (Beta)", "Simulates gravity on the GPU", myVar.isGPUEnabled, -1.0f, settingsButtonY, true, enabled);
+
 	ImGui::Spacing();
 	ImGui::Separator();
 

@@ -58,6 +58,8 @@ void selectedParticleDebug();
 
 void pinParticles();
 
+void buildKernel();
+
 void updateScene();
 
 void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myRayTracingTexture,

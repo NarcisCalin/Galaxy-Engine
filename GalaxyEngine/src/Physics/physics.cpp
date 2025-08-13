@@ -535,6 +535,8 @@ void Physics::mergerSolver(std::vector<ParticlePhysics>& pParticles, std::vector
 
 void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar, bool& sphGround) {
 	if (myVar.isPeriodicBoundaryEnabled) {
+
+#pragma omp parallel for schedule(dynamic)
 		for (size_t i = 0; i < pParticles.size(); i++) {
 
 			ParticlePhysics& pParticle = pParticles[i];
@@ -572,6 +574,7 @@ void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vecto
 		}
 	}
 	else {
+
 		for (size_t i = 0; i < pParticles.size(); ) {
 
 			ParticlePhysics& pParticle = pParticles[i];

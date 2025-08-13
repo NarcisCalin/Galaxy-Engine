@@ -4,12 +4,12 @@ extern uint32_t globalId;
 
 struct ParticlePhysics {
 	glm::vec2 pos;
-	glm::vec2 predPos;
 	glm::vec2 vel;
+	float mass;
+	glm::vec2 acc;
+	glm::vec2 predPos;
 	glm::vec2 prevVel;
 	glm::vec2 predVel;
-	glm::vec2 acc;
-	float mass;
 
 	// SPH Parameters
 	float press;
@@ -48,12 +48,12 @@ struct ParticlePhysics {
 	// Parameterized constructor
 	ParticlePhysics(glm::vec2 pos, glm::vec2 vel, float mass, float restDens, float stiff, float visc, float cohesion) {
 		this->pos = pos;
-		this->predPos = { 0.0f, 0.0f };
 		this->vel = vel;
+		this->mass = mass;
+		this->acc = { 0.0f, 0.0f };
+		this->predPos = { 0.0f, 0.0f };
 		this->prevVel = { 0.0f, 0.0f };
 		this->predVel = { 0.0f, 0.0f };
-		this->acc = { 0.0f, 0.0f };
-		this->mass = mass;
 
 		// SPH Parameters
 		this->press = 0.0f;

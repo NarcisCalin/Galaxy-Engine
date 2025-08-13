@@ -254,111 +254,171 @@ void exportObj() {
 	}
 }
 
-//void naiveGravity(std::vector<float>& vData) {
-//
-//	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-//		for (size_t j = 0; j < myParam.pParticles.size(); j++) {
-//
-//			if (i == j) continue;
-//
-//			float& posIx = vData[i];
-//			float& posIy = vData[i + myParam.pParticles.size()];
-//
-//			float& posJx = vData[j];
-//			float& posJy = vData[j + myParam.pParticles.size()];
-//
-//			glm::vec2 d = glm::vec2{posJx, posJy} - glm::vec2{posIx, posIy};
-//
-//			float distSq = glm::dot(d, d) + myVar.softening * myVar.softening;
-//
-//			glm::vec2 dir = glm::normalize(d);
-//
-//			float& massI = vData[i + 6 * myParam.pParticles.size()];
-//			float& massJ = vData[j + 6 * myParam.pParticles.size()];
-//
-//			float force = (myVar.G * massI * massJ) / distSq;
-//
-//			float& accIx = vData[i + 2 * myParam.pParticles.size()];
-//			float& accIy = vData[i + 3 * myParam.pParticles.size()];
-//
-//			float& accJx = vData[j + 2 * myParam.pParticles.size()];
-//			float& accJy = vData[j + 3 * myParam.pParticles.size()];
-//
-//			accIx += force / massI * dir.x;
-//			accIy += force / massI * dir.y;
-//
-//			accJx -= force / massJ * dir.x;
-//			accJy -= force / massJ * dir.y;
-//		}
-//	}
-//
-//	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-//
-//		ParticlePhysics& p = myParam.pParticles[i];
-//
-//		float& accX = vData[i + 2 * myParam.pParticles.size()];
-//		float& accY = vData[i + 3 * myParam.pParticles.size()];
-//
-//		float& velX = vData[i + 4 * myParam.pParticles.size()];
-//		float& velY = vData[i + 5 * myParam.pParticles.size()];
-//
-//		float& posX = vData[i];
-//		float& posY = vData[i + myParam.pParticles.size()];
-//
-//		velX += myVar.timeFactor * 1.5f * accX;
-//		velY += myVar.timeFactor * 1.5f * accY;
-//
-//		posX += velX * myVar.timeFactor;
-//		posY += velY * myVar.timeFactor;
-//	}
-//
-//	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-//
-//		ParticlePhysics& p = myParam.pParticles[i];
-//
-//		p.pos = { vData[i], vData[i + myParam.pParticles.size()] };
-//
-//		p.vel = { vData[i + 4 * myParam.pParticles.size()], vData[i + 5 * myParam.pParticles.size()] };
-//	}
-//}
+const char* computeTest = R"(
+#version 430
+
+layout(std430, binding = 0) buffer inPosVel { float posVel[]; };
+
+layout(std430, binding = 2) buffer inMass   { float mass[]; };
+
+layout(local_size_x = 256) in;
+
+uniform float dt;
+uniform int pCount;
+
+const float G = 6.67430e-11;
+
+shared vec2 tilePos[256];
+shared float tileMass[256];
+
+void main() {
+    uint idx = gl_GlobalInvocationID.x;
+    if (idx >= pCount) return;
+
+    vec2 myPos = vec2(posVel[idx], posVel[idx + pCount]);
+    vec2 myAcc = vec2(0.0);
+
+    for (int tileStart = 0; tileStart < pCount; tileStart += 256) {
+
+        uint localIdx = gl_LocalInvocationID.x;
+        uint globalTileIdx = tileStart + localIdx;
+
+        if (globalTileIdx < pCount) {
+            tilePos[localIdx]  = vec2(posVel[globalTileIdx], posVel[globalTileIdx + pCount]);
+            tileMass[localIdx] = mass[globalTileIdx];
+        } else {
+            tilePos[localIdx]  = vec2(0.0);
+            tileMass[localIdx] = 0.0;
+        }
+
+        barrier();
+
+        for (int j = 0; j < 256; j++) {
+            uint otherIdx = tileStart + j;
+            if (otherIdx >= pCount) break;
+
+            vec2 d = tilePos[j] - myPos;
+            float rSq  = dot(d, d) + 4.0;
+            float invR = inversesqrt(rSq);
+            myAcc += G * tileMass[j] * d * invR * invR * invR;
+        }
+
+        barrier();
+    }
+
+    posVel[idx + 2 * pCount] += dt * 1.5 * myAcc.x;
+    posVel[idx + 3 * pCount] += dt * 1.5 * myAcc.y;
+
+    posVel[idx] += posVel[idx + 2 * pCount] * dt;
+    posVel[idx + pCount] += posVel[idx + 3 * pCount] * dt;
+}
+)";
+
+GLuint ssboPosVel, ssboAcc, ssboMass;
+
+size_t reserveSize = 2097152;
+
+GLuint program;
+
+void buildKernel() {
+
+	glGenBuffers(1, &ssboPosVel);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboPosVel);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, reserveSize * sizeof(float), nullptr, GL_STREAM_DRAW);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssboPosVel);
+
+	/*glGenBuffers(1, &ssboAcc);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboAcc);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, reserveSize * sizeof(float), nullptr, GL_DYNAMIC_COPY);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssboAcc);*/
+
+	glGenBuffers(1, &ssboMass);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboMass);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, reserveSize * sizeof(float), nullptr, GL_DYNAMIC_DRAW);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, ssboMass);
+
+	program = glCreateProgram();
+	GLuint shader = glCreateShader(GL_COMPUTE_SHADER);
+	glShaderSource(shader, 1, &computeTest, nullptr);
+	glCompileShader(shader);
+
+	GLint success;
+	glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+
+	if (!success) {
+		char infoLog[512];
+		glGetShaderInfoLog(shader, 512, nullptr, infoLog);
+		std::cerr << "Compute shader compilation failed:\n" << infoLog << std::endl;
+	}
+
+	glAttachShader(program, shader);
+	glLinkProgram(program);
+
+	glGetProgramiv(program, GL_LINK_STATUS, &success);
+	if (!success) {
+		char infoLog[512];
+		glGetProgramInfoLog(program, 512, nullptr, infoLog);
+		std::cerr << "Shader program linking failed:\n" << infoLog << std::endl;
+	}
+
+	glDeleteShader(shader);
+}
+
+void gpuGravity() {
+	if (!myParam.pParticles.empty()) {
+
+		std::vector<float> xyPosVel(myParam.pParticles.size() * 4);
+		/*std::vector<float> xyAcc(myParam.pParticles.size() * 2);*/
+		std::vector<float> massVector(myParam.pParticles.size());
+
+		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+
+			xyPosVel[i] = myParam.pParticles[i].pos.x;
+			xyPosVel[i + myParam.pParticles.size()] = myParam.pParticles[i].pos.y;
+
+			xyPosVel[i + 2 * myParam.pParticles.size()] = myParam.pParticles[i].vel.x;
+			xyPosVel[i + 3 * myParam.pParticles.size()] = myParam.pParticles[i].vel.y;
+
+			/*xyAcc[i] = 0.0f;
+			xyAcc[i + myParam.pParticles.size()] = 0.0f;*/
+
+			massVector[i] = myParam.pParticles[i].mass;
+		}
+
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboPosVel);
+		glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, xyPosVel.size() * sizeof(float), xyPosVel.data());
+
+		/*glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboAcc);
+		glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, xyAcc.size() * sizeof(float), xyAcc.data());*/
+
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboMass);
+		glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, massVector.size() * sizeof(float), massVector.data());
+
+		glUseProgram(program);
+		glUniform1f(glGetUniformLocation(program, "dt"), myVar.timeFactor);
+		glUniform1i(glGetUniformLocation(program, "pCount"), static_cast<int>(myParam.pParticles.size()));
+
+		GLuint numGroups = (myParam.pParticles.size() + 255) / 256;
+		glDispatchCompute(numGroups, 1, 1);
+		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboPosVel);
+		float* ptrPos = (float*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+
+		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+
+			myParam.pParticles[i].pos.x = ptrPos[i];
+			myParam.pParticles[i].pos.y = ptrPos[i + myParam.pParticles.size()];
+
+			myParam.pParticles[i].vel.x = ptrPos[i + 2 * myParam.pParticles.size()];
+			myParam.pParticles[i].vel.y = ptrPos[i + 3 * myParam.pParticles.size()];
+		}
+
+		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+	}
+}
 
 void updateScene() {
-
-	//std::vector<float> vData(myParam.pParticles.size() * 7); // Pos, acc, vel, mass
-
-	//for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-	//	vData[i] = myParam.pParticles[i].pos.x;
-	//	vData[i + myParam.pParticles.size()] = myParam.pParticles[i].pos.y;
-
-	//	vData[i + 2 * myParam.pParticles.size()] = 0.0f; // accX
-	//	vData[i + 3 * myParam.pParticles.size()] = 0.0f; // accY
-
-	//	vData[i + 4 * myParam.pParticles.size()] = myParam.pParticles[i].vel.x;
-	//	vData[i + 5 * myParam.pParticles.size()] = myParam.pParticles[i].vel.y;
-
-	//	vData[i + 6 * myParam.pParticles.size()] = myParam.pParticles[i].mass;
-	//}
-
-	//naiveGravity(vData);
-
-	//int simdChannelSize = 5000;
-
-	//std::vector<int> simdArray(simdChannelSize * 2);
-
-	//std::vector<int> arrayA;
-
-	//std::vector<int> arrayB;
-
-	//for (int i = 0; i < simdChannelSize * 2; i++) {
-	//	arrayA.push_back(i);
-	//	arrayB.push_back(i * 10);
-	//}
-
-	//for (int i = 0; i < simdChannelSize * 2; i++) {
-
-	//	simdArray[i] = arrayA[i] + arrayB[i];
-	//}
-
 
 	// If menu is active, do not use mouse input for non-menu stuff. I keep raylib's own mouse input for the menu but the custom IO for non-menu stuff
 	if (myParam.rightClickSettings.isMenuActive) {
@@ -467,20 +527,25 @@ void updateScene() {
 
 	if (myVar.timeFactor > 0.0f && myVar.gridExists) {
 
-		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-			myParam.pParticles[i].acc = { 0.0f, 0.0f };
-		}
-
-#pragma omp parallel for schedule(dynamic)
-		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-
-			if ((myParam.rParticles[i].isBeingDrawn && myVar.isBrushDrawing && myVar.isSPHEnabled) || myParam.rParticles[i].isPinned) {
-				continue;
+		if (!myVar.isGPUEnabled) {
+			for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+				myParam.pParticles[i].acc = { 0.0f, 0.0f };
 			}
 
-			glm::vec2 netForce = physics.calculateForceFromGrid(rootNode, myParam.pParticles, myVar, myParam.pParticles[i]);
+#pragma omp parallel for schedule(dynamic)
+			for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 
-			myParam.pParticles[i].acc = netForce / myParam.pParticles[i].mass;
+				if ((myParam.rParticles[i].isBeingDrawn && myVar.isBrushDrawing && myVar.isSPHEnabled) || myParam.rParticles[i].isPinned) {
+					continue;
+				}
+
+				glm::vec2 netForce = physics.calculateForceFromGrid(rootNode, myParam.pParticles, myVar, myParam.pParticles[i]);
+
+				myParam.pParticles[i].acc = netForce / myParam.pParticles[i].mass;
+			}
+		}
+		else {
+			gpuGravity();
 		}
 
 		if (myVar.isMergerEnabled)
@@ -498,7 +563,9 @@ void updateScene() {
 
 		ship.spaceshipLogic(myParam.pParticles, myParam.rParticles, myVar.isShipGasEnabled);
 
-		physics.physicsUpdate(myParam.pParticles, myParam.rParticles, myVar, myVar.sphGround);
+		if (!myVar.isGPUEnabled) {
+			physics.physicsUpdate(myParam.pParticles, myParam.rParticles, myVar, myVar.sphGround);
+		}
 	}
 	else {
 		physics.constraints(myParam.pParticles, myParam.rParticles, myVar);

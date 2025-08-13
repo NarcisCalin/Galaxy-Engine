@@ -227,6 +227,8 @@ void main() {
 
 	bool accumulationCondition = false;
 
+	buildKernel();
+
 	while (!WindowShouldClose()) {
 
 		if (myVar.exitGame) {
