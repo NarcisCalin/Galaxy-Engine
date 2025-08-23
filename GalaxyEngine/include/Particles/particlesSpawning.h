@@ -33,11 +33,10 @@ public:
 
 	bool massMultiplierEnabled = true;
 
-	void particlesInitialConditions(Quadtree* quadtree, Physics& physics, UpdateVariables& myVar, UpdateParameters& myParam);
+	void particlesInitialConditions(Physics& physics, UpdateVariables& myVar, UpdateParameters& myParam);
 
 	void predictTrajectory(const std::vector<ParticlePhysics>& actualParticles, 
-		SceneCamera& myCamera, Physics physics,
-		Quadtree* quadtree, UpdateVariables& myVar, Slingshot& slingshot);
+		SceneCamera& myCamera, Physics physics, UpdateVariables& myVar, Slingshot& slingshot);
 
 private:
 

@@ -436,8 +436,11 @@ void main() {
 
 	geSound.unloadSounds();
 
-	// Unload experiment shader
+	// Unload accumulation shader
 	UnloadShader(accumulationShader);
+
+	// Free compute shader memory
+	freeGPUMemory();
 
 	CloseWindow();
 

@@ -5,14 +5,14 @@
 
 #include "parameters.h"
 
-void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& physics, UpdateVariables& myVar, UpdateParameters& myParam) {
+void ParticlesSpawning::particlesInitialConditions(Physics& physics, UpdateVariables& myVar, UpdateParameters& myParam) {
 
 	if (myVar.isMouseNotHoveringUI && isSpawningAllowed) {
 
 		Slingshot slingshot = slingshot.particleSlingshot(myVar, myParam.myCamera);
 
 		if (myVar.isDragging && enablePathPrediction && myVar.gridExists) {
-			predictTrajectory(myParam.pParticles, myParam.myCamera, physics, quadtree, myVar, slingshot);
+			predictTrajectory(myParam.pParticles, myParam.myCamera, physics, myVar, slingshot);
 		}
 
 		if (IO::mouseReleased(0) && myVar.toolSpawnHeavyParticle && !IO::shortcutDown(KEY_LEFT_CONTROL) && !IO::shortcutDown(KEY_LEFT_ALT) && myVar.isDragging) {
@@ -537,7 +537,7 @@ void ParticlesSpawning::particlesInitialConditions(Quadtree* quadtree, Physics& 
 }
 
 void ParticlesSpawning::predictTrajectory(const std::vector<ParticlePhysics>& pParticles,
-	SceneCamera& myCamera, Physics physics, Quadtree* quadtree,
+	SceneCamera& myCamera, Physics physics,
 	UpdateVariables& myVar, Slingshot& slingshot) {
 
 	if (!IsMouseButtonDown(0)) {
@@ -566,7 +566,7 @@ void ParticlesSpawning::predictTrajectory(const std::vector<ParticlePhysics>& pP
 	for (int step = 0; step < predictPathLength; ++step) {
 		ParticlePhysics& p = currentParticles[predictedIndex];
 
-		glm::vec2 netForce = physics.calculateForceFromGrid(*quadtree, currentParticles, myVar, p);
+		glm::vec2 netForce = physics.calculateForceFromGrid(currentParticles, myVar, p);
 
 		glm::vec2 acc;
 		acc = netForce / p.mass;

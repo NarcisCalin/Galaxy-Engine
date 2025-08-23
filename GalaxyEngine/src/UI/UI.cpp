@@ -651,7 +651,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			ImGui::Separator();
 			ImGui::Spacing();
 
-			sliderHelper("Max Color Force", "Controls the acceleration threshold to use the secondary color", myParam.colorVisuals.maxColorAcc, 1.0f, 400.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Max Force Color", "Controls the acceleration threshold to use the secondary color", myParam.colorVisuals.maxColorAcc, 1.0f, 400.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Max Velocity Color", "Controls the max velocity used to map the colors in the velocity color mode", myParam.colorVisuals.maxVel, 10.0f, 10000.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Max Shockwave Accel", "Controls the acceleration threshold to map the particle color in Shockwave color mode", myParam.colorVisuals.ShockwaveMaxAcc, 1.0f, 120.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Max Pressure Color", "Controls the max pressure used to map the colors in the pressure color mode", myParam.colorVisuals.maxPress, 100.0f, 100000.0f, parametersSliderX, parametersSliderY, enabled);
@@ -738,7 +738,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			ImGui::Spacing();
 
 			sliderHelper("Time Scale", "Controls how fast time passes", myVar.timeStepMultiplier, 0.0f, 15.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Softening", "Controls the smoothness of the gravity forces", myVar.softening, 1.0f, 30.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Softening", "Controls the smoothness of the gravity forces", myVar.softening, 0.5f, 30.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Gravity Strength", "Controls how much particles attract eachother", myVar.gravityMultiplier, 0.0f, 100.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Black Hole Init Mass", "Controls the mass of black holes when spawned", myParam.particlesSpawning.heavyParticleWeightMultiplier, 0.005f, 15.0f, parametersSliderX, parametersSliderY, enabled);
 

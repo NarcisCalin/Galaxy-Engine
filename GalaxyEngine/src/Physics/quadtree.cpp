@@ -15,12 +15,14 @@ Quadtree::Quadtree(glm::vec2 pos, float size,
 	this->gridMass = 0.0f;
 	this->centerOfMass = { 0.0f, 0.0f };
 
-	if ((endIndex - startIndex) <= maxLeafParticles || size <= minLeafSize) {
+	if (((endIndex - startIndex) <= 16 /*Max Leaf Particles*/ && size <= 2.0f /*Max Non-Dense Size*/) || size <= 0.01f /*Min Leaf Size*/) {
 		computeLeafMass(pParticles);
 	}
 	else {
 		subGridMaker(const_cast<std::vector<ParticlePhysics>&>(pParticles), const_cast<std::vector<ParticleRendering>&>(rParticles));
 		computeInternalMass();
+
+		calculateNextNeighbor();
 	}
 }
 

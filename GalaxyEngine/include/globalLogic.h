@@ -60,6 +60,8 @@ void pinParticles();
 
 void buildKernel();
 
+void freeGPUMemory();
+
 void updateScene();
 
 void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myRayTracingTexture,

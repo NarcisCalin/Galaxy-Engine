@@ -5,19 +5,18 @@
 struct Quadtree {
 	glm::vec2 pos;
 	float size;
+
 	uint32_t startIndex;
 	uint32_t endIndex;
+
 	float gridMass;
 	glm::vec2 centerOfMass;
+	float gridTemp;
 
 	uint32_t subGrids[2][2] = { { UINT32_MAX, UINT32_MAX }, { UINT32_MAX, UINT32_MAX } };
+	uint32_t next = 0;
 
 	static std::vector<Quadtree> globalNodes;
-
-	uint32_t maxLeafParticles = 1;
-	float minLeafSize = 1.0f;
-
-	float gridTemp;
 
 	Quadtree(glm::vec2 pos, float size,
 		uint32_t startIndex, uint32_t endIndex,
@@ -33,7 +32,6 @@ struct Quadtree {
 	static void boundingBox(const std::vector<ParticlePhysics>& pParticles,
 		const std::vector<ParticleRendering>& rParticles);
 
-private:
 	inline void computeLeafMass(const std::vector<ParticlePhysics>& pParticles) {
 		gridMass = 0.0f;
 		gridTemp = 0.0f;
@@ -72,6 +70,25 @@ private:
 
 		if (gridMass > 0) {
 			centerOfMass /= gridMass;
+		}
+	}
+
+	inline void calculateNextNeighbor() {
+
+		next = 0;
+
+		for (int i = 0; i < 2; ++i) {
+			for (int j = 0; j < 2; ++j) {
+				uint32_t idx = subGrids[i][j];
+
+				if (idx == UINT32_MAX) continue;
+
+				next++;
+
+				Quadtree& child = globalNodes[idx];
+
+				next += child.next;
+			}
 		}
 	}
 };

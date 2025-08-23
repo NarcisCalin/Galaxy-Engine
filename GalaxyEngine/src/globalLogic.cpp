@@ -254,6 +254,67 @@ void exportObj() {
 	}
 }
 
+//const char* computeTest = R"(
+//#version 430
+//
+//layout(std430, binding = 0) buffer inPosVel { float posVel[]; };
+//
+//layout(std430, binding = 2) buffer inMass   { float mass[]; };
+//
+//layout(local_size_x = 256) in;
+//const int tileSize = 256;
+//
+//uniform float dt;
+//uniform int pCount;
+//
+//const float G = 6.67430e-11;
+//
+//shared vec2 tilePos[tileSize];
+//shared float tileMass[tileSize];
+//
+//void main() {
+//    uint idx = gl_GlobalInvocationID.x;
+//    if (idx >= pCount) return;
+//
+//    vec2 myPos = vec2(posVel[idx], posVel[idx + pCount]);
+//    vec2 myAcc = vec2(0.0f);
+//
+//    for (int tileStart = 0; tileStart < pCount; tileStart += tileSize) {
+//
+//        uint localIdx = gl_LocalInvocationID.x;
+//        uint globalTileIdx = tileStart + localIdx;
+//
+//        if (globalTileIdx < pCount) {
+//            tilePos[localIdx]  = vec2(posVel[globalTileIdx], posVel[globalTileIdx + pCount]);
+//            tileMass[localIdx] = mass[globalTileIdx];
+//        } else {
+//            tilePos[localIdx]  = vec2(0.0f);
+//            tileMass[localIdx] = 0.0f;
+//        }
+//
+//        barrier();
+//
+//int limit = min(tileSize, pCount - tileStart);
+//
+//        for (int j = 0; j < limit; j++) {
+//            uint otherIdx = tileStart + j;
+//            if (otherIdx == idx) continue;
+//
+//            vec2 d = tilePos[j] - myPos;
+//            float rSq  = dot(d, d) + 4.0f;
+//            float invR = inversesqrt(rSq);
+//            myAcc += G * tileMass[j] * d * invR * invR * invR;
+//        }
+//    }
+//
+//    posVel[idx + 2 * pCount] += dt * 1.5f * myAcc.x;
+//    posVel[idx + 3 * pCount] += dt * 1.5f * myAcc.y;
+//
+//    posVel[idx] += posVel[idx + 2 * pCount] * dt;
+//    posVel[idx + pCount] += posVel[idx + 3 * pCount] * dt;
+//}
+//)";
+
 const char* computeTest = R"(
 #version 430
 
@@ -261,81 +322,143 @@ layout(std430, binding = 0) buffer inPosVel { float posVel[]; };
 
 layout(std430, binding = 2) buffer inMass   { float mass[]; };
 
+layout(std430, binding = 3) buffer inGrid   { float grid[]; };
+
+layout(std430, binding = 4) buffer inNext   { uint next[]; };
+
+struct GridChildren {
+    uvec2 subGrids[2];
+};
+
+layout(std430, binding = 5) buffer inChildren {
+    GridChildren children[];
+};
+
+layout(std430, binding = 6) buffer inPIdx   { uint endStart[]; };
+
 layout(local_size_x = 256) in;
+const int tileSize = 256;
 
 uniform float dt;
+uniform float theta;
 uniform int pCount;
+uniform int nCount;
+uniform bool periodicBoundary;
+uniform vec2 domainSize;
+uniform float softening;
 
 const float G = 6.67430e-11;
-
-shared vec2 tilePos[256];
-shared float tileMass[256];
 
 void main() {
     uint idx = gl_GlobalInvocationID.x;
     if (idx >= pCount) return;
-
+    
     vec2 myPos = vec2(posVel[idx], posVel[idx + pCount]);
-    vec2 myAcc = vec2(0.0);
-
-    for (int tileStart = 0; tileStart < pCount; tileStart += 256) {
-
-        uint localIdx = gl_LocalInvocationID.x;
-        uint globalTileIdx = tileStart + localIdx;
-
-        if (globalTileIdx < pCount) {
-            tilePos[localIdx]  = vec2(posVel[globalTileIdx], posVel[globalTileIdx + pCount]);
-            tileMass[localIdx] = mass[globalTileIdx];
-        } else {
-            tilePos[localIdx]  = vec2(0.0);
-            tileMass[localIdx] = 0.0;
+    vec2 totalForce = vec2(0.0f);
+    uint gridIdx = 0;
+    
+    while (gridIdx < nCount) {
+        if (grid[gridIdx + 2 * nCount] <= 0.0f) {
+            gridIdx += next[gridIdx] + 1;
+            continue;
         }
-
-        barrier();
-
-        for (int j = 0; j < 256; j++) {
-            uint otherIdx = tileStart + j;
-            if (otherIdx >= pCount) break;
-
-            vec2 d = tilePos[j] - myPos;
-            float rSq  = dot(d, d) + 4.0;
-            float invR = inversesqrt(rSq);
-            myAcc += G * tileMass[j] * d * invR * invR * invR;
+        
+        vec2 d = vec2(grid[gridIdx], grid[gridIdx + nCount]) - myPos;
+        if (periodicBoundary) {
+            d.x -= domainSize.x * round(d.x / domainSize.x);
+            d.y -= domainSize.y * round(d.y / domainSize.y);
         }
+        
+        float distSq = dot(d, d) + softening * softening;
 
-        barrier();
+        bool subgridsEmpty = true;
+for (int i = 0; i < 2; ++i) {
+    uvec2 sg = children[gridIdx].subGrids[i];
+    for (int j = 0; j < 2; ++j) {
+        uint childIdx = sg[j];
+        if (childIdx != 0xFFFFFFFFu) {
+            subgridsEmpty = false;
+            break;
+        }
     }
+    if (!subgridsEmpty) break;
+}
+        
+        if (grid[gridIdx + 3 * nCount] * grid[gridIdx + 3 * nCount] < (theta * theta) * distSq || subgridsEmpty) {
+            float invDist = inversesqrt(distSq);
+            float forceMag = G * mass[idx] * grid[gridIdx + 2 * nCount] * invDist * invDist * invDist;
+            totalForce += d * forceMag;
+            gridIdx += next[gridIdx] + 1;
+        } else {
+            gridIdx++;
+        }
+    }
+    
+    posVel[idx + 4 * pCount] = totalForce.x / mass[idx];
+    posVel[idx + 5 * pCount] = totalForce.y / mass[idx];
 
-    posVel[idx + 2 * pCount] += dt * 1.5 * myAcc.x;
-    posVel[idx + 3 * pCount] += dt * 1.5 * myAcc.y;
-
+    posVel[idx + 2 * pCount] += dt * 1.5f * posVel[idx + 4 * pCount];
+    posVel[idx + 3 * pCount] += dt * 1.5f * posVel[idx + 5 * pCount];
     posVel[idx] += posVel[idx + 2 * pCount] * dt;
     posVel[idx + pCount] += posVel[idx + 3 * pCount] * dt;
+
+    if (periodicBoundary) {
+                if (posVel[idx] < 0.0f)
+					posVel[idx] += domainSize.x;
+				else if (posVel[idx] >= domainSize.x)
+					posVel[idx] -= domainSize.x;
+
+				if (posVel[idx + pCount] < 0.0f)
+					posVel[idx + pCount] += domainSize.y;
+				else if (posVel[idx + pCount] >= domainSize.y)
+					posVel[idx + pCount] -= domainSize.y;
+    }
 }
 )";
 
-GLuint ssboPosVel, ssboAcc, ssboMass;
+GLuint ssboPosVel, ssboAcc, ssboMass, ssboGrid, ssboGridNext, ssboGridChildren, ssboGridPIdx;
 
-size_t reserveSize = 2097152;
+size_t mb = 256;
+
+size_t reserveSize = (1024 * 1024 * mb) / sizeof(float);
 
 GLuint program;
+
+struct GridChildren {
+	uint32_t subGrids[2][2];
+};
 
 void buildKernel() {
 
 	glGenBuffers(1, &ssboPosVel);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboPosVel);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, reserveSize * sizeof(float), nullptr, GL_STREAM_DRAW);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, reserveSize * sizeof(float), nullptr, GL_STREAM_COPY);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssboPosVel);
-
-	/*glGenBuffers(1, &ssboAcc);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboAcc);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, reserveSize * sizeof(float), nullptr, GL_DYNAMIC_COPY);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssboAcc);*/
 
 	glGenBuffers(1, &ssboMass);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboMass);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, reserveSize * sizeof(float), nullptr, GL_DYNAMIC_DRAW);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, ssboMass);
+
+	glGenBuffers(1, &ssboGrid);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboGrid);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, reserveSize * sizeof(float), nullptr, GL_DYNAMIC_DRAW);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, ssboGrid);
+
+	glGenBuffers(1, &ssboGridNext);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboGridNext);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, reserveSize * sizeof(uint32_t), nullptr, GL_DYNAMIC_DRAW);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, ssboGridNext);
+
+	glGenBuffers(1, &ssboGridChildren);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboGridChildren);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, reserveSize * sizeof(GridChildren), nullptr, GL_DYNAMIC_DRAW);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, ssboGridChildren);
+
+	glGenBuffers(1, &ssboGridPIdx);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboGridPIdx);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, reserveSize * sizeof(uint32_t), nullptr, GL_DYNAMIC_DRAW);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, ssboGridPIdx);
 
 	program = glCreateProgram();
 	GLuint shader = glCreateShader(GL_COMPUTE_SHADER);
@@ -364,39 +487,111 @@ void buildKernel() {
 	glDeleteShader(shader);
 }
 
+int prevPAmount = 0;
+bool prevGPUFlag = false;
+
+std::vector<float> xyPosVel;
+/*std::vector<float> xyAcc(myParam.pParticles.size() * 2);*/
+std::vector<float> massVector;
+
+std::vector<float> gridParams;
+
+std::vector<uint32_t> gridNext;
+
+std::vector<GridChildren> gridChildrenVector;
+
+std::vector<uint32_t> gridPIndices;
+
 void gpuGravity() {
 	if (!myParam.pParticles.empty()) {
 
-		std::vector<float> xyPosVel(myParam.pParticles.size() * 4);
-		/*std::vector<float> xyAcc(myParam.pParticles.size() * 2);*/
-		std::vector<float> massVector(myParam.pParticles.size());
+		//if (prevPAmount != myParam.pParticles.size() || prevGPUFlag != myVar.isGPUEnabled) {
 
-		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+			xyPosVel.clear();
+			massVector.clear();
 
-			xyPosVel[i] = myParam.pParticles[i].pos.x;
-			xyPosVel[i + myParam.pParticles.size()] = myParam.pParticles[i].pos.y;
+			gridParams.clear();
 
-			xyPosVel[i + 2 * myParam.pParticles.size()] = myParam.pParticles[i].vel.x;
-			xyPosVel[i + 3 * myParam.pParticles.size()] = myParam.pParticles[i].vel.y;
+			gridNext.clear();
 
-			/*xyAcc[i] = 0.0f;
-			xyAcc[i + myParam.pParticles.size()] = 0.0f;*/
+			gridChildrenVector.clear();
 
-			massVector[i] = myParam.pParticles[i].mass;
-		}
+			gridPIndices.clear();
 
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboPosVel);
-		glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, xyPosVel.size() * sizeof(float), xyPosVel.data());
+			xyPosVel.resize(myParam.pParticles.size() * 6);
+			massVector.resize(myParam.pParticles.size());
 
-		/*glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboAcc);
-		glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, xyAcc.size() * sizeof(float), xyAcc.data());*/
+			gridParams.resize(Quadtree::globalNodes.size() * 4);
 
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboMass);
-		glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, massVector.size() * sizeof(float), massVector.data());
+			gridNext.resize(Quadtree::globalNodes.size());
+
+			gridChildrenVector.resize(Quadtree::globalNodes.size());
+
+			gridPIndices.resize(Quadtree::globalNodes.size() * 2);
+
+			for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+
+				xyPosVel[i] = myParam.pParticles[i].pos.x;
+				xyPosVel[i + myParam.pParticles.size()] = myParam.pParticles[i].pos.y;
+
+				xyPosVel[i + 2 * myParam.pParticles.size()] = myParam.pParticles[i].vel.x;
+				xyPosVel[i + 3 * myParam.pParticles.size()] = myParam.pParticles[i].vel.y;
+
+				xyPosVel[i + 4 * myParam.pParticles.size()] = 0.0f;
+				xyPosVel[i + 5 * myParam.pParticles.size()] = 0.0f;
+
+				massVector[i] = myParam.pParticles[i].mass;
+			}
+
+			for (size_t i = 0; i < Quadtree::globalNodes.size(); i++) {
+			
+				gridParams[i] = Quadtree::globalNodes[i].centerOfMass.x;
+				gridParams[i + Quadtree::globalNodes.size()] = Quadtree::globalNodes[i].centerOfMass.y;
+
+				gridParams[i + 2 * Quadtree::globalNodes.size()] = Quadtree::globalNodes[i].gridMass;
+
+				gridParams[i + 3 * Quadtree::globalNodes.size()] = Quadtree::globalNodes[i].size;
+
+				gridNext[i] = Quadtree::globalNodes[i].next;
+
+				GridChildren children;
+				memcpy(children.subGrids, Quadtree::globalNodes[i].subGrids, sizeof(uint32_t) * 4);
+				gridChildrenVector[i] = children;
+
+				gridPIndices[i] = Quadtree::globalNodes[i].startIndex;
+				gridPIndices[i + Quadtree::globalNodes.size()] = Quadtree::globalNodes[i].endIndex;
+			}
+
+			glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboPosVel);
+			glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, xyPosVel.size() * sizeof(float), xyPosVel.data());
+
+			glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboMass);
+			glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, massVector.size() * sizeof(float), massVector.data());
+
+			glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboGrid);
+			glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, gridParams.size() * sizeof(float), gridParams.data());
+
+			glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboGridNext);
+			glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, gridNext.size() * sizeof(uint32_t), gridNext.data());
+
+			glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboGridChildren);
+			glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, gridChildrenVector.size() * sizeof(GridChildren), gridChildrenVector.data());
+
+			glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboGridPIdx);
+			glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, gridPIndices.size() * sizeof(uint32_t), gridPIndices.data());
+
+			prevPAmount = myParam.pParticles.size();
+			prevGPUFlag = myVar.isGPUEnabled;
+	//	}
 
 		glUseProgram(program);
 		glUniform1f(glGetUniformLocation(program, "dt"), myVar.timeFactor);
 		glUniform1i(glGetUniformLocation(program, "pCount"), static_cast<int>(myParam.pParticles.size()));
+		glUniform1i(glGetUniformLocation(program, "nCount"), static_cast<int>(Quadtree::globalNodes.size()));
+		glUniform1i(glGetUniformLocation(program, "periodicBoundary"), myVar.isPeriodicBoundaryEnabled);
+		glUniform2f(glGetUniformLocation(program, "domainSize"), myVar.domainSize.x, myVar.domainSize.y);
+		glUniform1f(glGetUniformLocation(program, "theta"), myVar.theta);
+		glUniform1f(glGetUniformLocation(program, "softening"), myVar.softening);
 
 		GLuint numGroups = (myParam.pParticles.size() + 255) / 256;
 		glDispatchCompute(numGroups, 1, 1);
@@ -412,11 +607,43 @@ void gpuGravity() {
 
 			myParam.pParticles[i].vel.x = ptrPos[i + 2 * myParam.pParticles.size()];
 			myParam.pParticles[i].vel.y = ptrPos[i + 3 * myParam.pParticles.size()];
+
+			myParam.pParticles[i].acc.x = ptrPos[i + 4 * myParam.pParticles.size()];
+			myParam.pParticles[i].acc.y = ptrPos[i + 5 * myParam.pParticles.size()];
 		}
 
 		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 	}
+	else {
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboPosVel);
+		glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, prevPAmount * 4 * sizeof(float), nullptr);
+
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboMass);
+		glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, prevPAmount * sizeof(float), nullptr);
+
+		prevPAmount = 0;
+	}
 }
+
+void freeGPUMemory() {
+
+	glDeleteBuffers(1, &ssboPosVel);
+	glDeleteBuffers(1, &ssboMass);
+
+	glDeleteBuffers(1, &ssboGrid);
+	glDeleteBuffers(1, &ssboGridNext);
+	glDeleteBuffers(1, &ssboGridChildren);
+	glDeleteBuffers(1, &ssboGridPIdx);
+
+	// glDeleteBuffers(1, &ssboAcc);
+
+	glDeleteProgram(program);
+}
+bool test = true;
+uint32_t gridRootIndex;
+size_t prevP = 0;
+uint32_t existingNodes = 0;
+uint32_t prevExistingNodes = 0;
 
 void updateScene() {
 
@@ -429,8 +656,6 @@ void updateScene() {
 		lighting.rayLogic(myVar, myParam);
 	}
 
-	uint32_t gridRootIndex = -1;
-
 	myVar.G = 6.674e-11 * myVar.gravityMultiplier;
 
 	if (IO::shortcutPress(KEY_SPACE)) {
@@ -442,17 +667,54 @@ void updateScene() {
 		gridRootIndex = 0;
 	}
 
+	//if (myVar.timeFactor != 0.0f) {
+	//	Quadtree::boundingBox(myParam.pParticles, myParam.rParticles);
+	//	gridRootIndex = 0;
+
+	//	prevP = myParam.pParticles.size();
+
+	//	prevExistingNodes = 0;
+	//}
+
+	//bool subdivide = true;
+
+	//while (subdivide) {
+	//	existingNodes = Quadtree::globalNodes.size();
+
+	//	subdivide = false;
+
+	//	for (uint32_t i = prevExistingNodes; i < existingNodes; i++) {
+	//		Quadtree& q = Quadtree::globalNodes[i];
+
+	//		if (((q.endIndex - q.startIndex) <= 16 /*Max Leaf Particles*/ && q.size <= 2.0f /*Max Non-Dense Size*/) || q.size <= 0.01f /*Min Leaf Size*/) {
+	//			q.computeLeafMass(myParam.pParticles);
+	//		}
+	//		else {
+	//			q.subGridMaker(const_cast<std::vector<ParticlePhysics>&>(myParam.pParticles), const_cast<std::vector<ParticleRendering>&>(myParam.rParticles));
+	//			q.computeInternalMass();
+
+	//			q.calculateNextNeighbor();
+
+	//			subdivide = true;
+	//		}
+	//	}
+
+	//	prevExistingNodes = existingNodes;
+	//}
+
 	Quadtree& rootNode = Quadtree::globalNodes[gridRootIndex];
+
+	myVar.gridExists = gridRootIndex != -1 && !Quadtree::globalNodes.empty();
 
 	myVar.halfDomainWidth = myVar.domainSize.x * 0.5f;
 	myVar.halfDomainHeight = myVar.domainSize.y * 0.5f;
 
 	myVar.timeFactor = myVar.fixedDeltaTime * myVar.timeStepMultiplier * static_cast<float>(myVar.isTimePlaying);
 
-	//if (myVar.timeFactor == 0) {
-	//	myParam.morton.computeMortonKeys(myParam.pParticles, grid->boundingBoxPos, grid->boundingBoxSize);
-	//	myParam.morton.sortParticlesByMortonKey(myParam.pParticles, myParam.rParticles);
-	//}
+	/*if (myVar.timeFactor >= 0) {
+		myParam.morton.computeMortonKeys(myParam.pParticles, rootNode.boundingBoxPos, rootNode.boundingBoxSize);
+		myParam.morton.sortParticlesByMortonKey(myParam.pParticles, myParam.rParticles);
+	}*/
 
 	if (myVar.drawQuadtree) {
 		for (uint32_t i = 0; i < Quadtree::globalNodes.size(); i++) {
@@ -465,7 +727,7 @@ void updateScene() {
 				DrawCircleV({ q.centerOfMass.x, q.centerOfMass.y }, 2.0f, { 180,50,50,128 });
 			}
 
-			//DrawText(TextFormat("%i", i), q.pos.x + q.size * 0.5f, q.pos.y + q.size * 0.5f, 5.0f, {255, 255, 255, 128});
+			DrawText(TextFormat("%i", q.next), q.pos.x + q.size * 0.5f, q.pos.y + q.size * 0.5f, 5.0f, { 255, 255, 255, 128 });
 		}
 	}
 
@@ -510,7 +772,7 @@ void updateScene() {
 		myParam.neighborSearch.neighborSearchHash(myParam.pParticles, myParam.rParticles);
 	}
 
-	myParam.particlesSpawning.particlesInitialConditions(&rootNode, physics, myVar, myParam);
+	myParam.particlesSpawning.particlesInitialConditions(physics, myVar, myParam);
 
 	if (myVar.constraintsEnabled && !myVar.isBrushDrawing) {
 		physics.createConstraints(myParam.pParticles, myParam.rParticles, myVar.constraintAfterDrawingFlag, myVar);
@@ -523,9 +785,7 @@ void updateScene() {
 	copyPaste.copyPasteParticles(myVar, myParam, physics);
 	copyPaste.copyPasteOptics(myParam, lighting);
 
-	myVar.gridExists = gridRootIndex != -1 && !Quadtree::globalNodes.empty();
-
-	if (myVar.timeFactor > 0.0f && myVar.gridExists) {
+	if ((myVar.timeFactor > 0.0f && myVar.gridExists) || myVar.isGPUEnabled) {
 
 		if (!myVar.isGPUEnabled) {
 			for (size_t i = 0; i < myParam.pParticles.size(); i++) {
@@ -539,7 +799,7 @@ void updateScene() {
 					continue;
 				}
 
-				glm::vec2 netForce = physics.calculateForceFromGrid(rootNode, myParam.pParticles, myVar, myParam.pParticles[i]);
+				glm::vec2 netForce = physics.calculateForceFromGrid(myParam.pParticles, myVar, myParam.pParticles[i]);
 
 				myParam.pParticles[i].acc = netForce / myParam.pParticles[i].mass;
 			}

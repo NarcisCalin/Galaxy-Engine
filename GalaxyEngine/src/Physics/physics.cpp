@@ -1,69 +1,77 @@
 #include "Physics/physics.h"
 
-glm::vec2 Physics::calculateForceFromGrid(const Quadtree& grid, std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar, ParticlePhysics& pParticle) {
+glm::vec2 Physics::calculateForceFromGrid(std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar, ParticlePhysics& pParticle) {
+	
 	glm::vec2 totalForce = { 0.0f, 0.0f };
 
-	if (grid.gridMass <= 0.0f)
-		return totalForce;
+	uint32_t gridIdx = 0;
+	const uint32_t nodeCount = static_cast<uint32_t>(Quadtree::globalNodes.size());
 
-	glm::vec2 d = grid.centerOfMass - pParticle.pos;
+	while (gridIdx < nodeCount) {
+		Quadtree& grid = Quadtree::globalNodes[gridIdx];
 
-	if (myVar.isPeriodicBoundaryEnabled) {
-		d.x -= myVar.domainSize.x * ((d.x > myVar.halfDomainWidth) - (d.x < -myVar.halfDomainWidth));
-		d.y -= myVar.domainSize.y * ((d.y > myVar.halfDomainHeight) - (d.y < -myVar.halfDomainHeight));
-	}
-
-	float distanceSq = d.x * d.x + d.y * d.y + myVar.softening * myVar.softening;
-
-	bool isSubgridsEmty = true;
-
-	for (int i = 0; i < 2; ++i) {
-		for (int j = 0; j < 2; ++j) {
-			uint32_t idx = grid.subGrids[i][j];
-
-			if (idx != UINT32_MAX) {
-				isSubgridsEmty = false;
-			}
-		}
-	}
-
-	if ((grid.size * grid.size < (myVar.theta * myVar.theta) * distanceSq) || isSubgridsEmty) {
-		if ((grid.endIndex - grid.startIndex) == 1 &&
-			fabs(pParticles[grid.startIndex].pos.x - pParticle.pos.x) < 0.001f &&
-			fabs(pParticles[grid.startIndex].pos.y - pParticle.pos.y) < 0.001f) {
-
-			return totalForce;
+		if (grid.gridMass <= 0.0f) {
+			gridIdx += grid.next + 1;
+			continue;
 		}
 
-		float invDistance = 1.0f / sqrt(distanceSq);
-		float forceMagnitude = static_cast<float>(myVar.G) * pParticle.mass * grid.gridMass * invDistance * invDistance * invDistance;
-		totalForce = d * forceMagnitude;
+		glm::vec2 d = grid.centerOfMass - pParticle.pos;
 
-		// Heat transfer
-		if (myVar.isTempEnabled) {
-			float gridAverageTemp = grid.gridTemp / (grid.endIndex - grid.startIndex);
-
-			float temperatureDifference = gridAverageTemp - pParticle.temp;
-
-			float distance = sqrt(distanceSq);
-			float heatTransfer = myVar.globalHeatConductivity * temperatureDifference / distance;
-
-			pParticle.temp += heatTransfer * myVar.timeFactor;
+		if (myVar.isPeriodicBoundaryEnabled) {
+			d.x -= myVar.domainSize.x * ((d.x > myVar.halfDomainWidth) - (d.x < -myVar.halfDomainWidth));
+			d.y -= myVar.domainSize.y * ((d.y > myVar.halfDomainHeight) - (d.y < -myVar.halfDomainHeight));
 		}
-	}
-	else {
+
+		float distanceSq = d.x * d.x + d.y * d.y + myVar.softening * myVar.softening;
+
+		bool isSubgridsEmty = true;
 		for (int i = 0; i < 2; ++i) {
 			for (int j = 0; j < 2; ++j) {
 				uint32_t idx = grid.subGrids[i][j];
-
-				if (idx == UINT32_MAX) continue;
-
-				glm::vec2 childForce = calculateForceFromGrid(Quadtree::globalNodes[idx], pParticles, myVar, pParticle);
-				totalForce += childForce;
-
+				if (idx != UINT32_MAX) {
+					isSubgridsEmty = false;
+					break;
+				}
 			}
+			if (!isSubgridsEmty) break;
+		}
+
+		if ((grid.size * grid.size < (myVar.theta * myVar.theta) * distanceSq) || isSubgridsEmty) {
+
+			if ((grid.endIndex - grid.startIndex) == 1 &&
+				fabs(pParticles[grid.startIndex].pos.x - pParticle.pos.x) < 0.001f &&
+				fabs(pParticles[grid.startIndex].pos.y - pParticle.pos.y) < 0.001f) {
+
+				gridIdx += grid.next + 1;
+				continue;
+			}
+
+			float invDistance = 1.0f / sqrt(distanceSq);
+			float forceMagnitude = static_cast<float>(myVar.G) * pParticle.mass * grid.gridMass
+				* invDistance * invDistance * invDistance;
+			totalForce += d * forceMagnitude;
+
+			if (myVar.isTempEnabled) {
+				uint32_t count = grid.endIndex - grid.startIndex;
+				if (count > 0) {
+					float gridAverageTemp = grid.gridTemp / static_cast<float>(count);
+					float temperatureDifference = gridAverageTemp - pParticle.temp;
+
+					float distance = sqrt(distanceSq);
+					if (distance > 1e-8f) {
+						float heatTransfer = myVar.globalHeatConductivity * temperatureDifference / distance;
+						pParticle.temp += heatTransfer * myVar.timeFactor;
+					}
+				}
+			}
+
+			gridIdx += grid.next + 1;
+		}
+		else {
+			++gridIdx;
 		}
 	}
+
 	return totalForce;
 }
 
@@ -561,12 +569,12 @@ void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vecto
 			pParticle.pos += pParticle.vel * myVar.timeFactor;
 
 			if (!sphGround) {
-				if (pParticle.pos.x < 0)
+				if (pParticle.pos.x < 0.0f)
 					pParticle.pos.x += myVar.domainSize.x;
 				else if (pParticle.pos.x >= myVar.domainSize.x)
 					pParticle.pos.x -= myVar.domainSize.x;
 
-				if (pParticle.pos.y < 0)
+				if (pParticle.pos.y < 0.0f)
 					pParticle.pos.y += myVar.domainSize.y;
 				else if (pParticle.pos.y >= myVar.domainSize.y)
 					pParticle.pos.y -= myVar.domainSize.y;
