@@ -2,6 +2,29 @@
 
 #include "Particles/particle.h"
 
+// --- UNUSED QUADTREE FOR MORTON KEYS VERSION --- //
+//struct Node {
+//	glm::vec2 pos;
+//	float size;
+//	float mass;
+//	glm::vec2 CoM;
+//	uint32_t next;
+//	int level;
+//
+//	Node(glm::vec2 pos, float size, float mass, glm::vec2 CoM, uint32_t next, int level) {
+//		this->pos = pos;
+//		this->size = size;
+//		this->mass = mass;
+//		this->CoM = CoM;
+//		this->next = next;
+//		this->level = level;
+//	}
+//};
+//
+//struct TestTree {
+//	static std::vector<Node> nodesTest;
+//};
+
 struct Quadtree {
 	glm::vec2 pos;
 	float size;
@@ -18,19 +41,21 @@ struct Quadtree {
 
 	static std::vector<Quadtree> globalNodes;
 
+	static std::vector<Quadtree> globalNodes1;
+	static std::vector<Quadtree> globalNodes2;
+	static std::vector<Quadtree> globalNodes3;
+	static std::vector<Quadtree> globalNodes4;
+
 	Quadtree(glm::vec2 pos, float size,
 		uint32_t startIndex, uint32_t endIndex,
-		const std::vector<ParticlePhysics>& pParticles, const std::vector<ParticleRendering>& rParticles);
+		std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles);
 
 	Quadtree() = default;
 
 	void subGridMaker(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles);
 
-	static glm::vec2 boundingBoxPos;
-	static float boundingBoxSize;
-
-	static void boundingBox(const std::vector<ParticlePhysics>& pParticles,
-		const std::vector<ParticleRendering>& rParticles);
+	static void root(std::vector<ParticlePhysics>& pParticles,
+		std::vector<ParticleRendering>& rParticles, glm::vec3& boundingBox);
 
 	inline void computeLeafMass(const std::vector<ParticlePhysics>& pParticles) {
 		gridMass = 0.0f;

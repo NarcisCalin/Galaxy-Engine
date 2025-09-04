@@ -93,6 +93,7 @@ void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar,
 	paramIO(filename, out, "SPHRadiusMult", sph.radiusMultiplier);
 	paramIO(filename, out, "SPHMass", sph.mass);
 	paramIO(filename, out, "SPHViscosity", sph.viscosity);
+	paramIO(filename, out, "SPHStiffness", sph.stiffMultiplier);
 	paramIO(filename, out, "SPHCohesion", sph.cohesionCoefficient);
 	paramIO(filename, out, "SPHGround", myVar.sphGround);
 	paramIO(filename, out, "SPHDelta", sph.delta);

@@ -4,9 +4,14 @@
 
 std::vector<Quadtree> Quadtree::globalNodes;
 
+std::vector<Quadtree> Quadtree::globalNodes1;
+std::vector<Quadtree> Quadtree::globalNodes2;
+std::vector<Quadtree> Quadtree::globalNodes3;
+std::vector<Quadtree> Quadtree::globalNodes4;
+
 Quadtree::Quadtree(glm::vec2 pos, float size,
 	uint32_t startIndex, uint32_t endIndex,
-	const std::vector<ParticlePhysics>& pParticles, const std::vector<ParticleRendering>& rParticles) {
+	std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles) {
 
 	this->pos = pos;
 	this->size = size;
@@ -19,15 +24,15 @@ Quadtree::Quadtree(glm::vec2 pos, float size,
 		computeLeafMass(pParticles);
 	}
 	else {
-		subGridMaker(const_cast<std::vector<ParticlePhysics>&>(pParticles), const_cast<std::vector<ParticleRendering>&>(rParticles));
+		subGridMaker(pParticles, rParticles);
 		computeInternalMass();
 
 		calculateNextNeighbor();
 	}
 }
 
-template<typename T, typename U, typename Predicate>
-uint32_t dualPartition(std::vector<T>& pParticlesVector, std::vector<U>& rParticlesVector, uint32_t begin, uint32_t end, Predicate predicate) {
+template<typename Predicate>
+uint32_t dualPartition(std::vector<ParticlePhysics>& pParticlesVector, std::vector<ParticleRendering>& rParticlesVector, uint32_t begin, uint32_t end, Predicate predicate) {
 	uint32_t i = begin;
 	for (uint32_t j = begin; j < end; ++j) {
 		if (predicate(pParticlesVector[j])) {
@@ -90,25 +95,8 @@ void Quadtree::subGridMaker(std::vector<ParticlePhysics>& pParticles, std::vecto
 	}
 }
 
-glm::vec2 Quadtree::boundingBoxPos = { 0.0f, 0.0f };
-float Quadtree::boundingBoxSize = 0.0f;
-
-void Quadtree::boundingBox(const std::vector<ParticlePhysics>& pParticles,
-	const std::vector<ParticleRendering>& rParticles) {
-
-	glm::vec2 min = glm::vec2(std::numeric_limits<float>::max());
-	glm::vec2 max = glm::vec2(std::numeric_limits<float>::lowest());
-
-	for (const ParticlePhysics& particle : pParticles) {
-		min = glm::min(min, particle.pos);
-		max = glm::max(max, particle.pos);
-	}
-
-	boundingBoxSize = glm::max(max.x - min.x, max.y - min.y);
-
-	glm::vec2 center = (min + max) * 0.5f;
-
-	boundingBoxPos = center - boundingBoxSize * 0.5f;
+void Quadtree::root(std::vector<ParticlePhysics>& pParticles,
+	std::vector<ParticleRendering>& rParticles, glm::vec3& boundingBox) {
 
 	globalNodes.clear();
 
@@ -122,7 +110,7 @@ void Quadtree::boundingBox(const std::vector<ParticlePhysics>& pParticles,
 	globalNodes.emplace_back();
 
 	globalNodes[0] = Quadtree(
-		boundingBoxPos, boundingBoxSize,
+		{ boundingBox.x, boundingBox.y }, boundingBox.z,
 		0, pParticles.size(),
 		pParticles, rParticles
 	);

@@ -3,11 +3,11 @@
 #include "Particles/particle.h"
 
 struct Morton {
-	uint32_t scaleToGrid(float pos, float minVal, float maxVal = 1023);
+	uint64_t scaleToGrid(float pos, float minVal, float maxVal = 3840);
 
-	uint32_t spreadBits(uint32_t x);
+	uint64_t spreadBits(uint64_t x);
 
-	uint32_t morton2D(uint32_t x, uint32_t y);
+	uint64_t morton2D(uint64_t x, uint64_t y);
 
 	void computeMortonKeys(std::vector<ParticlePhysics>& pParticles, glm::vec2& minPosition, float& size);
 

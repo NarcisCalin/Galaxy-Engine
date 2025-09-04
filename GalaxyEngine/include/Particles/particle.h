@@ -29,7 +29,7 @@ struct ParticlePhysics {
 	float temp;
 	float ke;
 	float prevKe;
-	uint32_t mortonKey;
+	uint64_t mortonKey;
 	uint32_t id;
 	std::vector<uint32_t> neighborIds;
 

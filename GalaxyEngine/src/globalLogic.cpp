@@ -507,82 +507,82 @@ void gpuGravity() {
 
 		//if (prevPAmount != myParam.pParticles.size() || prevGPUFlag != myVar.isGPUEnabled) {
 
-			xyPosVel.clear();
-			massVector.clear();
+		xyPosVel.clear();
+		massVector.clear();
 
-			gridParams.clear();
+		gridParams.clear();
 
-			gridNext.clear();
+		gridNext.clear();
 
-			gridChildrenVector.clear();
+		gridChildrenVector.clear();
 
-			gridPIndices.clear();
+		gridPIndices.clear();
 
-			xyPosVel.resize(myParam.pParticles.size() * 6);
-			massVector.resize(myParam.pParticles.size());
+		xyPosVel.resize(myParam.pParticles.size() * 6);
+		massVector.resize(myParam.pParticles.size());
 
-			gridParams.resize(Quadtree::globalNodes.size() * 4);
+		gridParams.resize(Quadtree::globalNodes.size() * 4);
 
-			gridNext.resize(Quadtree::globalNodes.size());
+		gridNext.resize(Quadtree::globalNodes.size());
 
-			gridChildrenVector.resize(Quadtree::globalNodes.size());
+		gridChildrenVector.resize(Quadtree::globalNodes.size());
 
-			gridPIndices.resize(Quadtree::globalNodes.size() * 2);
+		gridPIndices.resize(Quadtree::globalNodes.size() * 2);
 
-			for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 
-				xyPosVel[i] = myParam.pParticles[i].pos.x;
-				xyPosVel[i + myParam.pParticles.size()] = myParam.pParticles[i].pos.y;
+			xyPosVel[i] = myParam.pParticles[i].pos.x;
+			xyPosVel[i + myParam.pParticles.size()] = myParam.pParticles[i].pos.y;
 
-				xyPosVel[i + 2 * myParam.pParticles.size()] = myParam.pParticles[i].vel.x;
-				xyPosVel[i + 3 * myParam.pParticles.size()] = myParam.pParticles[i].vel.y;
+			xyPosVel[i + 2 * myParam.pParticles.size()] = myParam.pParticles[i].vel.x;
+			xyPosVel[i + 3 * myParam.pParticles.size()] = myParam.pParticles[i].vel.y;
 
-				xyPosVel[i + 4 * myParam.pParticles.size()] = 0.0f;
-				xyPosVel[i + 5 * myParam.pParticles.size()] = 0.0f;
+			xyPosVel[i + 4 * myParam.pParticles.size()] = 0.0f;
+			xyPosVel[i + 5 * myParam.pParticles.size()] = 0.0f;
 
-				massVector[i] = myParam.pParticles[i].mass;
-			}
+			massVector[i] = myParam.pParticles[i].mass;
+		}
 
-			for (size_t i = 0; i < Quadtree::globalNodes.size(); i++) {
-			
-				gridParams[i] = Quadtree::globalNodes[i].centerOfMass.x;
-				gridParams[i + Quadtree::globalNodes.size()] = Quadtree::globalNodes[i].centerOfMass.y;
+		for (size_t i = 0; i < Quadtree::globalNodes.size(); i++) {
 
-				gridParams[i + 2 * Quadtree::globalNodes.size()] = Quadtree::globalNodes[i].gridMass;
+			gridParams[i] = Quadtree::globalNodes[i].centerOfMass.x;
+			gridParams[i + Quadtree::globalNodes.size()] = Quadtree::globalNodes[i].centerOfMass.y;
 
-				gridParams[i + 3 * Quadtree::globalNodes.size()] = Quadtree::globalNodes[i].size;
+			gridParams[i + 2 * Quadtree::globalNodes.size()] = Quadtree::globalNodes[i].gridMass;
 
-				gridNext[i] = Quadtree::globalNodes[i].next;
+			gridParams[i + 3 * Quadtree::globalNodes.size()] = Quadtree::globalNodes[i].size;
 
-				GridChildren children;
-				memcpy(children.subGrids, Quadtree::globalNodes[i].subGrids, sizeof(uint32_t) * 4);
-				gridChildrenVector[i] = children;
+			gridNext[i] = Quadtree::globalNodes[i].next;
 
-				gridPIndices[i] = Quadtree::globalNodes[i].startIndex;
-				gridPIndices[i + Quadtree::globalNodes.size()] = Quadtree::globalNodes[i].endIndex;
-			}
+			GridChildren children;
+			memcpy(children.subGrids, Quadtree::globalNodes[i].subGrids, sizeof(uint32_t) * 4);
+			gridChildrenVector[i] = children;
 
-			glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboPosVel);
-			glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, xyPosVel.size() * sizeof(float), xyPosVel.data());
+			gridPIndices[i] = Quadtree::globalNodes[i].startIndex;
+			gridPIndices[i + Quadtree::globalNodes.size()] = Quadtree::globalNodes[i].endIndex;
+		}
 
-			glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboMass);
-			glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, massVector.size() * sizeof(float), massVector.data());
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboPosVel);
+		glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, xyPosVel.size() * sizeof(float), xyPosVel.data());
 
-			glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboGrid);
-			glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, gridParams.size() * sizeof(float), gridParams.data());
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboMass);
+		glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, massVector.size() * sizeof(float), massVector.data());
 
-			glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboGridNext);
-			glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, gridNext.size() * sizeof(uint32_t), gridNext.data());
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboGrid);
+		glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, gridParams.size() * sizeof(float), gridParams.data());
 
-			glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboGridChildren);
-			glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, gridChildrenVector.size() * sizeof(GridChildren), gridChildrenVector.data());
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboGridNext);
+		glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, gridNext.size() * sizeof(uint32_t), gridNext.data());
 
-			glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboGridPIdx);
-			glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, gridPIndices.size() * sizeof(uint32_t), gridPIndices.data());
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboGridChildren);
+		glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, gridChildrenVector.size() * sizeof(GridChildren), gridChildrenVector.data());
 
-			prevPAmount = myParam.pParticles.size();
-			prevGPUFlag = myVar.isGPUEnabled;
-	//	}
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboGridPIdx);
+		glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, gridPIndices.size() * sizeof(uint32_t), gridPIndices.data());
+
+		prevPAmount = myParam.pParticles.size();
+		prevGPUFlag = myVar.isGPUEnabled;
+		//	}
 
 		glUseProgram(program);
 		glUniform1f(glGetUniformLocation(program, "dt"), myVar.timeFactor);
@@ -639,11 +639,323 @@ void freeGPUMemory() {
 
 	glDeleteProgram(program);
 }
-bool test = true;
+
+// -------- This is an unused quadtree creation method I made for learning purposes. It builds the quadtree from Morton keys -------- //
+
+//struct Barrier {
+//	uint32_t idx;
+//	int level;
+//
+//	Barrier(uint32_t idx, int level) {
+//		this->idx = idx;
+//		this->level = level;
+//	}
+//};
+//
+//struct MortonData {
+//	uint64_t key;
+//	float mass;
+//	glm::vec2 pos;
+//};
+//
+//std::vector<Node> TestTree::nodesTest;
+//
+//void mortonToQuadtree() {
+//
+//	std::vector<MortonData> compactedMorton;
+//
+//	float currentKeyMass = 0.0f;
+//	uint32_t duplicateAmount = 0;
+//
+//	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+//
+//		if (!compactedMorton.empty()) {
+//			if (myParam.pParticles[i].mortonKey != compactedMorton.back().key) {
+//
+//				if (duplicateAmount > 0) {
+//					compactedMorton.back().mass += currentKeyMass;
+//				}
+//
+//				compactedMorton.push_back({ myParam.pParticles[i].mortonKey, myParam.pParticles[i].mass, myParam.pParticles[i].pos });
+//
+//				currentKeyMass = 0.0f;
+//				duplicateAmount = 0;
+//			}
+//			else {
+//				duplicateAmount++;
+//				currentKeyMass += myParam.pParticles[i].mass;
+//			}
+//		}
+//		else {
+//			compactedMorton.push_back({ myParam.pParticles[i].mortonKey, myParam.pParticles[i].mass, myParam.pParticles[i].pos });
+//		}
+//	}
+//
+//	int currentP = 0;
+//
+//	int start = 0;
+//	int end = compactedMorton.size();
+//
+//	int level = 0;
+//
+//	int totalBits = 18; // 18 bits per axis
+//
+//	std::vector<Barrier> barriers;
+//
+//	glm::vec2 min = glm::vec2(std::numeric_limits<float>::max());
+//	glm::vec2 max = glm::vec2(std::numeric_limits<float>::lowest());
+//
+//	for (const ParticlePhysics& particle : myParam.pParticles) {
+//		min = glm::min(min, particle.pos);
+//		max = glm::max(max, particle.pos);
+//	}
+//
+//	float boundingBoxSize = glm::max(max.x - min.x, max.y - min.y);
+//
+//	glm::vec2 center = (min + max) * 0.5f;
+//
+//	glm::vec2 boundingBoxPos = center - boundingBoxSize * 0.5f;
+//
+//	TestTree::nodesTest.clear();
+//
+//	TestTree::nodesTest.emplace_back(Node({ boundingBoxPos.x, boundingBoxPos.y }, boundingBoxSize, 0.0f, { 0.0f, 0.0f }, 0, 0));
+//
+//	while (currentP < compactedMorton.size()) {
+//
+//		float nodeMass = 0.0f;
+//		glm::vec2 nodeCoM = { 0.0f, 0.0f };
+//
+//		for (size_t i = start; i < end; i++) {
+//
+//			nodeMass += compactedMorton[i].mass;
+//
+//			nodeCoM += compactedMorton[i].pos * compactedMorton[i].mass;
+//
+//			if (i + 1 >= compactedMorton.size()) {
+//
+//				nodeCoM /= nodeMass;
+//
+//				Node node = { TestTree::nodesTest[0].pos, TestTree::nodesTest[0].size, nodeMass, nodeCoM, 1, level + 1};
+//
+//				for (int j = 0; j < level + 1; j++) {
+//
+//					int internalShift = (totalBits - 1 - j) * 2;
+//					bool lr = (compactedMorton[start].key >> internalShift) & 1u;
+//					bool ud = (compactedMorton[start].key >> (internalShift + 1)) & 1u;
+//
+//					node.pos.x = node.pos.x + (lr ? (node.size * 0.5f) : 0.0f);
+//					node.pos.y = node.pos.y + (ud ? (node.size * 0.5f) : 0.0f);
+//
+//					node.size *= 0.5f;
+//				}
+//
+//				TestTree::nodesTest.push_back(node);
+//
+//				TestTree::nodesTest[0].mass += nodeMass;
+//				TestTree::nodesTest[0].CoM += nodeCoM;
+//
+//				nodeMass = 0.0f;
+//				nodeCoM = { 0.0f, 0.0f };
+//
+//				level++;
+//				currentP++;
+//				end = compactedMorton.size();
+//				break;
+//			}
+//
+//			if (!barriers.empty() && barriers.back().idx == i + 1) {
+//
+//				nodeCoM /= nodeMass;
+//
+//				uint32_t next = end - start;
+//
+//				bool isLeaf = next == 1 ? 1 : 0;
+//
+//				Node node = { TestTree::nodesTest[0].pos, TestTree::nodesTest[0].size, nodeMass, nodeCoM, next, level + 1};
+//
+//				for (int j = 0; j < level + 1; j++) {
+//
+//					int internalShift = (totalBits - 1 - j) * 2;
+//					bool lr = (compactedMorton[start].key >> internalShift) & 1u;
+//					bool ud = (compactedMorton[start].key >> (internalShift + 1)) & 1u;
+//
+//					node.pos.x = node.pos.x + (lr ? (node.size * 0.5f) : 0.0f);
+//					node.pos.y = node.pos.y + (ud ? (node.size * 0.5f) : 0.0f);
+//
+//					node.size *= 0.5f;
+//				}
+//
+//				TestTree::nodesTest.push_back(node);
+//
+//				TestTree::nodesTest[0].mass += nodeMass;
+//				TestTree::nodesTest[0].CoM += nodeCoM;
+//
+//				nodeMass = 0.0f;
+//				nodeCoM = { 0.0f, 0.0f };
+//
+//				int prevShift = (totalBits - 1 - level) * 2;
+//
+//				unsigned int bits1 = (compactedMorton[i].key >> prevShift) & 0x3FFFFu;
+//				unsigned int bits2 = (compactedMorton[i - 1].key >> prevShift) & 0x3FFFFu;
+//
+//				if (bits1 == bits2) {
+//					level++;
+//
+//					currentP = start;
+//
+//					end = barriers.back().idx;
+//
+//					break;
+//				}
+//
+//				level = barriers.back().level;
+//
+//				if (barriers.size() > 1) {
+//					end = barriers.at(barriers.size() - 2).idx;
+//				}
+//				else {
+//					end = compactedMorton.size();
+//				}
+//
+//				currentP = barriers.back().idx;
+//
+//				start = barriers.back().idx;
+//
+//				TestTree::nodesTest[barriers.back().idx].next = TestTree::nodesTest.size();
+//
+//				barriers.pop_back();
+//
+//				break;
+//			}
+//
+//			int shift = (totalBits - 1 - level) * 2;
+//
+//			unsigned int bits1 = (compactedMorton[i].key >> shift) & 0b11u;
+//			unsigned int bits2 = (compactedMorton[i + 1].key >> shift) & 0b11u;
+//
+//			if (bits1 != bits2 && i + 1 != end) {
+//
+//				nodeCoM /= nodeMass;
+//
+//				Node node = { TestTree::nodesTest[0].pos, TestTree::nodesTest[0].size, nodeMass, nodeCoM, 1, level + 1};
+//
+//				for (int j = 0; j < level + 1; j++) {
+//
+//					int internalShift = (totalBits - 1 - j) * 2;
+//					bool lr = (compactedMorton[start].key >> internalShift) & 1u;
+//					bool ud = (compactedMorton[start].key >> (internalShift + 1)) & 1u;
+//
+//					node.pos.x = node.pos.x + (lr ? (node.size * 0.5f) : 0.0f);
+//					node.pos.y = node.pos.y + (ud ? (node.size * 0.5f) : 0.0f);
+//
+//					node.size *= 0.5f;
+//				}
+//
+//				TestTree::nodesTest.push_back(node);
+//
+//				TestTree::nodesTest[0].mass += nodeMass;
+//				TestTree::nodesTest[0].CoM += nodeCoM;
+//
+//				nodeMass = 0.0f;
+//				nodeCoM = { 0.0f, 0.0f };
+//
+//				end = i + 1;
+//
+//				if (end - start > 1) {
+//
+//					barriers.push_back(Barrier(end, level));
+//
+//					level++;
+//					currentP = start;
+//				}
+//				else if (end - start == 1) {
+//					start = end;
+//
+//					currentP = start;
+//
+//					if (!barriers.empty()) {
+//						end = barriers.back().idx;
+//					}
+//					else {
+//						end = compactedMorton.size();
+//					}
+//				}
+//
+//				break;
+//			}
+//		}
+//	}
+//
+//	TestTree::nodesTest[0].CoM /= TestTree::nodesTest[0].mass;
+//
+//	for (int i = totalBits; i >= 1; i--) {
+//		for (int j = 0; j < TestTree::nodesTest.size(); j++) {
+//			if (TestTree::nodesTest[j].level != i) continue;
+//
+//			int currentLevel = TestTree::nodesTest[j].level;
+//			int count = 0;
+//
+//			for (int k = j + 1; k < TestTree::nodesTest.size(); k++) {
+//				if (TestTree::nodesTest[k].level <= currentLevel) break;
+//
+//				if (TestTree::nodesTest[k].level == currentLevel + 1) {
+//					count += 1 + TestTree::nodesTest[k].next;
+//				}
+//			}
+//
+//			TestTree::nodesTest[j].next = count;
+//		}
+//	}
+//
+//
+//	/*static int idx = 1;
+//
+//	if (IO::shortcutPress(KEY_LEFT)) {
+//		idx--;
+//	}
+//	else if (IO::shortcutPress(KEY_RIGHT)) {
+//		idx++;
+//	}*/
+//
+//	/*std::cout << "Current Idx: " << idx << std::endl;*/
+//
+//	//for (size_t i = 0; i < TestTree::nodesTest.size(); i++) {
+//	//	//if (i == idx) {
+//	//		DrawRectangleLinesEx({ TestTree::nodesTest[i].pos.x, TestTree::nodesTest[i].pos.y, TestTree::nodesTest[i].size, TestTree::nodesTest[i].size }, 0.04f, RED);
+//
+//
+//	//		/*DrawText(TextFormat("%i", i), TestTree::nodesTest[i].pos.x + TestTree::nodesTest[i].size * 0.5f,
+//	//			TestTree::nodesTest[i].pos.y + TestTree::nodesTest[i].size * 0.5f, 5.0f, { 255, 255, 255, 128 });*/
+//
+//	//		/*if (TestTree::nodesTest[i].mass > 0.0f) {
+//	//			DrawCircleV({ TestTree::nodesTest[i].CoM.x, TestTree::nodesTest[i].CoM.y }, 2.0f, { 180,50,50,128 });
+//	//		}*/
+//	//	//}
+//	//}
+//}
+
+float boundingBoxSize = 0.0f;
+glm::vec2 boundingBoxPos = { 0.0f, 0.0f };
+
+glm::vec3 boundingBox() {
+	glm::vec2 min = glm::vec2(std::numeric_limits<float>::max());
+	glm::vec2 max = glm::vec2(std::numeric_limits<float>::lowest());
+
+	for (const ParticlePhysics& particle : myParam.pParticles) {
+		min = glm::min(min, particle.pos);
+		max = glm::max(max, particle.pos);
+	}
+
+	boundingBoxSize = glm::max(max.x - min.x, max.y - min.y);
+
+	glm::vec2 center = (min + max) * 0.5f;
+
+	boundingBoxPos = center - boundingBoxSize * 0.5f;
+
+	return { boundingBoxPos.x, boundingBoxPos.y, boundingBoxSize };
+}
+
 uint32_t gridRootIndex;
-size_t prevP = 0;
-uint32_t existingNodes = 0;
-uint32_t prevExistingNodes = 0;
 
 void updateScene() {
 
@@ -663,44 +975,14 @@ void updateScene() {
 	}
 
 	if (myVar.timeFactor != 0.0f) {
-		Quadtree::boundingBox(myParam.pParticles, myParam.rParticles);
+
+		glm::vec3 bb = boundingBox();
+
+		Quadtree::root(myParam.pParticles, myParam.rParticles, bb);
 		gridRootIndex = 0;
+
+
 	}
-
-	//if (myVar.timeFactor != 0.0f) {
-	//	Quadtree::boundingBox(myParam.pParticles, myParam.rParticles);
-	//	gridRootIndex = 0;
-
-	//	prevP = myParam.pParticles.size();
-
-	//	prevExistingNodes = 0;
-	//}
-
-	//bool subdivide = true;
-
-	//while (subdivide) {
-	//	existingNodes = Quadtree::globalNodes.size();
-
-	//	subdivide = false;
-
-	//	for (uint32_t i = prevExistingNodes; i < existingNodes; i++) {
-	//		Quadtree& q = Quadtree::globalNodes[i];
-
-	//		if (((q.endIndex - q.startIndex) <= 16 /*Max Leaf Particles*/ && q.size <= 2.0f /*Max Non-Dense Size*/) || q.size <= 0.01f /*Min Leaf Size*/) {
-	//			q.computeLeafMass(myParam.pParticles);
-	//		}
-	//		else {
-	//			q.subGridMaker(const_cast<std::vector<ParticlePhysics>&>(myParam.pParticles), const_cast<std::vector<ParticleRendering>&>(myParam.rParticles));
-	//			q.computeInternalMass();
-
-	//			q.calculateNextNeighbor();
-
-	//			subdivide = true;
-	//		}
-	//	}
-
-	//	prevExistingNodes = existingNodes;
-	//}
 
 	Quadtree& rootNode = Quadtree::globalNodes[gridRootIndex];
 
@@ -714,6 +996,10 @@ void updateScene() {
 	/*if (myVar.timeFactor >= 0) {
 		myParam.morton.computeMortonKeys(myParam.pParticles, rootNode.boundingBoxPos, rootNode.boundingBoxSize);
 		myParam.morton.sortParticlesByMortonKey(myParam.pParticles, myParam.rParticles);
+	}
+
+	if (!myParam.pParticles.empty()) {
+		mortonToQuadtree();
 	}*/
 
 	if (myVar.drawQuadtree) {
@@ -723,11 +1009,11 @@ void updateScene() {
 
 			DrawRectangleLinesEx({ q.pos.x, q.pos.y, q.size, q.size }, 1.0f, WHITE);
 
-			if (q.gridMass > 0) {
+			if (q.gridMass > 0.0f) {
 				DrawCircleV({ q.centerOfMass.x, q.centerOfMass.y }, 2.0f, { 180,50,50,128 });
 			}
 
-			DrawText(TextFormat("%i", q.next), q.pos.x + q.size * 0.5f, q.pos.y + q.size * 0.5f, 5.0f, { 255, 255, 255, 128 });
+			//DrawText(TextFormat("%i", i), q.pos.x + q.size * 0.5f, q.pos.y + q.size * 0.5f, 5.0f, { 255, 255, 255, 128 });
 		}
 	}
 

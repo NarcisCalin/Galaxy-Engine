@@ -1,7 +1,7 @@
 #include "Physics/physics.h"
 
 glm::vec2 Physics::calculateForceFromGrid(std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar, ParticlePhysics& pParticle) {
-	
+
 	glm::vec2 totalForce = { 0.0f, 0.0f };
 
 	uint32_t gridIdx = 0;
