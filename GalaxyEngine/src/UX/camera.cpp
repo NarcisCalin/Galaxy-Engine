@@ -127,7 +127,7 @@ void SceneCamera::cameraFollowObject(UpdateVariables& myVar, UpdateParameters& m
 		}
 
 		if (myVar.isSelectedTrailsEnabled) {
-			myParam.trails.trailDots.clear();
+			myParam.trails.segments.clear();
 		}
 	}
 
@@ -159,7 +159,7 @@ void SceneCamera::cameraFollowObject(UpdateVariables& myVar, UpdateParameters& m
 		isFollowing = true;
 		panFollowingOffset = { 0.0f, 0.0f };
 		if (myVar.isSelectedTrailsEnabled) {
-			myParam.trails.trailDots.clear();
+			myParam.trails.segments.clear();
 		}
 	}
 

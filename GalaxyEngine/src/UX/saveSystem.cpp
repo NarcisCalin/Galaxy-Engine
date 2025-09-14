@@ -19,6 +19,7 @@ void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar,
 	paramIO(filename, out, "ForceColor", myParam.colorVisuals.forceColor);
 	paramIO(filename, out, "VelocityColor", myParam.colorVisuals.velocityColor);
 	paramIO(filename, out, "ShockwaveColor", myParam.colorVisuals.shockwaveColor);
+	paramIO(filename, out, "TurbulenceColor", myParam.colorVisuals.turbulenceColor);
 	paramIO(filename, out, "PressureColor", myParam.colorVisuals.pressureColor);
 	paramIO(filename, out, "SPHColor", myParam.colorVisuals.SPHColor);
 	paramIO(filename, out, "SelectedColor", myParam.colorVisuals.selectedColor);
@@ -29,6 +30,10 @@ void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar,
 	paramIO(filename, out, "ColorMaxPressure", myParam.colorVisuals.maxPress);
 	paramIO(filename, out, "MaxColorForce", myParam.colorVisuals.maxColorAcc);
 	paramIO(filename, out, "ShockwaveMaxAcc", myParam.colorVisuals.ShockwaveMaxAcc);
+	paramIO(filename, out, "MaxColorTurbulence", myParam.colorVisuals.maxColorTurbulence);
+	paramIO(filename, out, "TurbulenceFadeRate", myParam.colorVisuals.turbulenceFadeRate);
+	paramIO(filename, out, "TurbulenceContrast", myParam.colorVisuals.turbulenceContrast);
+	paramIO(filename, out, "TurbulenceCustomColor", myParam.colorVisuals.turbulenceCustomCol);
 	paramIO(filename, out, "TemperatureColor", myParam.colorVisuals.temperatureColor);
 	paramIO(filename, out, "TemperatureGasColor", myParam.colorVisuals.gasTempColor);
 	paramIO(filename, out, "MaxTemperatureColor", myParam.colorVisuals.tempColorMaxTemp);
@@ -266,6 +271,7 @@ void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar,
 			file.write(reinterpret_cast<const char*>(&r.isPinned), sizeof(r.isPinned));
 			file.write(reinterpret_cast<const char*>(&r.isBeingDrawn), sizeof(r.isBeingDrawn));
 			file.write(reinterpret_cast<const char*>(&r.spawnCorrectIter), sizeof(r.spawnCorrectIter));
+			file.write(reinterpret_cast<const char*>(&r.turbulence), sizeof(r.turbulence));
 		}
 
 		uint32_t numConstraints = physics.particleConstraints.size();

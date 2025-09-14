@@ -5,10 +5,10 @@ glm::vec2 Physics::calculateForceFromGrid(std::vector<ParticlePhysics>& pParticl
 	glm::vec2 totalForce = { 0.0f, 0.0f };
 
 	uint32_t gridIdx = 0;
-	const uint32_t nodeCount = static_cast<uint32_t>(Quadtree::globalNodes.size());
+	const uint32_t nodeCount = static_cast<uint32_t>(globalNodes.size());
 
 	while (gridIdx < nodeCount) {
-		Quadtree& grid = Quadtree::globalNodes[gridIdx];
+		Node& grid = globalNodes[gridIdx];
 
 		if (grid.gridMass <= 0.0f) {
 			gridIdx += grid.next + 1;

@@ -9,7 +9,7 @@ struct Morton {
 
 	uint64_t morton2D(uint64_t x, uint64_t y);
 
-	void computeMortonKeys(std::vector<ParticlePhysics>& pParticles, glm::vec2& minPosition, float& size);
+	void computeMortonKeys(std::vector<ParticlePhysics>& pParticles, glm::vec3& posSize);
 
 	static void sortParticlesByMortonKey(std::vector<ParticlePhysics>& pParticles,
 		std::vector<ParticleRendering>& rParticles);

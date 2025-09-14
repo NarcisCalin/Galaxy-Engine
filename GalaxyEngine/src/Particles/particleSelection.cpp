@@ -55,7 +55,7 @@ void ParticleSelection::clusterSelection(UpdateVariables& myVar, UpdateParameter
 			if (!IsKeyDown(KEY_LEFT_SHIFT)) {
 				myParam.rParticles[i].isSelected = false;
 				if (!myVar.isGlobalTrailsEnabled) {
-					myParam.trails.trailDots.clear();
+					myParam.trails.segments.clear();
 				}
 			}
 			float dx = myParam.pParticles[i].pos.x - myParam.myCamera.mouseWorldPos.x;
@@ -68,7 +68,7 @@ void ParticleSelection::clusterSelection(UpdateVariables& myVar, UpdateParameter
 				if (!IsKeyDown(KEY_LEFT_SHIFT) && !myParam.pParticles.empty()) {
 					myParam.rParticles[i].isSelected = false;
 					if (!myVar.isGlobalTrailsEnabled) {
-						myParam.trails.trailDots.clear();
+						myParam.trails.segments.clear();
 					}
 				}
 			}
@@ -124,7 +124,7 @@ void ParticleSelection::particleSelection(UpdateVariables& myVar, UpdateParamete
 			}
 
 			if (!myVar.isGlobalTrailsEnabled) {
-				myParam.trails.trailDots.clear();
+				myParam.trails.segments.clear();
 			}
 
 			if (minDistanceSq < selectionThresholdSq && !myParam.pParticles.empty() && !wasClosestSelected && !myParam.rParticles[closestIndex].isDarkMatter) {
@@ -143,7 +143,7 @@ void ParticleSelection::particleSelection(UpdateVariables& myVar, UpdateParamete
 void ParticleSelection::manyClustersSelection(UpdateVariables& myVar, UpdateParameters& myParam) {
 	if (selectManyClusters) {
 		if (!myVar.isGlobalTrailsEnabled) {
-			myParam.trails.trailDots.clear();
+			myParam.trails.segments.clear();
 		}
 		float distanceThreshold = 10.0f;
 		std::vector<int> neighborCountsSelect(myParam.pParticles.size(), 0);

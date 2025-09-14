@@ -9,6 +9,7 @@ struct ColorVisuals {
 	bool densityColor = true;
 	bool velocityColor = false;
 	bool shockwaveColor = false;
+	bool turbulenceColor = false;
 	bool forceColor = false;
 	bool pressureColor = false;
 	bool temperatureColor = false;
@@ -32,6 +33,12 @@ struct ColorVisuals {
 
 	float maxColorAcc = 40.0f;
 	float minColorAcc = 0.0f;
+
+	float maxColorTurbulence = 40.0f;
+	float minColorTurbulence = 0.0f;
+	float turbulenceFadeRate = 0.015f;
+	float turbulenceContrast = 1.1f;
+	bool turbulenceCustomCol = false;
 
 	float ShockwaveMaxAcc = 18.0f;
 	float ShockwaveMinAcc = 0.0f;
@@ -102,7 +109,7 @@ struct ColorVisuals {
 		return powf(linear, 0.3f);
 	}
 
-	void particlesColorVisuals(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, bool& isTempEnabled) {
+	void particlesColorVisuals(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, bool& isTempEnabled, float& timeFactor) {
 
 		if (solidColor) {
 			for (size_t i = 0; i < pParticles.size(); i++) {
@@ -206,6 +213,54 @@ struct ColorVisuals {
 				value = 1.0f;
 
 				rParticles[i].color = ColorFromHSV(hue, saturation, value);
+			}
+			blendMode = 0;
+		}
+
+		if (turbulenceColor) {
+			for (size_t i = 0; i < pParticles.size(); i++) {
+
+				if (rParticles[i].isDarkMatter) {
+					continue;
+				}
+
+				if (timeFactor != 0.0f) {
+					float pTotalVel = sqrt(pParticles[i].vel.x * pParticles[i].vel.x + pParticles[i].vel.y * pParticles[i].vel.y);
+					float pTotalPrevVel = sqrt(pParticles[i].prevVel.x * pParticles[i].prevVel.x + pParticles[i].prevVel.y * pParticles[i].prevVel.y);
+
+					rParticles[i].turbulence += std::abs(pTotalVel - pTotalPrevVel);
+
+					glm::vec2 velDiff = pParticles[i].vel - pParticles[i].prevVel;
+					rParticles[i].turbulence += glm::length(velDiff);
+
+					rParticles[i].turbulence *= 1.0f - turbulenceFadeRate;
+
+					rParticles[i].turbulence = std::max(0.0f, rParticles[i].turbulence);
+				}
+
+				float clampedTurbulence = std::clamp(rParticles[i].turbulence, minColorTurbulence, maxColorTurbulence);
+				float normalizedTurbulence = pow(clampedTurbulence / maxColorTurbulence, turbulenceContrast);
+
+				if (turbulenceCustomCol) {
+					if (!rParticles[i].uniqueColor) {
+						rParticles[i].pColor = pColor;
+						rParticles[i].sColor = sColor;
+					}
+
+					Color lowTurbulenceColor = rParticles[i].pColor;
+
+					Color highTurbulenceColor = rParticles[i].sColor;
+
+					rParticles[i].color = ColorLerp(lowTurbulenceColor, highTurbulenceColor, normalizedTurbulence);
+				}
+				else {
+					hue = (1.0f - normalizedTurbulence) * 240.0f;
+					saturation = 1.0f;
+					value = 1.0f;
+
+					rParticles[i].color = ColorFromHSV(hue, saturation, value);
+				}
+
 			}
 			blendMode = 0;
 		}

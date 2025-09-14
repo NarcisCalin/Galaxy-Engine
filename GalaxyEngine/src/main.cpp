@@ -227,7 +227,7 @@ void main() {
 
 	bool accumulationCondition = false;
 
-	buildKernel();
+	buildKernels();
 
 	while (!WindowShouldClose()) {
 

@@ -2,14 +2,7 @@
 
 #include "Physics/quadtree.h"
 
-std::vector<Quadtree> Quadtree::globalNodes;
-
-std::vector<Quadtree> Quadtree::globalNodes1;
-std::vector<Quadtree> Quadtree::globalNodes2;
-std::vector<Quadtree> Quadtree::globalNodes3;
-std::vector<Quadtree> Quadtree::globalNodes4;
-
-Quadtree::Quadtree(glm::vec2 pos, float size,
+Node::Node(glm::vec2 pos, float size,
 	uint32_t startIndex, uint32_t endIndex,
 	std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles) {
 
@@ -20,7 +13,8 @@ Quadtree::Quadtree(glm::vec2 pos, float size,
 	this->gridMass = 0.0f;
 	this->centerOfMass = { 0.0f, 0.0f };
 
-	if (((endIndex - startIndex) <= 16 /*Max Leaf Particles*/ && size <= 2.0f /*Max Non-Dense Size*/) || size <= 0.01f /*Min Leaf Size*/) {
+	if ((((endIndex - startIndex) <= 16 /*Max Leaf Particles*/ && size <= 2.0f) /*Max Non-Dense Size*/ || (endIndex - startIndex) == 1) ||
+		size <= 0.01f /*Min Leaf Size*/) {
 		computeLeafMass(pParticles);
 	}
 	else {
@@ -46,7 +40,7 @@ uint32_t dualPartition(std::vector<ParticlePhysics>& pParticlesVector, std::vect
 	return i;
 }
 
-void Quadtree::subGridMaker(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles) {
+void Node::subGridMaker(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles) {
 
 	glm::vec2 mid = pos + size * 0.5f;
 
@@ -80,8 +74,8 @@ void Quadtree::subGridMaker(std::vector<ParticlePhysics>& pParticles, std::vecto
 			uint32_t childIndex = globalNodes.size();
 			globalNodes.emplace_back();
 
-			Quadtree& newNode = globalNodes[childIndex];
-			newNode = Quadtree(
+			Node& newNode = globalNodes[childIndex];
+			newNode = Node(
 				newPos, size * 0.5f,
 				boundaries[q], boundaries[q + 1],
 				pParticles, rParticles
@@ -96,9 +90,7 @@ void Quadtree::subGridMaker(std::vector<ParticlePhysics>& pParticles, std::vecto
 }
 
 void Quadtree::root(std::vector<ParticlePhysics>& pParticles,
-	std::vector<ParticleRendering>& rParticles, glm::vec3& boundingBox) {
-
-	globalNodes.clear();
+	std::vector<ParticleRendering>& rParticles) {
 
 	if (!pParticles.empty()) {
 		globalNodes.reserve(pParticles.size() * 4);
@@ -109,7 +101,7 @@ void Quadtree::root(std::vector<ParticlePhysics>& pParticles,
 
 	globalNodes.emplace_back();
 
-	globalNodes[0] = Quadtree(
+	globalNodes[0] = Node(
 		{ boundingBox.x, boundingBox.y }, boundingBox.z,
 		0, pParticles.size(),
 		pParticles, rParticles

@@ -23,15 +23,14 @@ uint64_t Morton::morton2D(uint64_t x, uint64_t y) {
 }
 
 void Morton::computeMortonKeys(std::vector<ParticlePhysics>& pParticles,
-    glm::vec2& minPosition,
-    float& size)
+    glm::vec3& posSize)
 {
-    const float maxX = minPosition.x + std::max(size, 1e-6f);
-    const float maxY = minPosition.y + std::max(size, 1e-6f);
+    const float maxX = posSize.x + std::max(posSize.z, 1e-6f);
+    const float maxY = posSize.y + std::max(posSize.z, 1e-6f);
 
     for (auto& pParticle : pParticles) {
-        uint64_t ix = scaleToGrid(pParticle.pos.x, minPosition.x, maxX);
-        uint64_t iy = scaleToGrid(pParticle.pos.y, minPosition.y, maxY);
+        uint64_t ix = scaleToGrid(pParticle.pos.x, posSize.x, maxX);
+        uint64_t iy = scaleToGrid(pParticle.pos.y, posSize.y, maxY);
         pParticle.mortonKey = morton2D(ix, iy);
     }
 }

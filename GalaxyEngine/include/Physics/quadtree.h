@@ -25,7 +25,10 @@
 //	static std::vector<Node> nodesTest;
 //};
 
-struct Quadtree {
+struct Node;
+extern std::vector<Node> globalNodes;
+
+struct Node {
 	glm::vec2 pos;
 	float size;
 
@@ -39,23 +42,13 @@ struct Quadtree {
 	uint32_t subGrids[2][2] = { { UINT32_MAX, UINT32_MAX }, { UINT32_MAX, UINT32_MAX } };
 	uint32_t next = 0;
 
-	static std::vector<Quadtree> globalNodes;
-
-	static std::vector<Quadtree> globalNodes1;
-	static std::vector<Quadtree> globalNodes2;
-	static std::vector<Quadtree> globalNodes3;
-	static std::vector<Quadtree> globalNodes4;
-
-	Quadtree(glm::vec2 pos, float size,
+	Node(glm::vec2 pos, float size,
 		uint32_t startIndex, uint32_t endIndex,
 		std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles);
 
-	Quadtree() = default;
+	Node() = default;
 
 	void subGridMaker(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles);
-
-	static void root(std::vector<ParticlePhysics>& pParticles,
-		std::vector<ParticleRendering>& rParticles, glm::vec3& boundingBox);
 
 	inline void computeLeafMass(const std::vector<ParticlePhysics>& pParticles) {
 		gridMass = 0.0f;
@@ -84,7 +77,7 @@ struct Quadtree {
 
 				if (idx == UINT32_MAX) continue;
 
-				Quadtree& child = globalNodes[idx];
+				Node& child = globalNodes[idx];
 
 				gridMass += child.gridMass;
 				gridTemp += child.gridTemp;
@@ -110,10 +103,27 @@ struct Quadtree {
 
 				next++;
 
-				Quadtree& child = globalNodes[idx];
+				Node& child = globalNodes[idx];
 
 				next += child.next;
 			}
 		}
 	}
+};
+
+struct Quadtree {
+
+	glm::vec3 boundingBox;
+
+	Quadtree(std::vector<ParticlePhysics>& pParticles,
+		std::vector<ParticleRendering>& rParticles,
+		glm::vec3& boundingBox) {
+
+		this->boundingBox = boundingBox;
+
+		root(pParticles, rParticles);
+	}
+
+	void root(std::vector<ParticlePhysics>& pParticles,
+		std::vector<ParticleRendering>& rParticles);
 };

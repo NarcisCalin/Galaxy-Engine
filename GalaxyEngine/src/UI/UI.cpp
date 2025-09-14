@@ -75,7 +75,13 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 	buttonHelper("Multi-Threading", "Distributes the simulation across multiple threads", myVar.isMultiThreadingEnabled, -1.0f, settingsButtonY, true, enabled);
 
-	buttonHelper("GPU (Beta)", "Simulates gravity on the GPU", myVar.isGPUEnabled, -1.0f, settingsButtonY, true, enabled);
+	bool canEnableGPU = !myVar.isSPHEnabled;
+
+	if (!canEnableGPU) {
+		myVar.isGPUEnabled = false;
+	}
+
+	buttonHelper("GPU (Beta)", "Simulates gravity on the GPU", myVar.isGPUEnabled, -1.0f, settingsButtonY, true, canEnableGPU);
 
 	ImGui::Spacing();
 	ImGui::Separator();
@@ -125,13 +131,14 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		&myParam.colorVisuals.forceColor,
 		&myParam.colorVisuals.velocityColor,
 		&myParam.colorVisuals.shockwaveColor,
+		& myParam.colorVisuals.turbulenceColor,
 		&myParam.colorVisuals.pressureColor,
 		&myParam.colorVisuals.temperatureColor,
 		&myParam.colorVisuals.gasTempColor,
 		&myParam.colorVisuals.SPHColor
 	};
 
-	const char* colorModes[] = { "Solid Color", "Density Color", "Force Color", "Velocity Color", "Shockwave Color", "Pressure Color", "Temperature Color",
+	const char* colorModes[] = { "Solid Color", "Density Color", "Force Color", "Velocity Color", "Shockwave Color", "Turbulence Color", "Pressure Color", "Temperature Color",
 	"Temperature Gas Color", "Material Color" };
 
 	const char* colorModeTips[] = {
@@ -140,6 +147,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		"Maps particle acceleration to primary and secondary colors",
 		"Maps particle velocity to color",
 		"Maps particle acceleration to color",
+		"Maps particle turbulence to primary and secondary colors",
 		"Maps particle pressure to color",
 		"Maps particle temperature to color",
 		"Maps particle temperature to primary and secondary colors",
@@ -654,6 +662,12 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			sliderHelper("Max Force Color", "Controls the acceleration threshold to use the secondary color", myParam.colorVisuals.maxColorAcc, 1.0f, 400.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Max Velocity Color", "Controls the max velocity used to map the colors in the velocity color mode", myParam.colorVisuals.maxVel, 10.0f, 10000.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Max Shockwave Accel", "Controls the acceleration threshold to map the particle color in Shockwave color mode", myParam.colorVisuals.ShockwaveMaxAcc, 1.0f, 120.0f, parametersSliderX, parametersSliderY, enabled);
+			ImGui::Separator();
+			sliderHelper("Max Turbulence Color", "Controls the turbulence threshold to use the secondary color", myParam.colorVisuals.maxColorTurbulence, 1.0f, 512.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Turbulence Fade Rate", "Controls how fast turbulence fades away", myParam.colorVisuals.turbulenceFadeRate, 0.00f, 1.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Turbulence Contrast", "Controls how much contrast turbulence color has", myParam.colorVisuals.turbulenceContrast, 0.1f, 4.0f, parametersSliderX, parametersSliderY, enabled);
+			buttonHelper("Turbulence Custom Colors", "Enables the use of primary and secondary colors for turbulence", myParam.colorVisuals.turbulenceCustomCol, 212.0f, 24.0f, true, enabled);
+			ImGui::Separator();
 			sliderHelper("Max Pressure Color", "Controls the max pressure used to map the colors in the pressure color mode", myParam.colorVisuals.maxPress, 100.0f, 100000.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Max Temperature Color", "Controls the max temperature used to map the colors in the temperature color mode", myParam.colorVisuals.tempColorMaxTemp, 10.0f, 50000.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Max Constraint Stress", "Controls the max constraint stress used to map the colors in the constraints stress color mode. If set to 0, it will set the max stress to the material's breaking limit", myVar.constraintMaxStressColor, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled);
@@ -680,7 +694,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			ImGui::Spacing();
 
 			sliderHelper("Trails Length", "Controls how long should the trails be. This feature is computationally expensive", myVar.trailMaxLength, 0, 1500, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Trails Thickness", "Controls the trails thickness", myParam.trails.trailThickness, 0.007f, 0.5f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Trails Thickness", "Controls the trails thickness", myParam.trails.trailThickness, 0.01f, 1.5f, parametersSliderX, parametersSliderY, enabled);
 
 			ImGui::Spacing();
 			ImGui::Separator();
@@ -1337,12 +1351,12 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 		buttonHelper("Ship Gas", "Enables gas particles coming from the ship when controlling particles", myVar.isShipGasEnabled, -1.0f, settingsButtonY, true, enabled);
 
-		buttonHelper("Export .obj File", "Exports particles to an obj file", myVar.exportObjFlag, -1.0f, settingsButtonY, true, enabled);
+		buttonHelper("Export .ply File", "Exports particles to an ply file", myVar.exportPlyFlag, -1.0f, settingsButtonY, true, enabled);
 
-		buttonHelper("Export .obj Seq.", "Exports particles to an obj file each frame, creating an obj sequence", myVar.exportObjSeqFlag, -1.0f, settingsButtonY, true, enabled);
+		buttonHelper("Export .ply Seq.", "Exports particles to an ply file each frame, creating an ply sequence", myVar.exportPlySeqFlag, -1.0f, settingsButtonY, true, enabled);
 
-		if (myVar.objFrameNumber != 0) {
-			ImGui::TextColored(UpdateVariables::colMenuInformation, "%s%d", "Frames Exported: ", myVar.objFrameNumber);
+		if (myVar.plyFrameNumber != 0) {
+			ImGui::TextColored(UpdateVariables::colMenuInformation, "%s%d", "Frames Exported: ", myVar.plyFrameNumber);
 		}
 
 		ImGui::EndTabItem();

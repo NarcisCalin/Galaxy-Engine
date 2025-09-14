@@ -213,10 +213,10 @@ struct UpdateVariables{
 
 	bool loadDropDownMenus = false;
 
-	bool exportObjFlag = false;
-	bool exportObjSeqFlag = false;
+	bool exportPlyFlag = false;
+	bool exportPlySeqFlag = false;
 
-	int objFrameNumber = 0;
+	int plyFrameNumber = 0;
 
 	bool toolSpawnHeavyParticle = false;
 	bool toolDrawParticles = true;

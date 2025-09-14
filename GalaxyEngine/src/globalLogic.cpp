@@ -11,6 +11,8 @@ GESound geSound;
 Lighting lighting;
 CopyPaste copyPaste;
 
+std::vector<Node> globalNodes;
+
 uint32_t globalId = 0;
 uint32_t globalShapeId = 1;
 uint32_t globalWallId = 1;
@@ -78,14 +80,62 @@ void pinParticles() {
 	}
 }
 
-void exportObj() {
+void plyFileCreation(std::ofstream& file) {
+	uint32_t visibleParticles = 0;
+
+	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+		if (myParam.rParticles[i].isDarkMatter) {
+			continue;
+		}
+
+		visibleParticles++;
+	}
+
+	file << "ply" << std::endl;
+	file << "format ascii 1.0" << std::endl;
+	file << "element vertex " << visibleParticles << std::endl;
+	file << "property float x" << std::endl;
+	file << "property float y" << std::endl;
+	file << "property float z" << std::endl;
+	file << "property uchar red" << std::endl;
+	file << "property uchar green" << std::endl;
+	file << "property uchar blue" << std::endl;
+	file << "end_header" << std::endl;
+
+	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+		ParticlePhysics& p = myParam.pParticles[i];
+		ParticleRendering& r = myParam.rParticles[i];
+
+		if (r.isDarkMatter) {
+			continue;
+		}
+
+		float posX = ((p.pos.x / myVar.domainSize.x) * 2.0f) - 1.0f;
+		float posY = ((p.pos.y / myVar.domainSize.y) * 2.0f) - 1.0f;
+
+		float domainRatio = myVar.domainSize.x / myVar.domainSize.y;
+		posX *= domainRatio;
+
+		float sizeMultiplier = 10.0f;
+
+		posX *= sizeMultiplier;
+		posY *= sizeMultiplier;
+
+		file << posX << " " << posY << " 0.000000" << " " << 
+			static_cast<int>(r.color.r) << " " <<
+			static_cast<int>(r.color.g) << " " << 
+			static_cast<int>(r.color.b) << std::endl;
+	}
+}
+
+void exportPly() {
 
 	static bool wasExportingLastFrame = false;
 	static std::filesystem::path currentSequenceDir;
 	static int currentFrameNumber = 0;
 	static int currentSequenceNumber = -1;
 
-	if (myVar.exportObjSeqFlag) {
+	if (myVar.exportPlySeqFlag) {
 		if (!wasExportingLastFrame) {
 
 			std::filesystem::path mainExportDir = "Export3D";
@@ -132,47 +182,33 @@ void exportObj() {
 		std::ostringstream filenameStream;
 		filenameStream << customName
 			<< std::setw(3) << std::setfill('0') << currentSequenceNumber << "_"
-			<< std::setw(4) << std::setfill('0') << currentFrameNumber << ".obj";
+			<< std::setw(4) << std::setfill('0') << currentFrameNumber << ".ply";
 
 		std::filesystem::path filePath = currentSequenceDir / filenameStream.str();
 
-		std::ofstream objFile(filePath);
-		if (!objFile) {
+		std::ofstream plyFile(filePath);
+		if (!plyFile) {
 			std::cerr << "Couldn't write file: " << filePath << std::endl;
 			return;
 		}
 
-		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-			ParticlePhysics& p = myParam.pParticles[i];
-			ParticleRendering& r = myParam.rParticles[i];
-			if (r.isDarkMatter) continue;
-
-			float posX = ((p.pos.x / myVar.domainSize.x) * 2.0f) - 1.0f;
-			float posY = ((p.pos.y / myVar.domainSize.y) * 2.0f) - 1.0f;
-			float domainRatio = myVar.domainSize.x / myVar.domainSize.y;
-			float sizeMultiplier = 10.0f;
-
-			posX *= domainRatio * sizeMultiplier;
-			posY *= sizeMultiplier;
-
-			objFile << "v " << posX << " " << posY << " 0.000000" << std::endl;
-		}
-
-		objFile.close();
+		plyFileCreation(plyFile);
+		
+		plyFile.close();
 		std::cout << "Particles at frame " << currentFrameNumber
 			<< " exported to " << filePath << std::endl;
 
 		currentFrameNumber++;
 
-		myVar.objFrameNumber = currentFrameNumber;
+		myVar.plyFrameNumber = currentFrameNumber;
 	}
 	else {
-		myVar.objFrameNumber = 0;
+		myVar.plyFrameNumber = 0;
 	}
 
-	wasExportingLastFrame = myVar.exportObjSeqFlag;
+	wasExportingLastFrame = myVar.exportPlySeqFlag;
 
-	if (myVar.exportObjFlag) {
+	if (myVar.exportPlyFlag) {
 
 		std::filesystem::path exportDir = "Export3D";
 		if (!std::filesystem::exists(exportDir)) {
@@ -198,7 +234,7 @@ void exportObj() {
 				std::string filename = entry.path().filename().string();
 
 				if (filename.rfind(namePrefix, 0) == 0 && filename.size() > namePrefix.size() + 4 &&
-					filename.substr(filename.size() - 4) == ".obj") {
+					filename.substr(filename.size() - 4) == ".ply") {
 
 					size_t startPos = namePrefix.size();
 					size_t length = filename.size() - startPos - 4;
@@ -217,40 +253,20 @@ void exportObj() {
 		}
 
 		int nextNumber = maxNumber + 1;
-		std::filesystem::path filePath = exportDirIndividual / (namePrefix + std::to_string(nextNumber) + ".obj");
-		std::ofstream objFile(filePath);
+		std::filesystem::path filePath = exportDirIndividual / (namePrefix + std::to_string(nextNumber) + ".ply");
+		std::ofstream plyFile(filePath);
 
-		if (!objFile) {
+		if (!plyFile) {
 			std::cerr << "Couldn't write file" << std::endl;
 			return;
 		}
 
-		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-			ParticlePhysics& p = myParam.pParticles[i];
-			ParticleRendering& r = myParam.rParticles[i];
+		plyFileCreation(plyFile);
 
-			if (r.isDarkMatter) {
-				continue;
-			}
+		plyFile.close();
+		std::cout << "ply export successful! File saved as: " << filePath << std::endl;
 
-			float posX = ((p.pos.x / myVar.domainSize.x) * 2.0f) - 1.0f;
-			float posY = ((p.pos.y / myVar.domainSize.y) * 2.0f) - 1.0f;
-
-			float domainRatio = myVar.domainSize.x / myVar.domainSize.y;
-			posX *= domainRatio;
-
-			float sizeMultiplier = 10.0f;
-
-			posX *= sizeMultiplier;
-			posY *= sizeMultiplier;
-
-			objFile << "v " << posX << " " << posY << " 0.000000" << std::endl;
-		}
-
-		objFile.close();
-		std::cout << "Obj export successful! File saved as: " << filePath << std::endl;
-
-		myVar.exportObjFlag = false;
+		myVar.exportPlyFlag = false;
 	}
 }
 
@@ -318,7 +334,7 @@ void exportObj() {
 const char* computeTest = R"(
 #version 430
 
-layout(std430, binding = 0) buffer inPosVel { float posVel[]; };
+layout(std430, binding = 0) buffer inPData { float pData[]; };
 
 layout(std430, binding = 2) buffer inMass   { float mass[]; };
 
@@ -341,9 +357,14 @@ const int tileSize = 256;
 
 uniform float dt;
 uniform float theta;
+uniform float globalHeatConductivity;
+
 uniform int pCount;
 uniform int nCount;
+
 uniform bool periodicBoundary;
+uniform bool isTempEnabled;
+
 uniform vec2 domainSize;
 uniform float softening;
 
@@ -353,7 +374,7 @@ void main() {
     uint idx = gl_GlobalInvocationID.x;
     if (idx >= pCount) return;
     
-    vec2 myPos = vec2(posVel[idx], posVel[idx + pCount]);
+    vec2 myPos = vec2(pData[idx], pData[idx + pCount]);
     vec2 totalForce = vec2(0.0f);
     uint gridIdx = 0;
     
@@ -385,55 +406,58 @@ for (int i = 0; i < 2; ++i) {
 }
         
         if (grid[gridIdx + 3 * nCount] * grid[gridIdx + 3 * nCount] < (theta * theta) * distSq || subgridsEmpty) {
+
+
             float invDist = inversesqrt(distSq);
             float forceMag = G * mass[idx] * grid[gridIdx + 2 * nCount] * invDist * invDist * invDist;
             totalForce += d * forceMag;
+
             gridIdx += next[gridIdx] + 1;
         } else {
             gridIdx++;
         }
     }
     
-    posVel[idx + 4 * pCount] = totalForce.x / mass[idx];
-    posVel[idx + 5 * pCount] = totalForce.y / mass[idx];
+    pData[idx + 2 * pCount] = totalForce.x / mass[idx];
+    pData[idx + 3 * pCount] = totalForce.y / mass[idx];
 
-    posVel[idx + 2 * pCount] += dt * 1.5f * posVel[idx + 4 * pCount];
-    posVel[idx + 3 * pCount] += dt * 1.5f * posVel[idx + 5 * pCount];
-    posVel[idx] += posVel[idx + 2 * pCount] * dt;
-    posVel[idx + pCount] += posVel[idx + 3 * pCount] * dt;
+    /*pData[idx + 2 * pCount] += dt * 1.5f * pData[idx + 4 * pCount];
+    pData[idx + 3 * pCount] += dt * 1.5f * pData[idx + 5 * pCount];
+    pData[idx] += pData[idx + 2 * pCount] * dt;
+    pData[idx + pCount] += pData[idx + 3 * pCount] * dt;
 
     if (periodicBoundary) {
-                if (posVel[idx] < 0.0f)
-					posVel[idx] += domainSize.x;
-				else if (posVel[idx] >= domainSize.x)
-					posVel[idx] -= domainSize.x;
+                if (pData[idx] < 0.0f)
+					pData[idx] += domainSize.x;
+				else if (pData[idx] >= domainSize.x)
+					pData[idx] -= domainSize.x;
 
-				if (posVel[idx + pCount] < 0.0f)
-					posVel[idx + pCount] += domainSize.y;
-				else if (posVel[idx + pCount] >= domainSize.y)
-					posVel[idx + pCount] -= domainSize.y;
-    }
+				if (pData[idx + pCount] < 0.0f)
+					pData[idx + pCount] += domainSize.y;
+				else if (pData[idx + pCount] >= domainSize.y)
+					pData[idx + pCount] -= domainSize.y;
+    }*/
 }
 )";
 
-GLuint ssboPosVel, ssboAcc, ssboMass, ssboGrid, ssboGridNext, ssboGridChildren, ssboGridPIdx;
+GLuint ssboPData, ssboAcc, ssboMass, ssboGrid, ssboGridNext, ssboGridChildren, ssboGridPIdx;
 
-size_t mb = 256;
+size_t mb = 512;
 
 size_t reserveSize = (1024 * 1024 * mb) / sizeof(float);
 
-GLuint program;
+GLuint gravityProgram;
 
 struct GridChildren {
 	uint32_t subGrids[2][2];
 };
 
-void buildKernel() {
+void gravityKernel() {
 
-	glGenBuffers(1, &ssboPosVel);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboPosVel);
+	glGenBuffers(1, &ssboPData);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboPData);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, reserveSize * sizeof(float), nullptr, GL_STREAM_COPY);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssboPosVel);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssboPData);
 
 	glGenBuffers(1, &ssboMass);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboMass);
@@ -460,7 +484,7 @@ void buildKernel() {
 	glBufferData(GL_SHADER_STORAGE_BUFFER, reserveSize * sizeof(uint32_t), nullptr, GL_DYNAMIC_DRAW);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, ssboGridPIdx);
 
-	program = glCreateProgram();
+	gravityProgram = glCreateProgram();
 	GLuint shader = glCreateShader(GL_COMPUTE_SHADER);
 	glShaderSource(shader, 1, &computeTest, nullptr);
 	glCompileShader(shader);
@@ -474,24 +498,24 @@ void buildKernel() {
 		std::cerr << "Compute shader compilation failed:\n" << infoLog << std::endl;
 	}
 
-	glAttachShader(program, shader);
-	glLinkProgram(program);
+	glAttachShader(gravityProgram, shader);
+	glLinkProgram(gravityProgram);
 
-	glGetProgramiv(program, GL_LINK_STATUS, &success);
+	glGetProgramiv(gravityProgram, GL_LINK_STATUS, &success);
 	if (!success) {
 		char infoLog[512];
-		glGetProgramInfoLog(program, 512, nullptr, infoLog);
-		std::cerr << "Shader program linking failed:\n" << infoLog << std::endl;
+		glGetProgramInfoLog(gravityProgram, 512, nullptr, infoLog);
+		std::cerr << "Shader gravityProgram linking failed:\n" << infoLog << std::endl;
 	}
 
 	glDeleteShader(shader);
 }
 
-int prevPAmount = 0;
-bool prevGPUFlag = false;
+void buildKernels() {
+	gravityKernel();
+}
 
-std::vector<float> xyPosVel;
-/*std::vector<float> xyAcc(myParam.pParticles.size() * 2);*/
+std::vector<float> pData;
 std::vector<float> massVector;
 
 std::vector<float> gridParams;
@@ -505,9 +529,7 @@ std::vector<uint32_t> gridPIndices;
 void gpuGravity() {
 	if (!myParam.pParticles.empty()) {
 
-		//if (prevPAmount != myParam.pParticles.size() || prevGPUFlag != myVar.isGPUEnabled) {
-
-		xyPosVel.clear();
+		pData.clear();
 		massVector.clear();
 
 		gridParams.clear();
@@ -518,52 +540,52 @@ void gpuGravity() {
 
 		gridPIndices.clear();
 
-		xyPosVel.resize(myParam.pParticles.size() * 6);
+		pData.resize(myParam.pParticles.size() * 4);
 		massVector.resize(myParam.pParticles.size());
 
-		gridParams.resize(Quadtree::globalNodes.size() * 4);
+		gridParams.resize(globalNodes.size() * 4);
 
-		gridNext.resize(Quadtree::globalNodes.size());
+		gridNext.resize(globalNodes.size());
 
-		gridChildrenVector.resize(Quadtree::globalNodes.size());
+		gridChildrenVector.resize(globalNodes.size());
 
-		gridPIndices.resize(Quadtree::globalNodes.size() * 2);
+		gridPIndices.resize(globalNodes.size() * 2);
 
 		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 
-			xyPosVel[i] = myParam.pParticles[i].pos.x;
-			xyPosVel[i + myParam.pParticles.size()] = myParam.pParticles[i].pos.y;
+			pData[i] = myParam.pParticles[i].pos.x;
+			pData[i + myParam.pParticles.size()] = myParam.pParticles[i].pos.y;
 
-			xyPosVel[i + 2 * myParam.pParticles.size()] = myParam.pParticles[i].vel.x;
-			xyPosVel[i + 3 * myParam.pParticles.size()] = myParam.pParticles[i].vel.y;
+			/*pData[i + 2 * myParam.pParticles.size()] = myParam.pParticles[i].vel.x;
+			pData[i + 3 * myParam.pParticles.size()] = myParam.pParticles[i].vel.y;*/
 
-			xyPosVel[i + 4 * myParam.pParticles.size()] = 0.0f;
-			xyPosVel[i + 5 * myParam.pParticles.size()] = 0.0f;
+			pData[i + 2 * myParam.pParticles.size()] = 0.0f;
+			pData[i + 3 * myParam.pParticles.size()] = 0.0f;
 
 			massVector[i] = myParam.pParticles[i].mass;
 		}
 
-		for (size_t i = 0; i < Quadtree::globalNodes.size(); i++) {
+		for (size_t i = 0; i < globalNodes.size(); i++) {
 
-			gridParams[i] = Quadtree::globalNodes[i].centerOfMass.x;
-			gridParams[i + Quadtree::globalNodes.size()] = Quadtree::globalNodes[i].centerOfMass.y;
+			gridParams[i] = globalNodes[i].centerOfMass.x;
+			gridParams[i + globalNodes.size()] = globalNodes[i].centerOfMass.y;
 
-			gridParams[i + 2 * Quadtree::globalNodes.size()] = Quadtree::globalNodes[i].gridMass;
+			gridParams[i + 2 * globalNodes.size()] = globalNodes[i].gridMass;
 
-			gridParams[i + 3 * Quadtree::globalNodes.size()] = Quadtree::globalNodes[i].size;
+			gridParams[i + 3 * globalNodes.size()] = globalNodes[i].size;
 
-			gridNext[i] = Quadtree::globalNodes[i].next;
+			gridNext[i] = globalNodes[i].next;
 
 			GridChildren children;
-			memcpy(children.subGrids, Quadtree::globalNodes[i].subGrids, sizeof(uint32_t) * 4);
+			memcpy(children.subGrids, globalNodes[i].subGrids, sizeof(uint32_t) * 4);
 			gridChildrenVector[i] = children;
 
-			gridPIndices[i] = Quadtree::globalNodes[i].startIndex;
-			gridPIndices[i + Quadtree::globalNodes.size()] = Quadtree::globalNodes[i].endIndex;
+			gridPIndices[i] = globalNodes[i].startIndex;
+			gridPIndices[i + globalNodes.size()] = globalNodes[i].endIndex;
 		}
 
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboPosVel);
-		glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, xyPosVel.size() * sizeof(float), xyPosVel.data());
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboPData);
+		glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, pData.size() * sizeof(float), pData.data());
 
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboMass);
 		glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, massVector.size() * sizeof(float), massVector.data());
@@ -580,54 +602,47 @@ void gpuGravity() {
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboGridPIdx);
 		glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, gridPIndices.size() * sizeof(uint32_t), gridPIndices.data());
 
-		prevPAmount = myParam.pParticles.size();
-		prevGPUFlag = myVar.isGPUEnabled;
-		//	}
+		glUseProgram(gravityProgram);
+		glUniform1f(glGetUniformLocation(gravityProgram, "dt"), myVar.timeFactor);
+		glUniform1f(glGetUniformLocation(gravityProgram, "globalHeatConductivity"), myVar.globalHeatConductivity);
 
-		glUseProgram(program);
-		glUniform1f(glGetUniformLocation(program, "dt"), myVar.timeFactor);
-		glUniform1i(glGetUniformLocation(program, "pCount"), static_cast<int>(myParam.pParticles.size()));
-		glUniform1i(glGetUniformLocation(program, "nCount"), static_cast<int>(Quadtree::globalNodes.size()));
-		glUniform1i(glGetUniformLocation(program, "periodicBoundary"), myVar.isPeriodicBoundaryEnabled);
-		glUniform2f(glGetUniformLocation(program, "domainSize"), myVar.domainSize.x, myVar.domainSize.y);
-		glUniform1f(glGetUniformLocation(program, "theta"), myVar.theta);
-		glUniform1f(glGetUniformLocation(program, "softening"), myVar.softening);
+		glUniform1i(glGetUniformLocation(gravityProgram, "pCount"), static_cast<int>(myParam.pParticles.size()));
+		glUniform1i(glGetUniformLocation(gravityProgram, "nCount"), static_cast<int>(globalNodes.size()));
+
+		glUniform1i(glGetUniformLocation(gravityProgram, "periodicBoundary"), myVar.isPeriodicBoundaryEnabled);
+		glUniform1i(glGetUniformLocation(gravityProgram, "isTempEnabled"), myVar.isTempEnabled);
+
+		glUniform2f(glGetUniformLocation(gravityProgram, "domainSize"), myVar.domainSize.x, myVar.domainSize.y);
+		glUniform1f(glGetUniformLocation(gravityProgram, "theta"), myVar.theta);
+		glUniform1f(glGetUniformLocation(gravityProgram, "softening"), myVar.softening);
 
 		GLuint numGroups = (myParam.pParticles.size() + 255) / 256;
 		glDispatchCompute(numGroups, 1, 1);
 		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboPosVel);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboPData);
 		float* ptrPos = (float*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
 
+#pragma omp parallel for schedule(dynamic)
 		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 
-			myParam.pParticles[i].pos.x = ptrPos[i];
+			/*myParam.pParticles[i].pos.x = ptrPos[i];
 			myParam.pParticles[i].pos.y = ptrPos[i + myParam.pParticles.size()];
 
 			myParam.pParticles[i].vel.x = ptrPos[i + 2 * myParam.pParticles.size()];
-			myParam.pParticles[i].vel.y = ptrPos[i + 3 * myParam.pParticles.size()];
+			myParam.pParticles[i].vel.y = ptrPos[i + 3 * myParam.pParticles.size()];*/
 
-			myParam.pParticles[i].acc.x = ptrPos[i + 4 * myParam.pParticles.size()];
-			myParam.pParticles[i].acc.y = ptrPos[i + 5 * myParam.pParticles.size()];
+			myParam.pParticles[i].acc.x = ptrPos[i + 2 * myParam.pParticles.size()];
+			myParam.pParticles[i].acc.y = ptrPos[i + 3 * myParam.pParticles.size()];
 		}
 
 		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-	}
-	else {
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboPosVel);
-		glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, prevPAmount * 4 * sizeof(float), nullptr);
-
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboMass);
-		glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, prevPAmount * sizeof(float), nullptr);
-
-		prevPAmount = 0;
 	}
 }
 
 void freeGPUMemory() {
 
-	glDeleteBuffers(1, &ssboPosVel);
+	glDeleteBuffers(1, &ssboPData);
 	glDeleteBuffers(1, &ssboMass);
 
 	glDeleteBuffers(1, &ssboGrid);
@@ -635,9 +650,7 @@ void freeGPUMemory() {
 	glDeleteBuffers(1, &ssboGridChildren);
 	glDeleteBuffers(1, &ssboGridPIdx);
 
-	// glDeleteBuffers(1, &ssboAcc);
-
-	glDeleteProgram(program);
+	glDeleteProgram(gravityProgram);
 }
 
 // -------- This is an unused quadtree creation method I made for learning purposes. It builds the quadtree from Morton keys -------- //
@@ -957,6 +970,8 @@ glm::vec3 boundingBox() {
 
 uint32_t gridRootIndex;
 
+glm::vec3 bb = { 0.0f, 0.0f, 0.0f };
+
 void updateScene() {
 
 	// If menu is active, do not use mouse input for non-menu stuff. I keep raylib's own mouse input for the menu but the custom IO for non-menu stuff
@@ -975,37 +990,35 @@ void updateScene() {
 	}
 
 	if (myVar.timeFactor != 0.0f) {
+		bb = boundingBox();
 
-		glm::vec3 bb = boundingBox();
+		/*if (myVar.timeFactor >= 0) {
+			myParam.morton.computeMortonKeys(myParam.pParticles, bb);
+			myParam.morton.sortParticlesByMortonKey(myParam.pParticles, myParam.rParticles);
+		}*/
 
-		Quadtree::root(myParam.pParticles, myParam.rParticles, bb);
+		/*if (!myParam.pParticles.empty()) {
+			mortonToQuadtree();
+		}*/
+
+		globalNodes.clear();
+
+		Quadtree root(myParam.pParticles, myParam.rParticles, bb);
+
 		gridRootIndex = 0;
-
-
 	}
 
-	Quadtree& rootNode = Quadtree::globalNodes[gridRootIndex];
-
-	myVar.gridExists = gridRootIndex != -1 && !Quadtree::globalNodes.empty();
+	myVar.gridExists = gridRootIndex != -1 && !globalNodes.empty();
 
 	myVar.halfDomainWidth = myVar.domainSize.x * 0.5f;
 	myVar.halfDomainHeight = myVar.domainSize.y * 0.5f;
 
 	myVar.timeFactor = myVar.fixedDeltaTime * myVar.timeStepMultiplier * static_cast<float>(myVar.isTimePlaying);
 
-	/*if (myVar.timeFactor >= 0) {
-		myParam.morton.computeMortonKeys(myParam.pParticles, rootNode.boundingBoxPos, rootNode.boundingBoxSize);
-		myParam.morton.sortParticlesByMortonKey(myParam.pParticles, myParam.rParticles);
-	}
-
-	if (!myParam.pParticles.empty()) {
-		mortonToQuadtree();
-	}*/
-
 	if (myVar.drawQuadtree) {
-		for (uint32_t i = 0; i < Quadtree::globalNodes.size(); i++) {
+		for (uint32_t i = 0; i < globalNodes.size(); i++) {
 
-			Quadtree& q = Quadtree::globalNodes[i];
+			Node& q = globalNodes[i];
 
 			DrawRectangleLinesEx({ q.pos.x, q.pos.y, q.size, q.size }, 1.0f, WHITE);
 
@@ -1078,6 +1091,16 @@ void updateScene() {
 				myParam.pParticles[i].acc = { 0.0f, 0.0f };
 			}
 
+			/*for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+				if ((myParam.rParticles[i].isBeingDrawn && myVar.isBrushDrawing && myVar.isSPHEnabled)
+					|| myParam.rParticles[i].isPinned) {
+					continue;
+				}
+
+				myParam.pParticles[i].pos += myParam.pParticles[i].vel * myVar.timeFactor
+					+ 0.5f * myParam.pParticles[i].prevAcc * myVar.timeFactor * myVar.timeFactor;
+			}*/
+
 #pragma omp parallel for schedule(dynamic)
 			for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 
@@ -1089,6 +1112,32 @@ void updateScene() {
 
 				myParam.pParticles[i].acc = netForce / myParam.pParticles[i].mass;
 			}
+
+			/*for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+				for (size_t j = i + 1; j < myParam.pParticles.size(); j++) {
+					glm::vec2 d = myParam.pParticles[j].pos - myParam.pParticles[i].pos;
+					float rSq = glm::dot(d, d) + myVar.softening * myVar.softening;
+					float r = sqrt(rSq);
+
+					glm::vec2 forceDir = d / r;
+					float accFactor = myVar.G / rSq;
+
+					myParam.pParticles[i].acc += accFactor * myParam.pParticles[j].mass * forceDir;
+					myParam.pParticles[j].acc -= accFactor * myParam.pParticles[i].mass * forceDir;
+				}
+			}*/
+
+			/*for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+				if ((myParam.rParticles[i].isBeingDrawn && myVar.isBrushDrawing && myVar.isSPHEnabled)
+					|| myParam.rParticles[i].isPinned) {
+					continue;
+				}
+
+				myParam.pParticles[i].vel += 0.5f * (myParam.pParticles[i].prevAcc + myParam.pParticles[i].acc)
+					* myVar.timeFactor;
+
+				myParam.pParticles[i].prevAcc = myParam.pParticles[i].acc;
+			}*/
 		}
 		else {
 			gpuGravity();
@@ -1109,9 +1158,9 @@ void updateScene() {
 
 		ship.spaceshipLogic(myParam.pParticles, myParam.rParticles, myVar.isShipGasEnabled);
 
-		if (!myVar.isGPUEnabled) {
-			physics.physicsUpdate(myParam.pParticles, myParam.rParticles, myVar, myVar.sphGround);
-		}
+		
+	    physics.physicsUpdate(myParam.pParticles, myParam.rParticles, myVar, myVar.sphGround);
+		
 	}
 	else {
 		physics.constraints(myParam.pParticles, myParam.rParticles, myVar);
@@ -1183,7 +1232,7 @@ void updateScene() {
 
 	pinParticles();
 
-	exportObj();
+	exportPly();
 
 	//selectedParticleDebug();
 
@@ -1377,8 +1426,7 @@ void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myRayTracingTexture,
 		}
 	}
 
-
-	myParam.colorVisuals.particlesColorVisuals(myParam.pParticles, myParam.rParticles, myVar.isTempEnabled);
+	myParam.colorVisuals.particlesColorVisuals(myParam.pParticles, myParam.rParticles, myVar.isTempEnabled, myVar.timeFactor);
 
 	myParam.trails.drawTrail(myParam.rParticles, particleBlurTex);
 

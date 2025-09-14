@@ -10,19 +10,22 @@ class ParticleTrails {
 public:
 	float size = 5;
 
-	struct TrailDot {
-		glm::vec2 pos;
-		glm::vec2 offset;
-		Color color;
-	};
-
-	float trailThickness = 0.07f;
+	float trailThickness = 0.5f;
 
 	bool whiteTrails = false;
 
-	std::vector<TrailDot> trailDots;
+	struct Segment {
+		glm::vec2 start;
+		glm::vec2 end;
+		glm::vec2 offset;
+		glm::vec2 prevOffset;
+		Color color;
+	};
+
+	std::vector<Segment> segments;
 
 	glm::vec2 selectedParticlesAveragePos = { 0.0f, 0.0f };
+	glm::vec2 selectedParticlesAveragePrevPos = { 0.0f, 0.0f };
 
 	void trailLogic(UpdateVariables& myVar, UpdateParameters& myParam);
 

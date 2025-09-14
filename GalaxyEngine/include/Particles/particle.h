@@ -29,7 +29,7 @@ struct ParticlePhysics {
 	float temp;
 	float ke;
 	float prevKe;
-	uint64_t mortonKey;
+	uint32_t mortonKey;
 	uint32_t id;
 	std::vector<uint32_t> neighborIds;
 
@@ -103,6 +103,7 @@ struct ParticleRendering {
 	bool isPinned;
 	bool isBeingDrawn;
 	int spawnCorrectIter;
+	float turbulence;
 
 
 	// Default constructor
@@ -112,7 +113,7 @@ struct ParticleRendering {
 		uniqueColor(false), isSolid(false), canBeSubdivided(false),
 		canBeResized(false), isDarkMatter(false), isSPH(false),
 		isSelected(false), isGrabbed(false), previousSize(1.0f),
-		neighbors(0), totalRadius(0.0f), lifeSpan(-1.0f), sphLabel(0), isPinned(false), isBeingDrawn(true), spawnCorrectIter(100000000)
+		neighbors(0), totalRadius(0.0f), lifeSpan(-1.0f), sphLabel(0), isPinned(false), isBeingDrawn(true), spawnCorrectIter(100000000), turbulence(0.0f)
 	{
 	}
 
@@ -144,5 +145,7 @@ struct ParticleRendering {
 		this->isPinned = false;
 		this->isBeingDrawn = false;
 		this->spawnCorrectIter = 100000000;
+
+		this->turbulence = 0.0f;
 	}
 };

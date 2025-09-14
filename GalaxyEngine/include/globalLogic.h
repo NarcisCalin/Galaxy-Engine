@@ -43,12 +43,6 @@ extern GESound geSound;
 extern Lighting lighting;
 extern CopyPaste copyPaste;
 
-Quadtree* gridFunction(std::vector<ParticlePhysics>& pParticles,
-	std::vector<ParticleRendering>& rParticles);
-
-
-void flattenQuadtree(Quadtree* node, std::vector<Quadtree*>& flatList);
-
 struct ParticleBounds {
 	float minX, maxX, minY, maxY;
 };
@@ -58,7 +52,7 @@ void selectedParticleDebug();
 
 void pinParticles();
 
-void buildKernel();
+void buildKernels();
 
 void freeGPUMemory();
 
