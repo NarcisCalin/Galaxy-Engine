@@ -91,18 +91,18 @@ void plyFileCreation(std::ofstream& file) {
 		visibleParticles++;
 	}
 
-	file << "ply" << std::endl;
-	file << "format ascii 1.0" << std::endl;
-	file << "element vertex " << visibleParticles << std::endl;
-	file << "property float x" << std::endl;
-	file << "property float y" << std::endl;
-	file << "property float z" << std::endl;
-	file << "property uchar red" << std::endl;
-	file << "property uchar green" << std::endl;
-	file << "property uchar blue" << std::endl;
-	file << "end_header" << std::endl;
+	constexpr size_t headerSize = 200;
+	constexpr size_t avgLineSize = 90;
+	std::string buffer;
+	buffer.reserve(headerSize + visibleParticles * avgLineSize);
 
+	buffer += "ply\nformat ascii 1.0\nelement vertex ";
+	buffer += std::to_string(visibleParticles);
+	buffer += "\nproperty float x\nproperty float y\nproperty float z\nproperty uchar red\nproperty uchar green\nproperty uchar blue\nproperty float radius\nend_header\n";
+
+	char lineBuffer[64];
 	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+
 		ParticlePhysics& p = myParam.pParticles[i];
 		ParticleRendering& r = myParam.rParticles[i];
 
@@ -121,11 +121,12 @@ void plyFileCreation(std::ofstream& file) {
 		posX *= sizeMultiplier;
 		posY *= sizeMultiplier;
 
-		file << posX << " " << posY << " 0.000000" << " " << 
-			static_cast<int>(r.color.r) << " " <<
-			static_cast<int>(r.color.g) << " " << 
-			static_cast<int>(r.color.b) << std::endl;
+		int len = sprintf(lineBuffer, "%.6g %.6g %.6g %d %d %d %.6g\n",
+			posX, posY, 0.0f, static_cast<int>(r.color.r), static_cast<int>(r.color.g), static_cast<int>(r.color.b), r.size);
+		buffer.append(lineBuffer, len);
 	}
+
+	file << buffer;
 }
 
 void exportPly() {
@@ -1152,14 +1153,13 @@ void updateScene() {
 
 		physics.constraints(myParam.pParticles, myParam.rParticles, myVar);
 
+		ship.spaceshipLogic(myParam.pParticles, myParam.rParticles, myVar.isShipGasEnabled);
+
+	    physics.physicsUpdate(myParam.pParticles, myParam.rParticles, myVar, myVar.sphGround);
+
 		if (myVar.isTempEnabled) {
 			physics.temperatureCalculation(myParam.pParticles, myParam.rParticles, myVar);
 		}
-
-		ship.spaceshipLogic(myParam.pParticles, myParam.rParticles, myVar.isShipGasEnabled);
-
-		
-	    physics.physicsUpdate(myParam.pParticles, myParam.rParticles, myVar, myVar.sphGround);
 		
 	}
 	else {

@@ -1351,9 +1351,9 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 		buttonHelper("Ship Gas", "Enables gas particles coming from the ship when controlling particles", myVar.isShipGasEnabled, -1.0f, settingsButtonY, true, enabled);
 
-		buttonHelper("Export .ply File", "Exports particles to an ply file", myVar.exportPlyFlag, -1.0f, settingsButtonY, true, enabled);
+		buttonHelper("Export .ply File", "Exports particles to a .ply file", myVar.exportPlyFlag, -1.0f, settingsButtonY, true, enabled);
 
-		buttonHelper("Export .ply Seq.", "Exports particles to an ply file each frame, creating an ply sequence", myVar.exportPlySeqFlag, -1.0f, settingsButtonY, true, enabled);
+		buttonHelper("Export .ply Seq.", "Exports particles to a .ply file each frame, creating a .ply sequence", myVar.exportPlySeqFlag, -1.0f, settingsButtonY, true, enabled);
 
 		if (myVar.plyFrameNumber != 0) {
 			ImGui::TextColored(UpdateVariables::colMenuInformation, "%s%d", "Frames Exported: ", myVar.plyFrameNumber);
