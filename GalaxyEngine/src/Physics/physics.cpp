@@ -49,7 +49,7 @@ glm::vec2 Physics::calculateForceFromGrid(std::vector<ParticlePhysics>& pParticl
 			float invDistance = 1.0f / sqrt(distanceSq);
 			float forceMagnitude = static_cast<float>(myVar.G) * pParticle.mass * grid.gridMass
 				* invDistance * invDistance * invDistance;
-			totalForce += d * forceMagnitude;
+				totalForce += d * forceMagnitude;
 
 			if (myVar.isTempEnabled) {
 				uint32_t count = grid.endIndex - grid.startIndex;

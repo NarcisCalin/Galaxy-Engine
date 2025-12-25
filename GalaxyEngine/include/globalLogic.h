@@ -16,6 +16,7 @@
 #include "Physics/physics.h"
 #include "Physics/SPH.h"
 #include "Physics/light.h"
+#include "Physics/field.h"
 
 #include "UI/brush.h"
 #include "UI/rightClickSettings.h"
@@ -42,6 +43,8 @@ extern SaveSystem save;
 extern GESound geSound;
 extern Lighting lighting;
 extern CopyPaste copyPaste;
+
+extern Field field;
 
 struct ParticleBounds {
 	float minX, maxX, minY, maxY;

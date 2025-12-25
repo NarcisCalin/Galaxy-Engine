@@ -242,4 +242,7 @@ struct UpdateVariables{
 	bool toolMoveOptics = false;
 	bool toolEraseOptics = false;
 	bool toolSelectOptics = false;
+
+	bool isGravityFieldEnabled = false;
+	bool gravityFieldDMParticles = true;
 };

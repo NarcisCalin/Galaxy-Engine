@@ -1,6 +1,6 @@
 #include "UI/UI.h"
 
-void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, SaveSystem& save, GESound& geSound, Lighting& lighting) {
+void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, SaveSystem& save, GESound& geSound, Lighting& lighting, Field& field) {
 
 	if (IO::shortcutPress(KEY_U)) {
 		showSettings = !showSettings;
@@ -461,6 +461,19 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	ImGui::Spacing();
 	ImGui::Separator();
 
+	ImGui::TextColored(UpdateVariables::colMenuInformation, "Fields");
+
+	ImGui::Separator();
+	ImGui::Spacing();
+
+	if (buttonHelper("Gravity Field", "Enables the gravity field visualization mode", myVar.isGravityFieldEnabled, -1.0f, settingsButtonY, true, enabled)) {
+		field.computeField = true;
+	}
+	buttonHelper("DM Particles", "Enables ignores Dark Matter particles for the gravity field", myVar.gravityFieldDMParticles, -1.0f, settingsButtonY, true, enabled);
+
+	ImGui::Spacing();
+	ImGui::Separator();
+
 	ImGui::Spacing();
 	ImGui::TextColored(UpdateVariables::colMenuInformation, "Misc.");
 
@@ -695,6 +708,19 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 			sliderHelper("Trails Length", "Controls how long should the trails be. This feature is computationally expensive", myVar.trailMaxLength, 0, 1500, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Trails Thickness", "Controls the trails thickness", myParam.trails.trailThickness, 0.01f, 1.5f, parametersSliderX, parametersSliderY, enabled);
+
+			ImGui::Spacing();
+			ImGui::Separator();
+
+			ImGui::TextColored(UpdateVariables::colMenuInformation, "Field Parameters");
+
+			ImGui::Separator();
+			ImGui::Spacing();
+
+			sliderHelper("Field Res", "Controls how much gravity affects the field colors", field.res, 50, 1000, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Gravity Display Threshold", "Controls how much gravity affects the field colors", field.gravityDisplayThreshold, 10.0f, 3000.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Gravity Display Softness", "Controls how soft the gravity display looks", field.gravityDisplaySoftness, 0.4f, 8.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Gravity Display Stretch", "Controls how contrasty the gravity display looks", field.gravityStretchFactor, 0.5f, 500.0f, parametersSliderX, parametersSliderY, enabled);
 
 			ImGui::Spacing();
 			ImGui::Separator();

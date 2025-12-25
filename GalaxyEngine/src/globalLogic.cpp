@@ -11,6 +11,8 @@ GESound geSound;
 Lighting lighting;
 CopyPaste copyPaste;
 
+Field field;
+
 std::vector<Node> globalNodes;
 
 uint32_t globalId = 0;
@@ -194,7 +196,7 @@ void exportPly() {
 		}
 
 		plyFileCreation(plyFile);
-		
+
 		plyFile.close();
 		std::cout << "Particles at frame " << currentFrameNumber
 			<< " exported to " << filePath << std::endl;
@@ -514,6 +516,7 @@ void gravityKernel() {
 
 void buildKernels() {
 	gravityKernel();
+	field.fieldGravityDisplayKernel();
 }
 
 std::vector<float> pData;
@@ -652,6 +655,12 @@ void freeGPUMemory() {
 	glDeleteBuffers(1, &ssboGridPIdx);
 
 	glDeleteProgram(gravityProgram);
+
+	glDeleteBuffers(1, &field.ssboParticlesPos);
+	glDeleteBuffers(1, &field.ssboParticlesMass);
+	glDeleteBuffers(1, &field.ssboCellsData);
+
+	glDeleteProgram(field.gravityDisplayProgram);
 }
 
 // -------- This is an unused quadtree creation method I made for learning purposes. It builds the quadtree from Morton keys -------- //
@@ -984,6 +993,12 @@ void updateScene() {
 		lighting.rayLogic(myVar, myParam);
 	}
 
+	if (myVar.isGravityFieldEnabled) {
+		field.initializeCells(myVar);
+
+		field.fieldLogic(myParam, myVar);
+	}
+
 	myVar.G = 6.674e-11 * myVar.gravityMultiplier;
 
 	if (IO::shortcutPress(KEY_SPACE)) {
@@ -1155,18 +1170,20 @@ void updateScene() {
 
 		ship.spaceshipLogic(myParam.pParticles, myParam.rParticles, myVar.isShipGasEnabled);
 
-	    physics.physicsUpdate(myParam.pParticles, myParam.rParticles, myVar, myVar.sphGround);
+		physics.physicsUpdate(myParam.pParticles, myParam.rParticles, myVar, myVar.sphGround);
 
 		if (myVar.isTempEnabled) {
 			physics.temperatureCalculation(myParam.pParticles, myParam.rParticles, myVar);
 		}
-		
+
 	}
 	else {
 		physics.constraints(myParam.pParticles, myParam.rParticles, myVar);
 	}
 
-	if ((myVar.isDensitySizeEnabled || myParam.colorVisuals.densityColor) && myVar.timeFactor > 0.0f) {
+	field.gpuGravityDisplay(myParam, myVar);
+
+	if ((myVar.isDensitySizeEnabled || myParam.colorVisuals.densityColor) && myVar.timeFactor > 0.0f && !myVar.isGravityFieldEnabled) {
 		myParam.neighborSearch.neighborSearch(myParam.pParticles, myParam.rParticles, myVar.particleSizeMultiplier, myVar.particleTextureHalfSize);
 	}
 
@@ -1404,29 +1421,36 @@ std::vector<std::pair<std::string, int>> introMessages = {
 void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myRayTracingTexture,
 	RenderTexture2D& myUITexture, RenderTexture2D& myMiscTexture, bool& fadeActive, bool& introActive) {
 
-	for (int i = 0; i < myParam.pParticles.size(); ++i) {
-
-		ParticlePhysics& pParticle = myParam.pParticles[i];
-		ParticleRendering& rParticle = myParam.rParticles[i];
-
-
-		// Texture size is set to 16 because that is the particle texture half size in pixels
-		DrawTextureEx(particleBlurTex, { static_cast<float>(pParticle.pos.x - rParticle.size * myVar.particleTextureHalfSize),
-			static_cast<float>(pParticle.pos.y - rParticle.size * myVar.particleTextureHalfSize) }, 0.0f, rParticle.size, rParticle.color);
-
-
-		if (!myVar.isDensitySizeEnabled) {
-
-			if (rParticle.canBeResized || myVar.isMergerEnabled) {
-				rParticle.size = rParticle.previousSize * myVar.particleSizeMultiplier;
-			}
-			else {
-				rParticle.size = rParticle.previousSize;
-			}
-		}
+	if (!field.cells.empty() && !myParam.pParticles.empty() && myVar.isGravityFieldEnabled) {
+		field.drawField();
 	}
 
-	myParam.colorVisuals.particlesColorVisuals(myParam.pParticles, myParam.rParticles, myVar.isTempEnabled, myVar.timeFactor);
+	if (!myVar.isGravityFieldEnabled) {
+		for (int i = 0; i < myParam.pParticles.size(); ++i) {
+
+			ParticlePhysics& pParticle = myParam.pParticles[i];
+			ParticleRendering& rParticle = myParam.rParticles[i];
+
+
+			// Texture size is set to 16 because that is the particle texture half size in pixels
+			DrawTextureEx(particleBlurTex, { static_cast<float>(pParticle.pos.x - rParticle.size * myVar.particleTextureHalfSize),
+				static_cast<float>(pParticle.pos.y - rParticle.size * myVar.particleTextureHalfSize) }, 0.0f, rParticle.size, rParticle.color);
+
+
+			if (!myVar.isDensitySizeEnabled) {
+
+				if (rParticle.canBeResized || myVar.isMergerEnabled) {
+					rParticle.size = rParticle.previousSize * myVar.particleSizeMultiplier;
+				}
+				else {
+					rParticle.size = rParticle.previousSize;
+				}
+			}
+		}
+
+
+		myParam.colorVisuals.particlesColorVisuals(myParam.pParticles, myParam.rParticles, myVar.isTempEnabled, myVar.timeFactor);
+	}
 
 	myParam.trails.drawTrail(myParam.rParticles, particleBlurTex);
 
@@ -1439,7 +1463,6 @@ void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myRayTracingTexture,
 	}
 
 	EndTextureMode();
-
 
 	// Ray Tracing
 
@@ -1495,7 +1518,7 @@ void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myRayTracingTexture,
 	// EVERYTHING STATIC RELATIVE TO CAMERA BELOW
 
 	if (!introActive) {
-		myUI.uiLogic(myParam, myVar, sph, save, geSound, lighting);
+		myUI.uiLogic(myParam, myVar, sph, save, geSound, lighting, field);
 	}
 
 	save.saveLoadLogic(myVar, myParam, sph, physics, lighting);

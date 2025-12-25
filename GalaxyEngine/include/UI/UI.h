@@ -12,6 +12,8 @@
 
 #include "parameters.h"
 
+#include "Physics/field.h"
+
 class SaveSystem;
 
 struct settingsParams {
@@ -44,7 +46,7 @@ public:
 	bool bSoundWindow = false;
 	bool bLightingWindow = false;
 
-	void uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, SaveSystem& save, GESound& geSound, Lighting& lighting);
+	void uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, SaveSystem& save, GESound& geSound, Lighting& lighting, Field& field);
 
 	void statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar);
 
