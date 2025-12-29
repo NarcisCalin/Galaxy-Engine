@@ -9,19 +9,7 @@ struct Cell {
 	bool isActive = false;
 	float strength = 0.0f;
 
-	/*Cell(glm::vec2 pos, float size) {
-		this->pos = pos;
-		this->size = size;
-	}*/
-
 	void drawCell() {
-
-		/*if (isActive) {
-			col = WHITE;
-		}
-		else {
-			col = { 5,5,5,255 };
-		}*/
 
 		DrawRectangleV({ pos.x, pos.y }, { size, size }, col);
 	}
@@ -92,26 +80,7 @@ struct Field {
 		}
 	}
 
-	void fieldLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
-
-		//glm::vec2 mouseWorldPos = myParam.myCamera.mouseWorldPos;
-
-		//for (size_t i = 0; i < cells.size(); i++) {
-		//	if ((mouseWorldPos.x > cells[i].pos.x && mouseWorldPos.x < cells[i].pos.x + cells[i].size) &&
-		//		mouseWorldPos.y > cells[i].pos.y && mouseWorldPos.y < cells[i].pos.y + cells[i].size) {
-
-		//		cells[i].isActive = true;
-
-		//		cells[i].strength = 1.0f;
-		//	}
-		//	else {
-		//		cells[i].isActive = false;
-		//	}
-		//}
-
-		//for (size_t i = 0; i < cells.size(); i++) {
-		//	//DrawText(TextFormat("%i", i), cells[i].pos.x, cells[i].pos.y, 2.0f, BLUE);
-		//}
+	//void fieldLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 
 //#pragma omp parallel for schedule(dynamic)
 //		for (size_t i = 0; i < cells.size(); i++) {
@@ -132,22 +101,22 @@ struct Field {
 //
 //			cells[i].strength = force;
 //		}
-	}
+	//}
 
 	const char* fieldGravityCompute = R"(
 #version 430
 
 layout(local_size_x = 256) in;
 
-layout(std430, binding = 0) buffer ParticlesPos {
+layout(std430, binding = 7) buffer ParticlesPos {
     float particlesPos[];
 };
 
-layout(std430, binding = 1) buffer ParticlesMass {
+layout(std430, binding = 8) buffer ParticlesMass {
     float particlesMass[];
 };
 
-layout(std430, binding = 2) buffer CellsData {
+layout(std430, binding = 9) buffer CellsData {
     float cellsData[];
 };
 
@@ -197,34 +166,124 @@ void main() {
 }
 )";
 
+
+	const char* fieldFragmentShader = R"(
+#version 430
+
+layout(std430, binding = 9) buffer CellsData {
+    float cellsData[];
+};
+
+uniform int amountX;
+uniform int amountY;
+uniform float cellSize;
+uniform float gravityDisplayThreshold;
+uniform float stretchFactor;
+uniform float exposure; 
+
+uniform bool useTwoColorMode;
+uniform vec3 colorLow;
+uniform vec3 colorHigh;
+
+in vec2 fragPosition;
+out vec4 finalColor;
+
+vec3 hsv2rgb(vec3 c) {
+    vec4 K = vec4(1.0, 2.0/3.0, 1.0/3.0, 3.0);
+    vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+    return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
+
+void main() {
+    int cellX = int(fragPosition.x / cellSize);
+    int cellY = int(fragPosition.y / cellSize);
+
+    if (cellX < 0 || cellX >= amountX || cellY < 0 || cellY >= amountY)
+        discard;
+
+    int cellIndex = cellY + cellX * amountY;
+    float strength = cellsData[cellIndex + 2 * amountX * amountY];
+
+    float clamped = clamp(strength, 0.0, gravityDisplayThreshold);
+    float normalized = clamped / gravityDisplayThreshold;
+    float stretched = log(1.0 + normalized * stretchFactor) / log(1.0 + stretchFactor);
+
+    vec3 color;
+
+    if (useTwoColorMode) {
+        vec3 base = mix(colorLow, colorHigh, stretched);
+        color = base * stretched; 
+
+        color *= exposure; 
+    } else {
+        float hue = (1.0 - stretched) * 240.0;
+        color = hsv2rgb(vec3(hue / 360.0, 1.0, stretched));
+    }
+
+    finalColor = vec4(color, 1.0);
+}
+)";
+
 	GLuint ssboParticlesPos, ssboParticlesMass, ssboCellsData;
 	GLuint gravityDisplayProgram;
 
+	const char* fieldVertexShader = R"(
+#version 430
+in vec3 vertexPosition;
+in vec2 vertexTexCoord;
+
+uniform mat4 mvp;
+
+out vec2 fragPosition;
+
+void main()
+{
+    fragPosition = vertexPosition.xy; 
+    gl_Position = mvp * vec4(vertexPosition, 1.0);
+}
+)";
+
+	Shader drawShader;
+
+
 	void fieldGravityDisplayKernel() {
+
+		drawShader = LoadShaderFromMemory(fieldVertexShader, fieldFragmentShader);
+
+		if (drawShader.id == 0) {
+			std::cout << "Fragment shader failed to load\n";
+		}
+
+		const size_t maxVRAM = size_t(512) * 1024 * 1024;
+
+		const size_t usableVRAM = size_t(maxVRAM * 0.8f);
+
+		const size_t bytesPerParticle = 6 * sizeof(float);
+		const size_t maxParticles = usableVRAM / bytesPerParticle;
 
 		glGenBuffers(1, &ssboParticlesPos);
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboParticlesPos);
 		glBufferData(GL_SHADER_STORAGE_BUFFER,
-			1000000 * 2 * sizeof(float),
+			maxParticles * 2 * sizeof(float),
 			nullptr,
 			GL_DYNAMIC_DRAW);
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssboParticlesPos);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, ssboParticlesPos);
 
 		glGenBuffers(1, &ssboParticlesMass);
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboParticlesMass);
 		glBufferData(GL_SHADER_STORAGE_BUFFER,
-			1000000 * sizeof(float),
+			maxParticles * sizeof(float),
 			nullptr,
 			GL_DYNAMIC_DRAW);
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssboParticlesMass);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 8, ssboParticlesMass);
 
 		glGenBuffers(1, &ssboCellsData);
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboCellsData);
 		glBufferData(GL_SHADER_STORAGE_BUFFER,
-			1000000 * 3 * sizeof(float),
+			maxParticles * 3 * sizeof(float),
 			nullptr,
 			GL_DYNAMIC_DRAW);
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, ssboCellsData);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 9, ssboCellsData);
 
 		gravityDisplayProgram = glCreateProgram();
 		GLuint shader = glCreateShader(GL_COMPUTE_SHADER);
@@ -258,8 +317,9 @@ void main() {
 
 	void gpuGravityDisplay(UpdateParameters& myParam, UpdateVariables& myVar) {
 
-		if (myParam.pParticles.empty())
+		if (myParam.pParticles.empty() || !myVar.isGravityFieldEnabled) {
 			return;
+		}
 
 		size_t particleCount = myParam.pParticles.size();
 
@@ -354,24 +414,57 @@ void main() {
 	float value = 0.5f;
 
 	float gravityStretchFactor = 90.0f;
-	float gravityExtraContrastFactor = 0.0f;
 
-	void drawField() {
+	bool gravityCustomColors = false;
 
-		for (size_t i = 0; i < cells.size(); i++) {
+	float gravityExposure = 3.0f;
 
-			float clampedAcc = std::clamp(cells[i].strength, 0.0f, gravityDisplayThreshold);
-			float normalizedAcc = clampedAcc / gravityDisplayThreshold;
+	void drawField(UpdateParameters& myParam, UpdateVariables& myVar)
+	{
+		BeginMode2D(myParam.myCamera.camera);
+		BeginShaderMode(drawShader);
 
-			float stretchFactor = gravityStretchFactor;
-			float stretchedAcc = std::log1p(normalizedAcc * stretchFactor) / std::log1p(stretchFactor);
+		int exposureLoc = GetShaderLocation(drawShader, "exposure");
 
-			hue = (1.0f - stretchedAcc) * 240.0f;
-			saturation = 1.0f;
-			value = stretchedAcc;
+		int amtXLoc = GetShaderLocation(drawShader, "amountX");
+		int amtYLoc = GetShaderLocation(drawShader, "amountY");
+		int sizeLoc = GetShaderLocation(drawShader, "cellSize");
+		int threshLoc = GetShaderLocation(drawShader, "gravityDisplayThreshold");
+		int stretchLoc = GetShaderLocation(drawShader, "stretchFactor");
 
-			cells[i].col = ColorFromHSV(hue, saturation, value);
-			cells[i].drawCell();
-		}
+		int lowLoc = GetShaderLocation(drawShader, "colorLow");
+		int highLoc = GetShaderLocation(drawShader, "colorHigh");
+
+		float lowColor[3] = {
+			static_cast<float>(myParam.colorVisuals.pColor.r / 255.0f),
+			static_cast<float>(myParam.colorVisuals.pColor.g / 255.0f),
+			static_cast<float>(myParam.colorVisuals.pColor.b / 255.0f)
+		};
+
+		float highColor[3] = {
+			static_cast<float>(myParam.colorVisuals.sColor.r / 255.0f),
+			static_cast<float>(myParam.colorVisuals.sColor.g / 255.0f),
+			static_cast<float>(myParam.colorVisuals.sColor.b / 255.0f)
+		};
+
+		SetShaderValue(drawShader, exposureLoc, &gravityExposure, SHADER_UNIFORM_FLOAT);
+
+		SetShaderValue(drawShader, lowLoc, lowColor, SHADER_UNIFORM_VEC3);
+		SetShaderValue(drawShader, highLoc, highColor, SHADER_UNIFORM_VEC3);
+
+		int toggleLoc = GetShaderLocation(drawShader, "useTwoColorMode");
+		int shaderBool = gravityCustomColors ? 1 : 0;
+		SetShaderValue(drawShader, toggleLoc, &shaderBool, SHADER_UNIFORM_INT);
+
+		SetShaderValue(drawShader, amtXLoc, &amountX, SHADER_UNIFORM_INT);
+		SetShaderValue(drawShader, amtYLoc, &amountY, SHADER_UNIFORM_INT);
+		SetShaderValue(drawShader, sizeLoc, &cellSize, SHADER_UNIFORM_FLOAT);
+		SetShaderValue(drawShader, threshLoc, &gravityDisplayThreshold, SHADER_UNIFORM_FLOAT);
+		SetShaderValue(drawShader, stretchLoc, &gravityStretchFactor, SHADER_UNIFORM_FLOAT);
+
+		DrawRectangleV({ 0.0f, 0.0f }, { myVar.domainSize.x, myVar.domainSize.y }, WHITE);
+
+		EndShaderMode();
+		EndMode2D();
 	}
 };

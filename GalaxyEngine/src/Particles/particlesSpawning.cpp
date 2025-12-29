@@ -353,7 +353,7 @@ void ParticlesSpawning::particlesInitialConditions(Physics& physics, UpdateVaria
 			myVar.isDragging = false;
 		}
 
-		if ((IO::shortcutReleased(KEY_THREE) || IO::mouseReleased(0) && myVar.toolSpawnStar)) {
+		if ((IO::shortcutReleased(KEY_THREE) || IO::mouseReleased(0) && myVar.toolSpawnStar) && !IO::shortcutDown(KEY_LEFT_CONTROL) && !IO::shortcutDown(KEY_LEFT_ALT)) {
 
 			for (int i = 0; i < static_cast<int>(10000 * particleAmountMultiplier); i++) {
 
@@ -404,7 +404,7 @@ void ParticlesSpawning::particlesInitialConditions(Physics& physics, UpdateVaria
 			myVar.isDragging = false;
 		}
 
-		if ((IO::shortcutPress(KEY_FOUR) || IO::mouseReleased(0) && myVar.toolSpawnBigBang)) {
+		if ((IO::shortcutPress(KEY_FOUR) || IO::mouseReleased(0) && myVar.toolSpawnBigBang) && !IO::shortcutDown(KEY_LEFT_CONTROL) && !IO::shortcutDown(KEY_LEFT_ALT)) {
 
 			// VISIBLE MATTER
 

@@ -466,7 +466,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	ImGui::Separator();
 	ImGui::Spacing();
 
-	if (buttonHelper("Gravity Field", "Enables the gravity field visualization mode", myVar.isGravityFieldEnabled, -1.0f, settingsButtonY, true, enabled)) {
+	if (buttonHelper("Gravity Field", "Enables the gravity field visualization mode (IT IS RECOMMENDED TO USE SMALLER DOMAIN SIZES)", myVar.isGravityFieldEnabled, -1.0f, settingsButtonY, true, enabled)) {
 		field.computeField = true;
 	}
 	buttonHelper("DM Particles", "Enables ignores Dark Matter particles for the gravity field", myVar.gravityFieldDMParticles, -1.0f, settingsButtonY, true, enabled);
@@ -720,7 +720,9 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			sliderHelper("Field Res", "Controls how much gravity affects the field colors", field.res, 50, 1000, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Gravity Display Threshold", "Controls how much gravity affects the field colors", field.gravityDisplayThreshold, 10.0f, 3000.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Gravity Display Softness", "Controls how soft the gravity display looks", field.gravityDisplaySoftness, 0.4f, 8.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Gravity Display Stretch", "Controls how contrasty the gravity display looks", field.gravityStretchFactor, 0.5f, 500.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Gravity Display Stretch", "Controls how contrasty the gravity display looks", field.gravityStretchFactor, 1.0f, 10000.0f, parametersSliderX, parametersSliderY, enabled);
+			buttonHelper("Gravity Custom Colors", "Enables the use of primary and secondary colors for the gravity field", field.gravityCustomColors, 212.0f, 24.0f, true, enabled);
+			sliderHelper("Gravity Custom Color Exp.", "Controls the exposure of the custom color mode for the gravity field", field.gravityExposure, 0.001f, 15.0f, parametersSliderX, parametersSliderY, enabled);
 
 			ImGui::Spacing();
 			ImGui::Separator();

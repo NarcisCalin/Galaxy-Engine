@@ -2,6 +2,7 @@
 
 #include "Particles/particle.h"
 #include "Physics/light.h"
+#include "Physics/field.h"
 
 #include "Physics/SPH.h"
 #include "Physics/physics.h"
@@ -30,7 +31,8 @@ public:
 	const uint32_t version170 = 170;
 	const uint32_t version171 = 171;
 	const uint32_t version172 = 172;
-	const uint32_t currentVersion = version172; // VERY IMPORTANT. CHANGE THIS IF YOU MAKE ANY CHANGES TO THE SAVE SYSTEM. VERSION "1.6.0" = 160, VERSION "1.6.12" = 1612
+	const uint32_t version173 = 173;
+	const uint32_t currentVersion = version173; // VERY IMPORTANT. CHANGE THIS IF YOU MAKE ANY CHANGES TO THE SAVE SYSTEM. VERSION "1.6.0" = 160, VERSION "1.6.12" = 1612
 
 	template <typename T>
 	void paramIO(const std::string& filename, YAML::Emitter& out, std::string key, T& value) {
@@ -109,7 +111,7 @@ public:
 		}
 	}
 
-	void saveSystem(const std::string& filename, UpdateVariables& myVar, UpdateParameters& myParam, SPH& sph, Physics& physics, Lighting& lighting);
+	void saveSystem(const std::string& filename, UpdateVariables& myVar, UpdateParameters& myParam, SPH& sph, Physics& physics, Lighting& lighting, Field& field);
 
 	bool deserializeParticleSystem(const std::string& filename,
 		std::string& yamlString,
@@ -160,6 +162,9 @@ public:
 		}
 
 		if (loadedVersion == currentVersion) {
+			deserializeVersion172(file, myParam, physics, lighting);
+		}
+		else if (loadedVersion == version172) {
 			deserializeVersion172(file, myParam, physics, lighting);
 		}
 		else if (loadedVersion == version171) {
@@ -915,7 +920,7 @@ public:
 	}
 
 
-	void saveLoadLogic(UpdateVariables& myVar, UpdateParameters& myParam, SPH& sph, Physics& physics, Lighting& lighting);
+	void saveLoadLogic(UpdateVariables& myVar, UpdateParameters& myParam, SPH& sph, Physics& physics, Lighting& lighting, Field& field);
 
 private:
 

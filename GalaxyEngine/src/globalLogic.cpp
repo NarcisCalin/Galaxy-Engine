@@ -995,8 +995,6 @@ void updateScene() {
 
 	if (myVar.isGravityFieldEnabled) {
 		field.initializeCells(myVar);
-
-		field.fieldLogic(myParam, myVar);
 	}
 
 	myVar.G = 6.674e-11 * myVar.gravityMultiplier;
@@ -1422,7 +1420,7 @@ void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myRayTracingTexture,
 	RenderTexture2D& myUITexture, RenderTexture2D& myMiscTexture, bool& fadeActive, bool& introActive) {
 
 	if (!field.cells.empty() && !myParam.pParticles.empty() && myVar.isGravityFieldEnabled) {
-		field.drawField();
+		field.drawField(myParam, myVar);
 	}
 
 	if (!myVar.isGravityFieldEnabled) {
@@ -1521,7 +1519,7 @@ void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myRayTracingTexture,
 		myUI.uiLogic(myParam, myVar, sph, save, geSound, lighting, field);
 	}
 
-	save.saveLoadLogic(myVar, myParam, sph, physics, lighting);
+	save.saveLoadLogic(myVar, myParam, sph, physics, lighting, field);
 
 	myParam.subdivision.subdivideParticles(myVar, myParam);
 

@@ -1,6 +1,6 @@
 #include "UX/saveSystem.h"
 
-void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar, UpdateParameters& myParam, SPH& sph, Physics& physics, Lighting& lighting) {
+void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar, UpdateParameters& myParam, SPH& sph, Physics& physics, Lighting& lighting, Field& field) {
 
 	YAML::Emitter out;
 	/*out << YAML::BeginMap;*/
@@ -187,6 +187,18 @@ void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar,
 	paramIO(filename, out, "SymmetricalLens", lighting.symmetricalLens);
 	paramIO(filename, out, "ShowNormals", lighting.drawNormals);
 	paramIO(filename, out, "RelaxMove", lighting.relaxMove);
+
+	// ----- Gravity Field -----
+	paramIO(filename, out, "GravityField", myVar.isGravityFieldEnabled);
+	paramIO(filename, out, "GravityFieldDM", myVar.gravityFieldDMParticles);
+	paramIO(filename, out, "GravityDisplayThreshold", field.gravityDisplayThreshold);
+	paramIO(filename, out, "GravityDisplaySoftness", field.gravityDisplaySoftness);
+	paramIO(filename, out, "GravityDisplayStretch", field.gravityStretchFactor);
+	paramIO(filename, out, "GravityCustomColors", field.gravityCustomColors);
+	paramIO(filename, out, "GravityCustomColExp", field.gravityExposure);
+
+	// ----- Field Misc -----
+	paramIO(filename, out, "FieldRes", field.res);
 
 	/*out << YAML::EndMap;*/
 
@@ -459,7 +471,7 @@ void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar,
 	deserializeParticleSystem(filename, yamlString, myVar, myParam, sph, physics, lighting, loadFlag);
 }
 
-void SaveSystem::saveLoadLogic(UpdateVariables& myVar, UpdateParameters& myParam, SPH& sph, Physics& physics, Lighting& lighting) {
+void SaveSystem::saveLoadLogic(UpdateVariables& myVar, UpdateParameters& myParam, SPH& sph, Physics& physics, Lighting& lighting, Field& field) {
 	if (saveFlag) {
 		if (!std::filesystem::exists("Saves")) {
 			std::filesystem::create_directory("Saves");
@@ -483,7 +495,7 @@ void SaveSystem::saveLoadLogic(UpdateVariables& myVar, UpdateParameters& myParam
 
 		std::string savePath = "Saves/Save_" + std::to_string(nextAvailableIndex) + ".bin";
 
-		saveSystem(savePath.c_str(), myVar, myParam, sph, physics, lighting);
+		saveSystem(savePath.c_str(), myVar, myParam, sph, physics, lighting, field);
 
 		saveIndex++;
 
@@ -578,7 +590,7 @@ void SaveSystem::saveLoadLogic(UpdateVariables& myVar, UpdateParameters& myParam
 			bool enabled = true;
 
 			if (UI::buttonHelper(fullPath.c_str(), "Select scene file", placeHolder, ImGui::GetContentRegionAvail().x, buttonHeight, enabled, enabled)) {
-				saveSystem(fullPath.c_str(), myVar, myParam, sph, physics, lighting);
+				saveSystem(fullPath.c_str(), myVar, myParam, sph, physics, lighting, field);
 				loadFlag = false;
 			}
 
