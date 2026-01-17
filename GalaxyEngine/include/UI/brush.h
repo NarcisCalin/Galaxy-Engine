@@ -25,7 +25,7 @@ public:
 
 	Brush(SceneCamera myCamera, float brushRadius);
 
-	void brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& constraintAfterDrawing);
+	void brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& constraintAfterDrawing, float& massScatter);
 
 	void brushSize();
 

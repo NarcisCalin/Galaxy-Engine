@@ -1004,6 +1004,14 @@ void updateScene() {
 	}
 
 	if (myVar.timeFactor != 0.0f) {
+		physics.integrateStart(myParam.pParticles, myParam.rParticles, myVar);
+
+		if (!myVar.isPeriodicBoundaryEnabled && !myVar.sphGround) {
+			physics.pruneParticles(myParam.pParticles, myParam.rParticles, myVar);
+		}
+	}
+
+	if (myVar.timeFactor != 0.0f) {
 		bb = boundingBox();
 
 		/*if (myVar.timeFactor >= 0) {
@@ -1098,22 +1106,12 @@ void updateScene() {
 	copyPaste.copyPasteParticles(myVar, myParam, physics);
 	copyPaste.copyPasteOptics(myParam, lighting);
 
-	if ((myVar.timeFactor > 0.0f && myVar.gridExists) || myVar.isGPUEnabled) {
+	if ((myVar.timeFactor != 0.0f && myVar.gridExists) || myVar.isGPUEnabled) {
 
 		if (!myVar.isGPUEnabled) {
 			for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 				myParam.pParticles[i].acc = { 0.0f, 0.0f };
 			}
-
-			/*for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-				if ((myParam.rParticles[i].isBeingDrawn && myVar.isBrushDrawing && myVar.isSPHEnabled)
-					|| myParam.rParticles[i].isPinned) {
-					continue;
-				}
-
-				myParam.pParticles[i].pos += myParam.pParticles[i].vel * myVar.timeFactor
-					+ 0.5f * myParam.pParticles[i].prevAcc * myVar.timeFactor * myVar.timeFactor;
-			}*/
 
 #pragma omp parallel for schedule(dynamic)
 			for (size_t i = 0; i < myParam.pParticles.size(); i++) {
@@ -1126,32 +1124,6 @@ void updateScene() {
 
 				myParam.pParticles[i].acc = netForce / myParam.pParticles[i].mass;
 			}
-
-			/*for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-				for (size_t j = i + 1; j < myParam.pParticles.size(); j++) {
-					glm::vec2 d = myParam.pParticles[j].pos - myParam.pParticles[i].pos;
-					float rSq = glm::dot(d, d) + myVar.softening * myVar.softening;
-					float r = sqrt(rSq);
-
-					glm::vec2 forceDir = d / r;
-					float accFactor = myVar.G / rSq;
-
-					myParam.pParticles[i].acc += accFactor * myParam.pParticles[j].mass * forceDir;
-					myParam.pParticles[j].acc -= accFactor * myParam.pParticles[i].mass * forceDir;
-				}
-			}*/
-
-			/*for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-				if ((myParam.rParticles[i].isBeingDrawn && myVar.isBrushDrawing && myVar.isSPHEnabled)
-					|| myParam.rParticles[i].isPinned) {
-					continue;
-				}
-
-				myParam.pParticles[i].vel += 0.5f * (myParam.pParticles[i].prevAcc + myParam.pParticles[i].acc)
-					* myVar.timeFactor;
-
-				myParam.pParticles[i].prevAcc = myParam.pParticles[i].acc;
-			}*/
 		}
 		else {
 			gpuGravity();
@@ -1168,7 +1140,9 @@ void updateScene() {
 
 		ship.spaceshipLogic(myParam.pParticles, myParam.rParticles, myVar.isShipGasEnabled);
 
-		physics.physicsUpdate(myParam.pParticles, myParam.rParticles, myVar, myVar.sphGround);
+		physics.integrateEnd(myParam.pParticles, myVar);
+
+		//physics.physicsUpdate(myParam.pParticles, myParam.rParticles, myVar, myVar.sphGround);
 
 		if (myVar.isTempEnabled) {
 			physics.temperatureCalculation(myParam.pParticles, myParam.rParticles, myVar);

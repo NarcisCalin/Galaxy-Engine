@@ -626,6 +626,77 @@ void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vecto
 	}
 }
 
+void Physics::integrateStart(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar) {
+	float dt = myVar.timeFactor;
+	float halfDt = dt * 0.5f;
+	float sphMaxVelSq = myVar.sphMaxVel * myVar.sphMaxVel;
+
+#pragma omp parallel for schedule(dynamic)
+	for (size_t i = 0; i < pParticles.size(); i++) {
+		ParticlePhysics& p = pParticles[i];
+
+		p.prevVel = p.vel;
+
+		p.vel += p.acc * halfDt;
+
+		if (myVar.isSPHEnabled) {
+			float vSq = p.vel.x * p.vel.x + p.vel.y * p.vel.y;
+
+			if (vSq > sphMaxVelSq) {
+				float prevVSq = p.prevVel.x * p.prevVel.x + p.prevVel.y * p.prevVel.y;
+
+				if (prevVSq > 0.00001f) {
+					float invPrevLen = myVar.sphMaxVel / sqrtf(prevVSq);
+					p.prevVel *= invPrevLen;
+				}
+
+				float invLen = myVar.sphMaxVel / sqrtf(vSq);
+				p.vel *= invLen;
+			}
+		}
+
+		p.pos += p.vel * dt;
+
+		if (myVar.isPeriodicBoundaryEnabled) {
+			if (p.pos.x < 0.0f) p.pos.x += myVar.domainSize.x;
+			else if (p.pos.x >= myVar.domainSize.x) p.pos.x -= myVar.domainSize.x;
+
+			if (p.pos.y < 0.0f) p.pos.y += myVar.domainSize.y;
+			else if (p.pos.y >= myVar.domainSize.y) p.pos.y -= myVar.domainSize.y;
+		}
+	}
+}
+
+void Physics::integrateEnd(std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar) {
+	float dt = myVar.timeFactor;
+
+#pragma omp parallel for schedule(dynamic)
+	for (size_t i = 0; i < pParticles.size(); i++) {
+		pParticles[i].vel += pParticles[i].acc * (dt * 0.5f);
+	}
+}
+
+void Physics::pruneParticles(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar) {
+
+	for (size_t i = 0; i < pParticles.size(); ) {
+		float x = pParticles[i].pos.x;
+		float y = pParticles[i].pos.y;
+
+		if (x <= 0.0f || x >= myVar.domainSize.x || y <= 0.0f || y >= myVar.domainSize.y) {
+
+			if (pParticles.size() > 1) {
+				std::swap(pParticles[i], pParticles.back());
+				std::swap(rParticles[i], rParticles.back());
+			}
+			pParticles.pop_back();
+			rParticles.pop_back();
+		}
+		else {
+			i++;
+		}
+	}
+}
+
 void Physics::collisions(ParticlePhysics& pParticleA, ParticlePhysics& pParticleB,
 	ParticleRendering& rParticleA, ParticleRendering& rParticleB, float& radius) {
 

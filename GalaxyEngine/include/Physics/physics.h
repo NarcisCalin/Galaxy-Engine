@@ -43,4 +43,10 @@ struct Physics {
 
 	void buildGrid(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles,
 		Physics& physics, glm::vec2& domainSize, const int& iterations);
+
+	void integrateStart(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar);
+
+	void integrateEnd(std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar);
+
+	void pruneParticles(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar);
 };

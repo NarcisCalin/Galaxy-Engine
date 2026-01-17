@@ -16,7 +16,7 @@ public:
 	float radiusMultiplier = 3.0f;
 	float mass = 0.03f;
 	float stiffMultiplier = 1.0f;
-	float viscosity = 0.1f;
+	float viscosity = 0.3f;
 	float cohesionCoefficient = 1.0f;
 	const float boundDamping = -0.1f;
 	float delta = 9500.0f;
@@ -26,6 +26,8 @@ public:
 
 	int maxIter = 1; // I keep only 1 iteration when I don't use the density error condition
 	int iter = 0;
+
+	float rhoError = 0.0f;
 
 	float cellSize;
 	std::unordered_map<size_t, GridCell> grid;

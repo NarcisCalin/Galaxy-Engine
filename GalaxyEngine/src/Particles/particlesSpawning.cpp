@@ -51,7 +51,7 @@ void ParticlesSpawning::particlesInitialConditions(Physics& physics, UpdateVaria
 		if ((IO::mouseDown(2) || (IO::mouseDown(0) && myVar.toolDrawParticles)) && !IO::shortcutDown(KEY_LEFT_CONTROL) && !IO::shortcutDown(KEY_LEFT_ALT) && !IO::shortcutDown(KEY_X)) {
 			myVar.isBrushDrawing = true;
 
-			myParam.brush.brushLogic(myParam, myVar.isSPHEnabled, myVar.constraintAfterDrawing);
+			myParam.brush.brushLogic(myParam, myVar.isSPHEnabled, myVar.constraintAfterDrawing, massScatter);
 			if (myVar.isBrushDrawing) {
 				if (myVar.isSPHEnabled) {
 
@@ -136,15 +136,18 @@ void ParticlesSpawning::particlesInitialConditions(Physics& physics, UpdateVaria
 
 				float speed = 10.5f * sqrt(1758.0f / (finalRadius + 54.7f));
 
-				glm::vec2 vel = tangent * speed;
+				glm::vec2 vel = tangent * speed * 0.85f;
 
 				float finalMass = 0.0f;
 
+				float rand01 = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+				float randomMassMultiplier = 1.0f + (rand01 * 2.0f - 1.0f) * massScatter;
+
 				if (massMultiplierEnabled) {
-					finalMass = 8500000000.0f / particleAmountMultiplier;
+					finalMass = (8500000000.0f / particleAmountMultiplier) * randomMassMultiplier;
 				}
 				else {
-					finalMass = 8500000000.0f;
+					finalMass = 8500000000.0f * randomMassMultiplier;
 				}
 
 				myParam.pParticles.emplace_back(
@@ -189,15 +192,18 @@ void ParticlesSpawning::particlesInitialConditions(Physics& physics, UpdateVaria
 
 					glm::vec2 pos = glm::vec2(galaxyCenter.x + radiusMultiplier * cos(angle), galaxyCenter.y + radiusMultiplier * sin(angle));
 
-					glm::vec2 vel = glm::vec2(static_cast<float>(rand() % 60 - 30), static_cast<float>(rand() % 60 - 30));
+					glm::vec2 vel = glm::vec2(static_cast<float>(rand() % 60 - 30), static_cast<float>(rand() % 60 - 30)) * 0.85f;
 
 					float finalMass = 0.0f;
 
+					float rand01 = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+					float randomMassMultiplier = 1.0f + (rand01 * 2.0f - 1.0f) * massScatter;
+
 					if (massMultiplierEnabled) {
-						finalMass = 141600000000.0f / DMAmountMultiplier;
+						finalMass = 141600000000.0f / DMAmountMultiplier * randomMassMultiplier;
 					}
 					else {
-						finalMass = 141600000000.0f;
+						finalMass = 141600000000.0f * randomMassMultiplier;
 					}
 
 					myParam.pParticles.emplace_back(
@@ -260,14 +266,17 @@ void ParticlesSpawning::particlesInitialConditions(Physics& physics, UpdateVaria
 
 				tangent /= length;
 
-				float speed = 10.5f * sqrt(505.0f / (finalRadius + 54.7f));
+				float speed = 10.5f * sqrt(505.0f / (finalRadius + 54.7f)) * 0.85f;
 
 				glm::vec2 vel = tangent * speed;
 
 				float finalMass = 0.0f;
 
+				float rand01 = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+				float randomMassMultiplier = 1.0f + (rand01 * 2.0f - 1.0f) * massScatter;
+
 				if (massMultiplierEnabled) {
-					finalMass = 8500000000.0f / particleAmountMultiplier;
+					finalMass = 8500000000.0f / particleAmountMultiplier * randomMassMultiplier;
 				}
 				else {
 					finalMass = 8500000000.0f;
@@ -314,15 +323,18 @@ void ParticlesSpawning::particlesInitialConditions(Physics& physics, UpdateVaria
 
 					glm::vec2 pos = glm::vec2(galaxyCenter.x + radiusMultiplier * cos(angle), galaxyCenter.y + radiusMultiplier * sin(angle));
 
-					glm::vec2 vel = glm::vec2(static_cast<float>(rand() % 60 - 30), static_cast<float>(rand() % 60 - 30));
+					glm::vec2 vel = glm::vec2(static_cast<float>(rand() % 60 - 30), static_cast<float>(rand() % 60 - 30)) * 0.85f;
 
 					float finalMass = 0.0f;
 
+					float rand01 = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+					float randomMassMultiplier = 1.0f + (rand01 * 2.0f - 1.0f) * massScatter;
+
 					if (massMultiplierEnabled) {
-						finalMass = 141600000000.0f / DMAmountMultiplier;
+						finalMass = 141600000000.0f / DMAmountMultiplier * randomMassMultiplier;
 					}
 					else {
-						finalMass = 141600000000.0f;
+						finalMass = 141600000000.0f * randomMassMultiplier;
 					}
 
 					myParam.pParticles.emplace_back(
@@ -350,6 +362,7 @@ void ParticlesSpawning::particlesInitialConditions(Physics& physics, UpdateVaria
 					);
 				}
 			}
+
 			myVar.isDragging = false;
 		}
 
@@ -431,11 +444,14 @@ void ParticlesSpawning::particlesInitialConditions(Physics& physics, UpdateVaria
 
 				float finalMass = 0.0f;
 
+				float rand01 = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+				float randomMassMultiplier = 1.0f + (rand01 * 2.0f - 1.0f) * massScatter;
+
 				if (massMultiplierEnabled) {
-					finalMass = 8500000000.0f / particleAmountMultiplier;
+					finalMass = 8500000000.0f / particleAmountMultiplier * randomMassMultiplier;
 				}
 				else {
-					finalMass = 8500000000.0f;
+					finalMass = 8500000000.0f * randomMassMultiplier;
 				}
 
 				myParam.pParticles.emplace_back(
@@ -490,11 +506,14 @@ void ParticlesSpawning::particlesInitialConditions(Physics& physics, UpdateVaria
 
 					float finalMass = 0.0f;
 
+					float rand01 = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+					float randomMassMultiplier = 1.0f + (rand01 * 2.0f - 1.0f) * massScatter;
+
 					if (massMultiplierEnabled) {
-						finalMass = 141600000000.0f / DMAmountMultiplier;
+						finalMass = 141600000000.0f / DMAmountMultiplier * randomMassMultiplier;
 					}
 					else {
-						finalMass = 141600000000.0f;
+						finalMass = 141600000000.0f * randomMassMultiplier;
 					}
 
 					myParam.pParticles.emplace_back(

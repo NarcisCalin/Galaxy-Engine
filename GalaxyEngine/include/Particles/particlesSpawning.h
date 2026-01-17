@@ -33,6 +33,8 @@ public:
 
 	bool massMultiplierEnabled = true;
 
+	float massScatter = 0.6f;
+
 	void particlesInitialConditions(Physics& physics, UpdateVariables& myVar, UpdateParameters& myParam);
 
 	void predictTrajectory(const std::vector<ParticlePhysics>& actualParticles, 

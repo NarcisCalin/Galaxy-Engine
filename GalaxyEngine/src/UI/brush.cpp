@@ -16,7 +16,7 @@ Brush::Brush(SceneCamera myCamera, float brushRadius) {
 	mouseWorldPos = { 0.0f, 0.0f };
 }
 
-void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& constraintAfterDrawing) {
+void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& constraintAfterDrawing, float& massScatter) {
 
 	// This entire function is a crime against programming and perhaps humanity as well. I don't know what destiny shall await for whoever reads such cursed code. 
 	// But I'm too lazy to change this for now. Will change it some time in the future
@@ -46,11 +46,14 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& cons
 
 			float finalMass = 0.0f;
 
+			float rand01 = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+			float randomMassMultiplier = 1.0f + (rand01 * 2.0f - 1.0f) * massScatter;
+
 			if (myParam.particlesSpawning.massMultiplierEnabled) {
-				finalMass = 8500000000.0f / myParam.particlesSpawning.particleAmountMultiplier;
+				finalMass = 8500000000.0f / myParam.particlesSpawning.particleAmountMultiplier * randomMassMultiplier;
 			}
 			else {
-				finalMass = 8500000000.0f;
+				finalMass = 8500000000.0f * randomMassMultiplier;
 			}
 
 			myParam.pParticles.emplace_back(particlePos,

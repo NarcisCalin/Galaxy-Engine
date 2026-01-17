@@ -65,34 +65,31 @@ void SPH::PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleR
 
 	size_t N = pParticles.size();
 
+	const float predictionCoeff = 0.5f * dt * dt;
+
 	std::vector<glm::vec2> sphForce(N, { 0.0f, 0.0f });
+
+	computeViscCohesionForces(pParticles, rParticles, sphForce, N);
 
 	for (size_t i = 0; i < N; ++i) {
 		pParticles[i].press = 0.0f;
 		pParticles[i].pressF = { 0.0f, 0.0f };
 	}
 
-	computeViscCohesionForces(pParticles, rParticles, sphForce, N);
-
 	float rhoError = 0.0f;
 	iter = 0;
 
 	do {
-
 		float maxRhoErr = 0.0f;
-		//std::fill(sphForce.begin(), sphForce.end(), glm::vec2{ 0.0f, 0.0f });
-		//computeViscCohesionForces(pParticles, rParticles, sphForce, N);
-		//sphForce = baseSphForce;
 
 #pragma omp parallel for
 		for (size_t i = 0; i < N; ++i) {
-
 			if (!rParticles[i].isSPH || rParticles[i].isBeingDrawn) continue;
 
 			auto& p = pParticles[i];
-			p.predVel = p.vel + dt * 1.5f * (sphForce[i] / p.sphMass);
 
-			p.predPos = { p.pos.x + p.predVel.x * dt, p.pos.y + p.predVel.y * dt };
+			glm::vec2 displacement = (sphForce[i] / p.sphMass) * predictionCoeff;
+			p.predPos = p.pos + displacement;
 		}
 
 		grid.clear();
@@ -115,36 +112,33 @@ void SPH::PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleR
 			for (auto neighIdx : neighborCells) {
 				auto it = grid.find(neighIdx);
 				if (it == grid.end()) continue;
-				for (auto pjIdx : it->second.particleIndices) {
 
+				for (auto pjIdx : it->second.particleIndices) {
 					if (!rParticles[pjIdx].isSPH || rParticles[pjIdx].isBeingDrawn) continue;
 
 					auto& pj = pParticles[pjIdx];
-					glm::vec2 dr = { pi.predPos.x - pj.predPos.x,
-								   pi.predPos.y - pj.predPos.y };
-					float   rr = sqrtf(dr.x * dr.x + dr.y * dr.y);
-					if (rr >= radiusMultiplier) continue;
+					glm::vec2 dr = pi.predPos - pj.predPos;
+					float rrSq = dr.x * dr.x + dr.y * dr.y;
+
+					if (rrSq >= radiusMultiplier * radiusMultiplier) continue;
+
+					float rr = sqrtf(rrSq);
 					float mJ = pj.sphMass * mass;
 					float rho0 = 0.5f * (pi.restDens + pj.restDens);
-
 					pi.predDens += mJ * smoothingKernel(rr, radiusMultiplier) / rho0;
 				}
 			}
 
 			float err = pi.predDens - pi.restDens;
 			pi.pressTmp = delta * err;
-
-			if (pi.pressTmp < 0.0f)
-				pi.pressTmp = 0.0f;
+			if (pi.pressTmp < 0.0f) pi.pressTmp = 0.0f;
 
 			maxRhoErr = std::max(maxRhoErr, std::abs(err));
-
 			pi.press += pi.pressTmp * pi.stiff * stiffMultiplier;
 		}
 
 #pragma omp parallel for
 		for (size_t i = 0; i < N; ++i) {
-
 			if (!rParticles[i].isSPH || rParticles[i].isBeingDrawn) continue;
 
 			auto& pi = pParticles[i];
@@ -154,31 +148,28 @@ void SPH::PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleR
 			for (auto neighIdx : neighborCells) {
 				auto it = grid.find(neighIdx);
 				if (it == grid.end()) continue;
+
 				for (auto pjIdx : it->second.particleIndices) {
 					if (pjIdx == i) continue;
-
 					if (!rParticles[pjIdx].isSPH || rParticles[pjIdx].isBeingDrawn) continue;
+
 					auto& pj = pParticles[pjIdx];
-					glm::vec2 dr = { pi.predPos.x - pj.predPos.x,
-								   pi.predPos.y - pj.predPos.y };
-					float   rr = sqrtf(dr.x * dr.x + dr.y * dr.y);
+					glm::vec2 dr = pi.predPos - pj.predPos;
+					float rr = sqrtf(dr.x * dr.x + dr.y * dr.y);
+
 					if (rr < 1e-5f || rr >= radiusMultiplier) continue;
 
 					float gradW = spikyKernelDerivative(rr, radiusMultiplier);
 					glm::vec2 nrm = { dr.x / rr, dr.y / rr };
-					float   avgP = 0.5f * (pi.press + pj.press);
-					float   avgD = 0.5f * (pi.predDens + pj.predDens);
+					float avgP = 0.5f * (pi.press + pj.press);
+					float avgD = 0.5f * (pi.predDens + pj.predDens);
+					float mag = -(pi.sphMass * mass + pj.sphMass * mass) * avgP / std::max(avgD, 0.01f);
 
-					float   mag = -(pi.sphMass * mass + pj.sphMass * mass) * avgP / std::max(avgD, 0.01f);
-
-					// Mass ratio mag limiter
 					float massRatio = std::max(pi.sphMass, pj.sphMass) / std::min(pi.sphMass, pj.sphMass);
 					float scale = std::min(1.0f, 8.0f / massRatio);
-
 					mag *= scale;
 
-					glm::vec2 pF = { mag * gradW * nrm.x,
-								   mag * gradW * nrm.y };
+					glm::vec2 pF = { mag * gradW * nrm.x, mag * gradW * nrm.y };
 
 #pragma omp atomic
 					sphForce[i].x += pF.x;
@@ -195,7 +186,7 @@ void SPH::PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleR
 		rhoError = maxRhoErr;
 		++iter;
 
-	} while (iter < maxIter/* && rhoError > densTolerance*/); // I'm keeping that condition commented because I might need it int the future
+	} while (iter < maxIter /*&& rhoError > densTolerance */ );
 
 #pragma omp parallel for
 	for (size_t i = 0; i < N; ++i) {
@@ -205,9 +196,6 @@ void SPH::PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleR
 
 		if (!rParticles[i].isPinned) {
 			p.acc += p.pressF;
-		}
-		else {
-			p.acc *= 0.0f;
 		}
 	}
 }

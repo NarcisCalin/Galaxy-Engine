@@ -62,10 +62,10 @@ struct SPHWater : public SPHMaterial {
 		color = { 30, 65, 230, 150 };
 
 		hotPoint = 373.2f;
-		hotMassMult = 0.3f;
-		hotRestDens = 0.045f;
+		hotMassMult = 0.25f;
+		hotRestDens = 0.065f;
 		hotStiff = 1.0f;
-		hotVisc = 0.075f;
+		hotVisc = 0.055f;
 		hotCohesion = 0.0f;
 		hotColor = { 230, 230, 250, 190 };
 
