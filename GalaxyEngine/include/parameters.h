@@ -21,6 +21,8 @@ struct UpdateParameters {
 	std::vector<ParticlePhysics> pParticles;
 	std::vector<ParticleRendering> rParticles;
 
+	//std::vector<uint32_t> globalNeighborList;
+
 	std::vector<ParticlePhysics> pParticlesSelected;
 	std::vector<ParticleRendering> rParticlesSelected;
 
@@ -245,4 +247,6 @@ struct UpdateVariables{
 
 	bool isGravityFieldEnabled = false;
 	bool gravityFieldDMParticles = false;
+
+	int frameCount = 0;
 };

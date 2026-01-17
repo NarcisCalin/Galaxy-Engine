@@ -163,7 +163,7 @@ void Physics::temperatureCalculation(std::vector<ParticlePhysics>& pParticles, s
 }
 
 void Physics::createConstraints(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, bool& constraintCreateSpecialFlag,
-	UpdateVariables& myVar) {
+	UpdateVariables& myVar, UpdateParameters& myParam) {
 
 	bool shouldCreateConstraints = IO::shortcutPress(KEY_P) || myVar.constraintAllSolids || constraintCreateSpecialFlag || myVar.constraintSelected;
 
@@ -204,14 +204,12 @@ void Physics::createConstraints(std::vector<ParticlePhysics>& pParticles, std::v
 			pi.hasSolidified = false;
 		}
 
-		for (uint32_t& id : pParticles[i].neighborIds) {
-			auto it = NeighborSearch::idToIndex.find(id);
-			if (it == NeighborSearch::idToIndex.end()) continue;
+		for (uint32_t k = 0; k < pi.neighborCount; k++) {
+			uint32_t nID = myParam.neighborSearch.globalNeighborList[pi.neighborOffset + k];
 
-			size_t neighborIndex = it->second;
-			if (neighborIndex == i) continue;
+			size_t neighborIndex = myParam.neighborSearch.idToIndexTable[nID];
 
-			ParticlePhysics& pj = pParticles[neighborIndex];
+			ParticlePhysics& pj = myParam.pParticles[neighborIndex];
 
 			if (constraintCreateSpecialFlag) {
 				if (!rParticles[neighborIndex].isBeingDrawn) {
@@ -277,25 +275,31 @@ void Physics::constraints(std::vector<ParticlePhysics>& pParticles, std::vector<
 		particleConstraints.clear();
 		constraintMap.clear();
 		myVar.deleteAllConstraints = false;
+		return;
 	}
 
+	uint32_t maxId = 0;
+	for (const auto& p : pParticles) if (p.id > maxId) maxId = p.id;
+
+	idToIndexTable.assign(maxId + 1, -1);
+	for (size_t i = 0; i < pParticles.size(); i++) {
+		idToIndexTable[pParticles[i].id] = i;
+	}
+
+	auto getIdx = [&](uint32_t id) -> int64_t {
+		if (id >= idToIndexTable.size()) return -1;
+		return idToIndexTable[id];
+		};
+
 	if (myVar.deleteSelectedConstraints) {
-		constraintMap.clear();
-		for (size_t i = 0; i < particleConstraints.size(); i++) {
-			auto& constraint = particleConstraints[i];
+		for (auto& constraint : particleConstraints) {
+			int64_t idx1 = getIdx(constraint.id1);
+			int64_t idx2 = getIdx(constraint.id2);
 
-			auto it1 = NeighborSearch::idToIndex.find(constraint.id1);
-			auto it2 = NeighborSearch::idToIndex.find(constraint.id2);
-			if (it1 == NeighborSearch::idToIndex.end() ||
-				it2 == NeighborSearch::idToIndex.end()) {
+			if (idx1 == -1 || idx2 == -1) {
 				constraint.isBroken = true;
-				continue;
 			}
-
-			ParticlePhysics& pi = pParticles[it1->second];
-			ParticlePhysics& pj = pParticles[it2->second];
-
-			if ((rParticles[it1->second].isSelected || rParticles[it2->second].isSelected) && myVar.deleteSelectedConstraints) {
+			else if (rParticles[idx1].isSelected || rParticles[idx2].isSelected) {
 				constraint.isBroken = true;
 			}
 		}
@@ -303,55 +307,84 @@ void Physics::constraints(std::vector<ParticlePhysics>& pParticles, std::vector<
 	}
 
 	if (!particleConstraints.empty()) {
-		const int substeps = 15;
-
 		auto new_end = std::remove_if(particleConstraints.begin(), particleConstraints.end(),
-			[](const auto& constraint) {
-				auto it1 = NeighborSearch::idToIndex.find(constraint.id1);
-				auto it2 = NeighborSearch::idToIndex.find(constraint.id2);
-				return it1 == NeighborSearch::idToIndex.end() ||
-					it2 == NeighborSearch::idToIndex.end() ||
-					constraint.isBroken;
+			[&](const auto& constraint) {
+				int64_t idx1 = getIdx(constraint.id1);
+				int64_t idx2 = getIdx(constraint.id2);
+				return idx1 == -1 || idx2 == -1 || constraint.isBroken;
 			});
 
 		for (auto it = new_end; it != particleConstraints.end(); ++it) {
 			constraintMap.erase(makeKey(it->id1, it->id2));
 		}
-
 		particleConstraints.erase(new_end, particleConstraints.end());
 
+		bool enforceTriangles = true;
+
+		myVar.frameCount++;
+		if (enforceTriangles && !particleConstraints.empty() && myVar.frameCount % 5 == 0) {
+
+			std::vector<std::vector<uint32_t>> adjacency(maxId + 1);
+
+			for (const auto& c : particleConstraints) {
+				if (c.isBroken) continue;
+
+				if (c.id1 <= maxId && c.id2 <= maxId) {
+					adjacency[c.id1].push_back(c.id2);
+					adjacency[c.id2].push_back(c.id1);
+				}
+			}
+
+			for (auto& constraint : particleConstraints) {
+				if (constraint.isBroken) continue;
+
+				uint32_t idA = constraint.id1;
+				uint32_t idB = constraint.id2;
+
+				bool partOfTriangle = false;
+
+				const std::vector<uint32_t>& neighborsOfA = adjacency[idA];
+				const std::vector<uint32_t>& neighborsOfB = adjacency[idB];
+
+				for (uint32_t neighborA : neighborsOfA) {
+
+					for (uint32_t neighborB : neighborsOfB) {
+						if (neighborA == neighborB) {
+							partOfTriangle = true;
+							break;
+						}
+					}
+					if (partOfTriangle) break;
+				}
+
+				if (!partOfTriangle) {
+					constraint.isBroken = true;
+				}
+			}
+		}
+
+		const int substeps = 15;
 		for (int step = 0; step < substeps; step++) {
 
 #pragma omp parallel for schedule(dynamic)
-			for (size_t i = 0; i < particleConstraints.size(); i++) {
+			for (int64_t i = 0; i < (int64_t)particleConstraints.size(); i++) {
 				auto& constraint = particleConstraints[i];
 
-				auto it1 = NeighborSearch::idToIndex.find(constraint.id1);
-				auto it2 = NeighborSearch::idToIndex.find(constraint.id2);
-				if (it1 == NeighborSearch::idToIndex.end() ||
-					it2 == NeighborSearch::idToIndex.end()) {
+				if (constraint.isBroken) continue;
+
+				int64_t idx1 = getIdx(constraint.id1);
+				int64_t idx2 = getIdx(constraint.id2);
+
+				if (idx1 == -1 || idx2 == -1) {
 					constraint.isBroken = true;
 					continue;
 				}
 
-				ParticlePhysics& pi = pParticles[it1->second];
-				ParticlePhysics& pj = pParticles[it2->second];
+				ParticlePhysics& pi = pParticles[idx1];
+				ParticlePhysics& pj = pParticles[idx2];
 
-				if ((rParticles[it1->second].isSelected || rParticles[it2->second].isSelected) && myVar.deleteSelectedConstraints) {
-					constraint.isBroken = true;
-				}
-
-				SPHMaterial* pMatI = nullptr;
-				auto matItI = SPHMaterials::idToMaterial.find(rParticles[it1->second].sphLabel);
-				if (matItI != SPHMaterials::idToMaterial.end()) {
-					pMatI = matItI->second;
-				}
-
-				SPHMaterial* pMatJ = nullptr;
-				auto matItJ = SPHMaterials::idToMaterial.find(rParticles[it2->second].sphLabel);
-				if (matItJ != SPHMaterials::idToMaterial.end()) {
-					pMatJ = matItJ->second;
-				}
+				SPHMaterial* pMatI = SPHMaterials::idToMaterial[rParticles[idx1].sphLabel];
+				SPHMaterial* pMatJ = SPHMaterials::idToMaterial[rParticles[idx2].sphLabel];
 
 				glm::vec2 delta = pj.pos - pi.pos;
 
@@ -367,50 +400,33 @@ void Physics::constraints(std::vector<ParticlePhysics>& pParticles, std::vector<
 				constraint.displacement = currentLength - constraint.restLength;
 
 				if (!myVar.unbreakableConstraints) {
-					// This actually uses a percentage of the rest length as reference. More intuitive than arbitrary numbers IMO
-					// The percentage in this case is constraint.hardness which is normalized from 0 - 1
 					if (pMatI && pMatJ) {
 						if (!pMatI->isPlastic || !pMatJ->isPlastic) {
-
 							constraint.isPlastic = false;
-
-							if (constraint.displacement >= (constraint.resistance * myVar.globalConstraintResistance) * constraint.restLength ||
-								constraint.displacement <= -((constraint.resistance * myVar.globalConstraintResistance) * constraint.restLength)) {
+							float limit = (constraint.resistance * myVar.globalConstraintResistance) * constraint.restLength;
+							if (std::abs(constraint.displacement) >= limit) {
 								constraint.isBroken = true;
 							}
 						}
 						else {
-
 							constraint.isPlastic = true;
-
-							if (constraint.displacement >= constraint.plasticityPoint * constraint.originalLength ||
-								constraint.displacement <= -(constraint.plasticityPoint * constraint.originalLength)) {
-
+							if (std::abs(constraint.displacement) >= constraint.plasticityPoint * constraint.originalLength) {
 								constraint.restLength += constraint.displacement;
-
 							}
 
-							if (constraint.restLength >= (constraint.originalLength + constraint.originalLength *
-								(constraint.resistance * myVar.globalConstraintResistance)) *
-								(pMatI->constraintPlasticPointMult + pMatJ->constraintPlasticPointMult) * 0.5f ||
+							float breakLimit = (constraint.originalLength + constraint.originalLength * (constraint.resistance * myVar.globalConstraintResistance)) * (pMatI->constraintPlasticPointMult + pMatJ->constraintPlasticPointMult) * 0.5f;
 
-								constraint.restLength <= -(constraint.originalLength + constraint.originalLength *
-									(constraint.resistance * myVar.globalConstraintResistance) *
-									(pMatI->constraintPlasticPointMult + pMatJ->constraintPlasticPointMult) * 0.5f)) {
-
+							if (std::abs(constraint.restLength) >= breakLimit) {
 								constraint.isBroken = true;
 							}
 						}
-					}
 
-					if (pMatI && pMatJ) {
-						if (pi.isHotPoint || pj.isHotPoint) {
-							constraint.isBroken = true;
-						}
+						if (pi.isHotPoint || pj.isHotPoint) constraint.isBroken = true;
 					}
 				}
 
-				if (myVar.timeFactor > 0.0f && myVar.gridExists) {
+				if (myVar.timeFactor > 0.0f && myVar.gridExists && !constraint.isBroken) {
+
 					glm::vec2 springForce = constraint.stiffness * constraint.displacement * dir * pi.mass * myVar.globalConstraintStiffnessMult;
 					glm::vec2 relVel = pj.vel - pi.vel;
 					glm::vec2 dampForce = -globalConstraintDamping * glm::dot(relVel, dir) * dir * pi.mass;
@@ -451,32 +467,33 @@ void Physics::pausedConstraints(std::vector<ParticlePhysics>& pParticles, std::v
 		auto& constraint = particleConstraints[i];
 
 		float prevLength = constraint.restLength;
-
 	}
 }
 
-void Physics::mergerSolver(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar) {
-
+void Physics::mergerSolver(
+	std::vector<ParticlePhysics>& pParticles,
+	std::vector<ParticleRendering>& rParticles,
+	UpdateVariables& myVar,
+	UpdateParameters& myParam)
+{
 	std::unordered_set<uint32_t> particleIdsToDelete;
 	std::vector<size_t> indicesToDelete;
 
 	int originalSize = static_cast<int>(pParticles.size());
+
 	for (int i = originalSize - 1; i >= 0; i--) {
 		ParticlePhysics& p = pParticles[i];
 		ParticleRendering& r = rParticles[i];
 
 		if (r.isDarkMatter || particleIdsToDelete.count(p.id)) continue;
 
-		for (int j = static_cast<int>(p.neighborIds.size()) - 1; j >= 0; j--) {
-			uint32_t neighborId = p.neighborIds[j];
-			auto it = NeighborSearch::idToIndex.find(neighborId);
-			if (it == NeighborSearch::idToIndex.end()) continue;
+		for (int j = p.neighborCount - 1; j >= 0; j--) {
+			uint32_t neighborId = myParam.neighborSearch.globalNeighborList[p.neighborOffset + j];
 
-			size_t neighborIndex = it->second;
-			if (i == neighborIndex || neighborIndex >= pParticles.size()) {
-				p.neighborIds.erase(p.neighborIds.begin() + j);
-				continue;
-			}
+			size_t neighborIndex = myParam.neighborSearch.idToIndexTable[neighborId];
+
+			if (neighborIndex >= pParticles.size()) continue;
+			if (neighborIndex == i) continue;
 
 			ParticlePhysics& pn = pParticles[neighborIndex];
 			ParticleRendering& rn = rParticles[neighborIndex];
@@ -522,6 +539,7 @@ void Physics::mergerSolver(std::vector<ParticlePhysics>& pParticles, std::vector
 					particleIdsToDelete.insert(p.id);
 					indicesToDelete.push_back(i);
 				}
+
 				break;
 			}
 		}
@@ -529,100 +547,25 @@ void Physics::mergerSolver(std::vector<ParticlePhysics>& pParticles, std::vector
 
 	std::sort(indicesToDelete.begin(), indicesToDelete.end());
 	indicesToDelete.erase(std::unique(indicesToDelete.begin(), indicesToDelete.end()), indicesToDelete.end());
-	std::sort(indicesToDelete.begin(), indicesToDelete.end(), std::greater<size_t>());
 
-	for (size_t index : indicesToDelete) {
-		if (index < pParticles.size()) {
-			std::swap(pParticles[index], pParticles.back());
-			std::swap(rParticles[index], rParticles.back());
-			pParticles.pop_back();
-			rParticles.pop_back();
-		}
-	}
-}
+	for (int k = static_cast<int>(indicesToDelete.size()) - 1; k >= 0; k--) {
+		size_t index = indicesToDelete[k];
+		if (index >= pParticles.size()) continue;
 
-void Physics::physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar, bool& sphGround) {
-	if (myVar.isPeriodicBoundaryEnabled) {
+		uint32_t removedId = pParticles[index].id;
 
-#pragma omp parallel for schedule(dynamic)
-		for (size_t i = 0; i < pParticles.size(); i++) {
+		std::swap(pParticles[index], pParticles.back());
+		std::swap(rParticles[index], rParticles.back());
 
-			ParticlePhysics& pParticle = pParticles[i];
+		uint32_t swappedId = pParticles[index].id;
+		myParam.neighborSearch.idToIndexTable[swappedId] = index;
 
-			pParticle.prevVel = pParticle.vel;
+		pParticles.pop_back();
+		rParticles.pop_back();
 
-			pParticle.vel += myVar.timeFactor * 1.5f * pParticle.acc;
-
-			// Max velocity for SPH
-			if (myVar.isSPHEnabled) {
-				const float sphMaxVelSq = myVar.sphMaxVel * myVar.sphMaxVel;
-				float vSq = pParticle.vel.x * pParticle.vel.x + pParticle.vel.y * pParticle.vel.y;
-				float prevVSq = pParticle.prevVel.x * pParticle.prevVel.x + pParticle.prevVel.y * pParticle.prevVel.y;
-				if (vSq > sphMaxVelSq) {
-					float invPrevLen = myVar.sphMaxVel / sqrtf(prevVSq);
-					float invLen = myVar.sphMaxVel / sqrtf(vSq);
-					pParticle.prevVel *= invPrevLen;
-					pParticle.vel *= invLen;
-				}
-			}
-
-			pParticle.pos += pParticle.vel * myVar.timeFactor;
-
-			if (!sphGround) {
-				if (pParticle.pos.x < 0.0f)
-					pParticle.pos.x += myVar.domainSize.x;
-				else if (pParticle.pos.x >= myVar.domainSize.x)
-					pParticle.pos.x -= myVar.domainSize.x;
-
-				if (pParticle.pos.y < 0.0f)
-					pParticle.pos.y += myVar.domainSize.y;
-				else if (pParticle.pos.y >= myVar.domainSize.y)
-					pParticle.pos.y -= myVar.domainSize.y;
-			}
-		}
-	}
-	else {
-
-		for (size_t i = 0; i < pParticles.size(); ) {
-
-			ParticlePhysics& pParticle = pParticles[i];
-
-			pParticle.prevVel = pParticle.vel;
-
-			pParticle.vel += myVar.timeFactor * 1.5f * pParticle.acc;
-
-			// Max velocity for SPH
-			if (myVar.isSPHEnabled) {
-				const float sphMaxVelSq = myVar.sphMaxVel * myVar.sphMaxVel;
-				float vSq = pParticle.vel.x * pParticle.vel.x + pParticle.vel.y * pParticle.vel.y;
-				float prevVSq = pParticle.prevVel.x * pParticle.prevVel.x + pParticle.prevVel.y * pParticle.prevVel.y;
-				if (vSq > sphMaxVelSq) {
-					float invPrevLen = myVar.sphMaxVel / sqrtf(prevVSq);
-					float invLen = myVar.sphMaxVel / sqrtf(vSq);
-					pParticle.prevVel *= invPrevLen;
-					pParticle.vel *= invLen;
-				}
-			}
-
-			pParticle.pos += pParticle.vel * myVar.timeFactor;
-
-			if (!sphGround) {
-				if (pParticles[i].pos.x <= 0.0f || pParticles[i].pos.x >= myVar.domainSize.x || pParticles[i].pos.y <= 0.0f || pParticles[i].pos.y >= myVar.domainSize.y) {
-					std::swap(pParticles[i], pParticles.back());
-					std::swap(rParticles[i], rParticles.back());
-
-					pParticles.pop_back();
-					rParticles.pop_back();
-				}
-				else {
-					i++;
-				}
-			}
-			else {
-				i++;
-			}
-
-		}
+		if (removedId < myParam.neighborSearch.idToIndexTable.size()) {
+            myParam.neighborSearch.idToIndexTable[removedId] = static_cast<size_t>(-1);
+        }
 	}
 }
 
@@ -668,11 +611,10 @@ void Physics::integrateStart(std::vector<ParticlePhysics>& pParticles, std::vect
 }
 
 void Physics::integrateEnd(std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar) {
-	float dt = myVar.timeFactor;
 
 #pragma omp parallel for schedule(dynamic)
 	for (size_t i = 0; i < pParticles.size(); i++) {
-		pParticles[i].vel += pParticles[i].acc * (dt * 0.5f);
+		pParticles[i].vel += pParticles[i].acc * (myVar.timeFactor * 0.5f);
 	}
 }
 

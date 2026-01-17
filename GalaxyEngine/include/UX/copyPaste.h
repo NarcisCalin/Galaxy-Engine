@@ -67,11 +67,19 @@ struct CopyPaste {
 				myParam.rParticles.push_back(ParticleRendering(rCopy));
 			}
 
-			NeighborSearch::idToI(myParam.pParticles);
-			myParam.neighborSearch.neighborSearchHash(myParam.pParticles, myParam.rParticles);
+			myParam.neighborSearch.UpdateNeighbors(myParam.pParticles, myParam.rParticles);
+
+			uint32_t maxPossibleId = 50000000;
+
+			myParam.neighborSearch.idToIndexTable.resize(maxPossibleId + 1);
+
+#pragma omp parallel for
+			for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+				myParam.neighborSearch.idToIndexTable[myParam.pParticles[i].id] = i;
+			}
 
 			bool enabled = true;
-			physics.createConstraints(myParam.pParticles, myParam.rParticles, enabled, myVar);
+			physics.createConstraints(myParam.pParticles, myParam.rParticles, enabled, myVar, myParam);
 
 			for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 				myParam.rParticles[i].isBeingDrawn = false;

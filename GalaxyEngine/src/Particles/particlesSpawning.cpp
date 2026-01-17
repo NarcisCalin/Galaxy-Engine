@@ -90,7 +90,7 @@ void ParticlesSpawning::particlesInitialConditions(Physics& physics, UpdateVaria
 
 					if (myVar.constraintAfterDrawingFlag && myVar.constraintAfterDrawing) {
 						physics.createConstraints(myParam.pParticles, myParam.rParticles, 
-							myVar.constraintAfterDrawingFlag, myVar);
+							myVar.constraintAfterDrawingFlag, myVar, myParam);
 					}
 
 					for (size_t i = 0; i < myParam.pParticles.size(); i++) {
@@ -174,6 +174,75 @@ void ParticlesSpawning::particlesInitialConditions(Physics& physics, UpdateVaria
 					0
 				);
 			}
+
+			/*for (int i = 0; i < static_cast<int>(160000 * particleAmountMultiplier); i++) {
+
+				glm::vec2 galaxyCenter = myParam.myCamera.mouseWorldPos;
+
+				float outerRadius = 200.0f;
+
+				float scaleLength = 90.0f;
+
+				float normalizedRand = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+
+				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 * PI;
+
+				float finalRadius = -scaleLength * log(1.0f - normalizedRand);
+
+				finalRadius = std::min(finalRadius, outerRadius + 600.0f);
+
+				finalRadius = std::max(finalRadius, 0.01f);
+
+				glm::vec2 pos = glm::vec2(galaxyCenter.x + finalRadius * cos(angle), galaxyCenter.y + finalRadius * sin(angle));
+
+				glm::vec2 d = pos - galaxyCenter;
+
+				glm::vec2 tangent = glm::vec2(d.y, -d.x);
+
+				float length = sqrt(tangent.x * tangent.x + tangent.y * tangent.y);
+
+				tangent /= length;
+
+				float speed = 10.5f * sqrt(1758.0f / (finalRadius + 54.7f));
+
+				glm::vec2 vel = tangent * speed * 0.85f;
+
+				float finalMass = 0.0f;
+
+				float rand01 = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+				float randomMassMultiplier = 1.0f + (rand01 * 2.0f - 1.0f) * 0.35f;
+
+				if (massMultiplierEnabled) {
+					finalMass = (8500000000.0f / particleAmountMultiplier) * randomMassMultiplier * 0.125f;
+				}
+				else {
+					finalMass = 8500000000.0f * randomMassMultiplier * 0.125f;
+				}
+
+				myParam.pParticles.emplace_back(
+					pos,
+					vel + slingshot.norm * slingshot.length * 0.3f,
+					finalMass,
+
+					0.008f,
+					1.0f,
+					1.0f,
+					1.0f
+				);
+				myParam.rParticles.emplace_back(
+					Color{ 128, 128, 128, 100 },
+					0.125f,
+					false,
+					false,
+					false,
+					true,
+					true,
+					false,
+					true,
+					-1.0f,
+					0
+				);
+			}*/
 
 			// DARK MATTER
 
@@ -587,12 +656,24 @@ void ParticlesSpawning::predictTrajectory(const std::vector<ParticlePhysics>& pP
 
 		glm::vec2 netForce = physics.calculateForceFromGrid(currentParticles, myVar, p);
 
-		glm::vec2 acc;
-		acc = netForce / p.mass;
+		p.acc = netForce / p.mass;
 
-		p.vel += myVar.timeFactor * (1.5f * acc);
+		p.vel += p.acc * (myVar.timeFactor * 0.5f);
 
 		p.pos += p.vel * myVar.timeFactor;
+
+		if (myVar.isPeriodicBoundaryEnabled) {
+			if (p.pos.x < 0.0f) p.pos.x += myVar.domainSize.x;
+			else if (p.pos.x >= myVar.domainSize.x) p.pos.x -= myVar.domainSize.x;
+
+			if (p.pos.y < 0.0f) p.pos.y += myVar.domainSize.y;
+			else if (p.pos.y >= myVar.domainSize.y) p.pos.y -= myVar.domainSize.y;
+		}
+
+		netForce = physics.calculateForceFromGrid(currentParticles, myVar, p);
+		p.acc = netForce / p.mass;
+
+		p.vel += p.acc * (myVar.timeFactor * 0.5f);
 
 		predictedPath.push_back(p.pos);
 	}

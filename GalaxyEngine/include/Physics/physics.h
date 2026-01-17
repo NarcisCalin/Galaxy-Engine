@@ -13,6 +13,8 @@ struct Physics {
 	std::vector<ParticleConstraint> particleConstraints;
 	std::unordered_map<uint64_t, ParticleConstraint*> constraintMap;
 
+	std::vector<int64_t> idToIndexTable;
+
 	uint64_t makeKey(uint32_t id1, uint32_t id2) {
 		return id1 < id2 ? ((uint64_t)id1 << 32) | id2
 			: ((uint64_t)id2 << 32) | id1;
@@ -28,15 +30,13 @@ struct Physics {
 	void temperatureCalculation(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar);
 
 	void createConstraints(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, bool& constraintCreateSpecialFlag,
-		UpdateVariables& myVar);
+		UpdateVariables& myVar, UpdateParameters& myParam);
 
 	void constraints(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar);
 
 	void pausedConstraints(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar);
 
-	void mergerSolver(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar);
-
-	void physicsUpdate(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar, bool& sphGround);
+	void mergerSolver(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar, UpdateParameters& myParam);
 
 	void collisions(ParticlePhysics& pParticleA, ParticlePhysics& pParticleB,
 		ParticleRendering& rParticleA, ParticleRendering& rParticleB, float& radius);

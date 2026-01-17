@@ -20,7 +20,7 @@ uint32_t globalShapeId = 1;
 uint32_t globalWallId = 1;
 // If someday light id gets added, don't forget to add the id to the copy paste code too
 
-std::unordered_map<unsigned int, uint64_t> NeighborSearch::idToIndex;
+//std::unordered_map<unsigned int, uint64_t> NeighborSearch::idToIndex;
 
 
 //void flattenQuadtree(Quadtree* node, std::vector<Quadtree*>& flatList) {
@@ -1056,8 +1056,32 @@ void updateScene() {
 		rParticle.totalRadius = rParticle.size * myVar.particleTextureHalfSize * myVar.particleSizeMultiplier;
 	}
 
-	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-		myParam.pParticles[i].neighborIds.clear();
+	if (myVar.constraintsEnabled || 
+		myVar.drawConstraints || 
+		myVar.visualizeMesh || 
+		myVar.isBrushDrawing || 
+		myVar.isMergerEnabled || 
+		myParam.colorVisuals.densityColor ||
+		myVar.isDensitySizeEnabled ||
+		myParam.colorVisuals.densityColor && myVar.timeFactor > 0.0f && !myVar.isGravityFieldEnabled) {
+
+		myParam.neighborSearch.UpdateNeighbors(myParam.pParticles, myParam.rParticles);
+
+		uint32_t maxPossibleId = 50000000;
+
+		if (myVar.isMergerEnabled) {
+			myParam.neighborSearch.densityRadius = 10.0f;
+		}
+		else {
+			myParam.neighborSearch.densityRadius = myParam.neighborSearch.originalDensityRadius;
+		}
+
+		myParam.neighborSearch.idToIndexTable.resize(maxPossibleId + 1);
+
+#pragma omp parallel for
+		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+			myParam.neighborSearch.idToIndexTable[myParam.pParticles[i].id] = i;
+		}
 	}
 
 	myParam.brush.brushSize();
@@ -1088,19 +1112,16 @@ void updateScene() {
 		myParam.neighborSearch.cellSize = 3.0f;
 	}
 
-	if (myVar.constraintsEnabled || myVar.drawConstraints || myVar.visualizeMesh || myVar.isBrushDrawing || myVar.isMergerEnabled) {
-		NeighborSearch::idToI(myParam.pParticles);
-		myParam.neighborSearch.neighborSearchHash(myParam.pParticles, myParam.rParticles);
-	}
-
 	myParam.particlesSpawning.particlesInitialConditions(physics, myVar, myParam);
 
 	if (myVar.constraintsEnabled && !myVar.isBrushDrawing) {
-		physics.createConstraints(myParam.pParticles, myParam.rParticles, myVar.constraintAfterDrawingFlag, myVar);
+		physics.createConstraints(myParam.pParticles, myParam.rParticles, myVar.constraintAfterDrawingFlag, myVar, myParam);
 	}
 	else if (!myVar.constraintsEnabled && !myVar.isBrushDrawing) {
 		physics.constraintMap.clear();
 		physics.particleConstraints.clear();
+
+		physics.idToIndexTable.clear();
 	}
 
 	copyPaste.copyPasteParticles(myVar, myParam, physics);
@@ -1130,7 +1151,7 @@ void updateScene() {
 		}
 
 		if (myVar.isMergerEnabled)
-			physics.mergerSolver(myParam.pParticles, myParam.rParticles, myVar);
+			physics.mergerSolver(myParam.pParticles, myParam.rParticles, myVar, myParam);
 
 		if (myVar.isSPHEnabled) {
 			sph.pcisphSolver(myParam.pParticles, myParam.rParticles, myVar.timeFactor, myVar.domainSize, myVar.sphGround);
@@ -1141,8 +1162,6 @@ void updateScene() {
 		ship.spaceshipLogic(myParam.pParticles, myParam.rParticles, myVar.isShipGasEnabled);
 
 		physics.integrateEnd(myParam.pParticles, myVar);
-
-		//physics.physicsUpdate(myParam.pParticles, myParam.rParticles, myVar, myVar.sphGround);
 
 		if (myVar.isTempEnabled) {
 			physics.temperatureCalculation(myParam.pParticles, myParam.rParticles, myVar);
@@ -1155,9 +1174,9 @@ void updateScene() {
 
 	field.gpuGravityDisplay(myParam, myVar);
 
-	if ((myVar.isDensitySizeEnabled || myParam.colorVisuals.densityColor) && myVar.timeFactor > 0.0f && !myVar.isGravityFieldEnabled) {
+	/*if ((myVar.isDensitySizeEnabled || myParam.colorVisuals.densityColor) && myVar.timeFactor > 0.0f && !myVar.isGravityFieldEnabled) {
 		myParam.neighborSearch.neighborSearch(myParam.pParticles, myParam.rParticles, myVar.particleSizeMultiplier, myVar.particleTextureHalfSize);
-	}
+	}*/
 
 	myParam.trails.trailLogic(myVar, myParam);
 
@@ -1238,34 +1257,30 @@ void drawConstraints() {
 		rlBegin(RL_LINES);
 		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 			ParticlePhysics& pi = myParam.pParticles[i];
-			for (uint32_t& id : myParam.pParticles[i].neighborIds) {
-				auto it = NeighborSearch::idToIndex.find(id);
-				if (it != NeighborSearch::idToIndex.end()) {
+			for (uint32_t k = 0; k < pi.neighborCount; k++) {
+				uint32_t nID = myParam.neighborSearch.globalNeighborList[pi.neighborOffset + k];
 
-					size_t neighborIndex = it->second;
+				size_t neighborIndex = myParam.neighborSearch.idToIndexTable[nID];
 
-					if (neighborIndex == i) continue;
+				ParticlePhysics& pj = myParam.pParticles[neighborIndex];
 
-					auto& pj = myParam.pParticles[neighborIndex];
+				if (pi.id < pj.id) {
+					glm::vec2 delta = pj.pos - pi.pos;
+					glm::vec2 periodicDelta = delta;
 
-					if (pi.id < pj.id) {
-						glm::vec2 delta = pj.pos - pi.pos;
-						glm::vec2 periodicDelta = delta;
-
-						if (abs(delta.x) > myVar.domainSize.x * 0.5f) {
-							periodicDelta.x += (delta.x > 0) ? -myVar.domainSize.x : myVar.domainSize.x;
-						}
-						if (abs(delta.y) > myVar.domainSize.y * 0.5f) {
-							periodicDelta.y += (delta.y > 0) ? -myVar.domainSize.y : myVar.domainSize.y;
-						}
-
-						glm::vec2 pjCorrectedPos = pi.pos + periodicDelta;
-
-						Color lineColor = ColorLerp(myParam.rParticles[i].color, myParam.rParticles[neighborIndex].color, 0.5f);
-						rlColor4ub(lineColor.r, lineColor.g, lineColor.b, lineColor.a);
-						rlVertex2f(pi.pos.x, pi.pos.y);
-						rlVertex2f(pjCorrectedPos.x, pjCorrectedPos.y);
+					if (abs(delta.x) > myVar.domainSize.x * 0.5f) {
+						periodicDelta.x += (delta.x > 0) ? -myVar.domainSize.x : myVar.domainSize.x;
 					}
+					if (abs(delta.y) > myVar.domainSize.y * 0.5f) {
+						periodicDelta.y += (delta.y > 0) ? -myVar.domainSize.y : myVar.domainSize.y;
+					}
+
+					glm::vec2 pjCorrectedPos = pi.pos + periodicDelta;
+
+					Color lineColor = ColorLerp(myParam.rParticles[i].color, myParam.rParticles[neighborIndex].color, 0.5f);
+					rlColor4ub(lineColor.r, lineColor.g, lineColor.b, lineColor.a);
+					rlVertex2f(pi.pos.x, pi.pos.y);
+					rlVertex2f(pjCorrectedPos.x, pjCorrectedPos.y);
 				}
 			}
 		}
@@ -1273,27 +1288,30 @@ void drawConstraints() {
 	}
 
 	if (myVar.drawConstraints && !physics.particleConstraints.empty()) {
+
 		rlBegin(RL_LINES);
 		for (size_t i = 0; i < physics.particleConstraints.size(); i++) {
 			auto& constraint = physics.particleConstraints[i];
-			auto it1 = NeighborSearch::idToIndex.find(constraint.id1);
-			auto it2 = NeighborSearch::idToIndex.find(constraint.id2);
 
-			if (it1 == NeighborSearch::idToIndex.end() ||
-				it2 == NeighborSearch::idToIndex.end()) {
+			if (constraint.id1 >= physics.idToIndexTable.size() || constraint.id2 >= physics.idToIndexTable.size()) continue;
+
+			int64_t idx1 = physics.idToIndexTable[constraint.id1];
+			int64_t idx2 = physics.idToIndexTable[constraint.id2];
+
+			if (idx1 == -1 || idx2 == -1) {
 				continue;
 			}
 
-			ParticlePhysics& pi = myParam.pParticles[it1->second];
-			ParticlePhysics& pj = myParam.pParticles[it2->second];
+			ParticlePhysics& pi = myParam.pParticles[idx1];
+			ParticlePhysics& pj = myParam.pParticles[idx2];
 
 			glm::vec2 delta = pj.pos - pi.pos;
 			glm::vec2 periodicDelta = delta;
 
-			if (abs(delta.x) > myVar.domainSize.x * 0.5f) {
+			if (std::abs(delta.x) > myVar.domainSize.x * 0.5f) {
 				periodicDelta.x += (delta.x > 0) ? -myVar.domainSize.x : myVar.domainSize.x;
 			}
-			if (abs(delta.y) > myVar.domainSize.y * 0.5f) {
+			if (std::abs(delta.y) > myVar.domainSize.y * 0.5f) {
 				periodicDelta.y += (delta.y > 0) ? -myVar.domainSize.y : myVar.domainSize.y;
 			}
 
@@ -1301,27 +1319,24 @@ void drawConstraints() {
 
 			Color lineColor;
 			if (myVar.constraintStressColor) {
-
 				float maxStress = 0.0f;
 
 				if (myVar.constraintMaxStressColor > 0.0f) {
 					maxStress = myVar.constraintMaxStressColor;
 				}
 				else {
-					maxStress = constraint.resistance * myVar.globalConstraintResistance * constraint.restLength * 0.18f; // The last multiplier is a heuristic
+					maxStress = constraint.resistance * myVar.globalConstraintResistance * constraint.restLength * 0.18f;
 				}
 
-				float clampedStress = std::clamp(constraint.displacement, 0.0f, maxStress);
+				float stressMag = std::abs(constraint.displacement);
+				float clampedStress = std::clamp(stressMag, 0.0f, maxStress);
 				float normalizedStress = clampedStress / maxStress;
 
 				float hue = (1.0f - normalizedStress) * 240.0f;
-				float saturation = 1.0f;
-				float value = 1.0f;
-
-				lineColor = ColorFromHSV(hue, saturation, value);
+				lineColor = ColorFromHSV(hue, 1.0f, 1.0f);
 			}
 			else {
-				lineColor = ColorLerp(myParam.rParticles[it1->second].color, myParam.rParticles[it2->second].color, 0.5f);
+				lineColor = ColorLerp(myParam.rParticles[idx1].color, myParam.rParticles[idx2].color, 0.5f);
 			}
 
 			rlColor4ub(lineColor.r, lineColor.g, lineColor.b, lineColor.a);

@@ -255,13 +255,6 @@ void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar,
 			file.write(reinterpret_cast<const char*>(&p.isHotPoint), sizeof(p.isHotPoint));
 			file.write(reinterpret_cast<const char*>(&p.hasSolidified), sizeof(p.hasSolidified));
 
-			uint32_t numNeighbors = p.neighborIds.size();
-			file.write(reinterpret_cast<const char*>(&numNeighbors), sizeof(numNeighbors));
-			if (numNeighbors > 0) {
-				file.write(reinterpret_cast<const char*>(p.neighborIds.data()),
-					numNeighbors * sizeof(uint32_t));
-			}
-
 			file.write(reinterpret_cast<const char*>(&r.color), sizeof(r.color));
 			file.write(reinterpret_cast<const char*>(&r.pColor), sizeof(r.pColor));
 			file.write(reinterpret_cast<const char*>(&r.sColor), sizeof(r.sColor));

@@ -31,7 +31,8 @@ struct ParticlePhysics {
 	float prevKe;
 	uint32_t mortonKey;
 	uint32_t id;
-	std::vector<uint32_t> neighborIds;
+	uint32_t neighborOffset;
+	uint32_t neighborCount;
 
 	bool isHotPoint;
 	bool hasSolidified;
@@ -41,7 +42,8 @@ struct ParticlePhysics {
 		: pos(0.0f, 0.0f), predPos{ 0,0 }, vel{ 0,0 }, prevVel{ 0.0f, 0.0f }, predVel{ 0.0f, 0.0f }, acc{ 0,0 },
 		mass(8500000000.0f), press(0.0f), pressTmp(0.0f), pressF{ 0.0f,0.0f }, dens(0.0f), predDens(0.0f), sphMass(1.0f),
 		restDens(0.0f), stiff(0.0f), visc(0.0f), cohesion(0.0f),
-		temp(0.0f), ke(0.0f), prevKe(0.0f), mortonKey(0), id(globalId++), isHotPoint(false), hasSolidified(false)
+		temp(0.0f), ke(0.0f), prevKe(0.0f), mortonKey(0), id(globalId++), neighborOffset(0), neighborCount(0), 
+		isHotPoint(false), hasSolidified(false)
 	{
 	}
 
@@ -75,6 +77,8 @@ struct ParticlePhysics {
 		this->prevKe = 0.0f;
 		this->mortonKey = 0;
 		this->id = globalId++;
+		this->neighborOffset = 0;
+		this->neighborCount = 0;
 
 		this->isHotPoint = false;
 		this->hasSolidified = false;
