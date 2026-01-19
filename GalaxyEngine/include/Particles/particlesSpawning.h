@@ -33,7 +33,7 @@ public:
 
 	bool massMultiplierEnabled = true;
 
-	float massScatter = 0.6f;
+	float massScatter = 0.75f;
 
 	void particlesInitialConditions(Physics& physics, UpdateVariables& myVar, UpdateParameters& myParam);
 

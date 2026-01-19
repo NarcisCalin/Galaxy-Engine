@@ -213,10 +213,10 @@ void ParticlesSpawning::particlesInitialConditions(Physics& physics, UpdateVaria
 				float randomMassMultiplier = 1.0f + (rand01 * 2.0f - 1.0f) * 0.35f;
 
 				if (massMultiplierEnabled) {
-					finalMass = (8500000000.0f / particleAmountMultiplier) * randomMassMultiplier * 0.125f;
+					finalMass = (8500000000.0f / particleAmountMultiplier) * randomMassMultiplier * 0.25f;
 				}
 				else {
-					finalMass = 8500000000.0f * randomMassMultiplier * 0.125f;
+					finalMass = 8500000000.0f * randomMassMultiplier * 0.25f;
 				}
 
 				myParam.pParticles.emplace_back(

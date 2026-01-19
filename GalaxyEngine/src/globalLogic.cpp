@@ -553,7 +553,7 @@ void gpuGravity() {
 
 		gridChildrenVector.resize(globalNodes.size());
 
-		gridPIndices.resize(globalNodes.size() * 2);
+		gridPIndices.resize(globalNodes.size() * 2);	
 
 		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 
@@ -1161,11 +1161,11 @@ void updateScene() {
 
 		ship.spaceshipLogic(myParam.pParticles, myParam.rParticles, myVar.isShipGasEnabled);
 
-		physics.integrateEnd(myParam.pParticles, myVar);
-
 		if (myVar.isTempEnabled) {
 			physics.temperatureCalculation(myParam.pParticles, myParam.rParticles, myVar);
 		}
+
+		physics.integrateEnd(myParam.pParticles, myVar);
 
 	}
 	else {
@@ -1173,10 +1173,6 @@ void updateScene() {
 	}
 
 	field.gpuGravityDisplay(myParam, myVar);
-
-	/*if ((myVar.isDensitySizeEnabled || myParam.colorVisuals.densityColor) && myVar.timeFactor > 0.0f && !myVar.isGravityFieldEnabled) {
-		myParam.neighborSearch.neighborSearch(myParam.pParticles, myParam.rParticles, myVar.particleSizeMultiplier, myVar.particleTextureHalfSize);
-	}*/
 
 	myParam.trails.trailLogic(myVar, myParam);
 

@@ -48,6 +48,7 @@ void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar,
 	paramIO(filename, out, "ParticleSizeMult", myVar.particleSizeMultiplier);
 	paramIO(filename, out, "VisiblePAmountMult", myParam.particlesSpawning.particleAmountMultiplier);
 	paramIO(filename, out, "DMPAmountMult", myParam.particlesSpawning.DMAmountMultiplier);
+	paramIO(filename, out, "MassRandomMultiplier", myParam.particlesSpawning.massScatter);
 	paramIO(filename, out, "MassMultiplierToggle", myParam.particlesSpawning.massMultiplierEnabled);
 
 	// ----- Colors -----

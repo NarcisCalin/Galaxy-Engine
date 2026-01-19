@@ -46,6 +46,9 @@ public:
 	bool bSoundWindow = false;
 	bool bLightingWindow = false;
 
+	bool prevSPHState = false;
+	bool prevMassMultiplier = false;
+
 	void uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, SaveSystem& save, GESound& geSound, Lighting& lighting, Field& field);
 
 	void statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar);

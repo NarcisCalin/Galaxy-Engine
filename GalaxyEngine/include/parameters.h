@@ -21,8 +21,6 @@ struct UpdateParameters {
 	std::vector<ParticlePhysics> pParticles;
 	std::vector<ParticleRendering> rParticles;
 
-	//std::vector<uint32_t> globalNeighborList;
-
 	std::vector<ParticlePhysics> pParticlesSelected;
 	std::vector<ParticleRendering> rParticlesSelected;
 

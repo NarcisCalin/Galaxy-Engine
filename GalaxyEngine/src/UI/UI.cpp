@@ -131,7 +131,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		&myParam.colorVisuals.forceColor,
 		&myParam.colorVisuals.velocityColor,
 		&myParam.colorVisuals.shockwaveColor,
-		& myParam.colorVisuals.turbulenceColor,
+		&myParam.colorVisuals.turbulenceColor,
 		&myParam.colorVisuals.pressureColor,
 		&myParam.colorVisuals.temperatureColor,
 		&myParam.colorVisuals.gasTempColor,
@@ -736,15 +736,33 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			sliderHelper("Visible P. Amount Multiplier", "Controls the spawn amount of visible particles", myParam.particlesSpawning.particleAmountMultiplier, 0.1f, 100.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("DM P. Amount Multiplier", "Controls the spawn amount of dark matter particles", myParam.particlesSpawning.DMAmountMultiplier, 0.1f, 100.0f, parametersSliderX, parametersSliderY, enabled);
 
-			bool massMultiplierButtonEnable = true;
-			if (myVar.isSPHEnabled) {
-				myParam.particlesSpawning.massMultiplierEnabled = false;
-				massMultiplierButtonEnable = false;
+			bool isSPHDisabled = !myVar.isSPHEnabled;
+
+			sliderHelper("Random Mass multiplier", "Controls how much mass can vary for each particle", myParam.particlesSpawning.massScatter, 0.0f, 1.0f, parametersSliderX, parametersSliderY, isSPHDisabled);
+
+			static bool prevSPHState = false;
+			static bool prevMassMultiplierEnabled = false;
+			static float prevMassScatter = 0.0f;
+
+			if (myVar.isSPHEnabled != prevSPHState) {
+				if (myVar.isSPHEnabled) {
+					prevMassMultiplierEnabled = myParam.particlesSpawning.massMultiplierEnabled;
+					prevMassScatter = myParam.particlesSpawning.massScatter;
+
+					myParam.particlesSpawning.massMultiplierEnabled = false;
+					myParam.particlesSpawning.massScatter = 0.0f;
+				}
+				else {
+					myParam.particlesSpawning.massMultiplierEnabled = prevMassMultiplierEnabled;
+					myParam.particlesSpawning.massScatter = prevMassScatter;
+				}
 			}
+
+			prevSPHState = myVar.isSPHEnabled;
 
 			ImGui::Spacing();
 
-			buttonHelper("Mass Multiplier", "Decides if particles' masses should be inversely multiplied by the amount of particles multiplier", myParam.particlesSpawning.massMultiplierEnabled, 240.0f, 30.0f, true, massMultiplierButtonEnable);
+			buttonHelper("Mass Multiplier", "Decides if particles' masses should be inversely multiplied by the amount of particles multiplier", myParam.particlesSpawning.massMultiplierEnabled, 240.0f, 30.0f, true, isSPHDisabled);
 		}
 
 		if (bPhysicsSliders) {
