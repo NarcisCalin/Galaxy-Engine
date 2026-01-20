@@ -627,7 +627,7 @@ void Brush::brushSize() {
 	float wheel = GetMouseWheelMove();
 	if (IO::shortcutDown(KEY_LEFT_CONTROL) && wheel != 0) {
 		float scale = 0.2f * wheel;
-		brushRadius = Clamp(expf(logf(brushRadius) + scale), 4.5f, 512.0f);
+		brushRadius = Clamp(expf(logf(brushRadius) + scale), 2.5f, 512.0f);
 	}
 }
 

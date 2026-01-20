@@ -696,7 +696,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			sliderHelper("Max Dynamic Size", "Controls the maximum size particles can have when chaning size dynamically", myParam.densitySize.maxSize, 0.1f, 5.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Min Dynamic Size", "Controls the minimum size particles can have when chaning size dynamically", myParam.densitySize.minSize, 0.001f, 5.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Max Size Force", "Controls the acceleration threshold to map the particle size", myParam.densitySize.sizeAcc, 1.0f, 400.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Particles Size", "Controls the size of all particles", myVar.particleSizeMultiplier, 0.1f, 5.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Particles Size", "Controls the size of all particles", myVar.particleSizeMultiplier, 0.0f, 5.0f, parametersSliderX, parametersSliderY, enabled);
 
 			ImGui::Spacing();
 			ImGui::Separator();

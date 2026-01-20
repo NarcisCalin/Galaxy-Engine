@@ -21,6 +21,7 @@ public:
 	const float boundDamping = -0.1f;
 	float delta = 19000.0f;
 	float verticalGravity = 3.0f;
+	float boundaryFriction = 0.8f;
 
 	float densTolerance = 0.08f;
 
