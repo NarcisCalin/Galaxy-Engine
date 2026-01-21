@@ -7,6 +7,11 @@ cmake_policy(SET CMP0135 NEW)
 
 project(GalaxyEngine)
 
+if(MSVC OR CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    add_compile_options("$<$<CONFIG:Debug>:/Od;/RTC1;/MDd>")
+    add_compile_options("$<$<CONFIG:Release>:/O2;/MD>")
+endif()
+
 include(FetchContent)
 
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/ffmpeg.cmake)
@@ -52,18 +57,18 @@ target_include_directories(GalaxyEngine PUBLIC ${CMAKE_CURRENT_LIST_DIR}/GalaxyE
 
 target_compile_features(GalaxyEngine PRIVATE cxx_std_20)
 set_target_properties(
-        GalaxyEngine PROPERTIES
-        MSVC_RUNTIME_LIBRARY MultiThreadedDLL
-        VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/GalaxyEngine)
+    GalaxyEngine PROPERTIES 
+    MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
+    VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/GalaxyEngine
+)
 
 target_link_libraries(GalaxyEngine PUBLIC raylib-lib ffmpeg imgui glm-lib openmp yaml-cpp::yaml-cpp)
 
 if(WIN32)
-    target_link_libraries(GalaxyEngine PUBLIC winmm)
-
     add_custom_command(
-            TARGET GalaxyEngine
-            POST_BUILD
-            COMMAND
-                ${CMAKE_COMMAND} -E copy_directory ${ffmpeg-fetch_SOURCE_DIR}/bin $<TARGET_FILE_DIR:GalaxyEngine>)
+        TARGET GalaxyEngine POST_BUILD 
+        COMMAND ${CMAKE_COMMAND} -E copy_directory 
+        ${ffmpeg-fetch_SOURCE_DIR}/bin 
+        $<TARGET_FILE_DIR:GalaxyEngine>
+    )
 endif()
