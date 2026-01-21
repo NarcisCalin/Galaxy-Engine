@@ -21,68 +21,38 @@ Special thanks to [Emily](https://github.com/Th3T3chn0G1t) for helping me on mul
 
 
 ---
-![RecordResult2](https://github.com/user-attachments/assets/8a9f8958-a7df-4d9c-bd39-518758e6aea7)
 
+![GalaxyCollisionField](https://github.com/user-attachments/assets/fa6d4eb8-7986-49dd-b274-e78ba03614bc)
 
-![SPH1](https://github.com/user-attachments/assets/926cdae3-43f9-48a5-9f97-5aa2dd4785ec)
+![PlanetaryCollision](https://github.com/user-attachments/assets/15cd619c-3274-445c-9618-de88055d4ff0)
 
-![BigBang](https://github.com/user-attachments/assets/e5bea8d7-f937-427a-90aa-38e5c59fd861)
+<img width="1920" height="1080" alt="Screenshot_96" src="https://github.com/user-attachments/assets/898ae45d-ce00-4b3c-a1b1-13afd7bf814b" />
 
 ## Features
 ---
 ### INTERACTIVITY
 Galaxy Engine was built with interactivity in mind
 
-
-![Interactivity](https://github.com/user-attachments/assets/3a1ae9ea-f31b-4938-9d55-6b32dbe83bed)
-
-
-### CUSTOMIZATION
-There are multiple parameters to allow you to achieve the look you want
-
-
-![Customization](https://github.com/user-attachments/assets/3a569153-642e-4e09-beae-5888a6bcfec0)
-
-
-### SUBDIVISION
-Add more quality to the simulation easily by subdividing the particles
-
-
-
-![Subdivision](https://github.com/user-attachments/assets/c414549b-920f-45ad-b330-205f94632465)
-
+![Interactivity](https://github.com/user-attachments/assets/ef3077a5-91c1-43fd-aa30-516b3e84fabc)
 
 ### SPH FLUID PHYSICS
-Galaxy Engine includes SPH fluid physics for planetary simulation
+Galaxy Engine includes SPH fluid physics for different types of simulation
 
-![SPH2](https://github.com/user-attachments/assets/9b990a20-732a-4887-8254-68708faae182)
+![PlanetsHQ](https://github.com/user-attachments/assets/0bbe27c9-c61d-435e-b20d-9cd055591e41)
 
-![SPH4](https://github.com/user-attachments/assets/4a348533-0fa5-4d32-9060-66ad1c32b138)
+![PlanetaryHQ2](https://github.com/user-attachments/assets/b185971f-0463-4086-831d-713c1d1c1a9c)
 
-![SPH3](https://github.com/user-attachments/assets/a99bbd1c-6ad8-4676-ba13-e55e8c934c3c)
-
+![AsteroidImpact](https://github.com/user-attachments/assets/d20d97a9-aaf7-4909-b73e-50d9945c17d3)
 
 ### REAL TIME PHYSICS
 Thanks to the Barnes-Hut algorithm, Galaxy Engine can simulate tens or even hundreds of thousands of particles in real time
 
-
-
-![Quadree](https://github.com/user-attachments/assets/92f7841e-356b-403d-b2f9-bd55c8fef2a4)
-
-
-
-
+![BH](https://github.com/user-attachments/assets/d1db1b59-ce03-46c5-9360-0a7b10199de4)
 
 ### RENDERING
 Engine Galaxy includes a recorder so you can compile videos showcasing millions of particles
 
-![Record](https://github.com/user-attachments/assets/7835b2e4-11e0-4906-ad1c-29d2412107e9)
-
-Result:
-
-![RecordResult](https://github.com/user-attachments/assets/496aea86-12f2-4b91-a680-4f9d29c36a44)
-
-
+![20Mil](https://github.com/user-attachments/assets/454af8b4-c8d5-4f9b-b2d6-a831c1dcc9f8)
 
 
 ## HOW TO INSTALL
