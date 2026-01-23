@@ -423,23 +423,6 @@ for (int i = 0; i < 2; ++i) {
     
     pData[idx + 2 * pCount] = totalForce.x / mass[idx];
     pData[idx + 3 * pCount] = totalForce.y / mass[idx];
-
-    /*pData[idx + 2 * pCount] += dt * 1.5f * pData[idx + 4 * pCount];
-    pData[idx + 3 * pCount] += dt * 1.5f * pData[idx + 5 * pCount];
-    pData[idx] += pData[idx + 2 * pCount] * dt;
-    pData[idx + pCount] += pData[idx + 3 * pCount] * dt;
-
-    if (periodicBoundary) {
-                if (pData[idx] < 0.0f)
-					pData[idx] += domainSize.x;
-				else if (pData[idx] >= domainSize.x)
-					pData[idx] -= domainSize.x;
-
-				if (pData[idx + pCount] < 0.0f)
-					pData[idx + pCount] += domainSize.y;
-				else if (pData[idx + pCount] >= domainSize.y)
-					pData[idx + pCount] -= domainSize.y;
-    }*/
 }
 )";
 
@@ -517,6 +500,10 @@ void gravityKernel() {
 void buildKernels() {
 	gravityKernel();
 	field.fieldGravityDisplayKernel();
+	sph.neighborSearchKernel();
+
+	sph.bitonicSortKernel();
+	sph.offsetKernel();
 }
 
 std::vector<float> pData;
@@ -553,7 +540,7 @@ void gpuGravity() {
 
 		gridChildrenVector.resize(globalNodes.size());
 
-		gridPIndices.resize(globalNodes.size() * 2);	
+		gridPIndices.resize(globalNodes.size() * 2);
 
 		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 
@@ -661,6 +648,15 @@ void freeGPUMemory() {
 	glDeleteBuffers(1, &field.ssboCellsData);
 
 	glDeleteProgram(field.gravityDisplayProgram);
+
+	glDeleteBuffers(1, &sph.ssboPPos);
+	glDeleteBuffers(1, &sph.ssboEntries);
+	glDeleteBuffers(1, &sph.ssboCellKeys);
+	glDeleteBuffers(1, &sph.ssboCellX);
+	glDeleteBuffers(1, &sph.ssboCellY);
+	glDeleteBuffers(1, &sph.ssboParticleIndices);
+
+	glDeleteProgram(sph.neighborSearchProgram);
 }
 
 // -------- This is an unused quadtree creation method I made for learning purposes. It builds the quadtree from Morton keys -------- //
@@ -1011,7 +1007,7 @@ void updateScene() {
 		}
 	}
 
-	if (myVar.timeFactor != 0.0f) {
+	if (myVar.timeFactor != 0.0f && !myVar.naiveSIMD) {
 		bb = boundingBox();
 
 		/*if (myVar.timeFactor >= 0) {
@@ -1056,11 +1052,11 @@ void updateScene() {
 		rParticle.totalRadius = rParticle.size * myVar.particleTextureHalfSize * myVar.particleSizeMultiplier;
 	}
 
-	if (myVar.constraintsEnabled || 
-		myVar.drawConstraints || 
-		myVar.visualizeMesh || 
-		myVar.isBrushDrawing || 
-		myVar.isMergerEnabled || 
+	if (myVar.constraintsEnabled ||
+		myVar.drawConstraints ||
+		myVar.visualizeMesh ||
+		myVar.isBrushDrawing ||
+		myVar.isMergerEnabled ||
 		myParam.colorVisuals.densityColor ||
 		myVar.isDensitySizeEnabled ||
 		myParam.colorVisuals.densityColor && myVar.timeFactor > 0.0f && !myVar.isGravityFieldEnabled) {
@@ -1129,32 +1125,44 @@ void updateScene() {
 
 	if ((myVar.timeFactor != 0.0f && myVar.gridExists) || myVar.isGPUEnabled) {
 
-		if (!myVar.isGPUEnabled) {
-			for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-				myParam.pParticles[i].acc = { 0.0f, 0.0f };
-			}
-
-#pragma omp parallel for schedule(dynamic)
-			for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-
-				if ((myParam.rParticles[i].isBeingDrawn && myVar.isBrushDrawing && myVar.isSPHEnabled) || myParam.rParticles[i].isPinned) {
-					continue;
-				}
-
-				glm::vec2 netForce = physics.calculateForceFromGrid(myParam.pParticles, myVar, myParam.pParticles[i]);
-
-				myParam.pParticles[i].acc = netForce / myParam.pParticles[i].mass;
-			}
+		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+			myParam.pParticles[i].acc = { 0.0f, 0.0f };
 		}
-		else {
-			gpuGravity();
+
+		if (myVar.gravityMultiplier != 0.0f) {
+			if (!myVar.isGPUEnabled) {
+
+				if (!myVar.naiveSIMD) {
+#pragma omp parallel for schedule(dynamic)
+					for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+
+						if ((myParam.rParticles[i].isBeingDrawn && myVar.isBrushDrawing && myVar.isSPHEnabled) || myParam.rParticles[i].isPinned) {
+							continue;
+						}
+
+						glm::vec2 netForce = physics.calculateForceFromGrid(myParam.pParticles, myVar, myParam.pParticles[i]);
+
+						myParam.pParticles[i].acc = netForce / myParam.pParticles[i].mass;
+					}
+				}
+				else {
+					physics.flattenParticles(myParam.pParticles);
+
+					physics.naiveGravity(myParam.pParticles, myVar);
+
+					physics.readFlattenBack(myParam.pParticles);
+				}
+			}
+			else {
+				gpuGravity();
+			}
 		}
 
 		if (myVar.isMergerEnabled)
 			physics.mergerSolver(myParam.pParticles, myParam.rParticles, myVar, myParam);
 
 		if (myVar.isSPHEnabled) {
-			sph.pcisphSolver(myParam.pParticles, myParam.rParticles, myVar.timeFactor, myVar.domainSize, myVar.sphGround);
+			sph.pcisphSolver(myParam.pParticles, myParam.rParticles, myVar.timeFactor, myVar.domainSize, myVar.sphGround, myVar.mouseWorldPos);
 		}
 
 		physics.constraints(myParam.pParticles, myParam.rParticles, myVar);

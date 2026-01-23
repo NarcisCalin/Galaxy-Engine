@@ -27,6 +27,23 @@ struct Physics {
 	glm::vec2 calculateForceFromGrid(std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar, 
 		ParticlePhysics& pParticle);
 
+
+	std::vector<float> posX;
+	std::vector<float> posY;
+	std::vector<float> accX;
+	std::vector<float> accY;
+	std::vector<float> velX;
+	std::vector<float> velY;
+	std::vector<float> prevVelX;
+	std::vector<float> prevVelY;
+	std::vector<float> mass;
+
+	void flattenParticles(std::vector<ParticlePhysics>& pParticles);
+
+	void naiveGravity(std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar);
+
+	void readFlattenBack(std::vector<ParticlePhysics>& pParticles);
+
 	void temperatureCalculation(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar);
 
 	void createConstraints(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, bool& constraintCreateSpecialFlag,

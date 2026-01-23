@@ -40,7 +40,6 @@ void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar,
 	paramIO(filename, out, "MaxNeighbors", myParam.colorVisuals.maxNeighbors);
 
 	// ----- Other visual sliders -----
-	paramIO(filename, out, "DensityRadius", myParam.neighborSearch.densityRadius);
 	paramIO(filename, out, "MaxSizeForce", myParam.densitySize.sizeAcc);
 	paramIO(filename, out, "Max Dynamic Size", myParam.densitySize.maxSize);
 	paramIO(filename, out, "Min Dynamic Size", myParam.densitySize.minSize);

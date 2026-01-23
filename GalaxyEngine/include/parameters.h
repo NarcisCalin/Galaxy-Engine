@@ -75,7 +75,7 @@ struct UpdateVariables{
 
 	bool exitGame = false;
 
-	int targetFPS = 144;
+	int targetFPS = 1000;
 
 	double G = 6.674e-11;
 	float gravityMultiplier = 1.0f;
@@ -247,4 +247,6 @@ struct UpdateVariables{
 	bool gravityFieldDMParticles = false;
 
 	int frameCount = 0;
+
+	bool naiveSIMD = false;
 };

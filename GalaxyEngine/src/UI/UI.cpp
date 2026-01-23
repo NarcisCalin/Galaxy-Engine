@@ -61,6 +61,11 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 { "Force Size", "Maps particle acceleration to size", &myVar.isForceSizeEnabled }
 	};
 
+	std::vector<SimilarTypeButton::Mode> gpuSimd{
+{ "GPU (Beta)", "Simulates gravity on the GPU", &myVar.isGPUEnabled },
+{ "Naive SIMD", "Simulates gravity with a Naive algorithm with SIMD vectorization (Recommended to leave turned off)", &myVar.naiveSIMD }
+	};
+
 	ImGui::Spacing();
 	ImGui::Separator();
 
@@ -75,13 +80,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 	buttonHelper("Multi-Threading", "Distributes the simulation across multiple threads", myVar.isMultiThreadingEnabled, -1.0f, settingsButtonY, true, enabled);
 
-	bool canEnableGPU = !myVar.isSPHEnabled;
-
-	if (!canEnableGPU) {
-		myVar.isGPUEnabled = false;
-	}
-
-	buttonHelper("GPU (Beta)", "Simulates gravity on the GPU", myVar.isGPUEnabled, -1.0f, settingsButtonY, true, canEnableGPU);
+	SimilarTypeButton::buttonIterator(gpuSimd, -1.0f, settingsButtonY, true, enabled);
 
 	ImGui::Spacing();
 	ImGui::Separator();
@@ -661,7 +660,6 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			ImGui::Separator();
 			ImGui::Spacing();
 
-			sliderHelper("Density Radius", "Controls the neighbor search radius", myParam.neighborSearch.densityRadius, 0.0f, 7.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Max Neighbors", "Controls the maximum neighbor count range", myParam.colorVisuals.maxNeighbors, 1, 2000, parametersSliderX, parametersSliderY, enabled);
 
 			ImGui::Spacing();

@@ -1,5 +1,100 @@
 #include "Physics/SPH.h"
 
+void SPH::flattenParticles(std::vector<ParticlePhysics>& pParticles) {
+	size_t particleCount = pParticles.size();
+
+	posX.resize(particleCount);
+	posY.resize(particleCount);
+	predPosX.resize(particleCount);
+	predPosY.resize(particleCount);
+
+	accX.resize(particleCount);
+	accY.resize(particleCount);
+
+	velX.resize(particleCount);
+	velY.resize(particleCount);
+	prevVelX.resize(particleCount);
+	prevVelY.resize(particleCount);
+
+	sphMass.resize(particleCount);
+	press.resize(particleCount);
+	pressFX.resize(particleCount);
+	pressFY.resize(particleCount);
+	stiff.resize(particleCount);
+	visc.resize(particleCount);
+	dens.resize(particleCount);
+	predDens.resize(particleCount);
+	restDens.resize(particleCount);
+
+#pragma omp parallel for schedule(static)
+	for (int i = 0; i < static_cast<int>(particleCount); i++)
+	{
+		const auto& particle = pParticles[i];
+
+		posX[i] = particle.pos.x;
+		posY[i] = particle.pos.y;
+
+		predPosX[i] = particle.pos.x;
+		predPosY[i] = particle.pos.y;
+
+		accX[i] = particle.acc.x;
+		accY[i] = particle.acc.y;
+
+		velX[i] = particle.vel.x;
+		velY[i] = particle.vel.y;
+
+		prevVelX[i] = particle.prevVel.x;
+		prevVelY[i] = particle.prevVel.y;
+
+		sphMass[i] = particle.sphMass;
+
+		press[i] = 0.0f;
+		pressFX[i] = 0.0f;
+		pressFY[i] = 0.0f;
+		stiff[i] = 0.0f;
+		visc[i] = 0.0f;
+		dens[i] = 0.0f;
+		predDens[i] = 0.0f;
+		restDens[i] = 0.0f;
+	}
+}
+
+void SPH::readFlattenBack(std::vector<ParticlePhysics>& pParticles) {
+	size_t particleCount = pParticles.size();
+
+#pragma omp parallel for schedule(static)
+	for (int i = 0; i < static_cast<int>(particleCount); i++)
+	{
+		auto& particle = pParticles[i];
+
+		particle.pos.x = posX[i];
+		particle.pos.y = posY[i];
+
+		particle.predPos.x = predPosX[i];
+		particle.predPos.y = predPosY[i];
+
+		particle.acc.x = accX[i];
+		particle.acc.y = accY[i];
+
+		particle.vel.x = velX[i];
+		particle.vel.y = velY[i];
+
+		particle.prevVel.x = prevVelX[i];
+		particle.prevVel.y = prevVelY[i];
+
+		particle.sphMass = sphMass[i];
+
+		particle.press = press[i];
+		particle.pressF.x = pressFX[i];
+		particle.pressF.y = pressFY[i];
+		particle.stiff = stiff[i];
+		particle.visc = visc[i];
+		particle.dens = dens[i];
+		particle.predDens = predDens[i];
+		particle.restDens = restDens[i];
+	}
+}
+
 void SPH::computeViscCohesionForces(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles,
 	std::vector<glm::vec2>& sphForce, size_t& N) {
 
@@ -13,50 +108,44 @@ void SPH::computeViscCohesionForces(std::vector<ParticlePhysics>& pParticles, st
 
 		auto& pi = pParticles[i];
 
-		size_t cellIndex = getGridIndex(pi.pos);
-		auto neighborCells = getNeighborCells(cellIndex);
+		std::vector<size_t> neighborIndices = queryNeighbors(pParticles[i].pos, pParticles);
 
-		for (auto neighCellIdx : neighborCells) {
-			auto it = grid.find(neighCellIdx);
-			if (it == grid.end()) continue;
-			auto& cell = it->second;
+		for (size_t j : neighborIndices) {
+			size_t pjIdx = j;
 
-			for (auto pjIdx : cell.particleIndices) {
+			if (!rParticles[pjIdx].isSPH || rParticles[pjIdx].isBeingDrawn) continue;
 
-				if (!rParticles[pjIdx].isSPH || rParticles[pjIdx].isBeingDrawn) continue;
+			if (pjIdx == i) continue;
+			auto& pj = pParticles[pjIdx];
 
-				if (pjIdx == i) continue;
-				auto& pj = pParticles[pjIdx];
+			glm::vec2 d = { pj.pos.x - pi.pos.x, pj.pos.y - pi.pos.y };
+			float   rSq = d.x * d.x + d.y * d.y;
+			if (rSq >= h2) continue;
 
-				glm::vec2 d = { pj.pos.x - pi.pos.x, pj.pos.y - pi.pos.y };
-				float   rSq = d.x * d.x + d.y * d.y;
-				if (rSq >= h2) continue;
+			float r = sqrtf(std::max(rSq, 1e-6f));
+			glm::vec2 nr = { d.x / r, d.y / r };
 
-				float r = sqrtf(std::max(rSq, 1e-6f));
-				glm::vec2 nr = { d.x / r, d.y / r };
+			float mJ = pj.sphMass * mass;
 
-				float mJ = pj.sphMass * mass;
+			float lapW = smoothingKernelLaplacian(r, h);
+			glm::vec2 viscF = {
+				viscosity * pj.visc * mJ / std::max(pj.dens, 0.001f) * lapW * (pj.vel.x - pi.vel.x),
+				viscosity * pj.visc * mJ / std::max(pj.dens, 0.001f) * lapW * (pj.vel.y - pi.vel.y)
+			};
 
-				float lapW = smoothingKernelLaplacian(r, h);
-				glm::vec2 viscF = {
-					viscosity * pj.visc * mJ / std::max(pj.dens, 0.001f) * lapW * (pj.vel.x - pi.vel.x),
-					viscosity * pj.visc * mJ / std::max(pj.dens, 0.001f) * lapW * (pj.vel.y - pi.vel.y)
-				};
-
-				float cohCoef = cohesionCoefficient * pi.cohesion;
-				float cohFactor = smoothingKernelCohesion(r, h);
-				glm::vec2 cohF = { cohCoef * mJ * cohFactor * nr.x,
-									cohCoef * mJ * cohFactor * nr.y };
+			float cohCoef = cohesionCoefficient * pi.cohesion;
+			float cohFactor = smoothingKernelCohesion(r, h);
+			glm::vec2 cohF = { cohCoef * mJ * cohFactor * nr.x,
+								cohCoef * mJ * cohFactor * nr.y };
 
 #pragma omp atomic
-				sphForce[i].x += viscF.x + cohF.x;
+			sphForce[i].x += viscF.x + cohF.x;
 #pragma omp atomic
-				sphForce[i].y += viscF.y + cohF.y;
+			sphForce[i].y += viscF.y + cohF.y;
 #pragma omp atomic
-				sphForce[pjIdx].x -= viscF.x + cohF.x;
+			sphForce[pjIdx].x -= viscF.x + cohF.x;
 #pragma omp atomic
-				sphForce[pjIdx].y -= viscF.y + cohF.y;
-			}
+			sphForce[pjIdx].y -= viscF.y + cohF.y;
 		}
 	}
 }
@@ -92,12 +181,6 @@ void SPH::PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleR
 			p.predPos = p.pos + displacement;
 		}
 
-		grid.clear();
-		for (size_t i = 0; i < N; ++i) {
-			size_t idx = getGridIndex(pParticles[i].predPos);
-			grid[idx].particleIndices.push_back(i);
-		}
-
 #pragma omp parallel for reduction(max:maxRhoErr)
 		for (size_t i = 0; i < N; ++i) {
 
@@ -106,28 +189,27 @@ void SPH::PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleR
 			auto& pi = pParticles[i];
 			pi.predDens = 0.0f;
 
-			size_t cellIndex = getGridIndex(pi.predPos);
-			auto neighborCells = getNeighborCells(cellIndex);
+			std::vector<size_t> neighborIndices = queryNeighbors(pParticles[i].predPos, pParticles);
 
-			for (auto neighIdx : neighborCells) {
-				auto it = grid.find(neighIdx);
-				if (it == grid.end()) continue;
+			for (size_t j : neighborIndices) {
+				size_t pjIdx = j;
 
-				for (auto pjIdx : it->second.particleIndices) {
-					if (!rParticles[pjIdx].isSPH || rParticles[pjIdx].isBeingDrawn) continue;
+				//if (pjIdx == i) continue;
+				if (!rParticles[pjIdx].isSPH || rParticles[pjIdx].isBeingDrawn) continue;
 
-					auto& pj = pParticles[pjIdx];
-					glm::vec2 dr = pi.predPos - pj.predPos;
-					float rrSq = dr.x * dr.x + dr.y * dr.y;
+				auto& pj = pParticles[pjIdx];
+				glm::vec2 dr = pi.predPos - pj.predPos;
+				float rrSq = dr.x * dr.x + dr.y * dr.y;
 
-					if (rrSq >= radiusMultiplier * radiusMultiplier) continue;
+				if (rrSq >= radiusMultiplier * radiusMultiplier) continue;
 
-					float rr = sqrtf(rrSq);
-					float mJ = pj.sphMass * mass;
-					float rho0 = 0.5f * (pi.restDens + pj.restDens);
-					pi.predDens += mJ * smoothingKernel(rr, radiusMultiplier) / rho0;
-				}
+				float rr = sqrtf(rrSq);
+				float mJ = pj.sphMass * mass;
+				float rho0 = 0.5f * (pi.restDens + pj.restDens);
+				pi.predDens += mJ * smoothingKernel(rr, radiusMultiplier) / rho0;
 			}
+
+
 
 			float err = pi.predDens - pi.restDens;
 			pi.pressTmp = delta * err;
@@ -142,51 +224,49 @@ void SPH::PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleR
 			if (!rParticles[i].isSPH || rParticles[i].isBeingDrawn) continue;
 
 			auto& pi = pParticles[i];
-			size_t cellIndex = getGridIndex(pi.predPos);
-			auto neighborCells = getNeighborCells(cellIndex);
+			std::vector<size_t> neighborIndices = queryNeighbors(pParticles[i].predPos, pParticles);
 
-			for (auto neighIdx : neighborCells) {
-				auto it = grid.find(neighIdx);
-				if (it == grid.end()) continue;
+			for (size_t j : neighborIndices) {
+						size_t pjIdx = j;
 
-				for (auto pjIdx : it->second.particleIndices) {
-					if (pjIdx == i) continue;
-					if (!rParticles[pjIdx].isSPH || rParticles[pjIdx].isBeingDrawn) continue;
+						if (pjIdx == i) continue;
+						if (!rParticles[pjIdx].isSPH || rParticles[pjIdx].isBeingDrawn) continue;
 
-					auto& pj = pParticles[pjIdx];
-					glm::vec2 dr = pi.predPos - pj.predPos;
-					float rr = sqrtf(dr.x * dr.x + dr.y * dr.y);
+						auto& pj = pParticles[pjIdx];
+						glm::vec2 dr = pi.predPos - pj.predPos;
+						float rr = sqrtf(dr.x * dr.x + dr.y * dr.y);
 
-					if (rr < 1e-5f || rr >= radiusMultiplier) continue;
+						if (rr < 1e-5f || rr >= radiusMultiplier) continue;
 
-					float gradW = spikyKernelDerivative(rr, radiusMultiplier);
-					glm::vec2 nrm = { dr.x / rr, dr.y / rr };
-					float avgP = 0.5f * (pi.press + pj.press);
-					float avgD = 0.5f * (pi.predDens + pj.predDens);
-					float mag = -(pi.sphMass * mass + pj.sphMass * mass) * avgP / std::max(avgD, 0.01f);
+						float gradW = spikyKernelDerivative(rr, radiusMultiplier);
+						glm::vec2 nrm = { dr.x / rr, dr.y / rr };
+						float avgP = 0.5f * (pi.press + pj.press);
+						float avgD = 0.5f * (pi.predDens + pj.predDens);
+						float mag = -(pi.sphMass * mass + pj.sphMass * mass) * avgP / std::max(avgD, 0.01f);
 
-					float massRatio = std::max(pi.sphMass, pj.sphMass) / std::min(pi.sphMass, pj.sphMass);
-					float scale = std::min(1.0f, 8.0f / massRatio);
-					mag *= scale;
+						float massRatio = std::max(pi.sphMass, pj.sphMass) / std::min(pi.sphMass, pj.sphMass);
+						float scale = std::min(1.0f, 8.0f / massRatio);
+						mag *= scale;
 
-					glm::vec2 pF = { mag * gradW * nrm.x, mag * gradW * nrm.y };
+						glm::vec2 pF = { mag * gradW * nrm.x, mag * gradW * nrm.y };
 
 #pragma omp atomic
-					sphForce[i].x += pF.x;
+						sphForce[i].x += pF.x;
 #pragma omp atomic
-					sphForce[i].y += pF.y;
+						sphForce[i].y += pF.y;
 #pragma omp atomic
-					sphForce[pjIdx].x -= pF.x;
+						sphForce[pjIdx].x -= pF.x;
 #pragma omp atomic
-					sphForce[pjIdx].y -= pF.y;
-				}
-			}
+						sphForce[pjIdx].y -= pF.y;
+					}
+				
+			
 		}
 
 		rhoError = maxRhoErr;
 		++iter;
 
-	} while (iter < maxIter /*&& rhoError > densTolerance */ );
+	} while (iter < maxIter /*&& rhoError > densTolerance */);
 
 #pragma omp parallel for
 	for (size_t i = 0; i < N; ++i) {

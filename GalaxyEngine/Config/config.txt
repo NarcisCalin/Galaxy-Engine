@@ -1,0 +1,4 @@
+Global Volume: 0.400000006
+Menu Volume: 0.25
+Music Volume: 0.400000006
+Message Index: 3

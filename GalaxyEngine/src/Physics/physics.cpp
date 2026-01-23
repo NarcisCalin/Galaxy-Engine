@@ -2,54 +2,65 @@
 
 glm::vec2 Physics::calculateForceFromGrid(std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar, ParticlePhysics& pParticle) {
 
-	glm::vec2 totalForce = { 0.0f, 0.0f };
+	glm::vec2 totalForce = { 0.0f,0.0f };
 
 	uint32_t gridIdx = 0;
 	const uint32_t nodeCount = static_cast<uint32_t>(globalNodes.size());
 
+	const float thetaSq = myVar.theta * myVar.theta;
+	const float softeningSq = myVar.softening * myVar.softening;
+	const float Gf = static_cast<float>(myVar.G);
+	const float pmass = pParticle.mass;
+	auto* particlesPtr = pParticles.data();
+
 	while (gridIdx < nodeCount) {
 		Node& grid = globalNodes[gridIdx];
 
-		if (grid.gridMass <= 0.0f) {
+		float gridMass = grid.gridMass;
+		if (gridMass <= 0.0f) {
 			gridIdx += grid.next + 1;
 			continue;
 		}
 
-		glm::vec2 d = grid.centerOfMass - pParticle.pos;
+		const glm::vec2 gridCOM = grid.centerOfMass;
+		const float gridSize = grid.size;
+
+		glm::vec2 d = gridCOM - pParticle.pos;
 
 		if (myVar.isPeriodicBoundaryEnabled) {
 			d.x -= myVar.domainSize.x * ((d.x > myVar.halfDomainWidth) - (d.x < -myVar.halfDomainWidth));
 			d.y -= myVar.domainSize.y * ((d.y > myVar.halfDomainHeight) - (d.y < -myVar.halfDomainHeight));
 		}
 
-		float distanceSq = d.x * d.x + d.y * d.y + myVar.softening * myVar.softening;
+		float distanceSq = d.x * d.x + d.y * d.y + softeningSq;
 
 		bool isSubgridsEmty = true;
-		for (int i = 0; i < 2; ++i) {
-			for (int j = 0; j < 2; ++j) {
-				uint32_t idx = grid.subGrids[i][j];
-				if (idx != UINT32_MAX) {
-					isSubgridsEmty = false;
-					break;
-				}
-			}
-			if (!isSubgridsEmty) break;
+		uint32_t s00 = grid.subGrids[0][0];
+		uint32_t s01 = grid.subGrids[0][1];
+		uint32_t s10 = grid.subGrids[1][0];
+		uint32_t s11 = grid.subGrids[1][1];
+		if (s00 != UINT32_MAX || s01 != UINT32_MAX || s10 != UINT32_MAX || s11 != UINT32_MAX) {
+			isSubgridsEmty = false;
 		}
 
-		if ((grid.size * grid.size < (myVar.theta * myVar.theta) * distanceSq) || isSubgridsEmty) {
+		float gridSizeSq = gridSize * gridSize;
 
-			if ((grid.endIndex - grid.startIndex) == 1 &&
-				fabs(pParticles[grid.startIndex].pos.x - pParticle.pos.x) < 0.001f &&
-				fabs(pParticles[grid.startIndex].pos.y - pParticle.pos.y) < 0.001f) {
+		if ((gridSizeSq < thetaSq * distanceSq) || isSubgridsEmty) {
 
-				gridIdx += grid.next + 1;
-				continue;
+			if ((grid.endIndex - grid.startIndex) == 1) {
+				const ParticlePhysics& other = particlesPtr[grid.startIndex];
+				if (std::abs(other.pos.x - pParticle.pos.x) < 0.001f && std::abs(other.pos.y - pParticle.pos.y) < 0.001f) {
+					gridIdx += grid.next + 1;
+					continue;
+				}
 			}
 
-			float invDistance = 1.0f / sqrt(distanceSq);
-			float forceMagnitude = static_cast<float>(myVar.G) * pParticle.mass * grid.gridMass
-				* invDistance * invDistance * invDistance;
-				totalForce += d * forceMagnitude;
+			float invDistance = 1.0f / std::sqrt(distanceSq);
+			float invDist2 = invDistance * invDistance;
+			float invDist3 = invDist2 * invDistance;
+
+			float forceMagnitude = Gf * pmass * gridMass * invDist3;
+			totalForce += d * forceMagnitude;
 
 			if (myVar.isTempEnabled) {
 				uint32_t count = grid.endIndex - grid.startIndex;
@@ -57,7 +68,8 @@ glm::vec2 Physics::calculateForceFromGrid(std::vector<ParticlePhysics>& pParticl
 					float gridAverageTemp = grid.gridTemp / static_cast<float>(count);
 					float temperatureDifference = gridAverageTemp - pParticle.temp;
 
-					float distance = sqrt(distanceSq);
+					float distance = 0.0f;
+					if (distanceSq > 1e-16f) distance = 1.0f / invDistance;
 					if (distance > 1e-8f) {
 						float heatTransfer = myVar.globalHeatConductivity * temperatureDifference / distance;
 						pParticle.temp += heatTransfer * myVar.timeFactor;
@@ -73,6 +85,173 @@ glm::vec2 Physics::calculateForceFromGrid(std::vector<ParticlePhysics>& pParticl
 	}
 
 	return totalForce;
+}
+
+void Physics::flattenParticles(std::vector<ParticlePhysics>& pParticles) {
+
+	size_t particleCount = pParticles.size();
+
+	posX.resize(particleCount);
+	posY.resize(particleCount);
+	accX.resize(particleCount);
+	accY.resize(particleCount);
+	velX.resize(particleCount);
+	velY.resize(particleCount);
+	prevVelX.resize(particleCount);
+	prevVelY.resize(particleCount);
+	mass.resize(particleCount);
+
+#pragma omp parallel for schedule(static)
+	for (int i = 0; i < static_cast<int>(particleCount); i++) {
+
+		const auto& particle = pParticles[i];
+
+		posX[i] = particle.pos.x;
+		posY[i] = particle.pos.y;
+
+		accX[i] = particle.acc.x;
+		accY[i] = particle.acc.y;
+
+		velX[i] = particle.vel.x;
+		velY[i] = particle.vel.y;
+
+		prevVelX[i] = particle.prevVel.x;
+		prevVelY[i] = particle.prevVel.y;
+
+		mass[i] = particle.mass;
+	}
+}
+__attribute__((target("avx")))
+void Physics::naiveGravity(std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar) {
+	int n = static_cast<int>(posX.size());
+	__m256 gVec = _mm256_set1_ps(myVar.G);
+	__m256 softVec = _mm256_set1_ps(myVar.softening);
+	const float* posXPtr = posX.data();
+	const float* posYPtr = posY.data();
+	const float* massPtr = mass.data();
+	float* accXPtr = accX.data();
+	float* accYPtr = accY.data();
+
+	__m256 domainSizeX = _mm256_set1_ps(myVar.domainSize.x);
+	__m256 domainSizeY = _mm256_set1_ps(myVar.domainSize.y);
+	__m256 halfDomainWidth = _mm256_set1_ps(myVar.halfDomainWidth);
+	__m256 halfDomainHeight = _mm256_set1_ps(myVar.halfDomainHeight);
+	__m256 negHalfDomainWidth = _mm256_set1_ps(-myVar.halfDomainWidth);
+	__m256 negHalfDomainHeight = _mm256_set1_ps(-myVar.halfDomainHeight);
+
+#pragma omp parallel for schedule(static)
+	for (int i = 0; i < n; i++) {
+		accX[i] = 0.0f;
+		accY[i] = 0.0f;
+	}
+
+#pragma omp parallel for schedule(dynamic, 64)
+	for (int i = 0; i < n; i++) {
+		float p_ix = posXPtr[i];
+		float p_iy = posYPtr[i];
+		__m256 pxi = _mm256_set1_ps(p_ix);
+		__m256 pyi = _mm256_set1_ps(p_iy);
+		__m256 totalAccX = _mm256_setzero_ps();
+		__m256 totalAccY = _mm256_setzero_ps();
+
+		int j;
+		for (j = 0; j <= n - 8; j += 8) {
+			__m256 pxj = _mm256_loadu_ps(&posXPtr[j]);
+			__m256 pyj = _mm256_loadu_ps(&posYPtr[j]);
+			__m256 mj = _mm256_loadu_ps(&massPtr[j]);
+
+			__m256 dx = _mm256_sub_ps(pxj, pxi);
+			__m256 dy = _mm256_sub_ps(pyj, pyi);
+
+			if (myVar.isPeriodicBoundaryEnabled) {
+				__m256 mask_pos_x = _mm256_cmp_ps(dx, halfDomainWidth, _CMP_GT_OQ);
+				__m256 mask_neg_x = _mm256_cmp_ps(dx, negHalfDomainWidth, _CMP_LT_OQ);
+				__m256 correction_x = _mm256_sub_ps(
+					_mm256_and_ps(mask_pos_x, domainSizeX),
+					_mm256_and_ps(mask_neg_x, domainSizeX)
+				);
+				dx = _mm256_sub_ps(dx, correction_x);
+
+				__m256 mask_pos_y = _mm256_cmp_ps(dy, halfDomainHeight, _CMP_GT_OQ);
+				__m256 mask_neg_y = _mm256_cmp_ps(dy, negHalfDomainHeight, _CMP_LT_OQ);
+				__m256 correction_y = _mm256_sub_ps(
+					_mm256_and_ps(mask_pos_y, domainSizeY),
+					_mm256_and_ps(mask_neg_y, domainSizeY)
+				);
+				dy = _mm256_sub_ps(dy, correction_y);
+			}
+
+			__m256 distSq =
+				_mm256_add_ps(
+					_mm256_add_ps(_mm256_mul_ps(dx, dx),
+						_mm256_mul_ps(dy, dy)),
+					softVec);
+			__m256 invDist = _mm256_div_ps(
+				_mm256_set1_ps(1.0f),
+				_mm256_sqrt_ps(distSq));
+			__m256 invDist3 =
+				_mm256_mul_ps(invDist,
+					_mm256_mul_ps(invDist, invDist));
+			__m256 factor =
+				_mm256_mul_ps(gVec,
+					_mm256_mul_ps(mj, invDist3));
+			totalAccX = _mm256_add_ps(totalAccX, _mm256_mul_ps(dx, factor));
+			totalAccY = _mm256_add_ps(totalAccY, _mm256_mul_ps(dy, factor));
+		}
+
+		float accX_array[8], accY_array[8];
+		_mm256_storeu_ps(accX_array, totalAccX);
+		_mm256_storeu_ps(accY_array, totalAccY);
+		float finalAccX =
+			accX_array[0] + accX_array[1] + accX_array[2] + accX_array[3] +
+			accX_array[4] + accX_array[5] + accX_array[6] + accX_array[7];
+		float finalAccY =
+			accY_array[0] + accY_array[1] + accY_array[2] + accY_array[3] +
+			accY_array[4] + accY_array[5] + accY_array[6] + accY_array[7];
+
+		for (; j < n; j++) {
+			float dx = posXPtr[j] - p_ix;
+			float dy = posYPtr[j] - p_iy;
+
+			if (myVar.isPeriodicBoundaryEnabled) {
+				dx -= myVar.domainSize.x * ((dx > myVar.halfDomainWidth) - (dx < -myVar.halfDomainWidth));
+				dy -= myVar.domainSize.y * ((dy > myVar.halfDomainHeight) - (dy < -myVar.halfDomainHeight));
+			}
+
+			float distSq = dx * dx + dy * dy + myVar.softening;
+			float invDist = 1.0f / std::sqrt(distSq);
+			float invDist3 = invDist * invDist * invDist;
+			float factor = myVar.G * massPtr[j] * invDist3;
+			finalAccX += dx * factor;
+			finalAccY += dy * factor;
+		}
+
+		accXPtr[i] = finalAccX;
+		accYPtr[i] = finalAccY;
+	}
+}
+
+void Physics::readFlattenBack(std::vector<ParticlePhysics>& pParticles) {
+
+	size_t particleCount = pParticles.size();
+
+#pragma omp parallel for schedule(static)
+	for (int i = 0; i < static_cast<int>(particleCount); i++) {
+
+		pParticles[i].pos.x = posX[i];
+		pParticles[i].pos.y = posY[i];
+
+		pParticles[i].vel.x = velX[i];
+		pParticles[i].vel.y = velY[i];
+
+		pParticles[i].acc.x = accX[i];
+		pParticles[i].acc.y = accY[i];
+
+		pParticles[i].prevVel.x = prevVelX[i];
+		pParticles[i].prevVel.y = prevVelY[i];
+
+		pParticles[i].mass = mass[i];
+	}
 }
 
 void Physics::temperatureCalculation(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar) {
