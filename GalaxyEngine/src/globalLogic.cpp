@@ -1129,7 +1129,7 @@ void updateScene() {
 			myParam.pParticles[i].acc = { 0.0f, 0.0f };
 		}
 
-		if (myVar.gravityMultiplier != 0.0f) {
+		if (myVar.gravityMultiplier != 0.0f || myVar.isTempEnabled) {
 			if (!myVar.isGPUEnabled) {
 
 				if (!myVar.naiveSIMD) {
