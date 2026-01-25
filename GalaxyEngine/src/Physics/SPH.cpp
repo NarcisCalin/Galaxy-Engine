@@ -101,7 +101,7 @@ void SPH::computeViscCohesionForces(std::vector<ParticlePhysics>& pParticles, st
 	const float h = radiusMultiplier;
 	const float h2 = h * h;
 
-#pragma omp parallel for
+#pragma omp parallel for schedule(dynamic, 32)
 	for (size_t i = 0; i < N; ++i) {
 
 		if (!rParticles[i].isSPH || rParticles[i].isPinned || rParticles[i].isBeingDrawn) continue;
@@ -165,13 +165,13 @@ void SPH::PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleR
 		pParticles[i].pressF = { 0.0f, 0.0f };
 	}
 
-	float rhoError = 0.0f;
+	//float rhoError = 0.0f;
 	iter = 0;
 
 	do {
-		float maxRhoErr = 0.0f;
+		//float maxRhoErr = 0.0f;
 
-#pragma omp parallel for
+#pragma omp parallel for schedule(static)
 		for (size_t i = 0; i < N; ++i) {
 			if (!rParticles[i].isSPH || rParticles[i].isBeingDrawn) continue;
 
@@ -181,7 +181,7 @@ void SPH::PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleR
 			p.predPos = p.pos + displacement;
 		}
 
-#pragma omp parallel for reduction(max:maxRhoErr)
+#pragma omp parallel for schedule(dynamic, 16) /*reduction(max:maxRhoErr)*/
 		for (size_t i = 0; i < N; ++i) {
 
 			if (!rParticles[i].isSPH || rParticles[i].isBeingDrawn) continue;
@@ -215,11 +215,11 @@ void SPH::PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleR
 			pi.pressTmp = delta * err;
 			if (pi.pressTmp < 0.0f) pi.pressTmp = 0.0f;
 
-			maxRhoErr = std::max(maxRhoErr, std::abs(err));
+			//maxRhoErr = std::max(maxRhoErr, std::abs(err));
 			pi.press += pi.pressTmp * pi.stiff * stiffMultiplier;
 		}
 
-#pragma omp parallel for
+#pragma omp parallel for schedule(dynamic, 32)
 		for (size_t i = 0; i < N; ++i) {
 			if (!rParticles[i].isSPH || rParticles[i].isBeingDrawn) continue;
 
@@ -227,48 +227,48 @@ void SPH::PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleR
 			std::vector<size_t> neighborIndices = queryNeighbors(pParticles[i].predPos, pParticles);
 
 			for (size_t j : neighborIndices) {
-						size_t pjIdx = j;
+				size_t pjIdx = j;
 
-						if (pjIdx == i) continue;
-						if (!rParticles[pjIdx].isSPH || rParticles[pjIdx].isBeingDrawn) continue;
+				if (pjIdx == i) continue;
+				if (!rParticles[pjIdx].isSPH || rParticles[pjIdx].isBeingDrawn) continue;
 
-						auto& pj = pParticles[pjIdx];
-						glm::vec2 dr = pi.predPos - pj.predPos;
-						float rr = sqrtf(dr.x * dr.x + dr.y * dr.y);
+				auto& pj = pParticles[pjIdx];
+				glm::vec2 dr = pi.predPos - pj.predPos;
+				float rr = sqrtf(dr.x * dr.x + dr.y * dr.y);
 
-						if (rr < 1e-5f || rr >= radiusMultiplier) continue;
+				if (rr < 1e-5f || rr >= radiusMultiplier) continue;
 
-						float gradW = spikyKernelDerivative(rr, radiusMultiplier);
-						glm::vec2 nrm = { dr.x / rr, dr.y / rr };
-						float avgP = 0.5f * (pi.press + pj.press);
-						float avgD = 0.5f * (pi.predDens + pj.predDens);
-						float mag = -(pi.sphMass * mass + pj.sphMass * mass) * avgP / std::max(avgD, 0.01f);
+				float gradW = spikyKernelDerivative(rr, radiusMultiplier);
+				glm::vec2 nrm = { dr.x / rr, dr.y / rr };
+				float avgP = 0.5f * (pi.press + pj.press);
+				float avgD = 0.5f * (pi.predDens + pj.predDens);
+				float mag = -(pi.sphMass * mass + pj.sphMass * mass) * avgP / std::max(avgD, 0.01f);
 
-						float massRatio = std::max(pi.sphMass, pj.sphMass) / std::min(pi.sphMass, pj.sphMass);
-						float scale = std::min(1.0f, 8.0f / massRatio);
-						mag *= scale;
+				float massRatio = std::max(pi.sphMass, pj.sphMass) / std::min(pi.sphMass, pj.sphMass);
+				float scale = std::min(1.0f, 8.0f / massRatio);
+				mag *= scale;
 
-						glm::vec2 pF = { mag * gradW * nrm.x, mag * gradW * nrm.y };
+				glm::vec2 pF = { mag * gradW * nrm.x, mag * gradW * nrm.y };
 
 #pragma omp atomic
-						sphForce[i].x += pF.x;
+				sphForce[i].x += pF.x;
 #pragma omp atomic
-						sphForce[i].y += pF.y;
+				sphForce[i].y += pF.y;
 #pragma omp atomic
-						sphForce[pjIdx].x -= pF.x;
+				sphForce[pjIdx].x -= pF.x;
 #pragma omp atomic
-						sphForce[pjIdx].y -= pF.y;
-					}
-				
-			
+				sphForce[pjIdx].y -= pF.y;
+			}
+
+
 		}
 
-		rhoError = maxRhoErr;
+		//rhoError = maxRhoErr;
 		++iter;
 
 	} while (iter < maxIter /*&& rhoError > densTolerance */);
 
-#pragma omp parallel for
+#pragma omp parallel for schedule(static)
 	for (size_t i = 0; i < N; ++i) {
 		auto& p = pParticles[i];
 

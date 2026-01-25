@@ -376,7 +376,7 @@ public:
 
 				size_t i = start;
 
-				for (; i + 8 <= entries.size && entries.cellKeys[i] == cellKey; i += 8) {
+				for (; i + 8 <= entries.cellKeys.size() && entries.cellKeys[i] == cellKey; i += 8) {
 					bool sameCellKey = true;
 					for (int k = 0; k < 8; k++) {
 						if (entries.cellKeys[i + k] != cellKey) {
@@ -402,7 +402,7 @@ public:
 					}
 				}
 
-				for (; i < entries.size && entries.cellKeys[i] == cellKey; i++) {
+				for (; i < entries.cellKeys.size() && entries.cellKeys[i] == cellKey; i++) {
 					if (entries.cellXs[i] == neighborX && entries.cellYs[i] == neighborY) {
 						neighbors.push_back(entries.particleIndices[i]);
 					}
@@ -426,7 +426,7 @@ public:
 				size_t start = startIndices[cellKey];
 				if (start == UINT32_MAX) continue;
 
-				for (size_t i = start; i < entries.size && entries.cellKeys[i] == cellKey; i++) {
+				for (size_t i = start; i < entries.cellKeys.size() && entries.cellKeys[i] == cellKey; i++) {
 					if (entries.cellXs[i] == neighborX && entries.cellYs[i] == neighborY) {
 						neighbors.push_back(entries.particleIndices[i]);
 					}
@@ -499,7 +499,7 @@ void main() {
 }
 )";
 
-	GLuint ssboPPos, ssboCellKeys, ssboParticleIndices, ssboCellX, ssboCellY;
+	GLuint ssboPPos, ssboCellKeys, ssboParticleIndices, ssboCellXs, ssboCellYs;
 
 	size_t mb = 512;
 
@@ -516,23 +516,23 @@ void main() {
 
 		glGenBuffers(1, &ssboCellKeys);
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboCellKeys);
-		glBufferData(GL_SHADER_STORAGE_BUFFER, reserveSize * sizeof(uint32_t), nullptr, GL_STREAM_COPY);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, 100000 * sizeof(uint32_t), nullptr, GL_DYNAMIC_DRAW);
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 11, ssboCellKeys);
 
 		glGenBuffers(1, &ssboParticleIndices);
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboParticleIndices);
-		glBufferData(GL_SHADER_STORAGE_BUFFER, reserveSize * sizeof(uint32_t), nullptr, GL_STREAM_COPY);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, 100000 * sizeof(uint32_t), nullptr, GL_DYNAMIC_DRAW);
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 12, ssboParticleIndices);
 
-		glGenBuffers(1, &ssboCellX);
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboCellX);
-		glBufferData(GL_SHADER_STORAGE_BUFFER, reserveSize * sizeof(int), nullptr, GL_STREAM_COPY);
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 13, ssboCellX);
+		glGenBuffers(1, &ssboCellXs);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboCellXs);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, 100000 * sizeof(int32_t), nullptr, GL_DYNAMIC_DRAW);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 13, ssboCellXs);
 
-		glGenBuffers(1, &ssboCellY);
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboCellY);
-		glBufferData(GL_SHADER_STORAGE_BUFFER, reserveSize * sizeof(int), nullptr, GL_STREAM_COPY);
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 14, ssboCellY);
+		glGenBuffers(1, &ssboCellYs);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboCellYs);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, 100000 * sizeof(int32_t), nullptr, GL_DYNAMIC_DRAW);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 14, ssboCellYs);
 
 		neighborSearchProgram = glCreateProgram();
 		GLuint shader = glCreateShader(GL_COMPUTE_SHADER);
@@ -567,11 +567,11 @@ void main() {
 		if (pParticles.empty()) return;
 		size_t n = pParticles.size();
 
-		pPos.resize(n);
 		entries.cellKeys.resize(n);
 		entries.particleIndices.resize(n);
 		entries.cellXs.resize(n);
 		entries.cellYs.resize(n);
+		pPos.resize(n);
 
 		for (size_t i = 0; i < n; i++) {
 			pPos[i] = pParticles[i].pos;
@@ -580,20 +580,7 @@ void main() {
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboPPos);
 		glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, n * sizeof(glm::vec2), pPos.data());
 
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboCellKeys);
-		glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, n * sizeof(uint32_t), entries.cellKeys.data());
-
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboParticleIndices);
-		glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, n * sizeof(uint32_t), entries.particleIndices.data());
-
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboCellX);
-		glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, n * sizeof(int), entries.cellXs.data());
-
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboCellY);
-		glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, n * sizeof(int), entries.cellYs.data());
-
 		glUseProgram(neighborSearchProgram);
-
 		glUniform1f(glGetUniformLocation(neighborSearchProgram, "cellSize"), cellSize);
 		glUniform1ui(glGetUniformLocation(neighborSearchProgram, "hashTableSize"), hashTableSize);
 		glUniform1ui(glGetUniformLocation(neighborSearchProgram, "numParticles"), (GLuint)n);
@@ -601,60 +588,27 @@ void main() {
 		GLuint numGroups = (GLuint)((n + 255) / 256);
 		glDispatchCompute(numGroups, 1, 1);
 
-		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT);
-
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboCellKeys);
-		uint32_t* ptrCellKeys = (uint32_t*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
-
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboParticleIndices);
-		uint32_t* ptrParticleIndices = (uint32_t*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
-
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboCellX);
-		int* ptrCellX = (int*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
-
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboCellY);
-		int* ptrCellY = (int*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
-
-		for (size_t i = 0; i < n; i++) { 
-			entries.cellKeys[i] = ptrCellKeys[i]; 
-			entries.particleIndices[i] = ptrParticleIndices[i];
-			entries.cellXs[i] = ptrCellX[i]; 
-			entries.cellYs[i] = ptrCellY[i];
-		}
-
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboCellKeys);
-		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboParticleIndices);
-		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboCellX);
-		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboCellY);
-		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 	}
-
-		struct Entry {
-		uint32_t cellKey;
-		uint32_t particleIndex;
-		int32_t cellX;
-		int32_t cellY;
-	};
 
 	const char* bitonicSortCompute = R"(
 #version 430
 layout(local_size_x = 256) in;
 
-struct Entry {
-    uint cellKey;
-    uint particleIndex;
-    int cellX;
-    int cellY;
+layout(std430, binding = 11) buffer CellKeys {
+    uint cellKeys[];
 };
 
-layout(std430, binding = 16) buffer Entries {
-    Entry entries[];
+layout(std430, binding = 12) buffer ParticleIndices {
+    uint particleIndices[];
+};
+
+layout(std430, binding = 13) buffer CellXs {
+    int cellXs[];
+};
+
+layout(std430, binding = 14) buffer CellYs {
+    int cellYs[];
 };
 
 uniform uint numValues;
@@ -672,30 +626,33 @@ void main() {
 
     if (indexRight >= numValues) return;
 
-    uint valueLeft = entries[indexLeft].cellKey;
-    uint valueRight = entries[indexRight].cellKey;
+    uint valueLeft = cellKeys[indexLeft];
+    uint valueRight = cellKeys[indexRight];
 
     if (valueLeft > valueRight)
     {
-        Entry temp = entries[indexLeft];
-        entries[indexLeft] = entries[indexRight];
-        entries[indexRight] = temp;
+        uint tempCellKey = cellKeys[indexLeft];
+        cellKeys[indexLeft] = cellKeys[indexRight];
+        cellKeys[indexRight] = tempCellKey;
+
+        uint tempIndices = particleIndices[indexLeft];
+        particleIndices[indexLeft] = particleIndices[indexRight];
+        particleIndices[indexRight] = tempIndices;
+
+        int tempX = cellXs[indexLeft];
+        cellXs[indexLeft] = cellXs[indexRight];
+        cellXs[indexRight] = tempX;
+
+        int tempY = cellYs[indexLeft];
+        cellYs[indexLeft] = cellYs[indexRight];
+        cellYs[indexRight] = tempY;
     }
 }
 )";
 
 	GLuint bitonicSortProgram;
 
-	GLuint ssboEntries;
-
-	std::vector<Entry> entriesBuffer;
-
 	void bitonicSortKernel() {
-
-		glGenBuffers(1, &ssboEntries);
-
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboEntries);
-		glBufferData(GL_SHADER_STORAGE_BUFFER, 100000 * sizeof(Entry), nullptr, GL_DYNAMIC_DRAW);
 
 		bitonicSortProgram = glCreateProgram();
 		GLuint shader = glCreateShader(GL_COMPUTE_SHADER);
@@ -728,17 +685,10 @@ void main() {
 		const size_t n = entries.cellKeys.size();
 		if (n == 0) return;
 
-		entriesBuffer.resize(n);
-		for (size_t i = 0; i < n; i++) {
-			entriesBuffer[i].cellKey = entries.cellKeys[i];
-			entriesBuffer[i].particleIndex = entries.particleIndices[i];
-			entriesBuffer[i].cellX = entries.cellXs[i];
-			entriesBuffer[i].cellY = entries.cellYs[i];
-		}
-
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboEntries);
-		glBufferData(GL_SHADER_STORAGE_BUFFER, n * sizeof(Entry), entriesBuffer.data(), GL_DYNAMIC_DRAW);
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 16, ssboEntries);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 11, ssboCellKeys);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 12, ssboParticleIndices);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 13, ssboCellXs);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 14, ssboCellYs);
 
 		glUseProgram(bitonicSortProgram);
 		glUniform1ui(glGetUniformLocation(bitonicSortProgram, "numValues"), n);
@@ -761,18 +711,6 @@ void main() {
 				glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 			}
 		}
-
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboEntries);
-		Entry* ptrEntries = (Entry*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
-
-		for (size_t i = 0; i < n; i++) {
-			entries.cellKeys[i] = ptrEntries[i].cellKey;
-			entries.particleIndices[i] = ptrEntries[i].particleIndex;
-			entries.cellXs[i] = ptrEntries[i].cellX;
-			entries.cellYs[i] = ptrEntries[i].cellY;
-		}
-
-		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 	}
 
 	const char* offsetCompute = R"(
@@ -780,16 +718,10 @@ void main() {
 
 layout(local_size_x = 256) in;
 
-struct Entry {
-    uint cellKey;
-    uint particleIndex;
-    int cellX;
-    int cellY;
+layout(std430, binding = 11) buffer CellKeys {
+    uint cellKeys[];
 };
 
-layout(std430, binding = 16) buffer Entries {
-    Entry entries[];
-};
 
 layout(std430, binding = 15) buffer Offsets {
     uint offsets[];
@@ -805,9 +737,9 @@ void main() {
 
     uint null = hashTableSize;
 
-    uint key = entries[i].cellKey; 
+    uint key = cellKeys[i]; 
 
-    uint keyPrev = (i == 0) ? null : entries[i - 1].cellKey;
+    uint keyPrev = (i == 0) ? null : cellKeys[i - 1];
 
     if (key != keyPrev && key < hashTableSize) {
         offsets[key] = i;
@@ -867,22 +799,74 @@ void main() {
 		return n + 1;
 	}
 
+	const char* offsetsResetCompute = R"(
+#version 430
+layout(local_size_x = 256) in;
+
+layout(std430, binding = 15) buffer Offsets {
+    uint offsets[];
+};
+
+uniform uint hashTableSize;
+
+void main() {
+    uint i = gl_GlobalInvocationID.x;
+    if (i >= hashTableSize) return;
+    offsets[i] = 4294967295; // UINT_MAX
+}
+)";
+
+	GLuint offsetsResetProgram;
+
+	void offsetResetKernel() {
+
+		offsetsResetProgram = glCreateProgram();
+		GLuint shader = glCreateShader(GL_COMPUTE_SHADER);
+		glShaderSource(shader, 1, &offsetsResetCompute, nullptr);
+		glCompileShader(shader);
+
+		GLint success;
+		glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+
+		if (!success) {
+			char infoLog[512];
+			glGetShaderInfoLog(shader, 512, nullptr, infoLog);
+			std::cerr << "Compute shader compilation failed:\n" << infoLog << std::endl;
+		}
+
+		glAttachShader(offsetsResetProgram, shader);
+		glLinkProgram(offsetsResetProgram);
+
+		glGetProgramiv(offsetsResetProgram, GL_LINK_STATUS, &success);
+		if (!success) {
+			char infoLog[512];
+			glGetProgramInfoLog(offsetsResetProgram, 512, nullptr, infoLog);
+			std::cerr << "Shader offsetsResetProgram linking failed:\n" << infoLog << std::endl;
+		}
+
+		glDeleteShader(shader);
+	}
+
 	void gpuOffsets() {
 		const size_t n = entries.cellKeys.size();
 		if (n == 0) return;
 
-		startIndices.assign(hashTableSize, UINT32_MAX);
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboOffsets);
-		glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0,
-			startIndices.size() * sizeof(uint32_t), startIndices.data());
+		glUseProgram(offsetsResetProgram);
 
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 16, ssboEntries);
+		glUniform1ui(glGetUniformLocation(offsetsResetProgram, "hashTableSize"), hashTableSize);
+
+		glDispatchCompute((hashTableSize + 255) / 256, 1, 1);
+
+		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 11, ssboCellKeys);
 
 		glUseProgram(offsetProgram);
 		glUniform1ui(glGetUniformLocation(offsetProgram, "numEntries"), (uint32_t)n);
 		glUniform1ui(glGetUniformLocation(offsetProgram, "hashTableSize"), hashTableSize);
 
 		glDispatchCompute((n + 255) / 256, 1, 1);
+
 		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboOffsets);
@@ -890,9 +874,6 @@ void main() {
 		if (ptrOffsets) {
 			memcpy(startIndices.data(), ptrOffsets, hashTableSize * sizeof(uint32_t));
 			glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-		}
-		else {
-			std::cerr << "gpuOffsets: Failed to map offset buffer\n";
 		}
 	}
 
@@ -917,6 +898,41 @@ void main() {
 		}*/
 
 		gpuOffsets();
+
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboCellKeys);
+
+		uint32_t* ptrCellKeys = (uint32_t*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+
+		memcpy(entries.cellKeys.data(), ptrCellKeys, entries.cellKeys.size() * sizeof(uint32_t));
+
+		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+
+
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboParticleIndices);
+
+		uint32_t* ptrIndices = (uint32_t*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+
+		memcpy(entries.particleIndices.data(), ptrIndices, entries.particleIndices.size() * sizeof(uint32_t));
+
+		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+
+
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboCellXs);
+
+		uint32_t* ptrCellX = (uint32_t*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+
+		memcpy(entries.cellXs.data(), ptrCellX, entries.cellXs.size() * sizeof(int32_t));
+
+		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+
+
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboCellYs);
+
+		uint32_t* ptrCellY = (uint32_t*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+
+		memcpy(entries.cellYs.data(), ptrCellY, entries.cellYs.size() * sizeof(int32_t));
+
+		glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 	}
 
 	std::vector<float> posX;

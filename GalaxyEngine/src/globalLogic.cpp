@@ -504,6 +504,7 @@ void buildKernels() {
 
 	sph.bitonicSortKernel();
 	sph.offsetKernel();
+	sph.offsetResetKernel();
 }
 
 std::vector<float> pData;
@@ -650,10 +651,9 @@ void freeGPUMemory() {
 	glDeleteProgram(field.gravityDisplayProgram);
 
 	glDeleteBuffers(1, &sph.ssboPPos);
-	glDeleteBuffers(1, &sph.ssboEntries);
 	glDeleteBuffers(1, &sph.ssboCellKeys);
-	glDeleteBuffers(1, &sph.ssboCellX);
-	glDeleteBuffers(1, &sph.ssboCellY);
+	glDeleteBuffers(1, &sph.ssboCellXs);
+	glDeleteBuffers(1, &sph.ssboCellYs);
 	glDeleteBuffers(1, &sph.ssboParticleIndices);
 
 	glDeleteProgram(sph.neighborSearchProgram);
@@ -1146,11 +1146,11 @@ void updateScene() {
 					}
 				}
 				else {
-					physics.flattenParticles(myParam.pParticles);
+					//physics.flattenParticles(myParam.pParticles);
 
 					physics.naiveGravity(myParam.pParticles, myVar);
 
-					physics.readFlattenBack(myParam.pParticles);
+					//physics.readFlattenBack(myParam.pParticles);
 				}
 			}
 			else {
