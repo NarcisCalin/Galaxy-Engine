@@ -1146,11 +1146,11 @@ void updateScene() {
 					}
 				}
 				else {
-					//physics.flattenParticles(myParam.pParticles);
+					physics.flattenParticles(myParam.pParticles);
 
 					physics.naiveGravity(myParam.pParticles, myVar);
 
-					//physics.readFlattenBack(myParam.pParticles);
+					physics.readFlattenBack(myParam.pParticles);
 				}
 			}
 			else {
