@@ -4,6 +4,7 @@ UpdateParameters myParam;
 UpdateVariables myVar;
 UI myUI;
 Physics physics;
+Physics3D physics3D;
 ParticleSpaceship ship;
 SPH sph;
 SaveSystem save;
@@ -14,10 +15,32 @@ CopyPaste copyPaste;
 Field field;
 
 std::vector<Node> globalNodes;
+std::vector<Node3D> globalNodes3D;
 
 uint32_t globalId = 0;
 uint32_t globalShapeId = 1;
 uint32_t globalWallId = 1;
+
+#ifdef _MSC_VER
+#include <intrin.h>
+#else
+#include <cpuid.h>
+#endif
+
+bool hasAVX2Support() {
+	static int cached = -1;
+	if (cached != -1) return cached;
+
+	int cpuInfo[4];
+#ifdef _MSC_VER
+	__cpuidex(cpuInfo, 7, 0);
+#else
+	__cpuid_count(7, 0, cpuInfo[0], cpuInfo[1], cpuInfo[2], cpuInfo[3]);
+#endif
+	cached = (cpuInfo[1] & (1 << 5)) != 0;
+	return cached;
+}
+
 // If someday light id gets added, don't forget to add the id to the copy paste code too
 
 //std::unordered_map<unsigned int, uint64_t> NeighborSearch::idToIndex;
@@ -1033,7 +1056,7 @@ void updateScene() {
 
 	myVar.timeFactor = myVar.fixedDeltaTime * myVar.timeStepMultiplier * static_cast<float>(myVar.isTimePlaying);
 
-	if (myVar.drawQuadtree) {
+	if (myVar.drawQuadtree && !myVar.is3DMode) {
 		for (uint32_t i = 0; i < globalNodes.size(); i++) {
 
 			Node& q = globalNodes[i];
@@ -1056,11 +1079,22 @@ void updateScene() {
 		myVar.drawConstraints ||
 		myVar.visualizeMesh ||
 		myVar.isBrushDrawing ||
-		myVar.isMergerEnabled ||
 		myParam.colorVisuals.densityColor ||
 		myVar.isDensitySizeEnabled ||
-		myParam.colorVisuals.densityColor && myVar.timeFactor > 0.0f && !myVar.isGravityFieldEnabled) {
+		myVar.isSPHEnabled ||
+		(myParam.colorVisuals.densityColor && myVar.timeFactor > 0.0f && !myVar.isGravityFieldEnabled)) {
 
+		if (!myVar.hasAVX2) {
+			myParam.neighborSearchV2.newGrid(myParam.pParticles);
+			myParam.neighborSearchV2.neighborAmount(myParam.pParticles, myParam.rParticles);
+		}
+		else {
+			myParam.neighborSearchV2AVX2.newGridAVX2(myParam.pParticles);
+			myParam.neighborSearchV2AVX2.neighborAmount(myParam.pParticles, myParam.rParticles);
+		}
+	}
+
+	if (myVar.isMergerEnabled) {
 		myParam.neighborSearch.UpdateNeighbors(myParam.pParticles, myParam.rParticles);
 
 		uint32_t maxPossibleId = 50000000;
@@ -1079,8 +1113,10 @@ void updateScene() {
 			myParam.neighborSearch.idToIndexTable[myParam.pParticles[i].id] = i;
 		}
 	}
-
-	myParam.brush.brushSize();
+	
+	if (!myVar.is3DMode) {
+		myParam.brush.brushSize();
+	}
 
 	if (myVar.isMergerEnabled) {
 
@@ -1108,7 +1144,9 @@ void updateScene() {
 		myParam.neighborSearch.cellSize = 3.0f;
 	}
 
-	myParam.particlesSpawning.particlesInitialConditions(physics, myVar, myParam);
+	if (!myVar.is3DMode) {
+		myParam.particlesSpawning.particlesInitialConditions(physics, myVar, myParam);
+	}
 
 	if (myVar.constraintsEnabled && !myVar.isBrushDrawing) {
 		physics.createConstraints(myParam.pParticles, myParam.rParticles, myVar.constraintAfterDrawingFlag, myVar, myParam);
@@ -1123,8 +1161,9 @@ void updateScene() {
 	copyPaste.copyPasteParticles(myVar, myParam, physics);
 	copyPaste.copyPasteOptics(myParam, lighting);
 
-	if ((myVar.timeFactor != 0.0f && myVar.gridExists) || myVar.isGPUEnabled) {
+	if ((myVar.timeFactor != 0.0f /*&& myVar.gridExists*/) || myVar.isGPUEnabled) {
 
+#pragma omp parallel for schedule(dynamic)
 		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 			myParam.pParticles[i].acc = { 0.0f, 0.0f };
 		}
@@ -1133,17 +1172,23 @@ void updateScene() {
 			if (!myVar.isGPUEnabled) {
 
 				if (!myVar.naiveSIMD) {
-#pragma omp parallel for schedule(dynamic)
-					for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+					//#pragma omp parallel for schedule(dynamic)
+										//for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 
-						if ((myParam.rParticles[i].isBeingDrawn && myVar.isBrushDrawing && myVar.isSPHEnabled) || myParam.rParticles[i].isPinned) {
-							continue;
-						}
+										//	if ((myParam.rParticles[i].isBeingDrawn && myVar.isBrushDrawing && myVar.isSPHEnabled) || myParam.rParticles[i].isPinned) {
+										//		continue;
+										//	}
 
-						glm::vec2 netForce = physics.calculateForceFromGrid(myParam.pParticles, myVar, myParam.pParticles[i]);
+										//	//glm::vec2 netForce = physics.calculateForceFromGrid(myParam.pParticles, myVar, myParam.pParticles[i]);
 
-						myParam.pParticles[i].acc = netForce / myParam.pParticles[i].mass;
-					}
+										//	//myParam.pParticles[i].acc = netForce / myParam.pParticles[i].mass;
+										//}
+
+					physics.flattenParticles(myParam.pParticles);
+
+					physics.calculateForceFromGrid(myVar);
+
+					physics.readFlattenBack(myParam.pParticles);
 				}
 				else {
 					physics.flattenParticles(myParam.pParticles);
@@ -1151,6 +1196,7 @@ void updateScene() {
 					physics.naiveGravity(myParam.pParticles, myVar);
 
 					physics.readFlattenBack(myParam.pParticles);
+
 				}
 			}
 			else {
@@ -1162,7 +1208,7 @@ void updateScene() {
 			physics.mergerSolver(myParam.pParticles, myParam.rParticles, myVar, myParam);
 
 		if (myVar.isSPHEnabled) {
-			sph.pcisphSolver(myParam.pParticles, myParam.rParticles, myVar.timeFactor, myVar.domainSize, myVar.sphGround, myVar.mouseWorldPos);
+			sph.pcisphSolver(myVar, myParam);
 		}
 
 		physics.constraints(myParam.pParticles, myParam.rParticles, myVar);
@@ -1186,9 +1232,9 @@ void updateScene() {
 
 	myParam.myCamera.cameraFollowObject(myVar, myParam);
 
-	myParam.particleSelection.clusterSelection(myVar, myParam);
+	myParam.particleSelection.clusterSelection(myVar, myParam, false);
 
-	myParam.particleSelection.particleSelection(myVar, myParam);
+	myParam.particleSelection.particleSelection(myVar, myParam, false);
 
 	myParam.particleSelection.manyClustersSelection(myVar, myParam);
 
@@ -1200,12 +1246,12 @@ void updateScene() {
 
 	myParam.particleSelection.selectedParticlesStoring(myParam);
 
-	myParam.densitySize.sizeByDensity(myParam.pParticles, myParam.rParticles, myVar.isDensitySizeEnabled, myVar.isForceSizeEnabled,
-		myVar.particleSizeMultiplier);
+	myParam.densitySize.sizeByDensity(myParam.pParticles, myParam.rParticles, myParam.pParticles3D, myParam.rParticles3D,
+		myVar.isDensitySizeEnabled, myVar.isForceSizeEnabled,
+		myVar.particleSizeMultiplier, myVar.is3DMode);
 
-	myParam.particleDeletion.deleteSelected(myParam.pParticles, myParam.rParticles);
-
-	myParam.particleDeletion.deleteStrays(myParam.pParticles, myParam.rParticles, myVar.isSPHEnabled);
+	myParam.particleDeletion.deleteSelected(myParam.pParticles, myParam.rParticles, myParam.pParticles3D, myParam.rParticles3D, myVar.is3DMode);
+	myParam.particleDeletion.deleteStrays(myParam.pParticles, myParam.rParticles, myVar.isSPHEnabled, myParam.pParticles3D, myParam.rParticles3D, myVar.is3DMode);
 
 	myParam.brush.particlesAttractor(myVar, myParam);
 
@@ -1255,16 +1301,213 @@ void updateScene() {
 	myParam.myCamera.hasCamMoved();
 }
 
+float boundingBox3DSize = 0.0f;
+glm::vec3 boundingBox3DPos = { 0.0f, 0.0f, 0.0f };
+
+glm::vec4 boundingBox3D() {
+	glm::vec3 min = glm::vec3(std::numeric_limits<float>::max());
+	glm::vec3 max = glm::vec3(std::numeric_limits<float>::lowest());
+
+	for (const ParticlePhysics3D& particle : myParam.pParticles3D) {
+		min = glm::min(min, particle.pos);
+		max = glm::max(max, particle.pos);
+	}
+
+	boundingBox3DSize = glm::max(glm::max(max.x - min.x, max.y - min.y), max.z - min.z);
+
+	glm::vec3 center = (min + max) * 0.5f;
+	boundingBox3DPos = center - boundingBox3DSize * 0.5f;
+
+	return { boundingBox3DPos.x, boundingBox3DPos.y, boundingBox3DPos.z, boundingBox3DSize };
+}
+
+uint32_t gridRootIndex3D;
+
+glm::vec4 bb3D = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+void mode3D(Texture2D& particleBlurTex) {
+
+	Camera3D& cam3D = myParam.myCamera3D.cam3D;
+	
+	physics3D.integrateStart3D(myParam.pParticles3D, myParam.rParticles3D, myVar);
+
+	if (myVar.timeFactor != 0.0f && !myVar.naiveSIMD) {
+		bb3D = boundingBox3D();
+
+		globalNodes3D.clear();
+
+		Octree root3D(myParam.pParticles3D, myParam.rParticles3D, glm::vec3{ bb3D.x,bb3D.y,bb3D.z }, bb3D.w);
+
+		gridRootIndex3D = 0;
+	}
+
+	for (ParticleRendering3D& rParticle : myParam.rParticles3D) {
+		rParticle.totalRadius = rParticle.size * myVar.particleTextureHalfSize * myVar.particleSizeMultiplier;
+	}
+
+	myVar.grid3DExists = gridRootIndex3D != -1 && !globalNodes3D.empty();
+
+	myVar.halfDomain3DWidth = myVar.domainSize3D.x * 0.5f;
+	myVar.halfDomain3DHeight = myVar.domainSize3D.y * 0.5f;
+	myVar.halfDomain3DDepth = myVar.domainSize3D.z * 0.5f;
+
+	if (myVar.drawQuadtree) {
+		for (uint32_t i = 0; i < globalNodes3D.size(); i++) {
+
+			Node3D& q = globalNodes3D[i];
+
+			DrawCubeWiresV({ q.pos.x, q.pos.y, q.pos.z }, { q.size, q.size, q.size }, {128,128,128,128});
+
+			/*if (q.gridMass > 0.0f) {
+				DrawCircleV({ q.centerOfMass.x, q.centerOfMass.y }, 2.0f, { 180,50,50,128 });
+			}*/
+
+			//DrawText(TextFormat("%i", i), q.pos.x + q.size * 0.5f, q.pos.y + q.size * 0.5f, 5.0f, { 255, 255, 255, 128 });
+		}
+	}
+
+	if (myVar.constraintsEnabled ||
+		myVar.drawConstraints ||
+		myVar.visualizeMesh ||
+		myVar.isBrushDrawing ||
+		myVar.isMergerEnabled ||
+		myParam.colorVisuals.densityColor ||
+		myVar.isDensitySizeEnabled ||
+	myParam.colorVisuals.densityColor && myVar.timeFactor > 0.0f && !myVar.isGravityFieldEnabled) {
+
+		/*myParam.neighborSearch3D.UpdateNeighbors(myParam.pParticles3D, myParam.rParticles3D);
+
+		uint32_t maxPossibleId = 50000000;
+
+		if (myVar.isMergerEnabled) {
+			myParam.neighborSearch3D.densityRadius = 10.0f;
+		}
+		else {
+			myParam.neighborSearch3D.densityRadius = myParam.neighborSearch3D.originalDensityRadius;
+		}
+
+		myParam.neighborSearch3D.idToIndexTable.resize(maxPossibleId + 1);
+
+#pragma omp parallel for
+		for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
+			myParam.neighborSearch3D.idToIndexTable[myParam.pParticles3D[i].id] = i;
+		}*/
+
+		if (!myVar.hasAVX2) {
+			myParam.neighborSearch3DV2.newGrid(myParam.pParticles3D);
+			myParam.neighborSearch3DV2.neighborAmount(myParam.pParticles3D, myParam.rParticles3D);
+		}
+		else {
+			myParam.neighborSearch3DV2AVX2.newGridAVX2(myParam.pParticles3D);
+			myParam.neighborSearch3DV2AVX2.neighborAmount(myParam.pParticles3D, myParam.rParticles3D);
+		}
+	}
+
+	myParam.brush3D.brushPosLogic(myParam);
+	myParam.brush3D.brushSize();
+
+	myParam.particlesSpawning3D.particlesInitialConditions(physics, myVar, myParam);
+
+	physics3D.flattenParticles3D(myParam.pParticles3D);
+
+	physics3D.calculateForceFromGrid3D(myVar);
+
+	//physics3D.naiveGravity3D(myParam.pParticles3D, myVar);
+
+	physics3D.readFlattenBack3D(myParam.pParticles3D);
+
+	physics3D.integrateEnd3D(myParam.pParticles3D, myVar);
+
+	// --- //
+
+	myParam.trails.trailLogic3D(myVar, myParam);
+
+	myParam.myCamera3D.cameraFollowObject(myVar, myParam);
+
+	myParam.particleSelection3D.particleSelection(myVar, myParam, false);
+	myParam.particleSelection3D.clusterSelection(myVar, myParam, false);
+	myParam.particleSelection3D.manyClustersSelection(myVar, myParam);
+	myParam.particleSelection3D.boxSelection(myParam);
+	myParam.particleSelection3D.invertSelection(myParam.rParticles3D);
+	myParam.particleSelection3D.deselection(myParam.rParticles3D);
+	myParam.particleSelection3D.selectedParticlesStoring(myParam);
+
+	myParam.densitySize.sizeByDensity(myParam.pParticles, myParam.rParticles, myParam.pParticles3D, myParam.rParticles3D,
+		myVar.isDensitySizeEnabled, myVar.isForceSizeEnabled,
+		myVar.particleSizeMultiplier, myVar.is3DMode);
+
+	myParam.particleDeletion.deleteSelected(myParam.pParticles, myParam.rParticles, myParam.pParticles3D, myParam.rParticles3D, myVar.is3DMode);
+	myParam.particleDeletion.deleteStrays(myParam.pParticles, myParam.rParticles, myVar.isSPHEnabled, myParam.pParticles3D, myParam.rParticles3D, myVar.is3DMode);
+
+
+
+	// DRAW 3D
+
+
+	myParam.colorVisuals.particlesColorVisuals(myParam.pParticles, myParam.rParticles, myParam.pParticles3D, myParam.rParticles3D, myVar.isTempEnabled, myVar.timeFactor, myVar.is3DMode);
+
+	Rectangle sourceRec = { 0.0f, 0.0f, (float)particleBlurTex.width, (float)particleBlurTex.height };
+
+	for (int i = 0; i < myParam.pParticles3D.size(); ++i) {
+		ParticlePhysics3D& pParticle3D = myParam.pParticles3D[i];
+		ParticleRendering3D& rParticle3D = myParam.rParticles3D[i];
+
+		float sizeValue = particleBlurTex.width * rParticle3D.size;
+
+		Vector2 size = { sizeValue, sizeValue };
+
+		Vector2 origin = { sizeValue / 2.0f, sizeValue / 2.0f };
+
+		DrawBillboardPro(
+			cam3D,
+			particleBlurTex,
+			sourceRec,
+			{ pParticle3D.pos.x, pParticle3D.pos.y, pParticle3D.pos.z },
+			cam3D.up,
+			size,
+			origin,
+			0.0f,
+			rParticle3D.color
+		);
+	}
+
+	if (!myVar.isDensitySizeEnabled) {
+
+#pragma omp parallel for schedule(dynamic)
+		for (int i = 0; i < myParam.pParticles3D.size(); ++i) {
+
+			ParticlePhysics3D& pParticle = myParam.pParticles3D[i];
+			ParticleRendering3D& rParticle = myParam.rParticles3D[i];
+
+			if (rParticle.canBeResized || myVar.isMergerEnabled) {
+				rParticle.size = rParticle.previousSize * myVar.particleSizeMultiplier;
+			}
+			else {
+				rParticle.size = rParticle.previousSize;
+			}
+		}
+	}
+
+	myParam.trails.drawTrail3D(myParam.rParticles3D, particleBlurTex, myParam.myCamera3D.cam3D);
+
+	DrawCubeWiresV({ 0.0f, 0.0f, 0.0f }, { myVar.domainSize3D.x, myVar.domainSize3D.y, myVar.domainSize3D.z }, GRAY);
+
+	myParam.brush3D.drawBrush(myVar.domainSize3D.y);
+}
+
 void drawConstraints() {
 
 	if (myVar.visualizeMesh) {
 		rlBegin(RL_LINES);
 		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 			ParticlePhysics& pi = myParam.pParticles[i];
-			for (uint32_t k = 0; k < pi.neighborCount; k++) {
-				uint32_t nID = myParam.neighborSearch.globalNeighborList[pi.neighborOffset + k];
 
-				size_t neighborIndex = myParam.neighborSearch.idToIndexTable[nID];
+			std::vector<size_t> neighborIndices = QueryNeighbors::queryNeighbors(myParam, myVar.hasAVX2, 64, pi.pos);
+
+			for (size_t j : neighborIndices) {
+				size_t neighborIndex = j;
+
+				if (neighborIndex == i) continue;
 
 				ParticlePhysics& pj = myParam.pParticles[neighborIndex];
 
@@ -1417,184 +1660,227 @@ void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myRayTracingTexture,
 	}
 
 	if (!myVar.isGravityFieldEnabled) {
-		for (int i = 0; i < myParam.pParticles.size(); ++i) {
-
-			ParticlePhysics& pParticle = myParam.pParticles[i];
-			ParticleRendering& rParticle = myParam.rParticles[i];
 
 
-			// Texture size is set to 16 because that is the particle texture half size in pixels
-			DrawTextureEx(particleBlurTex, { static_cast<float>(pParticle.pos.x - rParticle.size * myVar.particleTextureHalfSize),
-				static_cast<float>(pParticle.pos.y - rParticle.size * myVar.particleTextureHalfSize) }, 0.0f, rParticle.size, rParticle.color);
+		if (!myVar.is3DMode) {
+			Rectangle source = {
+		0.0f,
+		0.0f,
+		static_cast<float>(particleBlurTex.width),
+		static_cast<float>(particleBlurTex.height)
+			};
 
+			for (int i = 0; i < myParam.pParticles.size(); ++i) {
+
+				ParticlePhysics& pParticle = myParam.pParticles[i];
+				ParticleRendering& rParticle = myParam.rParticles[i];
+
+
+				// Texture size is set to 16 because that is the particle texture half size in pixels
+
+				Rectangle dest = {
+					pParticle.pos.x,
+					pParticle.pos.y,
+					particleBlurTex.width * rParticle.size,
+					particleBlurTex.height * rParticle.size
+				};
+
+				glm::vec2 origin = {
+					particleBlurTex.width * 0.5f * rParticle.size,
+					particleBlurTex.height * 0.5f * rParticle.size
+				};
+
+				DrawTexturePro(
+					particleBlurTex,
+					source,
+					dest,
+					{ origin.x, origin.y },
+					0.0f,
+					rParticle.color
+				);
+			}
 
 			if (!myVar.isDensitySizeEnabled) {
 
-				if (rParticle.canBeResized || myVar.isMergerEnabled) {
-					rParticle.size = rParticle.previousSize * myVar.particleSizeMultiplier;
+#pragma omp parallel for schedule(dynamic)
+				for (int i = 0; i < myParam.pParticles.size(); ++i) {
+
+					ParticlePhysics& pParticle = myParam.pParticles[i];
+					ParticleRendering& rParticle = myParam.rParticles[i];
+
+					if (rParticle.canBeResized || myVar.isMergerEnabled) {
+						rParticle.size = rParticle.previousSize * myVar.particleSizeMultiplier;
+					}
+					else {
+						rParticle.size = rParticle.previousSize;
+					}
 				}
-				else {
-					rParticle.size = rParticle.previousSize;
-				}
+			}
+
+			myParam.trails.drawTrail(myParam.rParticles, particleBlurTex);
+
+			drawConstraints();
+
+			myParam.colorVisuals.particlesColorVisuals(myParam.pParticles, myParam.rParticles, myParam.pParticles3D, myParam.rParticles3D, myVar.isTempEnabled, myVar.timeFactor, myVar.is3DMode);
+		}
+		else {
+
+		}
+
+		if (myVar.isOpticsEnabled) {
+			for (Wall& wall : lighting.walls) {
+				wall.drawWall();
 			}
 		}
 
+		EndTextureMode();
 
-		myParam.colorVisuals.particlesColorVisuals(myParam.pParticles, myParam.rParticles, myVar.isTempEnabled, myVar.timeFactor);
+		// Ray Tracing
+
+		BeginTextureMode(myRayTracingTexture);
+
+		ClearBackground({ 0,0,0,0 });
+
+		BeginMode2D(myParam.myCamera.camera);
+
+		EndMode2D();
+
+		EndTextureMode();
+
+
+		//EVERYTHING INTENDED TO APPEAR WHILE RECORDING ABOVE
+
+
+		//END OF PARTICLES RENDER PASS
+		//-------------------------------------------------//
+		//BEGINNNG OF UI RENDER PASS
+
+
+		//EVERYTHING NOT INTENDED TO APPEAR WHILE RECORDING BELOW
+		BeginTextureMode(myUITexture);
+
+		ClearBackground({ 0,0,0,0 });
+
+		BeginMode2D(myParam.myCamera.camera);
+
+		myVar.mouseWorldPos = glm::vec2(GetScreenToWorld2D(GetMousePosition(), myParam.myCamera.camera).x,
+			GetScreenToWorld2D(GetMousePosition(), myParam.myCamera.camera).y);
+		if (!myVar.is3DMode) {
+			myParam.brush.drawBrush(myVar.mouseWorldPos);
+		}
+
+		if (!myVar.is3DMode) {
+			DrawRectangleLinesEx({ 0,0, myVar.domainSize.x, myVar.domainSize.y }, 3, GRAY);
+		}
+
+		// Z-Curves debug toggle
+		if (myParam.pParticles.size() > 1 && myVar.drawZCurves) {
+			for (size_t i = 0; i < myParam.pParticles.size() - 1; i++) {
+				DrawLineV({ myParam.pParticles[i].pos.x, myParam.pParticles[i].pos.y }, { myParam.pParticles[i + 1].pos.x,myParam.pParticles[i + 1].pos.y }, WHITE);
+
+				DrawText(TextFormat("%i", i), static_cast<int>(myParam.pParticles[i].pos.x), static_cast<int>(myParam.pParticles[i].pos.y) - 10, 10, { 128,128,128,128 });
+			}
+		}
+
+		if (myVar.isOpticsEnabled) {
+			lighting.drawScene();
+			lighting.drawMisc(myVar, myParam);
+		}
+
+		EndMode2D();
+
+		// EVERYTHING NON-STATIC RELATIVE TO CAMERA ABOVE
+
+		// EVERYTHING STATIC RELATIVE TO CAMERA BELOW
+
+		if (!introActive) {
+			myUI.uiLogic(myParam, myVar, sph, save, geSound, lighting, field);
+		}
+
+		save.saveLoadLogic(myVar, myParam, sph, physics, lighting, field);
+
+		myParam.subdivision.subdivideParticles(myVar, myParam);
+
+		EndTextureMode();
+
+		BeginTextureMode(myMiscTexture);
+
+		ClearBackground({ 0,0,0,0 });
+
+		// ---- Intro screen ---- //
+
+		if (introActive) {
+
+			if (introStartTime == 0.0f) {
+				introStartTime = GetTime();
+			}
+
+			float introElapsedTime = GetTime() - introStartTime;
+			float fadeProgress = introElapsedTime / introDuration;
+
+			if (introElapsedTime >= introDuration) {
+				introActive = false;
+				fadeStartTime = GetTime();
+			}
+
+			DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), BLACK);
+
+			const char* text = nullptr;
+
+			if (messageIndex < introMessages.size()) {
+				text = introMessages[messageIndex].first.c_str();
+			}
+			else {
+				text = "Welcome back to Galaxy Engine, friend";
+			}
+
+			int fontSize = myVar.introFontSize;
+
+			Font fontToUse = (myVar.customFont.texture.id != 0) ? myVar.customFont : GetFontDefault();
+
+			Vector2 textSize = MeasureTextEx(fontToUse, text, fontSize, 1.0f);
+			int posX = (GetScreenWidth() - textSize.x) * 0.5f;
+			int posY = (GetScreenHeight() - textSize.y) * 0.5f;
+
+			float textAlpha;
+			if (fadeProgress < 0.2f) {
+				textAlpha = fadeProgress / 0.2f;
+			}
+			else if (fadeProgress > 0.8f) {
+				textAlpha = 1.0f - ((fadeProgress - 0.8f) / 0.2f);
+			}
+			else {
+				textAlpha = 1.0f;
+			}
+
+			Color textColor = Fade(WHITE, textAlpha);
+
+			DrawTextEx(fontToUse, text, { static_cast<float>(posX), static_cast<float>(posY) }, fontSize, 1.0f, textColor);
+		}
+		else if (fadeActive) {
+			float fadeElapsedTime = GetTime() - fadeStartTime;
+
+			if (fadeElapsedTime >= fadeDuration) {
+				fadeActive = false;
+			}
+			else {
+				float alpha = 1.0f - (fadeElapsedTime / fadeDuration);
+				alpha = Clamp(alpha, 0.0f, 1.0f);
+				DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(BLACK, alpha));
+			}
+		}
+
+		if (firstTimeOpened && !introActive) {
+			messageIndex++;
+			messageIndex = std::min(static_cast<size_t>(messageIndex), introMessages.size());
+
+			firstTimeOpened = false;
+		}
+
+		// ---- Intro screen ---- //
+
+		EndTextureMode();
 	}
-
-	myParam.trails.drawTrail(myParam.rParticles, particleBlurTex);
-
-	drawConstraints();
-
-	if (myVar.isOpticsEnabled) {
-		for (Wall& wall : lighting.walls) {
-			wall.drawWall();
-		}
-	}
-
-	EndTextureMode();
-
-	// Ray Tracing
-
-	BeginTextureMode(myRayTracingTexture);
-
-	ClearBackground({ 0,0,0,0 });
-
-	BeginMode2D(myParam.myCamera.camera);
-
-	EndMode2D();
-
-	EndTextureMode();
-
-
-	//EVERYTHING INTENDED TO APPEAR WHILE RECORDING ABOVE
-
-
-	//END OF PARTICLES RENDER PASS
-	//-------------------------------------------------//
-	//BEGINNNG OF UI RENDER PASS
-
-
-	//EVERYTHING NOT INTENDED TO APPEAR WHILE RECORDING BELOW
-	BeginTextureMode(myUITexture);
-
-	ClearBackground({ 0,0,0,0 });
-
-	BeginMode2D(myParam.myCamera.camera);
-
-	myVar.mouseWorldPos = glm::vec2(GetScreenToWorld2D(GetMousePosition(), myParam.myCamera.camera).x,
-		GetScreenToWorld2D(GetMousePosition(), myParam.myCamera.camera).y);
-	myParam.brush.drawBrush(myVar.mouseWorldPos);
-	DrawRectangleLinesEx({ 0,0, static_cast<float>(myVar.domainSize.x), static_cast<float>(myVar.domainSize.y) }, 3, GRAY);
-
-	// Z-Curves debug toggle
-	if (myParam.pParticles.size() > 1 && myVar.drawZCurves) {
-		for (size_t i = 0; i < myParam.pParticles.size() - 1; i++) {
-			DrawLineV({ myParam.pParticles[i].pos.x, myParam.pParticles[i].pos.y }, { myParam.pParticles[i + 1].pos.x,myParam.pParticles[i + 1].pos.y }, WHITE);
-
-			DrawText(TextFormat("%i", i), static_cast<int>(myParam.pParticles[i].pos.x), static_cast<int>(myParam.pParticles[i].pos.y) - 10, 10, { 128,128,128,128 });
-		}
-	}
-
-	if (myVar.isOpticsEnabled) {
-		lighting.drawScene();
-		lighting.drawMisc(myVar, myParam);
-	}
-
-	EndMode2D();
-
-	// EVERYTHING NON-STATIC RELATIVE TO CAMERA ABOVE
-
-	// EVERYTHING STATIC RELATIVE TO CAMERA BELOW
-
-	if (!introActive) {
-		myUI.uiLogic(myParam, myVar, sph, save, geSound, lighting, field);
-	}
-
-	save.saveLoadLogic(myVar, myParam, sph, physics, lighting, field);
-
-	myParam.subdivision.subdivideParticles(myVar, myParam);
-
-	EndTextureMode();
-
-	BeginTextureMode(myMiscTexture);
-
-	ClearBackground({ 0,0,0,0 });
-
-	// ---- Intro screen ---- //
-
-	if (introActive) {
-
-		if (introStartTime == 0.0f) {
-			introStartTime = GetTime();
-		}
-
-		float introElapsedTime = GetTime() - introStartTime;
-		float fadeProgress = introElapsedTime / introDuration;
-
-		if (introElapsedTime >= introDuration) {
-			introActive = false;
-			fadeStartTime = GetTime();
-		}
-
-		DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), BLACK);
-
-		const char* text = nullptr;
-
-		if (messageIndex < introMessages.size()) {
-			text = introMessages[messageIndex].first.c_str();
-		}
-		else {
-			text = "Welcome back to Galaxy Engine, friend";
-		}
-
-		int fontSize = myVar.introFontSize;
-
-		Font fontToUse = (myVar.customFont.texture.id != 0) ? myVar.customFont : GetFontDefault();
-
-		Vector2 textSize = MeasureTextEx(fontToUse, text, fontSize, 1.0f);
-		int posX = (GetScreenWidth() - textSize.x) * 0.5f;
-		int posY = (GetScreenHeight() - textSize.y) * 0.5f;
-
-		float textAlpha;
-		if (fadeProgress < 0.2f) {
-			textAlpha = fadeProgress / 0.2f;
-		}
-		else if (fadeProgress > 0.8f) {
-			textAlpha = 1.0f - ((fadeProgress - 0.8f) / 0.2f);
-		}
-		else {
-			textAlpha = 1.0f;
-		}
-
-		Color textColor = Fade(WHITE, textAlpha);
-
-		DrawTextEx(fontToUse, text, { static_cast<float>(posX), static_cast<float>(posY) }, fontSize, 1.0f, textColor);
-	}
-	else if (fadeActive) {
-		float fadeElapsedTime = GetTime() - fadeStartTime;
-
-		if (fadeElapsedTime >= fadeDuration) {
-			fadeActive = false;
-		}
-		else {
-			float alpha = 1.0f - (fadeElapsedTime / fadeDuration);
-			alpha = Clamp(alpha, 0.0f, 1.0f);
-			DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(BLACK, alpha));
-		}
-	}
-
-	if (firstTimeOpened && !introActive) {
-		messageIndex++;
-		messageIndex = std::min(static_cast<size_t>(messageIndex), introMessages.size());
-
-		firstTimeOpened = false;
-	}
-
-	// ---- Intro screen ---- //
-
-	EndTextureMode();
 }
 
 float lastGlobalVolume = -1.0f;

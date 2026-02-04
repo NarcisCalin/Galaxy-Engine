@@ -43,7 +43,7 @@ void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar,
 	paramIO(filename, out, "MaxSizeForce", myParam.densitySize.sizeAcc);
 	paramIO(filename, out, "Max Dynamic Size", myParam.densitySize.maxSize);
 	paramIO(filename, out, "Min Dynamic Size", myParam.densitySize.minSize);
-	paramIO(filename, out, "MaxSizeForce", myParam.densitySize.sizeAcc);
+	paramIO(filename, out, "MaxSizeNeighbors", myParam.densitySize.maxNeighbors);
 	paramIO(filename, out, "ParticleSizeMult", myVar.particleSizeMultiplier);
 	paramIO(filename, out, "VisiblePAmountMult", myParam.particlesSpawning.particleAmountMultiplier);
 	paramIO(filename, out, "DMPAmountMult", myParam.particlesSpawning.DMAmountMultiplier);

@@ -1,158 +1,164 @@
 #include "globalLogic.h"
 
+#if defined(PLATFORM_DESKTOP)
+#define GLSL_VERSION            330
+#else   // PLATFORM_ANDROID, PLATFORM_WEB
+#define GLSL_VERSION            100
+#endif
+
 int main(int argc, char** argv) {
 
-	// SPH Materials initialization
-	SPHMaterials::Init();
+    // SPH Materials initialization
+    SPHMaterials::Init();
 
-	SetConfigFlags(FLAG_MSAA_4X_HINT);
+    SetConfigFlags(FLAG_MSAA_4X_HINT);
 
-	SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
 
-	SetConfigFlags(FLAG_WINDOW_ALWAYS_RUN);
+    SetConfigFlags(FLAG_WINDOW_ALWAYS_RUN);
 
-	int threadsAvailable = std::thread::hardware_concurrency();
+    int threadsAvailable = std::thread::hardware_concurrency();
 
-	myVar.threadsAmount = static_cast<int>(threadsAvailable * 0.5f);
+    myVar.threadsAmount = static_cast<int>(threadsAvailable * 0.5f);
 
-	std::cout << "Threads available: " << threadsAvailable << std::endl;
-	std::cout << "Thread amount set to: " << myVar.threadsAmount << std::endl;
+    std::cout << "Threads available: " << threadsAvailable << std::endl;
+    std::cout << "Thread amount set to: " << myVar.threadsAmount << std::endl;
 
-	if (myVar.fullscreenState) {
-		myVar.screenWidth = GetMonitorWidth(GetCurrentMonitor());
-		myVar.screenHeight = GetMonitorHeight(GetCurrentMonitor());
-	}
+    if (myVar.fullscreenState) {
+        myVar.screenWidth = GetMonitorWidth(GetCurrentMonitor());
+        myVar.screenHeight = GetMonitorHeight(GetCurrentMonitor());
+    }
 
-	InitWindow(myVar.screenWidth, myVar.screenHeight, "Galaxy Engine");
+    InitWindow(myVar.screenWidth, myVar.screenHeight, "Galaxy Engine");
 
-	// ---- Config ---- //
+    // ---- Config ---- //
 
-	if (!std::filesystem::exists("Config")) {
-		std::filesystem::create_directory("Config");
-	}
+    if (!std::filesystem::exists("Config")) {
+        std::filesystem::create_directory("Config");
+    }
 
-	if (!std::filesystem::exists("Config/config.txt")) {
-		saveConfig();
-	}
-	else {
-		loadConfig();
-	}
+    if (!std::filesystem::exists("Config/config.txt")) {
+        saveConfig();
+    }
+    else {
+        loadConfig();
+    }
 
-	// ---- Audio ---- //
+    // ---- Audio ---- //
 
-	geSound.loadSounds();
+    geSound.loadSounds();
 
-	// ---- Icon ---- //
+    // ---- Icon ---- //
 
-	Image icon = LoadImage("Textures/WindowIcon.png");
-	SetWindowIcon(icon);
+    Image icon = LoadImage("Textures/WindowIcon.png");
+    SetWindowIcon(icon);
 
-	// ---- Textures & rlImGui ---- //
+    // ---- Textures & rlImGui ---- //
 
-	rlImGuiSetup(true);
+    rlImGuiSetup(true);
 
-	Texture2D particleBlurTex = LoadTexture("Textures/ParticleBlur.png");
+    Texture2D particleBlurTex = LoadTexture("Textures/ParticleBlur.png");
 
-	Shader myBloom = LoadShader(nullptr, "Shaders/bloom.fs");
+    Shader myBloom = LoadShader(nullptr, "Shaders/bloom.fs");
 
-	RenderTexture2D myParticlesTexture = CreateFloatRenderTexture(GetScreenWidth(), GetScreenHeight());
-	RenderTexture2D myRayTracingTexture = CreateFloatRenderTexture(GetScreenWidth(), GetScreenHeight());
-	RenderTexture2D myUITexture = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
-	RenderTexture2D myMiscTexture = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
+    RenderTexture2D myParticlesTexture = CreateFloatRenderTexture(GetScreenWidth(), GetScreenHeight());
+    RenderTexture2D myRayTracingTexture = CreateFloatRenderTexture(GetScreenWidth(), GetScreenHeight());
+    RenderTexture2D myUITexture = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
+    RenderTexture2D myMiscTexture = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
 
-	SetTargetFPS(myVar.targetFPS);
+    SetTargetFPS(myVar.targetFPS);
 
-	// ---- Fullscreen ---- //
+    // ---- Fullscreen ---- //
 
-	int lastScreenWidth = GetScreenWidth();
-	int lastScreenHeight = GetScreenHeight();
-	bool wasFullscreen = IsWindowMaximized();
+    int lastScreenWidth = GetScreenWidth();
+    int lastScreenHeight = GetScreenHeight();
+    bool wasFullscreen = IsWindowMaximized();
 
-	bool lastScreenState = false;
+    bool lastScreenState = false;
 
-	// ---- Save ---- //
+    // ---- Save ---- //
 
-	// If "Saves" directory doesn't exist, then create one. This is done here to store the default parameters
-	if (!std::filesystem::exists("Saves")) {
-		std::filesystem::create_directory("Saves");
-	}
+    // If "Saves" directory doesn't exist, then create one. This is done here to store the default parameters
+    if (!std::filesystem::exists("Saves")) {
+        std::filesystem::create_directory("Saves");
+    }
 
-	save.saveFlag = true;
-	save.saveSystem("Saves/DefaultSettings.bin", myVar, myParam, sph, physics, lighting, field);
-	save.saveFlag = false;
+    save.saveFlag = true;
+    save.saveSystem("Saves/DefaultSettings.bin", myVar, myParam, sph, physics, lighting, field);
+    save.saveFlag = false;
 
-	// ---- ImGui ---- //
+    // ---- ImGui ---- //
 
-	ImGuiStyle& style = ImGui::GetStyle();
-	ImVec4* colors = style.Colors;
+    ImGuiStyle& style = ImGui::GetStyle();
+    ImVec4* colors = style.Colors;
 
-	// Button and window colors
-	colors[ImGuiCol_WindowBg] = myVar.colWindowBg;
-	colors[ImGuiCol_Button] = myVar.colButton;
-	colors[ImGuiCol_ButtonHovered] = myVar.colButtonHover;
-	colors[ImGuiCol_ButtonActive] = myVar.colButtonPress;
+    // Button and window colors
+    colors[ImGuiCol_WindowBg] = myVar.colWindowBg;
+    colors[ImGuiCol_Button] = myVar.colButton;
+    colors[ImGuiCol_ButtonHovered] = myVar.colButtonHover;
+    colors[ImGuiCol_ButtonActive] = myVar.colButtonPress;
 
-	// Slider colors
-	style.Colors[ImGuiCol_SliderGrab] = myVar.colSliderGrab;        // Bright cyan-ish knob
-	style.Colors[ImGuiCol_SliderGrabActive] = myVar.colSliderGrabActive;  // Darker when dragging
+    // Slider colors
+    style.Colors[ImGuiCol_SliderGrab] = myVar.colSliderGrab;        // Bright cyan-ish knob
+    style.Colors[ImGuiCol_SliderGrabActive] = myVar.colSliderGrabActive;  // Darker when dragging
 
-	style.Colors[ImGuiCol_FrameBg] = myVar.colSliderBg;           // Dark track when idle
-	style.Colors[ImGuiCol_FrameBgHovered] = myVar.colSliderBgHover;    // Lighter track on hover
-	style.Colors[ImGuiCol_FrameBgActive] = myVar.colSliderBgActive;     // Even lighter on active
+    style.Colors[ImGuiCol_FrameBg] = myVar.colSliderBg;           // Dark track when idle
+    style.Colors[ImGuiCol_FrameBgHovered] = myVar.colSliderBgHover;     // Lighter track on hover
+    style.Colors[ImGuiCol_FrameBgActive] = myVar.colSliderBgActive;      // Even lighter on active
 
-	// Tab colors
-	style.Colors[ImGuiCol_Tab] = myVar.colButton;
-	style.Colors[ImGuiCol_TabHovered] = myVar.colButtonHover;
-	style.Colors[ImGuiCol_TabActive] = myVar.colButtonPress;
+    // Tab colors
+    style.Colors[ImGuiCol_Tab] = myVar.colButton;
+    style.Colors[ImGuiCol_TabHovered] = myVar.colButtonHover;
+    style.Colors[ImGuiCol_TabActive] = myVar.colButtonPress;
 
-	ImGuiIO& io = ImGui::GetIO();
+    ImGuiIO& io = ImGui::GetIO();
 
-	ImFontConfig config;
-	config.SizePixels = 14.0f;        // Base font size in pixels
-	config.RasterizerDensity = 2.0f;  // Improves rendering at small sizes
-	config.OversampleH = 4;           // Horizontal anti-aliasing
-	config.OversampleV = 4;           // Vertical anti-aliasing
-	config.PixelSnapH = false;        // Disable pixel snapping for smoother text
-	config.RasterizerMultiply = 0.9f; // Slightly boosts brightness
+    ImFontConfig config;
+    config.SizePixels = 14.0f;        // Base font size in pixels
+    config.RasterizerDensity = 2.0f;  // Improves rendering at small sizes
+    config.OversampleH = 4;           // Horizontal anti-aliasing
+    config.OversampleV = 4;           // Vertical anti-aliasing
+    config.PixelSnapH = false;        // Disable pixel snapping for smoother text
+    config.RasterizerMultiply = 0.9f; // Slightly boosts brightness
 
-	myVar.robotoMediumFont = io.Fonts->AddFontFromFileTTF(
-		"fonts/Roboto-Medium.ttf",
-		config.SizePixels,
-		&config,
-		io.Fonts->GetGlyphRangesDefault()
-	);
+    myVar.robotoMediumFont = io.Fonts->AddFontFromFileTTF(
+        "fonts/Roboto-Medium.ttf",
+        config.SizePixels,
+        &config,
+        io.Fonts->GetGlyphRangesDefault()
+    );
 
-	if (!myVar.robotoMediumFont) {
-		std::cerr << "Failed to load special font!\n";
-	}
-	else {
-		std::cout << "Special font loaded successfully\n";
-	}
+    if (!myVar.robotoMediumFont) {
+        std::cerr << "Failed to load special font!\n";
+    }
+    else {
+        std::cout << "Special font loaded successfully\n";
+    }
 
-	io.Fonts->Build();
-	ImPlot::CreateContext();
+    io.Fonts->Build();
+    ImPlot::CreateContext();
 
-	// ---- Intro ---- //
+    // ---- Intro ---- //
 
-	bool fadeActive = false;
-	bool introActive = false;
+    bool fadeActive = false;
+    bool introActive = false;
 
-	myVar.customFont = LoadFontEx("fonts/Unispace Bd.otf", myVar.introFontSize, 0, 250);
+    myVar.customFont = LoadFontEx("fonts/Unispace Bd.otf", myVar.introFontSize, 0, 250);
 
-	SetTextureFilter(myVar.customFont.texture, TEXTURE_FILTER_BILINEAR);
+    SetTextureFilter(myVar.customFont.texture, TEXTURE_FILTER_BILINEAR);
 
-	if (myVar.customFont.texture.id == 0) {
-		TraceLog(LOG_WARNING, "Failed to load font! Using default font");
-	}
+    if (myVar.customFont.texture.id == 0) {
+        TraceLog(LOG_WARNING, "Failed to load font! Using default font");
+    }
 
-	if (myVar.fullscreenState) {
-		myVar.screenWidth = GetMonitorWidth(GetCurrentMonitor()) * 0.5f;
-		myVar.screenHeight = GetMonitorHeight(GetCurrentMonitor()) * 0.5f;
-	}
+    if (myVar.fullscreenState) {
+        myVar.screenWidth = GetMonitorWidth(GetCurrentMonitor()) * 0.5f;
+        myVar.screenHeight = GetMonitorHeight(GetCurrentMonitor()) * 0.5f;
+    }
 
-	// ---- Ray Tracing and Long Exposure ---- //
+    // ---- Ray Tracing and Long Exposure ---- //
 
-	const char* accumulationVs = R"(
+    const char* accumulationVs = R"(
     #version 330 core
 
 layout(location = 0) in vec3 vertexPosition;
@@ -176,7 +182,7 @@ void main()
 }
     )";
 
-	const char* accumulationFs = R"(
+    const char* accumulationFs = R"(
 
 #version 330
 
@@ -201,250 +207,317 @@ void main() {
 }
 )";
 
-	Shader accumulationShader = LoadShaderFromMemory(accumulationVs, accumulationFs);
+    Shader accumulationShader = LoadShaderFromMemory(accumulationVs, accumulationFs);
 
-	int screenSizeLoc = GetShaderLocation(accumulationShader, "screenSize");
-	float screenSize[2] = {
-		(float)myVar.screenWidth,
-		(float)myVar.screenHeight
-	};
-	SetShaderValue(accumulationShader, screenSizeLoc, screenSize, SHADER_UNIFORM_VEC2);
+    int screenSizeLoc = GetShaderLocation(accumulationShader, "screenSize");
+    float screenSize[2] = {
+        (float)myVar.screenWidth,
+        (float)myVar.screenHeight
+    };
+    SetShaderValue(accumulationShader, screenSizeLoc, screenSize, SHADER_UNIFORM_VEC2);
 
-	int rayTextureLoc = GetShaderLocation(accumulationShader, "rayTexture");
+    int rayTextureLoc = GetShaderLocation(accumulationShader, "rayTexture");
 
-	RenderTexture2D accumulatedTexture = CreateFloatRenderTexture(GetScreenWidth(), GetScreenHeight());
-	RenderTexture2D pingPongTexture = CreateFloatRenderTexture(GetScreenWidth(), GetScreenHeight());
+    RenderTexture2D accumulatedTexture = CreateFloatRenderTexture(GetScreenWidth(), GetScreenHeight());
+    RenderTexture2D pingPongTexture = CreateFloatRenderTexture(GetScreenWidth(), GetScreenHeight());
 
-	int currentFrameLoc = GetShaderLocation(accumulationShader, "currentFrame");
-	int accumulatedFrameLoc = GetShaderLocation(accumulationShader, "accumulatedFrame");
-	int sampleCountLoc = GetShaderLocation(accumulationShader, "sampleCount");
-	RenderTexture2D testSampleTexture = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
+    int currentFrameLoc = GetShaderLocation(accumulationShader, "currentFrame");
+    int accumulatedFrameLoc = GetShaderLocation(accumulationShader, "accumulatedFrame");
+    int sampleCountLoc = GetShaderLocation(accumulationShader, "sampleCount");
+    RenderTexture2D testSampleTexture = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
 
-	int prevScreenWidth = GetScreenWidth();
-	int prevScreenHeight = GetScreenHeight();
+    int prevScreenWidth = GetScreenWidth();
+    int prevScreenHeight = GetScreenHeight();
 
-	bool prevLongExpFlag = false;
+    bool prevLongExpFlag = false;
 
-	bool accumulationCondition = false;
+    bool accumulationCondition = false;
 
-	buildKernels();
+    buildKernels();
 
-	while (!WindowShouldClose()) {
+    myVar.hasAVX2 = hasAVX2Support();
 
-		if (myVar.exitGame) {
-			CloseWindow();
-			break;
-		}
+    rlSetClipPlanes(1.0f, 50000.0f);
 
-		fullscreenToggle(lastScreenWidth, lastScreenHeight, wasFullscreen, lastScreenState, myParticlesTexture, myUITexture);
+    // ================= SKYBOX INITIALIZATION ================= //
 
-		BeginTextureMode(myParticlesTexture);
+    Mesh cubeSky = GenMeshCube(10000.0f, 10000.0f, 10000.0f);
+    Model skybox = LoadModelFromMesh(cubeSky);
 
-		ClearBackground(BLACK);
+    // Load skybox shader
+    skybox.materials[0].shader = LoadShader(TextFormat("Shaders/skybox.vs", GLSL_VERSION),
+        TextFormat("Shaders/skybox.fs", GLSL_VERSION));
 
-		BeginBlendMode(myParam.colorVisuals.blendMode);
+    SetShaderValue(skybox.materials[0].shader, GetShaderLocation(skybox.materials[0].shader, "environmentMap"), (int[1]) { MATERIAL_MAP_CUBEMAP }, SHADER_UNIFORM_INT);
+    SetShaderValue(skybox.materials[0].shader, GetShaderLocation(skybox.materials[0].shader, "doGamma"), (int[1]) 0, SHADER_UNIFORM_INT);
+    SetShaderValue(skybox.materials[0].shader, GetShaderLocation(skybox.materials[0].shader, "vflipped"), (int[1]) 0, SHADER_UNIFORM_INT);
 
-		BeginMode2D(myParam.myCamera.cameraLogic(save.loadFlag, myVar.isMouseNotHoveringUI));
+    Image faces[6] = {
+        LoadImage("Textures/sky_pos_x.png"),   // +X
+        LoadImage("Textures/sky_neg_x.png"),    // -X
+        LoadImage("Textures/sky_pos_y.png"),     // +Y
+        LoadImage("Textures/sky_neg_y.png"),  // -Y
+        LoadImage("Textures/sky_pos_z.png"),   // +Z
+        LoadImage("Textures/sky_neg_z.png")     // -Z
+    };
 
-		rlImGuiBegin();
+    int width = faces[0].width;
+    int height = faces[0].height;
 
-		if (introActive) {
-			ImGuiIO& io = ImGui::GetIO();
-			io.WantCaptureMouse = true;
-			io.WantCaptureKeyboard = true;
-			io.WantTextInput = true;
+    Image verticalStrip = GenImageColor(width, height * 6, BLACK);
 
-			if (myParam.pParticles.size() > 0) {
-				myParam.pParticles.clear();
-				myParam.rParticles.clear();
-			}
-		}
-		else {
-			geSound.soundtrackLogic();
-		}
+    for (int i = 0; i < 6; i++) {
 
-		ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 2.0f);
+        ImageDraw(&verticalStrip, faces[i],
+            (Rectangle) {
+            0, 0, (float)width, (float)height
+        },
+            (Rectangle) {
+            0, (float)(i * height), (float)width, (float)height
+        },
+            WHITE);
 
-		saveConfigIfChanged();
+        UnloadImage(faces[i]);
+    }
 
-		updateScene();
+    skybox.materials[0].maps[MATERIAL_MAP_CUBEMAP].texture = LoadTextureCubemap(verticalStrip, CUBEMAP_LAYOUT_LINE_VERTICAL);
 
-		drawScene(particleBlurTex, myRayTracingTexture, myUITexture, myMiscTexture, fadeActive, introActive);
+    UnloadImage(verticalStrip);
 
-		EndMode2D();
+    while (!WindowShouldClose()) {
 
-		EndBlendMode();
+        if (myVar.exitGame) {
+            CloseWindow();
+            break;
+        }
 
+        fullscreenToggle(lastScreenWidth, lastScreenHeight, wasFullscreen, lastScreenState, myParticlesTexture, myUITexture);
 
-		//------------------------ RENDER TEXTURES BELOW ------------------------//
+        BeginTextureMode(myParticlesTexture);
 
-		if (myVar.isGlowEnabled) {
-			BeginShaderMode(myBloom);
-		}
+        ClearBackground(BLACK);
 
-		if (myVar.isGlowEnabled) {
-			EndShaderMode();
-		}
+        BeginBlendMode(myParam.colorVisuals.blendMode);
 
-		if (myParam.myCamera.cameraChangedThisFrame) {
-			lighting.shouldRender = true;
-		}
+        if (myVar.is3DMode) {
 
-		if (myVar.longExposureFlag != prevLongExpFlag) {
-			myVar.longExposureCurrent = 1;
+            BeginMode3D(myParam.myCamera3D.cameraLogic(save.loadFlag, myVar.isMouseNotHoveringUI));
 
-			prevLongExpFlag = myVar.longExposureFlag;
-		}
+            rlDisableBackfaceCulling();
+            rlDisableDepthMask();
+            DrawModel(skybox, (Vector3) { 0, 0, 0 }, 1.0f, WHITE);
+            rlEnableBackfaceCulling();
+            rlEnableDepthMask();
 
-		if (myVar.isOpticsEnabled) {
-			accumulationCondition = lighting.currentSamples <= lighting.maxSamples;
-		}
-		else if (myVar.longExposureFlag) {
-			accumulationCondition = myVar.longExposureCurrent <= myVar.longExposureDuration;
-		}
-		else {
-			accumulationCondition = true;
-		}
+            mode3D(particleBlurTex);
 
-		if (GetScreenWidth() != prevScreenWidth || GetScreenHeight() != prevScreenHeight) {
+            EndMode3D();
+        }
 
-			UnloadRenderTexture(accumulatedTexture);
-			UnloadRenderTexture(pingPongTexture);
-			UnloadRenderTexture(testSampleTexture);
+        BeginMode2D(myParam.myCamera.cameraLogic(save.loadFlag, myVar.isMouseNotHoveringUI));
 
-			accumulatedTexture = CreateFloatRenderTexture(GetScreenWidth(), GetScreenHeight());
-			pingPongTexture = CreateFloatRenderTexture(GetScreenWidth(), GetScreenHeight());
-			testSampleTexture = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
+        rlImGuiBegin();
 
-			screenSize[0] = (float)GetScreenWidth();
-			screenSize[1] = (float)GetScreenHeight();
-			SetShaderValue(accumulationShader, screenSizeLoc, screenSize, SHADER_UNIFORM_VEC2);
+        if (introActive) {
+            ImGuiIO& io = ImGui::GetIO();
+            io.WantCaptureMouse = true;
+            io.WantCaptureKeyboard = true;
+            io.WantTextInput = true;
 
-			prevScreenWidth = GetScreenWidth();
-			prevScreenHeight = GetScreenHeight();
+            if (myParam.pParticles.size() > 0) {
+                myParam.pParticles.clear();
+                myParam.rParticles.clear();
+            }
+        }
+        else {
+            geSound.soundtrackLogic();
+        }
 
-			if (myVar.isOpticsEnabled) {
-				lighting.shouldRender = true;
-			}
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 2.0f);
 
-			if (myVar.longExposureFlag) {
-				myVar.longExposureFlag = false;
-			}
-		}
+        saveConfigIfChanged();
 
-		// Ray Tracing and Long Exposure
-		if (accumulationCondition) {
+        updateScene();
 
-			BeginTextureMode(pingPongTexture);
+        drawScene(particleBlurTex, myRayTracingTexture, myUITexture, myMiscTexture, fadeActive, introActive);
 
-			BeginShaderMode(accumulationShader);
+        EndMode2D();
 
-			SetShaderValueTexture(accumulationShader, currentFrameLoc, myParticlesTexture.texture);
-			SetShaderValueTexture(accumulationShader, accumulatedFrameLoc, accumulatedTexture.texture);
+        EndBlendMode();
 
-			float sampleCount = 1.0f;
 
-			if (myVar.isOpticsEnabled) {
-				sampleCount = static_cast<float>(lighting.currentSamples);
-			}
-			else {
-				lighting.currentSamples = 0;
-			}
+        //------------------------ RENDER TEXTURES BELOW ------------------------//
 
-			if (myVar.longExposureFlag) {
-				sampleCount = static_cast<float>(myVar.longExposureCurrent);
-			}
-			else {
-				myVar.longExposureCurrent = 0;
-			}
+        if (myVar.isGlowEnabled) {
+            BeginShaderMode(myBloom);
+        }
 
-			SetShaderValue(accumulationShader, sampleCountLoc, &sampleCount, SHADER_UNIFORM_FLOAT);
+        if (myVar.isGlowEnabled) {
+            EndShaderMode();
+        }
 
-			DrawTextureRec(
-				accumulatedTexture.texture,
-				Rectangle{ 0, 0, (float)GetScreenWidth(), -((float)GetScreenHeight()) },
-				Vector2{ 0, 0 },
-				WHITE
-			);
+        if (myParam.myCamera.cameraChangedThisFrame) {
+            lighting.shouldRender = true;
+        }
 
-			EndShaderMode();
+        if (myVar.longExposureFlag != prevLongExpFlag) {
+            myVar.longExposureCurrent = 1;
 
-			EndTextureMode();
+            prevLongExpFlag = myVar.longExposureFlag;
+        }
 
-			std::swap(accumulatedTexture, pingPongTexture);
+        if (myVar.isOpticsEnabled) {
+            accumulationCondition = lighting.currentSamples <= lighting.maxSamples;
+        }
+        else if (myVar.longExposureFlag) {
+            accumulationCondition = myVar.longExposureCurrent <= myVar.longExposureDuration;
+        }
+        else {
+            accumulationCondition = true;
+        }
 
+        if (GetScreenWidth() != prevScreenWidth || GetScreenHeight() != prevScreenHeight) {
 
-			if (myVar.longExposureFlag) {
-				myVar.longExposureCurrent++;
-			}
-		}
+            UnloadRenderTexture(accumulatedTexture);
+            UnloadRenderTexture(pingPongTexture);
+            UnloadRenderTexture(testSampleTexture);
 
-		DrawTextureRec(
-			accumulatedTexture.texture,
-			Rectangle{ 0, 0, (float)GetScreenWidth(), -((float)GetScreenHeight()) },
-			Vector2{ 0, 0 },
-			WHITE
-		);
+            accumulatedTexture = CreateFloatRenderTexture(GetScreenWidth(), GetScreenHeight());
+            pingPongTexture = CreateFloatRenderTexture(GetScreenWidth(), GetScreenHeight());
+            testSampleTexture = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
 
+            screenSize[0] = (float)GetScreenWidth();
+            screenSize[1] = (float)GetScreenHeight();
+            SetShaderValue(accumulationShader, screenSizeLoc, screenSize, SHADER_UNIFORM_VEC2);
 
-		DrawTextureRec(
-			myUITexture.texture,
-			Rectangle{ 0, 0, static_cast<float>(GetScreenWidth()), -static_cast<float>(GetScreenHeight()) },
-			Vector2{ 0, 0 },
-			WHITE
-		);
+            prevScreenWidth = GetScreenWidth();
+            prevScreenHeight = GetScreenHeight();
 
-		EndBlendMode();
+            if (myVar.isOpticsEnabled) {
+                lighting.shouldRender = true;
+            }
 
+            if (myVar.longExposureFlag) {
+                myVar.longExposureFlag = false;
+            }
+        }
 
-		// Detects if the user is recording the screen
-		myVar.isRecording = myParam.screenCapture.screenGrab(accumulatedTexture, myVar, myParam);
+        // Ray Tracing and Long Exposure
+        if (accumulationCondition) {
 
-		if (myVar.isRecording) {
-			DrawRectangleLinesEx({ 0,0, static_cast<float>(GetScreenWidth()), static_cast<float>(GetScreenHeight()) }, 3, RED);
-		}
+            BeginTextureMode(pingPongTexture);
 
-		ImGui::PopStyleVar();
+            BeginShaderMode(accumulationShader);
 
-		rlImGuiEnd();
+            SetShaderValueTexture(accumulationShader, currentFrameLoc, myParticlesTexture.texture);
+            SetShaderValueTexture(accumulationShader, accumulatedFrameLoc, accumulatedTexture.texture);
 
-		DrawTextureRec(
-			myMiscTexture.texture,
-			Rectangle{ 0, 0, static_cast<float>(GetScreenWidth()), -static_cast<float>(GetScreenHeight()) },
-			Vector2{ 0, 0 },
-			WHITE
-		);
+            float sampleCount = 1.0f;
 
+            if (myVar.isOpticsEnabled) {
+                sampleCount = static_cast<float>(lighting.currentSamples);
+            }
+            else {
+                lighting.currentSamples = 0;
+            }
 
-		EndDrawing();
+            if (myVar.longExposureFlag) {
+                sampleCount = static_cast<float>(myVar.longExposureCurrent);
+            }
+            else {
+                myVar.longExposureCurrent = 0;
+            }
 
-		enableMultiThreading();
-	}
+            SetShaderValue(accumulationShader, sampleCountLoc, &sampleCount, SHADER_UNIFORM_FLOAT);
 
-	rlImGuiShutdown();
-	ImPlot::DestroyContext();
+            DrawTextureRec(
+                accumulatedTexture.texture,
+                Rectangle{ 0, 0, (float)GetScreenWidth(), -((float)GetScreenHeight()) },
+                Vector2{ 0, 0 },
+                WHITE
+            );
 
-	UnloadShader(myBloom);
-	UnloadTexture(particleBlurTex);
+            EndShaderMode();
 
-	UnloadRenderTexture(myParticlesTexture);
-	UnloadRenderTexture(myRayTracingTexture);
-	UnloadRenderTexture(myUITexture);
-	UnloadRenderTexture(myMiscTexture);
+            EndTextureMode();
 
-	UnloadImage(icon);
+            std::swap(accumulatedTexture, pingPongTexture);
 
-	geSound.unloadSounds();
 
-	// Unload accumulation shader
-	UnloadShader(accumulationShader);
+            if (myVar.longExposureFlag) {
+                myVar.longExposureCurrent++;
+            }
+        }
 
-	// Free compute shader memory
-	freeGPUMemory();
+        DrawTextureRec(
+            accumulatedTexture.texture,
+            Rectangle{ 0, 0, (float)GetScreenWidth(), -((float)GetScreenHeight()) },
+            Vector2{ 0, 0 },
+            WHITE
+        );
 
-	CloseWindow();
 
+        DrawTextureRec(
+            myUITexture.texture,
+            Rectangle{ 0, 0, static_cast<float>(GetScreenWidth()), -static_cast<float>(GetScreenHeight()) },
+            Vector2{ 0, 0 },
+            WHITE
+        );
 
+        EndBlendMode();
 
-	return 0;
+
+        // Detects if the user is recording the screen
+        myVar.isRecording = myParam.screenCapture.screenGrab(accumulatedTexture, myVar, myParam);
+
+        if (myVar.isRecording) {
+            DrawRectangleLinesEx({ 0,0, static_cast<float>(GetScreenWidth()), static_cast<float>(GetScreenHeight()) }, 3, RED);
+        }
+
+        ImGui::PopStyleVar();
+
+        rlImGuiEnd();
+
+        DrawTextureRec(
+            myMiscTexture.texture,
+            Rectangle{ 0, 0, static_cast<float>(GetScreenWidth()), -static_cast<float>(GetScreenHeight()) },
+            Vector2{ 0, 0 },
+            WHITE
+        );
+
+
+        EndDrawing();
+
+        enableMultiThreading();
+    }
+
+    rlImGuiShutdown();
+    ImPlot::DestroyContext();
+
+    UnloadShader(myBloom);
+    UnloadTexture(particleBlurTex);
+
+    UnloadRenderTexture(myParticlesTexture);
+    UnloadRenderTexture(myRayTracingTexture);
+    UnloadRenderTexture(myUITexture);
+    UnloadRenderTexture(myMiscTexture);
+
+    UnloadShader(skybox.materials[0].shader);
+    UnloadTexture(skybox.materials[0].maps[MATERIAL_MAP_CUBEMAP].texture);
+
+    UnloadImage(icon);
+
+    geSound.unloadSounds();
+
+    // Unload accumulation shader
+    UnloadShader(accumulationShader);
+
+    // Free compute shader memory
+    freeGPUMemory();
+
+    CloseWindow();
+
+
+
+    return 0;
 }

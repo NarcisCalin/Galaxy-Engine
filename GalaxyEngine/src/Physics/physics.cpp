@@ -1,6 +1,7 @@
 #include "Physics/physics.h"
 
-glm::vec2 Physics::calculateForceFromGrid(std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar, ParticlePhysics& pParticle) {
+// This is used in predict trajectory inside particleSpawning.cpp
+glm::vec2 Physics::calculateForceFromGridOld(std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar, ParticlePhysics& pParticle) {
 
 	glm::vec2 totalForce = { 0.0f,0.0f };
 
@@ -55,7 +56,7 @@ glm::vec2 Physics::calculateForceFromGrid(std::vector<ParticlePhysics>& pParticl
 				}
 			}
 
-			float invDistance = 1.0f / std::sqrt(distanceSq);
+			float invDistance = 1.0f / std::sqrtf(distanceSq);
 			float invDist2 = invDistance * invDistance;
 			float invDist3 = invDist2 * invDistance;
 
@@ -87,6 +88,94 @@ glm::vec2 Physics::calculateForceFromGrid(std::vector<ParticlePhysics>& pParticl
 	return totalForce;
 }
 
+void Physics::calculateForceFromGrid(UpdateVariables& myVar) {
+#pragma omp parallel for schedule(dynamic)
+	for (size_t i = 0; i < posX.size(); i++) {
+		glm::vec2 totalForce = { 0.0f,0.0f };
+
+		uint32_t gridIdx = 0;
+		const uint32_t nodeCount = static_cast<uint32_t>(globalNodes.size());
+
+		const float thetaSq = myVar.theta * myVar.theta;
+		const float softeningSq = myVar.softening * myVar.softening;
+		const float Gf = myVar.G;
+		const float pmass = mass[i];
+
+		while (gridIdx < nodeCount) {
+			Node& grid = globalNodes[gridIdx];
+
+			float gridMass = grid.gridMass;
+			if (gridMass <= 0.0f) {
+				gridIdx += grid.next + 1;
+				continue;
+			}
+
+			const glm::vec2 gridCOM = grid.centerOfMass;
+			const float gridSize = grid.size;
+
+			glm::vec2 d = gridCOM - glm::vec2{ posX[i], posY[i] };
+
+			if (myVar.isPeriodicBoundaryEnabled) {
+				d.x -= myVar.domainSize.x * ((d.x > myVar.halfDomainWidth) - (d.x < -myVar.halfDomainWidth));
+				d.y -= myVar.domainSize.y * ((d.y > myVar.halfDomainHeight) - (d.y < -myVar.halfDomainHeight));
+			}
+
+			float distanceSq = d.x * d.x + d.y * d.y + softeningSq;
+
+			bool isSubgridsEmty = true;
+			uint32_t s00 = grid.subGrids[0][0];
+			uint32_t s01 = grid.subGrids[0][1];
+			uint32_t s10 = grid.subGrids[1][0];
+			uint32_t s11 = grid.subGrids[1][1];
+			if (s00 != UINT32_MAX || s01 != UINT32_MAX || s10 != UINT32_MAX || s11 != UINT32_MAX) {
+				isSubgridsEmty = false;
+			}
+
+			float gridSizeSq = gridSize * gridSize;
+
+			if ((gridSizeSq < thetaSq * distanceSq) || isSubgridsEmty) {
+
+				if ((grid.endIndex - grid.startIndex) == 1) {
+					if (std::abs(posX[grid.startIndex] - posX[i]) < 0.001f && std::abs(posY[grid.startIndex] - posY[i]) < 0.001f) {
+						gridIdx += grid.next + 1;
+						continue;
+					}
+				}
+
+				float invDistance = 1.0f / std::sqrtf(distanceSq);
+				float invDist2 = invDistance * invDistance;
+				float invDist3 = invDist2 * invDistance;
+
+				float forceMagnitude = Gf * pmass * gridMass * invDist3;
+				totalForce += d * forceMagnitude;
+
+				if (myVar.isTempEnabled) {
+					uint32_t count = grid.endIndex - grid.startIndex;
+					if (count > 0) {
+						float gridAverageTemp = grid.gridTemp / static_cast<float>(count);
+						float temperatureDifference = gridAverageTemp - temp[i];
+
+						float distance = 0.0f;
+						if (distanceSq > 1e-16f) distance = 1.0f / invDistance;
+						if (distance > 1e-8f) {
+							float heatTransfer = myVar.globalHeatConductivity * temperatureDifference / distance;
+							temp[i] += heatTransfer * myVar.timeFactor;
+						}
+					}
+				}
+
+				gridIdx += grid.next + 1;
+			}
+			else {
+				++gridIdx;
+			}
+		}
+
+		accX[i] = totalForce.x / mass[i];
+		accY[i] = totalForce.y / mass[i];
+	}
+}
+
 void Physics::flattenParticles(std::vector<ParticlePhysics>& pParticles) {
 
 	size_t particleCount = pParticles.size();
@@ -100,6 +189,7 @@ void Physics::flattenParticles(std::vector<ParticlePhysics>& pParticles) {
 	prevVelX.resize(particleCount);
 	prevVelY.resize(particleCount);
 	mass.resize(particleCount);
+	temp.resize(particleCount);
 
 #pragma omp parallel for schedule(static)
 	for (int i = 0; i < static_cast<int>(particleCount); i++) {
@@ -119,9 +209,11 @@ void Physics::flattenParticles(std::vector<ParticlePhysics>& pParticles) {
 		prevVelY[i] = particle.prevVel.y;
 
 		mass[i] = particle.mass;
+
+		temp[i] = particle.temp;
 	}
 }
-__attribute__((target("avx")))
+
 void Physics::naiveGravity(std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar) {
 	int n = static_cast<int>(posX.size());
 	__m256 gVec = _mm256_set1_ps(myVar.G);
@@ -251,6 +343,8 @@ void Physics::readFlattenBack(std::vector<ParticlePhysics>& pParticles) {
 		pParticles[i].prevVel.y = prevVelY[i];
 
 		pParticles[i].mass = mass[i];
+
+		pParticles[i].temp = temp[i];
 	}
 }
 
@@ -262,8 +356,8 @@ void Physics::temperatureCalculation(std::vector<ParticlePhysics>& pParticles, s
 		if (it != SPHMaterials::idToMaterial.end()) {
 			SPHMaterial* pMat = it->second;
 
-			float pTotalVel = sqrt(p.vel.x * p.vel.x + p.vel.y * p.vel.y);
-			float pTotalPrevVel = sqrt(p.prevVel.x * p.prevVel.x + p.prevVel.y * p.prevVel.y);
+			float pTotalVel = sqrtf(p.vel.x * p.vel.x + p.vel.y * p.vel.y);
+			float pTotalPrevVel = sqrtf(p.prevVel.x * p.prevVel.x + p.prevVel.y * p.prevVel.y);
 
 			p.ke = 0.5f * p.sphMass * pTotalVel * pTotalVel;
 			p.prevKe = 0.5f * p.sphMass * pTotalPrevVel * pTotalPrevVel;
@@ -323,8 +417,8 @@ void Physics::temperatureCalculation(std::vector<ParticlePhysics>& pParticles, s
 			}
 		}
 		else {
-			float pTotalVel = sqrt(p.vel.x * p.vel.x + p.vel.y * p.vel.y);
-			float pTotalPrevVel = sqrt(p.prevVel.x * p.prevVel.x + p.prevVel.y * p.prevVel.y);
+			float pTotalVel = sqrtf(p.vel.x * p.vel.x + p.vel.y * p.vel.y);
+			float pTotalPrevVel = sqrtf(p.prevVel.x * p.prevVel.x + p.prevVel.y * p.prevVel.y);
 
 			p.ke = 0.5f * p.sphMass * pTotalVel * pTotalVel;
 			p.prevKe = 0.5f * p.sphMass * pTotalPrevVel * pTotalPrevVel;
@@ -383,12 +477,20 @@ void Physics::createConstraints(std::vector<ParticlePhysics>& pParticles, std::v
 			pi.hasSolidified = false;
 		}
 
-		for (uint32_t k = 0; k < pi.neighborCount; k++) {
-			uint32_t nID = myParam.neighborSearch.globalNeighborList[pi.neighborOffset + k];
+		std::vector<size_t> neighborIndices = QueryNeighbors::queryNeighbors(myParam, myVar.hasAVX2, 64, pi.pos);
 
-			size_t neighborIndex = myParam.neighborSearch.idToIndexTable[nID];
+		for (size_t j : neighborIndices) {
+			size_t neighborIndex = j;
+
+			if (neighborIndex == i) continue;
 
 			ParticlePhysics& pj = myParam.pParticles[neighborIndex];
+
+			float distSq = glm::dot(pj.pos - pi.pos, pj.pos - pi.pos);
+
+			if (distSq > 12.0f) {
+				continue;
+			}
 
 			if (constraintCreateSpecialFlag) {
 				if (!rParticles[neighborIndex].isBeingDrawn) {
@@ -666,7 +768,7 @@ void Physics::mergerSolver(
 
 		if (r.isDarkMatter || particleIdsToDelete.count(p.id)) continue;
 
-		for (int j = p.neighborCount - 1; j >= 0; j--) {
+		for (int j = r.neighbors - 1; j >= 0; j--) {
 			uint32_t neighborId = myParam.neighborSearch.globalNeighborList[p.neighborOffset + j];
 
 			size_t neighborIndex = myParam.neighborSearch.idToIndexTable[neighborId];
@@ -694,7 +796,7 @@ void Physics::mergerSolver(
 
 					float area1 = r.previousSize * r.previousSize;
 					float area2 = rn.previousSize * rn.previousSize;
-					float fullGrowthSize = sqrt(area1 + area2);
+					float fullGrowthSize = sqrtf(area1 + area2);
 					float maxOriginalSize = std::max(r.previousSize, rn.previousSize);
 					float growthFactor = 0.25f;
 
@@ -709,7 +811,7 @@ void Physics::mergerSolver(
 
 					float area1 = r.previousSize * r.previousSize;
 					float area2 = rn.previousSize * rn.previousSize;
-					float fullGrowthSize = sqrt(area1 + area2);
+					float fullGrowthSize = sqrtf(area1 + area2);
 					float maxOriginalSize = std::max(r.previousSize, rn.previousSize);
 					float growthFactor = 0.25f;
 
@@ -743,8 +845,8 @@ void Physics::mergerSolver(
 		rParticles.pop_back();
 
 		if (removedId < myParam.neighborSearch.idToIndexTable.size()) {
-            myParam.neighborSearch.idToIndexTable[removedId] = static_cast<size_t>(-1);
-        }
+			myParam.neighborSearch.idToIndexTable[removedId] = static_cast<size_t>(-1);
+		}
 	}
 }
 
@@ -818,199 +920,172 @@ void Physics::pruneParticles(std::vector<ParticlePhysics>& pParticles, std::vect
 	}
 }
 
-void Physics::collisions(ParticlePhysics& pParticleA, ParticlePhysics& pParticleB,
-	ParticleRendering& rParticleA, ParticleRendering& rParticleB, float& radius) {
+void Physics::spawnCorrection(UpdateParameters& myParam, bool& hasAVX2, const int& iterations) {
 
-	// IN THIS CODE I ONLY KEEP THE POSITION CORRECTION. COLLISION MODE IS NOT SUPPORTED ANYMORE BUT THE COMMENTED CODE MIGHT STILL BE OF USE SOME TIME
+#pragma omp parallel for
+	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
 
-	if (rParticleA.isDarkMatter || rParticleB.isDarkMatter) {
-		return;
+		ParticlePhysics& pi = myParam.pParticles[i];
+
+		std::vector<size_t> neighborIndices =
+			QueryNeighbors::queryNeighbors(myParam, hasAVX2, 64, pi.pos);
+
+		for (size_t j : neighborIndices) {
+			size_t neighborIndex = j;
+
+			if (neighborIndex == i) continue;
+
+			ParticlePhysics& pj = myParam.pParticles[neighborIndex];
+
+			if (!myParam.rParticles[neighborIndex].isBeingDrawn || !myParam.rParticles[i].isBeingDrawn) continue;
+
+			glm::vec2 d = pj.pos - pi.pos;
+
+			float dSq = glm::dot(d, d);
+
+			const float minDist = 2.4f;
+			const float minDistSq = minDist * minDist;
+
+			if (dSq > 0.000001f && dSq < minDistSq) {
+
+				float dist = std::sqrt(dSq);
+
+				glm::vec2 dir = -d / dist;
+
+				float penetration = minDist - dist;
+
+				float totalMass = pi.mass + pj.mass;
+
+				if (totalMass > 0.0f) {
+
+					float piMove = pj.mass / totalMass;
+					float pjMove = pi.mass / totalMass;
+
+					glm::vec2 correction = dir * penetration;
+
+					pi.pos += correction * piMove;
+					pj.pos -= correction * pjMove;
+				}
+			}
+		}
+
+		myParam.rParticles[i].spawnCorrectIter++;
 	}
-
-	ParticlePhysics& pA = pParticleA;
-	ParticlePhysics& pB = pParticleB;
-
-	glm::vec2 posA = pA.pos;
-	glm::vec2 posB = pB.pos;
-
-	glm::vec2 d = posB - posA;
-	float distanceSq = d.x * d.x + d.y * d.y;
-
-	float radiiSum = radius + radius;
-	float radiiSumSq = radiiSum * radiiSum;
-
-
-	if (distanceSq > radiiSumSq || distanceSq <= 1e-6f) {
-		return;
-	}
-
-	/*glm::vec2 velA = pA.vel;
-	glm::vec2 velB = pB.vel;
-	glm::vec2 relativeVel = velB - velA;
-
-	float velocityNormal = glm::dot(d, relativeVel);*/
-
-	float weightA = pB.mass / (pA.mass + pB.mass);
-	float weightB = pA.mass / (pA.mass + pB.mass);
-
-	float distance = sqrt(distanceSq);
-
-	float penetration = radiiSum - distance;
-	const float percent = 0.8f;
-	const float slop = 0.01f;
-	float correctionMag = std::max(penetration - slop, 0.0f) * percent;
-
-	glm::vec2 normal = d / distance;
-	glm::vec2 correction = normal * correctionMag;
-
-	pA.pos -= weightA * correction;
-
-	pB.pos += weightB * correction;
-
-
-	/*if (velocityNormal >= 0.0f) {
-		return;
-	}
-
-	float relativeVelSq = relativeVel.x * relativeVel.x + relativeVel.y * relativeVel.y;
-	float discr = velocityNormal * velocityNormal - relativeVelSq * (distanceSq - radiiSumSq);
-
-	if (relativeVelSq <= 0.0f || discr < 0.0f) {
-		return;
-	}
-
-	float t = (-velocityNormal - sqrt(discr)) / relativeVelSq;
-
-	const float epsilon = 1e-4f * dt;
-	t = std::clamp(t, 0.0f, dt - epsilon);
-
-
-	pA.pos -= velA * t;
-	pB.pos -= velB * t;
-
-	posA = pA.pos;
-	posB = pB.pos;
-
-	d = posB - posA;
-	distanceSq = d.x * d.x + d.y * d.y;
-	normal = d / sqrt(distanceSq);
-
-	float impulseNumerator = -(1.0f + myVar.particleBounciness) * glm::dot(relativeVel, normal);
-	float impulseDenominator = (1.0f / pA.mass + 1.0f / pB.mass);
-	float j = impulseNumerator / impulseDenominator;
-
-	glm::vec2 impulse = normal * j;
-
-	pA.vel = velA - impulse / pA.mass;
-	pB.vel = velB + impulse / pB.mass;
-
-	pA.pos += pA.vel * t;
-	pB.pos += pB.vel * t;*/
 }
 
-void Physics::buildGrid(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles,
-	Physics& physics, glm::vec2& domainSize, const int& iterations) {
+// ----- Unused. Test code ----- //
+void Physics::gravityGrid(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar, glm::vec3& bb) {
 
-	// Some code from here is not needed anymore. I keep it because it might be useful some time
+	if (pParticles.empty()) return;
 
-	//for (size_t i = 0; i < pParticles.size(); i++) {
- //       
-	//	float thisSize = 8.0f; // Heuristic
+#pragma omp parallel for
+	for (long long i = 0; i < static_cast<long long>(cells.size()); i++) {
+		cells[i].mass = 0.0f;
+		cells[i].particles.clear();
+		cells[i].force = { 0.0f, 0.0f };
+	}
 
-	//	if (thisSize > cellSize) {
-	//		cellSize = thisSize;
-	//	}
-	//}
+	struct DepthInfo {
+		int gridRes;
+		float cellSize;
+		size_t startIndex;
+	};
 
-	constexpr float cellSize = 8.0f; // <- Heuristic
+	std::vector<DepthInfo> depthInfos;
+	size_t currentStartIdx = 0;
 
-	int cellAmountX = static_cast<int>(domainSize.x / cellSize);
-	int cellAmountY = static_cast<int>(domainSize.y / cellSize);
+	for (int depth = 0; depth < maxDepth; depth++) {
+		int res = std::pow(2, depth + 1);
+		float size = bb.z / static_cast<float>(res);
+		depthInfos.push_back({ res, size, currentStartIdx });
+		currentStartIdx += (res * res);
+	}
 
-	int totalCells = cellAmountX * cellAmountY;
-	std::vector<std::vector<size_t>> cellList(totalCells);
+	for (ParticlePhysics& p : pParticles) {
+		for (int depth = 0; depth < maxDepth; depth++) {
+			const auto& info = depthInfos[depth];
 
-	for (size_t i = 0; i < pParticles.size(); ++i) {
+			float relX = p.pos.x - bb.x;
+			float relY = p.pos.y - bb.y;
+			int x = static_cast<int>(relX / info.cellSize);
+			int y = static_cast<int>(relY / info.cellSize);
 
-		if (!rParticles[i].isBeingDrawn || !rParticles[i].isBeingDrawn) {
-			continue;
-		}
-
-		rParticles[i].spawnCorrectIter++;
-
-		int xIdx = static_cast<int>((pParticles[i].pos.x - 0) / cellSize);
-		int yIdx = static_cast<int>((pParticles[i].pos.y - 0) / cellSize);
-
-		if (xIdx >= 0 && xIdx < cellAmountX &&
-			yIdx >= 0 && yIdx < cellAmountY) {
-
-			int cellId = xIdx + yIdx * cellAmountX;
-			cellList[cellId].push_back(i);
+			if (x >= 0 && x < info.gridRes && y >= 0 && y < info.gridRes) {
+				size_t cellIdx = info.startIndex + (y * info.gridRes + x);
+				if (cellIdx < cells.size()) {
+					cells[cellIdx].mass += p.mass;
+					cells[cellIdx].particles.push_back(&p);
+				}
+			}
 		}
 	}
 
-	//std::vector<std::mutex> particleLocks(pParticles.size());
+	for (const auto& info : depthInfos) {
+		long long start = static_cast<long long>(info.startIndex);
+		long long end = static_cast<long long>(info.startIndex + (info.gridRes * info.gridRes));
 
+#pragma omp parallel for schedule(dynamic)
+		for (long long i = start; i < end; i++) {
+			GravityCell& ci = cells[i];
 
-	auto checkCollision = [&](size_t a, size_t b) {
+			if (ci.mass == 0.0f) continue;
 
-		if (a == b) return;
+			size_t localIdx = i - info.startIndex;
+			int cix = localIdx % info.gridRes;
+			int ciy = localIdx / info.gridRes;
 
-		float r = 1.3f; // <- Heuristic
+			for (int dy = -11; dy <= 11; dy++) {
+				for (int dx = -11; dx <= 11; dx++) {
+					if (dx == 0 && dy == 0) continue;
 
-		glm::vec2 delta = pParticles[a].pos - pParticles[b].pos;
-		float distSq = delta.x * delta.x + delta.y * delta.y;
-		float sumR = r + r;
+					int cjx = cix + dx;
+					int cjy = ciy + dy;
 
-		if (distSq < sumR * sumR) {
+					if (cjx < 0 || cjx >= info.gridRes || cjy < 0 || cjy >= info.gridRes) continue;
 
-			if (a < b) {
-				// std::scoped_lock lock(particleLocks[a], particleLocks[b]);
-				physics.collisions(pParticles[a], pParticles[b],
-					rParticles[a], rParticles[b], r);
-			}
-			else {
-				//std::scoped_lock lock(particleLocks[b], particleLocks[a]);
-				physics.collisions(pParticles[a], pParticles[b],
-					rParticles[a], rParticles[b], r);
+					size_t neighborLocalIdx = cjy * info.gridRes + cjx;
+					size_t finalNeighborIdx = info.startIndex + neighborLocalIdx;
+
+					const GravityCell& cj = cells[finalNeighborIdx];
+
+					if (cj.mass == 0.0f) continue;
+
+					glm::vec2 d = cj.pos - ci.pos;
+					float distSq = glm::dot(d, d);
+
+					if (distSq < 1e-4f) continue;
+					float dist = std::sqrt(distSq);
+
+					float force = (myVar.G * ci.mass * cj.mass) / distSq;
+					ci.force += force * (d / dist);
+				}
 			}
 		}
-		};
+	}
 
+#pragma omp parallel for
+	for (long long i = 0; i < static_cast<long long>(pParticles.size()); i++) {
+		ParticlePhysics& p = pParticles[i];
 
-#pragma omp parallel for collapse(2) schedule(dynamic)
-	for (int y = 0; y < cellAmountY; ++y) {
-		for (int x = 0; x < cellAmountX; ++x) {
-			int baseId = x + y * cellAmountX;
-			auto& cell = cellList[baseId];
+		for (int depth = 0; depth < maxDepth; depth++) {
+			const auto& info = depthInfos[depth];
 
-			for (int dx = -1; dx <= 1; ++dx) {
-				for (int dy = -1; dy <= 1; ++dy) {
-					int nx = x + dx, ny = y + dy;
-					if (nx < 0 || ny < 0 || nx >= cellAmountX || ny >= cellAmountY)
-						continue;
+			float relX = p.pos.x - bb.x;
+			float relY = p.pos.y - bb.y;
+			int x = static_cast<int>(relX / info.cellSize);
+			int y = static_cast<int>(relY / info.cellSize);
 
-					int neighborId = nx + ny * cellAmountX;
-					auto& other = cellList[neighborId];
+			if (x >= 0 && x < info.gridRes && y >= 0 && y < info.gridRes) {
+				size_t cellIdx = info.startIndex + (y * info.gridRes + x);
 
-					if (neighborId == baseId) {
+				if (cellIdx < cells.size() && cells[cellIdx].mass > 0.0f) {
+					const GravityCell& c = cells[cellIdx];
 
-						for (size_t i = 0; i < cell.size(); ++i) {
-							for (size_t j = i + 1; j < cell.size(); ++j) {
-								checkCollision(cell[i], cell[j]);
-							}
-						}
-					}
-					else {
-
-						for (size_t i : cell) {
-							for (size_t j : other) {
-								checkCollision(i, j);
-							}
-						}
-					}
+					p.acc += c.force / c.mass;
 				}
 			}
 		}
 	}
 }
+// ----- Unused. Test code ----- //
+

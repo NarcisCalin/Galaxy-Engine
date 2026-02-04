@@ -82,6 +82,18 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 	SimilarTypeButton::buttonIterator(gpuSimd, -1.0f, settingsButtonY, true, enabled);
 
+	if (buttonHelper("3D Mode (BETA)", "Enables 3D simulation", myVar.is3DMode, -1.0f, settingsButtonY, true, enabled)) {
+		myParam.pParticles.clear();
+		myParam.rParticles.clear();
+
+		myParam.pParticles3D.clear();
+		myParam.rParticles3D.clear();
+
+		myParam.trails.segments.clear();
+		myParam.trails.segments3D.clear();
+
+	}
+
 	ImGui::Spacing();
 	ImGui::Separator();
 
@@ -694,6 +706,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			sliderHelper("Max Dynamic Size", "Controls the maximum size particles can have when chaning size dynamically", myParam.densitySize.maxSize, 0.1f, 5.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Min Dynamic Size", "Controls the minimum size particles can have when chaning size dynamically", myParam.densitySize.minSize, 0.001f, 5.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Max Size Force", "Controls the acceleration threshold to map the particle size", myParam.densitySize.sizeAcc, 1.0f, 400.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Max Size Neighbors", "Controls the neighbors threshold to map the particle size", myParam.densitySize.maxNeighbors, 1, 1000, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Particles Size", "Controls the size of all particles", myVar.particleSizeMultiplier, 0.0f, 5.0f, parametersSliderX, parametersSliderY, enabled);
 
 			ImGui::Spacing();
@@ -1127,8 +1140,8 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 	ImGui::SetWindowFontScale(1.5f);
 
-	int particlesAmout = static_cast<int>(myParam.pParticles.size());
-	int selecParticlesAmout = static_cast<int>(myParam.pParticlesSelected.size());
+	int particlesAmout = static_cast<int>(myParam.pParticles.size()) + static_cast<int>(myParam.pParticles3D.size());
+	int selecParticlesAmout = static_cast<int>(myParam.pParticlesSelected.size()) + static_cast<int>(myParam.pParticlesSelected3D.size());
 
 	ImGui::TextColored(UpdateVariables::colMenuInformation, "%s%d", "Total Particles: ", particlesAmout);
 
@@ -1438,8 +1451,8 @@ void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 	ImGui::TextColored(UpdateVariables::colMenuInformation, "Particle Count");
 	ImGui::Spacing();
 
-	int particlesAmout = static_cast<int>(myParam.pParticles.size());
-	int selecParticlesAmout = static_cast<int>(myParam.pParticlesSelected.size());
+	int particlesAmout = static_cast<int>(myParam.pParticles.size()) + static_cast<int>(myParam.pParticles3D.size());
+	int selecParticlesAmout = static_cast<int>(myParam.pParticlesSelected.size()) + static_cast<int>(myParam.pParticlesSelected3D.size());
 
 	ImGui::Text("%s%d", "Total Particles: ", particlesAmout);
 

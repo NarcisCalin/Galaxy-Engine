@@ -95,8 +95,7 @@ void SPH::readFlattenBack(std::vector<ParticlePhysics>& pParticles) {
 	}
 }
 
-void SPH::computeViscCohesionForces(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles,
-	std::vector<glm::vec2>& sphForce, size_t& N) {
+void SPH::computeViscCohesionForces(UpdateVariables& myVar, UpdateParameters& myParam, std::vector<glm::vec2>& sphForce, size_t& N) {
 
 	const float h = radiusMultiplier;
 	const float h2 = h * h;
@@ -104,19 +103,19 @@ void SPH::computeViscCohesionForces(std::vector<ParticlePhysics>& pParticles, st
 #pragma omp parallel for schedule(dynamic, 32)
 	for (size_t i = 0; i < N; ++i) {
 
-		if (!rParticles[i].isSPH || rParticles[i].isPinned || rParticles[i].isBeingDrawn) continue;
+		if (!myParam.rParticles[i].isSPH || myParam.rParticles[i].isPinned || myParam.rParticles[i].isBeingDrawn) continue;
 
-		auto& pi = pParticles[i];
+		auto& pi = myParam.pParticles[i];
 
-		std::vector<size_t> neighborIndices = queryNeighbors(pParticles[i].pos, pParticles);
+		std::vector<size_t> neighborIndices = QueryNeighbors::queryNeighbors(myParam, myVar.hasAVX2, 64, pi.pos);
 
 		for (size_t j : neighborIndices) {
 			size_t pjIdx = j;
 
-			if (!rParticles[pjIdx].isSPH || rParticles[pjIdx].isBeingDrawn) continue;
+			if (!myParam.rParticles[pjIdx].isSPH || myParam.rParticles[pjIdx].isBeingDrawn) continue;
 
 			if (pjIdx == i) continue;
-			auto& pj = pParticles[pjIdx];
+			auto& pj = myParam.pParticles[pjIdx];
 
 			glm::vec2 d = { pj.pos.x - pi.pos.x, pj.pos.y - pi.pos.y };
 			float   rSq = d.x * d.x + d.y * d.y;
@@ -150,19 +149,19 @@ void SPH::computeViscCohesionForces(std::vector<ParticlePhysics>& pParticles, st
 	}
 }
 
-void SPH::PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, float& dt) {
+void SPH::PCISPH(UpdateVariables& myVar, UpdateParameters& myParam) {
 
-	size_t N = pParticles.size();
+	size_t N = myParam.pParticles.size();
 
-	const float predictionCoeff = 0.5f * dt * dt;
+	const float predictionCoeff = 0.5f * myVar.timeFactor * myVar.timeFactor;
 
 	std::vector<glm::vec2> sphForce(N, { 0.0f, 0.0f });
 
-	computeViscCohesionForces(pParticles, rParticles, sphForce, N);
+	computeViscCohesionForces(myVar, myParam, sphForce, N);
 
 	for (size_t i = 0; i < N; ++i) {
-		pParticles[i].press = 0.0f;
-		pParticles[i].pressF = { 0.0f, 0.0f };
+		myParam.pParticles[i].press = 0.0f;
+		myParam.pParticles[i].pressF = { 0.0f, 0.0f };
 	}
 
 	//float rhoError = 0.0f;
@@ -173,9 +172,9 @@ void SPH::PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleR
 
 #pragma omp parallel for schedule(static)
 		for (size_t i = 0; i < N; ++i) {
-			if (!rParticles[i].isSPH || rParticles[i].isBeingDrawn) continue;
+			if (!myParam.rParticles[i].isSPH || myParam.rParticles[i].isBeingDrawn) continue;
 
-			auto& p = pParticles[i];
+			auto& p = myParam.pParticles[i];
 
 			glm::vec2 displacement = (sphForce[i] / p.sphMass) * predictionCoeff;
 			p.predPos = p.pos + displacement;
@@ -184,20 +183,20 @@ void SPH::PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleR
 #pragma omp parallel for schedule(dynamic, 16) /*reduction(max:maxRhoErr)*/
 		for (size_t i = 0; i < N; ++i) {
 
-			if (!rParticles[i].isSPH || rParticles[i].isBeingDrawn) continue;
+			if (!myParam.rParticles[i].isSPH || myParam.rParticles[i].isBeingDrawn) continue;
 
-			auto& pi = pParticles[i];
+			auto& pi = myParam.pParticles[i];
 			pi.predDens = 0.0f;
 
-			std::vector<size_t> neighborIndices = queryNeighbors(pParticles[i].predPos, pParticles);
+			std::vector<size_t> neighborIndices = QueryNeighbors::queryNeighbors(myParam, myVar.hasAVX2, 64, pi.predPos);
 
 			for (size_t j : neighborIndices) {
 				size_t pjIdx = j;
 
 				//if (pjIdx == i) continue;
-				if (!rParticles[pjIdx].isSPH || rParticles[pjIdx].isBeingDrawn) continue;
+				if (!myParam.rParticles[pjIdx].isSPH || myParam.rParticles[pjIdx].isBeingDrawn) continue;
 
-				auto& pj = pParticles[pjIdx];
+				auto& pj = myParam.pParticles[pjIdx];
 				glm::vec2 dr = pi.predPos - pj.predPos;
 				float rrSq = dr.x * dr.x + dr.y * dr.y;
 
@@ -221,18 +220,19 @@ void SPH::PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleR
 
 #pragma omp parallel for schedule(dynamic, 32)
 		for (size_t i = 0; i < N; ++i) {
-			if (!rParticles[i].isSPH || rParticles[i].isBeingDrawn) continue;
+			if (!myParam.rParticles[i].isSPH || myParam.rParticles[i].isBeingDrawn) continue;
 
-			auto& pi = pParticles[i];
-			std::vector<size_t> neighborIndices = queryNeighbors(pParticles[i].predPos, pParticles);
+			auto& pi = myParam.pParticles[i];
+
+			std::vector<size_t> neighborIndices = QueryNeighbors::queryNeighbors(myParam, myVar.hasAVX2, 64, pi.predPos);
 
 			for (size_t j : neighborIndices) {
 				size_t pjIdx = j;
 
 				if (pjIdx == i) continue;
-				if (!rParticles[pjIdx].isSPH || rParticles[pjIdx].isBeingDrawn) continue;
+				if (!myParam.rParticles[pjIdx].isSPH || myParam.rParticles[pjIdx].isBeingDrawn) continue;
 
-				auto& pj = pParticles[pjIdx];
+				auto& pj = myParam.pParticles[pjIdx];
 				glm::vec2 dr = pi.predPos - pj.predPos;
 				float rr = sqrtf(dr.x * dr.x + dr.y * dr.y);
 
@@ -270,11 +270,11 @@ void SPH::PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleR
 
 #pragma omp parallel for schedule(static)
 	for (size_t i = 0; i < N; ++i) {
-		auto& p = pParticles[i];
+		auto& p = myParam.pParticles[i];
 
 		p.pressF = sphForce[i] / p.sphMass;
 
-		if (!rParticles[i].isPinned) {
+		if (!myParam.rParticles[i].isPinned) {
 			p.acc += p.pressF;
 		}
 	}

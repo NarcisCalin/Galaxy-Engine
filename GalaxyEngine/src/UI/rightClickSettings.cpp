@@ -113,12 +113,14 @@ void RightClickSettings::rightClickMenu(UpdateVariables& myVar, UpdateParameters
 		}
 		if (UI::buttonHelper("Deselect All", "Deselects all particles", myParam.particleSelection.deselectParticles, -1.0f, buttonSizeY, enabled, enabled)) {
 			isMenuActive = false;
+			myParam.particleSelection3D.deselectParticles = true;
 		}
 		if (UI::buttonHelper("Follow selection", "Make the camera follow the selected particles", myParam.myCamera.centerCamera, -1.0f, buttonSizeY, enabled, enabled)) {
 			isMenuActive = false;
 		}
 		if (UI::buttonHelper("Select Clusters", "Selects multiple clusters of particles", myParam.particleSelection.selectManyClusters, -1.0f, buttonSizeY, enabled, enabled)) {
 			isMenuActive = false;
+			myParam.particleSelection3D.selectManyClusters3D = true;
 		}
 		if (UI::buttonHelper("Delete Selection", "Deletes selected particles", myParam.particleDeletion.deleteSelection, -1.0f, buttonSizeY, enabled, enabled)) {
 			isMenuActive = false;

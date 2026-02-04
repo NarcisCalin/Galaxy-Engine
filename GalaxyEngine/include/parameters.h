@@ -24,6 +24,12 @@ struct UpdateParameters {
 	std::vector<ParticlePhysics> pParticlesSelected;
 	std::vector<ParticleRendering> rParticlesSelected;
 
+	std::vector<ParticlePhysics3D> pParticles3D;
+	std::vector<ParticleRendering3D> rParticles3D;
+
+	std::vector<ParticlePhysics3D> pParticlesSelected3D;
+	std::vector<ParticleRendering3D> rParticlesSelected3D;
+
 	std::vector<ParticleTrails> trailDots;
 
 	ScreenCapture screenCapture;
@@ -33,12 +39,13 @@ struct UpdateParameters {
 	ParticleTrails trails;
 
 	ParticleSelection particleSelection;
+	ParticleSelection3D particleSelection3D;
 
 	SceneCamera myCamera;
+	SceneCamera3D myCamera3D;
 
 	Brush brush;
-
-	UpdateParameters() : brush(myCamera, 25.0f) {}
+	Brush3D brush3D;
 
 	ParticleSubdivision subdivision;
 
@@ -53,11 +60,18 @@ struct UpdateParameters {
 	ParticleDeletion particleDeletion;
 
 	ParticlesSpawning particlesSpawning;
+	ParticlesSpawning3D particlesSpawning3D;
 
 	NeighborSearch neighborSearch;
+	NeighborSearch3D neighborSearch3D;
+
+	NeighborSearchV2 neighborSearchV2;
+	NeighborSearchV2AVX2 neighborSearchV2AVX2;
+	NeighborSearch3DV2 neighborSearch3DV2;
+	NeighborSearch3DV2AVX2 neighborSearch3DV2AVX2;
 };
 
-struct UpdateVariables{
+struct UpdateVariables {
 	int screenWidth = 1920;
 	int screenHeight = 1080;
 	float halfScreenWidth = screenWidth * 0.5f;
@@ -68,8 +82,14 @@ struct UpdateVariables{
 
 	glm::vec2 domainSize = { 3840.0f, 2160.0f };
 
+	glm::vec3 domainSize3D = { 960.0f,  960.0f,  960.0f };
+
 	float halfDomainWidth = domainSize.x * 0.5f;
 	float halfDomainHeight = domainSize.y * 0.5f;
+
+	float halfDomain3DWidth = domainSize3D.x * 0.5f;
+	float halfDomain3DHeight = domainSize3D.y * 0.5f;
+	float halfDomain3DDepth = domainSize3D.z * 0.5f;
 
 	bool fullscreenState = false;
 
@@ -77,7 +97,7 @@ struct UpdateVariables{
 
 	int targetFPS = 1000;
 
-	double G = 6.674e-11;
+	float G = 6.674e-11;
 	float gravityMultiplier = 1.0f;
 	float softening = 2.5f;
 	float theta = 0.8f;
@@ -126,7 +146,7 @@ struct UpdateVariables{
 
 	float particleTextureHalfSize = 16.0f;
 
-	int trailMaxLength = 48;
+	int trailMaxLength = 350;
 
 	static ImVec4 colWindowBg;
 
@@ -182,7 +202,7 @@ struct UpdateVariables{
 
 	bool pauseAfterRecording = false;
 	bool cleanSceneAfterRecording = false;
-	float recordingTimeLimit = 0.0f; 
+	float recordingTimeLimit = 0.0f;
 
 	float globalConstraintStiffnessMult = 1.0f;
 	float globalConstraintResistance = 1.0f;
@@ -210,6 +230,7 @@ struct UpdateVariables{
 	int introFontSize = 48;
 
 	bool gridExists = true;
+	bool grid3DExists = true;
 
 	bool loadDropDownMenus = false;
 
@@ -249,4 +270,8 @@ struct UpdateVariables{
 	int frameCount = 0;
 
 	bool naiveSIMD = false;
+
+	bool is3DMode = true;
+
+	bool hasAVX2 = false;
 };

@@ -3,6 +3,7 @@
 #include "Particles/particle.h"
 
 #include "parameters.h"
+#include "Particles/QueryNeighbors.h"
 
 struct UpdateVariables;
 struct UpdateVariables;
@@ -33,6 +34,13 @@ public:
 	float cellSize;
 
 	SPH() : cellSize(radiusMultiplier) {}
+
+	void computeViscCohesionForcesWithCache(
+		std::vector<ParticlePhysics>& pParticles,
+		std::vector<ParticleRendering>& rParticles,
+		std::vector<glm::vec2>& forces, // This is 'nonPressureForces'
+		const std::vector<std::vector<size_t>>& neighborCache, // Pass the cache
+		size_t N);
 
 	float smoothingKernel(float dst, float radiusMultiplier) {
 		if (dst >= radiusMultiplier) return 0.0f;
@@ -96,354 +104,6 @@ public:
 	const uint32_t hashTableSize = 16384;
 	EntryArrays entries;
 	std::vector<uint32_t> startIndices;
-
-	std::pair<int, int> posToCellCoord(glm::vec2& pos) {
-		int cellX = static_cast<int>(floor(pos.x / cellSize));
-		int cellY = static_cast<int>(floor(pos.y / cellSize));
-		return { cellX, cellY };
-	}
-
-	uint32_t hashCell(int cellX, int cellY) {
-		uint32_t h = (uint32_t)((cellX * 73856093) ^ (cellY * 19349663));
-		return h % hashTableSize;
-	}
-
-	uint32_t getKey(size_t hash) {
-		if (entries.size == 0) return 0;
-		uint32_t cellKey = hash % hashTableSize;
-		return cellKey;
-	}
-
-	__attribute__((target("avx2")))
-		void newGridAVX2(std::vector<ParticlePhysics>& pParticles) {
-		const size_t n = pParticles.size();
-		if (n == 0) return;
-
-		entries.cellKeys.resize(n);
-		entries.particleIndices.resize(n);
-		entries.cellXs.resize(n);
-		entries.cellYs.resize(n);
-		entries.size = n;
-		startIndices.assign(hashTableSize, UINT32_MAX);
-
-#pragma omp parallel for
-		for (size_t i = 0; i < n; i++) {
-			auto cellCoord = posToCellCoord(pParticles[i].pos);
-			uint32_t cellKey = hashCell(cellCoord.first, cellCoord.second);
-			entries.cellKeys[i] = cellKey;
-			entries.particleIndices[i] = i;
-			entries.cellXs[i] = cellCoord.first;
-			entries.cellYs[i] = cellCoord.second;
-		}
-
-		std::vector<uint32_t> indices(n);
-		std::iota(indices.begin(), indices.end(), 0);
-
-		std::sort(std::execution::par_unseq, indices.begin(), indices.end(),
-			[&](uint32_t a, uint32_t b) {
-				return entries.cellKeys[a] < entries.cellKeys[b];
-			}
-		);
-
-		EntryArrays sorted;
-		sorted.cellKeys.resize(n);
-		sorted.particleIndices.resize(n);
-		sorted.cellXs.resize(n);
-		sorted.cellYs.resize(n);
-		sorted.size = n;
-
-		size_t i = 0;
-
-#pragma omp parallel for
-		for (i = 0; i < (n & ~7); i += 8) {
-			uint32_t idx0 = indices[i];
-			uint32_t idx1 = indices[i + 1];
-			uint32_t idx2 = indices[i + 2];
-			uint32_t idx3 = indices[i + 3];
-			uint32_t idx4 = indices[i + 4];
-			uint32_t idx5 = indices[i + 5];
-			uint32_t idx6 = indices[i + 6];
-			uint32_t idx7 = indices[i + 7];
-
-			sorted.cellKeys[i] = entries.cellKeys[idx0];
-			sorted.cellKeys[i + 1] = entries.cellKeys[idx1];
-			sorted.cellKeys[i + 2] = entries.cellKeys[idx2];
-			sorted.cellKeys[i + 3] = entries.cellKeys[idx3];
-			sorted.cellKeys[i + 4] = entries.cellKeys[idx4];
-			sorted.cellKeys[i + 5] = entries.cellKeys[idx5];
-			sorted.cellKeys[i + 6] = entries.cellKeys[idx6];
-			sorted.cellKeys[i + 7] = entries.cellKeys[idx7];
-
-			sorted.particleIndices[i] = entries.particleIndices[idx0];
-			sorted.particleIndices[i + 1] = entries.particleIndices[idx1];
-			sorted.particleIndices[i + 2] = entries.particleIndices[idx2];
-			sorted.particleIndices[i + 3] = entries.particleIndices[idx3];
-			sorted.particleIndices[i + 4] = entries.particleIndices[idx4];
-			sorted.particleIndices[i + 5] = entries.particleIndices[idx5];
-			sorted.particleIndices[i + 6] = entries.particleIndices[idx6];
-			sorted.particleIndices[i + 7] = entries.particleIndices[idx7];
-
-			__m256i cellXVec = _mm256_set_epi32(
-				entries.cellXs[idx7], entries.cellXs[idx6],
-				entries.cellXs[idx5], entries.cellXs[idx4],
-				entries.cellXs[idx3], entries.cellXs[idx2],
-				entries.cellXs[idx1], entries.cellXs[idx0]
-			);
-			_mm256_storeu_si256((__m256i*) & sorted.cellXs[i], cellXVec);
-
-			__m256i cellYVec = _mm256_set_epi32(
-				entries.cellYs[idx7], entries.cellYs[idx6],
-				entries.cellYs[idx5], entries.cellYs[idx4],
-				entries.cellYs[idx3], entries.cellYs[idx2],
-				entries.cellYs[idx1], entries.cellYs[idx0]
-			);
-			_mm256_storeu_si256((__m256i*) & sorted.cellYs[i], cellYVec);
-		}
-
-		for (; i < n; i++) {
-			size_t idx = indices[i];
-			sorted.cellKeys[i] = entries.cellKeys[idx];
-			sorted.particleIndices[i] = entries.particleIndices[idx];
-			sorted.cellXs[i] = entries.cellXs[idx];
-			sorted.cellYs[i] = entries.cellYs[idx];
-		}
-
-		entries = std::move(sorted);
-
-		if (n > 0) {
-			startIndices[entries.cellKeys[0]] = 0;
-		}
-		for (size_t i = 1; i < n; i++) {
-			if (entries.cellKeys[i - 1] != entries.cellKeys[i]) {
-				startIndices[entries.cellKeys[i]] = i;
-			}
-		}
-	}
-
-	void newGrid(std::vector<ParticlePhysics>& pParticles) {
-		if (hasAVX2Support()) {
-			newGridAVX2(pParticles);
-		}
-		else {
-			newGridScalar(pParticles);
-		}
-	}
-
-	void newGridScalar(std::vector<ParticlePhysics>& pParticles) {
-		const size_t n = pParticles.size();
-		if (n == 0) return;
-
-		entries.cellKeys.resize(n);
-		entries.particleIndices.resize(n);
-		entries.cellXs.resize(n);
-		entries.cellYs.resize(n);
-		entries.size = n;
-		startIndices.assign(hashTableSize, UINT32_MAX);
-
-#pragma omp parallel for
-		for (size_t i = 0; i < n; i++) {
-			auto cellCoord = posToCellCoord(pParticles[i].pos);
-			uint32_t cellKey = hashCell(cellCoord.first, cellCoord.second);
-			entries.cellKeys[i] = cellKey;
-			entries.particleIndices[i] = i;
-			entries.cellXs[i] = cellCoord.first;
-			entries.cellYs[i] = cellCoord.second;
-		}
-
-		std::vector<uint32_t> indices(n);
-		std::iota(indices.begin(), indices.end(), 0);
-
-		std::sort(std::execution::par_unseq, indices.begin(), indices.end(),
-			[&](uint32_t a, uint32_t b) {
-				return entries.cellKeys[a] < entries.cellKeys[b];
-			}
-		);
-
-		EntryArrays sorted;
-		sorted.cellKeys.resize(n);
-		sorted.particleIndices.resize(n);
-		sorted.cellXs.resize(n);
-		sorted.cellYs.resize(n);
-		sorted.size = n;
-
-		size_t i = 0;
-
-#pragma omp parallel for
-		for (size_t i = 0; i < (n & ~7); i += 8) {
-			size_t idx0 = indices[i];
-			size_t idx1 = indices[i + 1];
-			size_t idx2 = indices[i + 2];
-			size_t idx3 = indices[i + 3];
-			size_t idx4 = indices[i + 4];
-			size_t idx5 = indices[i + 5];
-			size_t idx6 = indices[i + 6];
-			size_t idx7 = indices[i + 7];
-
-			sorted.cellKeys[i] = entries.cellKeys[idx0];
-			sorted.cellKeys[i + 1] = entries.cellKeys[idx1];
-			sorted.cellKeys[i + 2] = entries.cellKeys[idx2];
-			sorted.cellKeys[i + 3] = entries.cellKeys[idx3];
-			sorted.cellKeys[i + 4] = entries.cellKeys[idx4];
-			sorted.cellKeys[i + 5] = entries.cellKeys[idx5];
-			sorted.cellKeys[i + 6] = entries.cellKeys[idx6];
-			sorted.cellKeys[i + 7] = entries.cellKeys[idx7];
-
-			sorted.particleIndices[i] = entries.particleIndices[idx0];
-			sorted.particleIndices[i + 1] = entries.particleIndices[idx1];
-			sorted.particleIndices[i + 2] = entries.particleIndices[idx2];
-			sorted.particleIndices[i + 3] = entries.particleIndices[idx3];
-			sorted.particleIndices[i + 4] = entries.particleIndices[idx4];
-			sorted.particleIndices[i + 5] = entries.particleIndices[idx5];
-			sorted.particleIndices[i + 6] = entries.particleIndices[idx6];
-			sorted.particleIndices[i + 7] = entries.particleIndices[idx7];
-
-			sorted.cellXs[i] = entries.cellXs[idx0];
-			sorted.cellXs[i + 1] = entries.cellXs[idx1];
-			sorted.cellXs[i + 2] = entries.cellXs[idx2];
-			sorted.cellXs[i + 3] = entries.cellXs[idx3];
-			sorted.cellXs[i + 4] = entries.cellXs[idx4];
-			sorted.cellXs[i + 5] = entries.cellXs[idx5];
-			sorted.cellXs[i + 6] = entries.cellXs[idx6];
-			sorted.cellXs[i + 7] = entries.cellXs[idx7];
-
-			sorted.cellYs[i] = entries.cellYs[idx0];
-			sorted.cellYs[i + 1] = entries.cellYs[idx1];
-			sorted.cellYs[i + 2] = entries.cellYs[idx2];
-			sorted.cellYs[i + 3] = entries.cellYs[idx3];
-			sorted.cellYs[i + 4] = entries.cellYs[idx4];
-			sorted.cellYs[i + 5] = entries.cellYs[idx5];
-			sorted.cellYs[i + 6] = entries.cellYs[idx6];
-			sorted.cellYs[i + 7] = entries.cellYs[idx7];
-		}
-
-		for (; i < n; i++) {
-			uint32_t idx = indices[i];
-			sorted.cellKeys[i] = entries.cellKeys[idx];
-			sorted.particleIndices[i] = entries.particleIndices[idx];
-			sorted.cellXs[i] = entries.cellXs[idx];
-			sorted.cellYs[i] = entries.cellYs[idx];
-		}
-
-		entries = std::move(sorted);
-
-		if (n > 0) {
-			startIndices[entries.cellKeys[0]] = 0;
-		}
-		for (size_t i = 1; i < n; i++) {
-			if (entries.cellKeys[i - 1] != entries.cellKeys[i]) {
-				startIndices[entries.cellKeys[i]] = i;
-			}
-		}
-	}
-
-#ifdef _MSC_VER
-#include <intrin.h>
-#else
-#include <cpuid.h>
-#endif
-
-	bool hasAVX2Support() {
-		static int cached = -1;
-		if (cached != -1) return cached;
-
-		int cpuInfo[4];
-#ifdef _MSC_VER
-		__cpuidex(cpuInfo, 7, 0);
-#else
-		__cpuid_count(7, 0, cpuInfo[0], cpuInfo[1], cpuInfo[2], cpuInfo[3]);
-#endif
-		cached = (cpuInfo[1] & (1 << 5)) != 0;
-		return cached;
-	}
-
-	__attribute__((target("avx2")))
-		std::vector<size_t> queryNeighborsAVX2(glm::vec2& pos, std::vector<ParticlePhysics>& pParticles) {
-		std::vector<size_t> neighbors;
-		neighbors.reserve(64);
-
-		auto [cellX, cellY] = posToCellCoord(pos);
-
-		for (int dx = -1; dx <= 1; dx++) {
-			for (int dy = -1; dy <= 1; dy++) {
-				int neighborX = cellX + dx;
-				int neighborY = cellY + dy;
-				uint32_t cellKey = hashCell(neighborX, neighborY);
-				uint32_t start = startIndices[cellKey];
-				if (start == UINT32_MAX) continue;
-
-				__m256i targetX = _mm256_set1_epi32(neighborX);
-				__m256i targetY = _mm256_set1_epi32(neighborY);
-
-				size_t i = start;
-
-				for (; i + 8 <= entries.cellKeys.size() && entries.cellKeys[i] == cellKey; i += 8) {
-					bool sameCellKey = true;
-					for (int k = 0; k < 8; k++) {
-						if (entries.cellKeys[i + k] != cellKey) {
-							sameCellKey = false;
-							break;
-						}
-					}
-					if (!sameCellKey) break;
-
-					__m256i cellXs = _mm256_loadu_si256((__m256i*) & entries.cellXs[i]);
-					__m256i cellYs = _mm256_loadu_si256((__m256i*) & entries.cellYs[i]);
-
-					__m256i matchX = _mm256_cmpeq_epi32(cellXs, targetX);
-					__m256i matchY = _mm256_cmpeq_epi32(cellYs, targetY);
-					__m256i match = _mm256_and_si256(matchX, matchY);
-
-					int mask = _mm256_movemask_ps(_mm256_castsi256_ps(match));
-
-					for (int k = 0; k < 8; k++) {
-						if (mask & (1 << k)) {
-							neighbors.push_back(entries.particleIndices[i + k]);
-						}
-					}
-				}
-
-				for (; i < entries.cellKeys.size() && entries.cellKeys[i] == cellKey; i++) {
-					if (entries.cellXs[i] == neighborX && entries.cellYs[i] == neighborY) {
-						neighbors.push_back(entries.particleIndices[i]);
-					}
-				}
-			}
-		}
-		return neighbors;
-	}
-
-	std::vector<size_t> queryNeighborsScalar(glm::vec2& pos, std::vector<ParticlePhysics>& pParticles) {
-		std::vector<size_t> neighbors;
-		neighbors.reserve(64);
-
-		auto [cellX, cellY] = posToCellCoord(pos);
-
-		for (int dx = -1; dx <= 1; dx++) {
-			for (int dy = -1; dy <= 1; dy++) {
-				int neighborX = cellX + dx;
-				int neighborY = cellY + dy;
-				size_t cellKey = hashCell(neighborX, neighborY);
-				size_t start = startIndices[cellKey];
-				if (start == UINT32_MAX) continue;
-
-				for (size_t i = start; i < entries.cellKeys.size() && entries.cellKeys[i] == cellKey; i++) {
-					if (entries.cellXs[i] == neighborX && entries.cellYs[i] == neighborY) {
-						neighbors.push_back(entries.particleIndices[i]);
-					}
-				}
-			}
-		}
-		return neighbors;
-	}
-
-	std::vector<size_t> queryNeighbors(glm::vec2& pos, std::vector<ParticlePhysics>& pParticles) {
-		if (hasAVX2Support()) {
-			return queryNeighborsAVX2(pos, pParticles);
-		}
-		else {
-			return queryNeighborsScalar(pos, pParticles);
-		}
-	}
 
 	const char* neighborSearchCompute = R"(
 #version 430
@@ -959,24 +619,21 @@ void main() {
 
 	void readFlattenBack(std::vector<ParticlePhysics>& pParticles);
 
-	void computeViscCohesionForces(std::vector<ParticlePhysics>& pParticles,
-		std::vector<ParticleRendering>& rParticles, std::vector<glm::vec2>& sphForce, size_t& N);
+	void computeViscCohesionForces(UpdateVariables& myVar, UpdateParameters& myParam, std::vector<glm::vec2>& sphForce, size_t& N);
 
 	void groundModeBoundary(std::vector<ParticlePhysics>& pParticles,
 		std::vector<ParticleRendering>& rParticles, glm::vec2 domainSize);
 
-	void PCISPH(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, float& dt);
+	void PCISPH(UpdateVariables& myVar, UpdateParameters& myParam);
 
-	void pcisphSolver(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, float& dt, glm::vec2& domainSize, bool& sphGround, glm::vec2& mouseWorldPos) {
-
-		newGrid(pParticles);
+	void pcisphSolver(UpdateVariables& myVar, UpdateParameters& myParam) {
 
 		//newGridGPU(pParticles);
 
-		PCISPH(pParticles, rParticles, dt);
+		PCISPH(myVar, myParam);
 
-		if (sphGround) {
-			groundModeBoundary(pParticles, rParticles, domainSize);
+		if (myVar.sphGround) {
+			groundModeBoundary(myParam.pParticles, myParam.rParticles, myVar.domainSize);
 		}
 	}
 };

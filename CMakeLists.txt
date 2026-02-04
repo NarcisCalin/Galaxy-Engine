@@ -32,6 +32,7 @@ set(
     Particles/particleTrails.cpp
     Physics/morton.cpp
     Physics/physics.cpp
+    Physics/physics3D.cpp
     Physics/quadtree.cpp
     Physics/slingshot.cpp
     Physics/SPH.cpp
@@ -50,6 +51,14 @@ set(
 list(TRANSFORM GALAXYENGINE_SOURCES PREPEND ${CMAKE_CURRENT_LIST_DIR}/GalaxyEngine/src/)
 
 add_executable(GalaxyEngine ${GALAXYENGINE_SOURCES})
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_compile_options(GalaxyEngine PRIVATE -mavx2 -mfma)
+elseif(MSVC)
+    target_compile_options(GalaxyEngine PRIVATE /arch:AVX2)
+else()
+    target_compile_options(GalaxyEngine PRIVATE -mavx2 -mfma)
+endif()
 
 target_precompile_headers(GalaxyEngine PUBLIC ${CMAKE_CURRENT_LIST_DIR}/GalaxyEngine/include/pch.h)
 

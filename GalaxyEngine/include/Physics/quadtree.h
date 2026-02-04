@@ -30,17 +30,17 @@ extern std::vector<Node> globalNodes;
 
 struct Node {
 	glm::vec2 pos;
+	glm::vec2 centerOfMass;
+
 	float size;
+	float gridMass;
+	float gridTemp;
 
 	uint32_t startIndex;
 	uint32_t endIndex;
-
-	float gridMass;
-	glm::vec2 centerOfMass;
-	float gridTemp;
+	uint32_t next = 0;
 
 	uint32_t subGrids[2][2] = { { UINT32_MAX, UINT32_MAX }, { UINT32_MAX, UINT32_MAX } };
-	uint32_t next = 0;
 
 	Node(glm::vec2 pos, float size,
 		uint32_t startIndex, uint32_t endIndex,
@@ -126,4 +126,73 @@ struct Quadtree {
 
 	void root(std::vector<ParticlePhysics>& pParticles,
 		std::vector<ParticleRendering>& rParticles);
+};
+
+struct Node3D;
+extern std::vector<Node3D> globalNodes3D;
+
+struct Node3D {
+	glm::vec3 pos;
+	glm::vec3 centerOfMass;
+
+	float size;
+	float gridMass;
+	float gridTemp;
+
+	uint32_t startIndex;
+	uint32_t endIndex;
+	uint32_t next = 0;
+
+	uint32_t subGrids[2][2][2] = {
+		{ { UINT32_MAX, UINT32_MAX }, { UINT32_MAX, UINT32_MAX } },
+		{ { UINT32_MAX, UINT32_MAX }, { UINT32_MAX, UINT32_MAX } }
+	};
+
+	Node3D(glm::vec3 pos, float size,
+		uint32_t startIndex, uint32_t endIndex,
+		std::vector<ParticlePhysics3D>& pParticles, std::vector<ParticleRendering3D>& rParticles);
+
+	Node3D() = default;
+
+	void subGridMaker3D(std::vector<ParticlePhysics3D>& pParticles, std::vector<ParticleRendering3D>& rParticles);
+
+	inline void computeLeafMass3D(const std::vector<ParticlePhysics3D>& pParticles) {
+		gridMass = 0.0f;
+		gridTemp = 0.0f;
+		centerOfMass = { 0.0f, 0.0f, 0.0f };
+
+		for (uint32_t i = startIndex; i < endIndex; ++i) {
+			gridMass += pParticles[i].mass;
+			gridTemp += pParticles[i].temp;
+
+			centerOfMass += pParticles[i].pos * pParticles[i].mass;
+		}
+
+		if (gridMass > 0) {
+			centerOfMass /= gridMass;
+		}
+	}
+
+	inline void computeInternalMass3D();
+
+	inline void calculateNextNeighbor3D();
+};
+
+struct Octree {
+
+	glm::vec3 rootPos;
+	float rootSize;
+
+	Octree(std::vector<ParticlePhysics3D>& pParticles,
+		std::vector<ParticleRendering3D>& rParticles,
+		glm::vec3 rootPos, float rootSize) {
+
+		this->rootPos = rootPos;
+		this->rootSize = rootSize;
+
+		root(pParticles, rParticles);
+	}
+
+	void root(std::vector<ParticlePhysics3D>& pParticles,
+		std::vector<ParticleRendering3D>& rParticles);
 };

@@ -29,7 +29,7 @@ struct ColorVisuals {
 	float saturation = 0.8f;
 	float value = 0.5f;
 
-	int maxNeighbors = 80;
+	int maxNeighbors = 200;
 
 	float maxColorAcc = 40.0f;
 	float minColorAcc = 0.0f;
@@ -109,9 +109,9 @@ struct ColorVisuals {
 		return powf(linear, 0.3f);
 	}
 
-	void particlesColorVisuals(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, bool& isTempEnabled, float& timeFactor) {
+	void particlesColorVisuals(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, std::vector<ParticlePhysics3D>& pParticles3D, std::vector<ParticleRendering3D>& rParticles3D, bool& isTempEnabled, float& timeFactor, bool& is3DMode) {
 
-		if (solidColor) {
+		if (solidColor && !is3DMode) {
 			for (size_t i = 0; i < pParticles.size(); i++) {
 				if (!rParticles[i].uniqueColor) {
 					rParticles[i].pColor = pColor;
@@ -123,8 +123,20 @@ struct ColorVisuals {
 			}
 			blendMode = 1;
 		}
+		else if (solidColor && is3DMode) {
+			for (size_t i = 0; i < pParticles3D.size(); i++) {
+				if (!rParticles3D[i].uniqueColor) {
+					rParticles3D[i].pColor = pColor;
+					rParticles3D[i].color = rParticles3D[i].pColor;
+				}
+				else {
+					rParticles3D[i].color = rParticles3D[i].pColor;
+				}
+			}
+			blendMode = 1;
+		}
 
-		if (densityColor) {
+		if (densityColor && !is3DMode) {
 
 			const float invMaxNeighbors = 1.0f / maxNeighbors;
 
@@ -149,8 +161,33 @@ struct ColorVisuals {
 
 			blendMode = 1;
 		}
+		else if (densityColor && is3DMode) {
 
-		if (velocityColor) {
+			const float invMaxNeighbors = 1.0f / maxNeighbors;
+
+#pragma omp parallel for schedule(dynamic)
+			for (int64_t i = 0; i < pParticles3D.size(); i++) {
+				if (rParticles3D[i].isDarkMatter) {
+					continue;
+				}
+
+				if (!rParticles3D[i].uniqueColor) {
+					rParticles3D[i].pColor = pColor;
+					rParticles3D[i].sColor = sColor;
+				}
+
+				Color lowDensityColor = rParticles3D[i].pColor;
+
+				Color highDensityColor = rParticles3D[i].sColor;
+
+				float normalDensity = std::min(static_cast<float>(rParticles3D[i].neighbors) * invMaxNeighbors, 1.0f);
+				rParticles3D[i].color = ColorLerp(lowDensityColor, highDensityColor, normalDensity);
+			}
+
+			blendMode = 1;
+		}
+
+		if (velocityColor && !is3DMode) {
 #pragma omp parallel for schedule(dynamic)
 			for (int64_t i = 0; i < pParticles.size(); i++) {
 
@@ -169,8 +206,27 @@ struct ColorVisuals {
 
 			blendMode = 0;
 		}
+		else if (velocityColor && is3DMode) {
+#pragma omp parallel for schedule(dynamic)
+			for (int64_t i = 0; i < pParticles3D.size(); i++) {
 
-		if (forceColor) {
+				float particleVelSq = pParticles3D[i].vel.x * pParticles3D[i].vel.x +
+					pParticles3D[i].vel.y * pParticles3D[i].vel.y;
+
+				float clampedVel = std::clamp(particleVelSq, minVel, maxVel);
+				float normalizedVel = clampedVel / maxVel;
+
+				hue = (1.0f - normalizedVel) * 240.0f;
+				saturation = 1.0f;
+				value = 1.0f;
+
+				rParticles3D[i].color = ColorFromHSV(hue, saturation, value);
+			}
+
+			blendMode = 0;
+		}
+
+		if (forceColor && !is3DMode) {
 			for (size_t i = 0; i < pParticles.size(); i++) {
 
 				if (rParticles[i].isDarkMatter) {
@@ -197,8 +253,35 @@ struct ColorVisuals {
 			}
 			blendMode = 1;
 		}
+		else if (forceColor && is3DMode) {
+			for (size_t i = 0; i < pParticles3D.size(); i++) {
 
-		if (shockwaveColor) {
+				if (rParticles3D[i].isDarkMatter) {
+					continue;
+				}
+
+				float particleAccSq = pParticles3D[i].acc.x * pParticles3D[i].acc.x +
+					pParticles3D[i].acc.y * pParticles3D[i].acc.y;
+
+				float clampedAcc = std::clamp(sqrt(particleAccSq), minColorAcc, maxColorAcc);
+				float normalizedAcc = clampedAcc / maxColorAcc;
+
+				if (!rParticles3D[i].uniqueColor) {
+					rParticles3D[i].pColor = pColor;
+					rParticles3D[i].sColor = sColor;
+				}
+
+				Color lowAccColor = rParticles3D[i].pColor;
+
+				Color highAccColor = rParticles3D[i].sColor;
+
+				rParticles3D[i].color = ColorLerp(lowAccColor, highAccColor, normalizedAcc);
+
+			}
+			blendMode = 1;
+		}
+
+		if (shockwaveColor && !is3DMode) {
 			for (size_t i = 0; i < pParticles.size(); i++) {
 
 				glm::vec2 shockwave = pParticles[i].acc;
@@ -216,8 +299,26 @@ struct ColorVisuals {
 			}
 			blendMode = 0;
 		}
+		else if (shockwaveColor && is3DMode) {
+			for (size_t i = 0; i < pParticles3D.size(); i++) {
 
-		if (turbulenceColor) {
+				glm::vec2 shockwave = pParticles3D[i].acc;
+
+				float shockMag = std::sqrt(shockwave.x * shockwave.x + shockwave.y * shockwave.y);
+
+				float clampedShock = std::clamp(shockMag, ShockwaveMinAcc, ShockwaveMaxAcc);
+				float normalizedShock = clampedShock / ShockwaveMaxAcc;
+
+				hue = (1.0f - normalizedShock) * 240.0f;
+				saturation = 1.0f;
+				value = 1.0f;
+
+				rParticles3D[i].color = ColorFromHSV(hue, saturation, value);
+			}
+			blendMode = 0;
+		}
+
+		if (turbulenceColor && !is3DMode) {
 			for (size_t i = 0; i < pParticles.size(); i++) {
 
 				if (rParticles[i].isDarkMatter) {
@@ -264,8 +365,55 @@ struct ColorVisuals {
 			}
 			blendMode = 0;
 		}
+		else if (turbulenceColor && is3DMode) {
+			for (size_t i = 0; i < pParticles3D.size(); i++) {
 
-		if (pressureColor) {
+				if (rParticles[i].isDarkMatter) {
+					continue;
+				}
+
+				if (timeFactor != 0.0f) {
+					float pTotalVel = sqrt(pParticles3D[i].vel.x * pParticles3D[i].vel.x + pParticles3D[i].vel.y * pParticles3D[i].vel.y);
+					float pTotalPrevVel = sqrt(pParticles3D[i].prevVel.x * pParticles3D[i].prevVel.x + pParticles3D[i].prevVel.y * pParticles3D[i].prevVel.y);
+
+					rParticles3D[i].turbulence += std::abs(pTotalVel - pTotalPrevVel);
+
+					glm::vec2 velDiff = pParticles[i].vel - pParticles[i].prevVel;
+					rParticles3D[i].turbulence += glm::length(velDiff);
+
+					rParticles3D[i].turbulence *= 1.0f - turbulenceFadeRate;
+
+					rParticles3D[i].turbulence = std::max(0.0f, rParticles3D[i].turbulence);
+				}
+
+				float clampedTurbulence = std::clamp(rParticles[i].turbulence, minColorTurbulence, maxColorTurbulence);
+				float normalizedTurbulence = pow(clampedTurbulence / maxColorTurbulence, turbulenceContrast);
+
+				if (turbulenceCustomCol) {
+					if (!rParticles3D[i].uniqueColor) {
+						rParticles3D[i].pColor = pColor;
+						rParticles3D[i].sColor = sColor;
+					}
+
+					Color lowTurbulenceColor = rParticles3D[i].pColor;
+
+					Color highTurbulenceColor = rParticles3D[i].sColor;
+
+					rParticles3D[i].color = ColorLerp(lowTurbulenceColor, highTurbulenceColor, normalizedTurbulence);
+				}
+				else {
+					hue = (1.0f - normalizedTurbulence) * 240.0f;
+					saturation = 1.0f;
+					value = 1.0f;
+
+					rParticles3D[i].color = ColorFromHSV(hue, saturation, value);
+				}
+
+			}
+			blendMode = 0;
+		}
+
+		if (pressureColor && !is3DMode) {
 #pragma omp parallel for schedule(dynamic)
 			for (int64_t i = 0; i < pParticles.size(); i++) {
 
@@ -282,8 +430,25 @@ struct ColorVisuals {
 			}
 			blendMode = 0;
 		}
+		else if (pressureColor && is3DMode) {
+#pragma omp parallel for schedule(dynamic)
+			for (int64_t i = 0; i < pParticles3D.size(); i++) {
 
-		if (temperatureColor) {
+				ParticlePhysics3D& p = pParticles3D[i];
+
+				float clampedPress = std::clamp(p.press, minPress, maxPress);
+				float normalizedPress = clampedPress / maxPress;
+
+				hue = (1.0f - normalizedPress) * 240.0f;
+				saturation = 1.0f;
+				value = 1.0f;
+
+				rParticles3D[i].color = ColorFromHSV(hue, saturation, value);
+			}
+			blendMode = 0;
+		}
+
+		if (temperatureColor && !is3DMode) {
 #pragma omp parallel for schedule(dynamic)
 			for (int64_t i = 0; i < pParticles.size(); i++) {
 
@@ -300,8 +465,25 @@ struct ColorVisuals {
 			}
 			blendMode = 0;
 		}
+		else if (temperatureColor && is3DMode) {
+#pragma omp parallel for schedule(dynamic)
+			for (int64_t i = 0; i < pParticles3D.size(); i++) {
 
-		if (gasTempColor) {
+				ParticlePhysics3D& p = pParticles3D[i];
+
+				float clampedTemp = std::clamp(p.temp, tempColorMinTemp, tempColorMaxTemp);
+				float normalizedTemp = clampedTemp / tempColorMaxTemp;
+
+				hue = (1.0f - normalizedTemp) * 240.0f;
+				saturation = 1.0f;
+				value = 1.0f;
+
+				rParticles3D[i].color = ColorFromHSV(hue, saturation, value);
+			}
+			blendMode = 0;
+		}
+
+		if (gasTempColor && !is3DMode) {
 			for (size_t i = 0; i < rParticles.size(); i++) {
 
 				if (!rParticles[i].uniqueColor) {
@@ -320,8 +502,27 @@ struct ColorVisuals {
 			}
 			blendMode = 1;
 		}
+		else if (gasTempColor && is3DMode) {
+			for (size_t i = 0; i < rParticles3D.size(); i++) {
 
-		if (SPHColor) {
+				if (!rParticles3D[i].uniqueColor) {
+					rParticles3D[i].pColor = pColor;
+					rParticles3D[i].sColor = sColor;
+				}
+
+				float normalizedTemp = (pParticles3D[i].temp - tempColorMinTemp) / (tempColorMaxTemp - tempColorMinTemp);
+				normalizedTemp = std::clamp(normalizedTemp, 0.0f, 1.0f);
+
+				Color lowTempColor = rParticles3D[i].pColor;
+
+				Color highTempColor = rParticles3D[i].sColor;
+
+				rParticles3D[i].color = ColorLerp(lowTempColor, highTempColor, normalizedTemp);
+			}
+			blendMode = 1;
+		}
+
+		if (SPHColor && !is3DMode) {
 			for (size_t i = 0; i < rParticles.size(); i++) {
 				if (!rParticles[i].uniqueColor) {
 
@@ -370,27 +571,101 @@ struct ColorVisuals {
 
 			blendMode = 0;
 		}
+		else if (SPHColor && is3DMode) {
+			for (size_t i = 0; i < rParticles3D.size(); i++) {
+				if (!rParticles3D[i].uniqueColor) {
+
+					auto it = SPHMaterials::idToMaterial.find(rParticles3D[i].sphLabel);
+					if (it != SPHMaterials::idToMaterial.end()) {
+						SPHMaterial* pMat = it->second;
+
+						if (pMat->sphLabel != "water") {
+
+							float glowFactor = getGlowFactor(pParticles3D[i].temp);
+
+							Color matColor = rParticles3D[i].sphColor;
+
+							Color glowColor;
+							blackbodyToRGB(pParticles3D[i].temp, glowColor.r, glowColor.g, glowColor.b);
+
+							Color finalColor = blendColors(matColor, glowColor, glowFactor);
+
+							rParticles3D[i].color = finalColor;
+						}
+						else {
+							float normalizedTemp = (pParticles3D[i].temp - minTemp) / (pMat->hotPoint - minTemp);
+							normalizedTemp = std::clamp(normalizedTemp, 0.0f, 1.0f);
+
+							Color lowTempColor = rParticles3D[i].sphColor;
+
+							Color highTempColor = { 255, 113, 33, 255 };
+
+							highTempColor = it->second->hotColor;
 
 
-		if (selectedColor) {
+							if (pParticles3D[i].temp < pMat->coldPoint) {
+
+								rParticles3D[i].color = pMat->coldColor;
+							}
+							else {
+								rParticles3D[i].color = ColorLerp(lowTempColor, highTempColor, normalizedTemp);
+							}
+						}
+					}
+				}
+				else {
+					rParticles3D[i].color = rParticles3D[i].pColor;
+				}
+			}
+
+			blendMode = 0;
+		}
+
+
+		if (selectedColor && !is3DMode) {
 			for (size_t i = 0; i < rParticles.size(); i++) {
 				if (rParticles[i].isSelected) {
 					rParticles[i].color = { 255, 20,20, 255 };
 				}
 			}
 		}
+		else if (selectedColor && is3DMode) {
+			for (size_t i = 0; i < rParticles3D.size(); i++) {
+				if (rParticles3D[i].isSelected) {
+					rParticles3D[i].color = { 255, 20,20, 255 };
+				}
+			}
+		}
 
-		if (showDarkMatterEnabled) {
-			for (size_t i = 0; i < rParticles.size(); i++) {
-				if (rParticles[i].isDarkMatter) {
-					rParticles[i].color = { 128, 128, 128, 170 };
+		if (!is3DMode) {
+			if (showDarkMatterEnabled) {
+				for (size_t i = 0; i < rParticles.size(); i++) {
+					if (rParticles[i].isDarkMatter) {
+						rParticles[i].color = { 128, 128, 128, 170 };
+					}
+				}
+			}
+			else {
+				for (size_t i = 0; i < rParticles.size(); i++) {
+					if (rParticles[i].isDarkMatter) {
+						rParticles[i].color = { 0, 0, 0, 0 };
+					}
 				}
 			}
 		}
 		else {
-			for (size_t i = 0; i < rParticles.size(); i++) {
-				if (rParticles[i].isDarkMatter) {
-					rParticles[i].color = { 0, 0, 0, 0 };
+			if (showDarkMatterEnabled) {
+				for (size_t i = 0; i < rParticles3D.size(); i++) {
+					if (rParticles3D[i].isDarkMatter) {
+						rParticles3D[i].color = { 128, 128, 128, 170 };
+					}
+				}
+			}
+			else {
+				for (size_t i = 0; i < rParticles3D.size(); i++) {
+					if (rParticles3D[i].isDarkMatter) {
+						rParticles3D[i].color = { 0, 0, 0, 0 };
+					}
 				}
 			}
 		}

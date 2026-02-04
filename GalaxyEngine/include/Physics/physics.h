@@ -2,6 +2,8 @@
 
 #include "Particles/particle.h"
 
+#include "Particles/QueryNeighbors.h"
+
 #include "Physics/quadtree.h"
 
 #include "Physics/constraint.h"
@@ -24,8 +26,9 @@ struct Physics {
 
 	const float stiffCorrectionRatio = 0.013333f; // Heuristic. This used to modify the stiffness of a constraint in a more intuitive way. DO NOT CHANGE
 
-	glm::vec2 calculateForceFromGrid(std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar, 
-		ParticlePhysics& pParticle);
+	void calculateForceFromGrid(UpdateVariables& myVar);
+
+	glm::vec2 calculateForceFromGridOld(std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar, ParticlePhysics& pParticle);
 
 
 	std::vector<float> posX;
@@ -37,6 +40,7 @@ struct Physics {
 	std::vector<float> prevVelX;
 	std::vector<float> prevVelY;
 	std::vector<float> mass;
+	std::vector<float> temp;
 
 	void flattenParticles(std::vector<ParticlePhysics>& pParticles);
 
@@ -55,15 +59,73 @@ struct Physics {
 
 	void mergerSolver(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar, UpdateParameters& myParam);
 
-	void collisions(ParticlePhysics& pParticleA, ParticlePhysics& pParticleB,
-		ParticleRendering& rParticleA, ParticleRendering& rParticleB, float& radius);
-
-	void buildGrid(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles,
-		Physics& physics, glm::vec2& domainSize, const int& iterations);
+	void spawnCorrection(UpdateParameters& myParam, bool& hasVAX2, const int& iterations);
 
 	void integrateStart(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar);
 
 	void integrateEnd(std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar);
 
 	void pruneParticles(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar);
+
+	// ----- Unused. Test code ----- //
+
+	// This was made for learning purposes and it is not going to replace the existing gravity algorithm.
+	// To use it, call first initGrid() and then gravityGrid(). Also be sure to process the bounding box before these
+	struct GravityCell {
+		glm::vec2 pos;
+		float size;
+		float mass = 0.0f;
+		glm::vec2 force = { 0.0f, 0.0f };
+		int depth;
+
+		GravityCell() = default;
+
+		GravityCell(glm::vec2 pos, float size, int depth)
+			: pos(pos), size(size), depth(depth)
+		{
+		}
+
+		std::vector<ParticlePhysics*> particles;
+	};
+
+	std::vector<GravityCell> cells;
+
+	int maxDepth = 9; // This controls quality. Higher means more accurate. Gravity forces scale with this too, which is not intended
+	int gridRes = 0;
+
+	void initGrid(std::vector<ParticlePhysics>& pParticles, glm::vec3& bb) {
+
+		int totalCells = 0;
+		for (int depth = 0; depth < maxDepth; depth++) {
+			int res = std::pow(2, depth + 1);
+			totalCells += res * res;
+		}
+
+		cells.clear();
+		cells.resize(totalCells);
+
+		int offset = 0;
+
+		for (int depth = 0; depth < maxDepth; depth++) {
+			gridRes = std::pow(2, depth + 1);
+			float cellSize = bb.z / static_cast<float>(gridRes);
+
+#pragma omp parallel for collapse(2)
+			for (int y = 0; y < gridRes; y++) {
+				for (int x = 0; x < gridRes; x++) {
+					int index = offset + y * gridRes + x;
+					cells[index] = GravityCell(
+						glm::vec2{ bb.x + (x * cellSize), bb.y + (y * cellSize) },
+						cellSize,
+						depth
+					);
+				}
+			}
+
+			offset += gridRes * gridRes;
+		}
+	}
+
+	void gravityGrid(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar, glm::vec3& bb);
+	// ----- Unused. Test code ----- //
 };

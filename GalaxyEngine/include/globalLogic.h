@@ -14,6 +14,7 @@
 #include "Physics/slingshot.h"
 #include "Physics/morton.h"
 #include "Physics/physics.h"
+#include "Physics/physics3D.h"
 #include "Physics/SPH.h"
 #include "Physics/light.h"
 #include "Physics/field.h"
@@ -37,6 +38,7 @@ extern UpdateParameters myParam;
 extern UpdateVariables myVar;
 extern UI myUI;
 extern Physics physics;
+extern Physics3D physics3D;
 extern ParticleSpaceship ship;
 extern SPH sph;
 extern SaveSystem save;
@@ -61,6 +63,8 @@ void freeGPUMemory();
 
 void updateScene();
 
+void mode3D(Texture2D& particleBlurTex);
+
 void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myRayTracingTexture,
 	RenderTexture2D& myUITexture, RenderTexture2D& myMiscTexture, bool& fadeActive, bool& introActive);
 
@@ -80,3 +84,5 @@ void saveConfig();
 void loadConfig();
 
 RenderTexture2D CreateFloatRenderTexture(int w, int h);
+
+bool hasAVX2Support();

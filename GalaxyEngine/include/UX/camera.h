@@ -35,3 +35,33 @@ private:
 	float lastZoom = camera.zoom;
 	float lastRotation = camera.rotation;
 };
+
+class SceneCamera3D {
+public:
+	Camera3D cam3D = {
+		{200.0f, 200.0f, 0.0f},
+		{0.0f, 0.0f, 0.0f},
+		{0.0f, 1.0f, 0.0f},
+		45.0f,
+		CAMERA_PERSPECTIVE
+	};
+
+	glm::vec3 offset = { 0.0f, 0.0f, 0.0f };
+	glm::vec3 currentSmoothedTarget = { 0.0f, 0.0f, 0.0f };
+
+	glm::vec3 followPosition;
+	glm::vec3 panFollowingOffset;
+	float defaultCamDist = 500.0f;
+
+	Vector3 target = { 0.0f, 0.0f, 0.0f };
+	float distance = defaultCamDist;
+	float angleX = 45.0f;
+	float angleY = 30.0f;
+
+	bool centerCamera;
+	bool isFollowing;
+
+	Camera3D cameraLogic(bool& isLoading, bool& isMouseNotHoveringUI);
+
+	void cameraFollowObject(UpdateVariables& myVar, UpdateParameters& myParam);
+};

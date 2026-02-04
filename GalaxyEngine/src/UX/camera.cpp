@@ -19,8 +19,7 @@ SceneCamera::SceneCamera() {
 
 Camera2D SceneCamera::cameraLogic(bool& loadFlag, bool& isMouseNotHoveringUI) {
 
-	if (IsMouseButtonDown(1))
-	{
+	if (IsMouseButtonDown(1)) {
 		delta = glm::vec2(GetMouseDelta().x, GetMouseDelta().y);
 		delta = delta * (-1.0f / camera.zoom);
 		camera.target.x = camera.target.x + delta.x;
@@ -30,9 +29,11 @@ Camera2D SceneCamera::cameraLogic(bool& loadFlag, bool& isMouseNotHoveringUI) {
 	}
 
 	float wheel = GetMouseWheelMove();
-	if (wheel != 0 && !IsKeyDown(KEY_LEFT_CONTROL) && !loadFlag && isMouseNotHoveringUI) {
-		mouseWorldPos = glm::vec2(GetScreenToWorld2D(GetMousePosition(), camera).x,
+
+	mouseWorldPos = glm::vec2(GetScreenToWorld2D(GetMousePosition(), camera).x,
 			GetScreenToWorld2D(GetMousePosition(), camera).y);
+
+	if (wheel != 0 && !IsKeyDown(KEY_LEFT_CONTROL) && !loadFlag && isMouseNotHoveringUI) {
 
 		if (isFollowing) {
 			glm::vec2 screenCenter = { GetScreenWidth() * 0.5f, GetScreenHeight() * 0.5f };
@@ -67,8 +68,6 @@ Camera2D SceneCamera::cameraLogic(bool& loadFlag, bool& isMouseNotHoveringUI) {
 
 void SceneCamera::cameraFollowObject(UpdateVariables& myVar, UpdateParameters& myParam) {
 
-	mouseWorldPos = glm::vec2(GetScreenToWorld2D(GetMousePosition(), camera).x, GetScreenToWorld2D(GetMousePosition(), camera).y);
-
 	static bool isDragging = false;
 	static glm::vec2 dragStartPos = { 0.0f, 0.0f };
 
@@ -91,40 +90,11 @@ void SceneCamera::cameraFollowObject(UpdateVariables& myVar, UpdateParameters& m
 	}
 
 	if (IsMouseButtonReleased(1) && IsKeyDown(KEY_LEFT_CONTROL) && !isDragging && myVar.isMouseNotHoveringUI) {
-		float distanceThreshold = 10.0f;
-		std::vector<int> neighborCountsSelect(myParam.pParticles.size(), 0);
-		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-			const auto& pParticle = myParam.pParticles[i];
 
-			if (myParam.rParticles[i].isDarkMatter) {
-				continue;
-			}
-
-			for (size_t j = i + 1; j < myParam.pParticles.size(); j++) {
-				if (std::abs(myParam.pParticles[j].pos.x - pParticle.pos.x) > 2.4f) break;
-
-				glm::vec2 d = pParticle.pos - myParam.pParticles[j].pos;
-
-				if (d.x * d.x + d.y * d.y < distanceThreshold * distanceThreshold) {
-					neighborCountsSelect[i]++;
-					neighborCountsSelect[j]++;
-				}
-			}
-		}
+		myParam.particleSelection.clusterSelection(myVar, myParam, true);
 
 		isFollowing = true;
 		panFollowingOffset = { 0.0f, 0.0f };
-
-		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-			myParam.rParticles[i].isSelected = false;
-
-			glm::vec2 d = myParam.pParticles[i].pos - mouseWorldPos;
-
-			float distanceSq = d.x * d.x + d.y * d.y;
-			if (distanceSq < selectionThresholdSq && neighborCountsSelect[i] > 3) {
-				myParam.rParticles[i].isSelected = true;
-			}
-		}
 
 		if (myVar.isSelectedTrailsEnabled) {
 			myParam.trails.segments.clear();
@@ -133,28 +103,7 @@ void SceneCamera::cameraFollowObject(UpdateVariables& myVar, UpdateParameters& m
 
 	if (IsMouseButtonReleased(1) && IsKeyDown(KEY_LEFT_ALT) && !isDragging && myVar.isMouseNotHoveringUI) {
 
-		size_t closestIndex = 0;
-		float minDistanceSq = std::numeric_limits<float>::max();
-
-		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-			myParam.rParticles[i].isSelected = false;
-
-			if (myParam.rParticles[i].isDarkMatter) {
-				continue;
-			}
-
-			glm::vec2 d = myParam.pParticles[i].pos - mouseWorldPos;
-
-			float currentDistanceSq = d.x * d.x + d.y * d.y;
-			if (currentDistanceSq < minDistanceSq) {
-				minDistanceSq = currentDistanceSq;
-				closestIndex = i;
-			}
-		}
-
-		if (minDistanceSq < selectionThresholdSq && !myParam.pParticles.empty()) {
-			myParam.rParticles[closestIndex].isSelected = true;
-		}
+		myParam.particleSelection.particleSelection(myVar, myParam, true);
 
 		isFollowing = true;
 		panFollowingOffset = { 0.0f, 0.0f };
@@ -219,4 +168,145 @@ void SceneCamera::hasCamMoved() {
 	lastRotation = camera.rotation;
 }
 
+// ---- 3D IMPLEMENTATION ---- //
 
+Camera3D SceneCamera3D::cameraLogic(bool& isLoading, bool& isMouseNotHoveringUI) {
+
+	if (isMouseNotHoveringUI && IO::mouseDown(MOUSE_BUTTON_RIGHT)) {
+		Vector2 mouseDelta = GetMouseDelta();
+		angleX -= mouseDelta.x * 0.3f;
+		angleY += mouseDelta.y * 0.3f;
+
+		if (angleY > 89.0f) angleY = 89.0f;
+		if (angleY < -89.0f) angleY = -89.0f;
+	}
+
+	if (isMouseNotHoveringUI && !IO::shortcutDown(KEY_LEFT_CONTROL) && !IO::shortcutDown(KEY_LEFT_SHIFT)) {
+		float wheel = GetMouseWheelMove();
+
+		float zoomFactor = 1.15f;
+
+		if (wheel > 0) {
+			distance /= powf(zoomFactor, wheel);
+		}
+		else if (wheel < 0) {
+			distance *= powf(zoomFactor, -wheel);
+		}
+
+		if (distance < 1.0f) distance = 1.0f;
+		if (distance > 5000.0f) distance = 5000.0f;
+	}
+
+	float smoothSpeed = 0.1f;
+
+	currentSmoothedTarget.x += (target.x - currentSmoothedTarget.x) * smoothSpeed;
+	currentSmoothedTarget.y += (target.y - currentSmoothedTarget.y) * smoothSpeed;
+	currentSmoothedTarget.z += (target.z - currentSmoothedTarget.z) * smoothSpeed;
+
+	float radX = angleX * DEG2RAD;
+	float radY = angleY * DEG2RAD;
+
+	Vector3 orbitOffset;
+	orbitOffset.x = distance * cosf(radY) * sinf(radX);
+	orbitOffset.y = distance * sinf(radY);
+	orbitOffset.z = distance * cosf(radY) * cosf(radX);
+
+	cam3D.target = { currentSmoothedTarget.x,currentSmoothedTarget.y, currentSmoothedTarget.z };
+	cam3D.position = Vector3Add(cam3D.target, orbitOffset);
+
+	Vector3 forward = Vector3Subtract(cam3D.target, cam3D.position);
+	forward = Vector3Normalize(forward);
+
+	Vector3 worldUp = { 0.0f, 1.0f, 0.0f };
+	Vector3 right = Vector3CrossProduct(worldUp, forward);
+	right = Vector3Normalize(right);
+
+	cam3D.up = Vector3Normalize(Vector3CrossProduct(forward, right));
+
+	cam3D.fovy = 45.0f;
+	cam3D.projection = CAMERA_PERSPECTIVE;
+
+	return cam3D;
+}
+
+void SceneCamera3D::cameraFollowObject(UpdateVariables& myVar, UpdateParameters& myParam) {
+
+	static bool isDragging = false;
+	static glm::vec2 dragStartPos = { 0.0f, 0.0f };
+
+	if ((IsMouseButtonPressed(1) && IsKeyDown(KEY_LEFT_CONTROL) && myVar.isMouseNotHoveringUI) ||
+		(IsMouseButtonPressed(1) && IsKeyDown(KEY_LEFT_ALT) && myVar.isMouseNotHoveringUI)) {
+		dragStartPos = glm::vec2(GetMousePosition().x, GetMousePosition().y);
+		isDragging = false;
+	}
+
+	if ((IsMouseButtonDown(1) && IsKeyDown(KEY_LEFT_CONTROL) && myVar.isMouseNotHoveringUI) ||
+		(IsMouseButtonDown(1) && IsKeyDown(KEY_LEFT_ALT) && myVar.isMouseNotHoveringUI)) {
+		glm::vec2 currentPos = glm::vec2(GetMousePosition().x, GetMousePosition().y);
+		float dragThreshold = 5.0f;
+
+		glm::vec2 d = currentPos - dragStartPos;
+
+		if (d.x * d.x + d.y * d.y > dragThreshold * dragThreshold) {
+			isDragging = true;
+		}
+	}
+
+	if (IsMouseButtonReleased(1) && IsKeyDown(KEY_LEFT_CONTROL) && !isDragging && myVar.isMouseNotHoveringUI) {
+
+		myParam.particleSelection3D.clusterSelection(myVar, myParam, true);
+
+		isFollowing = true;
+		panFollowingOffset = { 0.0f, 0.0f, 0.0f };
+
+		if (myVar.isSelectedTrailsEnabled) {
+			myParam.trails.segments3D.clear();
+		}
+	}
+
+	if (IsMouseButtonReleased(1) && IsKeyDown(KEY_LEFT_ALT) && !isDragging && myVar.isMouseNotHoveringUI) {
+
+		myParam.particleSelection3D.particleSelection(myVar, myParam, true);
+
+		isFollowing = true;
+		panFollowingOffset = { 0.0f, 0.0f, 0.0f };
+		if (myVar.isSelectedTrailsEnabled) {
+			myParam.trails.segments3D.clear();
+		}
+	}
+
+	if (IO::shortcutPress(KEY_Z) || centerCamera) {
+		panFollowingOffset = { 0.0f, 0.0f, 0.0f };
+		isFollowing = true;
+		centerCamera = false;
+	}
+
+	if (IO::shortcutPress(KEY_F) || myParam.pParticles3D.empty()) {
+		isFollowing = false;
+		target = { 0.0f, 0.0f, 0.0f };
+	}
+
+	if (isFollowing) {
+		Vector3 sum = { 0.0f, 0.0f, 0.0f };
+		float count = 0.0f;
+
+		for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
+			if (myParam.rParticles3D[i].isSelected) {
+
+				sum.x += myParam.pParticles3D[i].pos.x;
+				sum.y += myParam.pParticles3D[i].pos.y;
+				sum.z += myParam.pParticles3D[i].pos.z;
+				count++;
+			}
+		}
+
+		if (count > 0) {
+			target = Vector3Scale(sum, 1.0f / count);
+
+			target = Vector3Add(target, { panFollowingOffset.x, panFollowingOffset.y, panFollowingOffset.z });
+		}
+		else {
+			isFollowing = false;
+		}
+	}
+}

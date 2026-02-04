@@ -25,7 +25,7 @@ public:
 	float particleAmountMultiplier = 1.0;
 	float DMAmountMultiplier = 1.0f;
 
-	const int correctionSubsteps = 24;
+	const int correctionSubsteps = 32;
 	bool particlesIterating = false;
 
 	bool enablePathPrediction = false;
@@ -38,6 +38,35 @@ public:
 	void particlesInitialConditions(Physics& physics, UpdateVariables& myVar, UpdateParameters& myParam);
 
 	void predictTrajectory(const std::vector<ParticlePhysics>& actualParticles, 
+		SceneCamera& myCamera, Physics physics, UpdateVariables& myVar, Slingshot& slingshot);
+
+private:
+
+	float heavyParticleInitMass = 300000000000000.0f;
+};
+
+class ParticlesSpawning3D {
+public:
+
+	float heavyParticleWeightMultiplier = 1.0f;
+	int predictPathLength = 1000;
+
+	float particleAmountMultiplier = 1.0;
+	float DMAmountMultiplier = 1.0f;
+
+	const int correctionSubsteps = 24;
+	bool particlesIterating = false;
+
+	bool enablePathPrediction = false;
+	bool isSpawningAllowed = true;
+
+	bool massMultiplierEnabled = true;
+
+	float massScatter = 0.75f;
+
+	void particlesInitialConditions(Physics& physics, UpdateVariables& myVar, UpdateParameters& myParam);
+
+	void predictTrajectory(const std::vector<ParticlePhysics>& actualParticles,
 		SceneCamera& myCamera, Physics physics, UpdateVariables& myVar, Slingshot& slingshot);
 
 private:

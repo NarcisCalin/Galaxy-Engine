@@ -30,8 +30,7 @@ target_sources(imgui PRIVATE
     ${imgui-fetch_SOURCE_DIR}/imgui_tables.cpp
     ${imgui-fetch_SOURCE_DIR}/imgui_widgets.cpp
     ${imgui-fetch_SOURCE_DIR}/imgui_draw.cpp
-    ${imgui-fetch_SOURCE_DIR}/imgui_demo.cpp
-)
+    ${imgui-fetch_SOURCE_DIR}/imgui_demo.cpp)
 
 target_sources(imgui PRIVATE 
     ${implot-fetch_SOURCE_DIR}/implot.cpp
