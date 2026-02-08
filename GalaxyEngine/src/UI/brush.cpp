@@ -10,7 +10,7 @@ struct SPHSoil soil;
 struct SPHMud mud;
 struct SPHRubber rubber;
 
-void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& constraintAfterDrawing, float& massScatter) {
+void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& constraintAfterDrawing, float& massScatter, UpdateVariables& myVar) {
 
 	// This entire function is a crime against programming and perhaps humanity as well. I don't know what destiny shall await for whoever reads such cursed code. 
 	// But I'm too lazy to change this for now. Will change it some time in the future
@@ -27,7 +27,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& cons
 	}
 
 	if (!SPHWater && !SPHRock && !SPHSand && !SPHSoil && !SPHIce && !SPHMud && !SPHGas && !SPHIron && !SPHRubber) {
-		for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
+		for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
 			float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 			float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
@@ -44,7 +44,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& cons
 			float randomMassMultiplier = 1.0f + (rand01 * 2.0f - 1.0f) * massScatter;
 
 			if (myParam.particlesSpawning.massMultiplierEnabled) {
-				finalMass = 8500000000.0f / myParam.particlesSpawning.particleAmountMultiplier * randomMassMultiplier;
+				finalMass = 8500000000.0f / myVar.particleAmountMultiplier * randomMassMultiplier;
 			}
 			else {
 				finalMass = 8500000000.0f * randomMassMultiplier;
@@ -74,7 +74,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& cons
 
 	if (isSPHEnabled) {
 		if (SPHWater) {
-			for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
+			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
@@ -88,7 +88,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& cons
 				float finalMass = 0.0f;
 
 				if (myParam.particlesSpawning.massMultiplierEnabled) {
-					finalMass = (8500000000.0f * water.massMult) / myParam.particlesSpawning.particleAmountMultiplier;
+					finalMass = (8500000000.0f * water.massMult) / myVar.particleAmountMultiplier;
 				}
 				else {
 					finalMass = (8500000000.0f * water.massMult);
@@ -114,7 +114,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& cons
 		}
 
 		if (SPHRock) {
-			for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
+			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
@@ -128,7 +128,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& cons
 				float finalMass = 0.0f;
 
 				if (myParam.particlesSpawning.massMultiplierEnabled) {
-					finalMass = (8500000000.0f * rock.massMult) / myParam.particlesSpawning.particleAmountMultiplier;
+					finalMass = (8500000000.0f * rock.massMult) / myVar.particleAmountMultiplier;
 				}
 				else {
 					finalMass = (8500000000.0f * rock.massMult);
@@ -184,7 +184,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& cons
 		}
 
 		if (SPHIron) {
-			for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
+			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
@@ -198,7 +198,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& cons
 				float finalMass = 0.0f;
 
 				if (myParam.particlesSpawning.massMultiplierEnabled) {
-					finalMass = (8500000000.0f * iron.massMult) / myParam.particlesSpawning.particleAmountMultiplier;
+					finalMass = (8500000000.0f * iron.massMult) / myVar.particleAmountMultiplier;
 				}
 				else {
 					finalMass = (8500000000.0f * iron.massMult);
@@ -254,7 +254,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& cons
 		}
 
 		if (SPHSand) {
-			for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
+			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
@@ -268,7 +268,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& cons
 				float finalMass = 0.0f;
 
 				if (myParam.particlesSpawning.massMultiplierEnabled) {
-					finalMass = (8500000000.0f * sand.massMult) / myParam.particlesSpawning.particleAmountMultiplier;
+					finalMass = (8500000000.0f * sand.massMult) / myVar.particleAmountMultiplier;
 				}
 				else {
 					finalMass = (8500000000.0f * sand.massMult);
@@ -324,7 +324,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& cons
 		}
 
 		if (SPHSoil) {
-			for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
+			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
@@ -338,7 +338,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& cons
 				float finalMass = 0.0f;
 
 				if (myParam.particlesSpawning.massMultiplierEnabled) {
-					finalMass = (8500000000.0f * soil.massMult) / myParam.particlesSpawning.particleAmountMultiplier;
+					finalMass = (8500000000.0f * soil.massMult) / myVar.particleAmountMultiplier;
 				}
 				else {
 					finalMass = (8500000000.0f * soil.massMult);
@@ -394,7 +394,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& cons
 		}
 
 		if (SPHIce) {
-			for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
+			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
@@ -408,7 +408,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& cons
 				float finalMass = 0.0f;
 
 				if (myParam.particlesSpawning.massMultiplierEnabled) {
-					finalMass = (8500000000.0f * water.massMult) / myParam.particlesSpawning.particleAmountMultiplier;
+					finalMass = (8500000000.0f * water.massMult) / myVar.particleAmountMultiplier;
 				}
 				else {
 					finalMass = (8500000000.0f * water.massMult);
@@ -435,7 +435,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& cons
 		}
 
 		if (SPHMud) {
-			for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
+			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
@@ -449,7 +449,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& cons
 				float finalMass = 0.0f;
 
 				if (myParam.particlesSpawning.massMultiplierEnabled) {
-					finalMass = (8500000000.0f * mud.massMult) / myParam.particlesSpawning.particleAmountMultiplier;
+					finalMass = (8500000000.0f * mud.massMult) / myVar.particleAmountMultiplier;
 				}
 				else {
 					finalMass = (8500000000.0f * mud.massMult);
@@ -505,7 +505,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& cons
 		}
 
 		if (SPHRubber) {
-			for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
+			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
@@ -519,7 +519,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& cons
 				float finalMass = 0.0f;
 
 				if (myParam.particlesSpawning.massMultiplierEnabled) {
-					finalMass = (8500000000.0f * rubber.massMult) / myParam.particlesSpawning.particleAmountMultiplier;
+					finalMass = (8500000000.0f * rubber.massMult) / myVar.particleAmountMultiplier;
 				}
 				else {
 					finalMass = (8500000000.0f * rubber.massMult);
@@ -575,7 +575,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& cons
 		}
 
 		if (SPHGas) {
-			for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
+			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
@@ -589,7 +589,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& cons
 				float finalMass = 0.0f;
 
 				if (myParam.particlesSpawning.massMultiplierEnabled) {
-					finalMass = (8500000000.0f * water.massMult) / myParam.particlesSpawning.particleAmountMultiplier;
+					finalMass = (8500000000.0f * water.massMult) / myVar.particleAmountMultiplier;
 				}
 				else {
 					finalMass = (8500000000.0f * water.massMult);
@@ -806,7 +806,7 @@ void Brush::temperatureBrush(UpdateVariables& myVar, UpdateParameters& myParam) 
 
 // ---- 3D IMPLEMENTATION ---- //
 
-void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& constraintAfterDrawing, float& massScatter) {
+void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& constraintAfterDrawing, float& massScatter, UpdateVariables& myVar) {
 
 	if (!isSPHEnabled) {
 		SPHWater = false;
@@ -821,7 +821,7 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 
 	if (!SPHWater && !SPHRock && !SPHSand && !SPHSoil && !SPHIce && !SPHMud && !SPHGas && !SPHIron && !SPHRubber) {
 
-		for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
+		for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
 			float theta = static_cast<float>(rand()) / RAND_MAX * 2.0f * 3.14159265f;
 			float phi = acosf(1.0f - 2.0f * (static_cast<float>(rand()) / RAND_MAX));
 			float distance = sqrtf(static_cast<float>(rand()) / RAND_MAX) * brushRadius;
@@ -839,7 +839,7 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 			float randomMassMultiplier = 1.0f + (rand01 * 2.0f - 1.0f) * 0.8f;
 
 			if (myParam.particlesSpawning.massMultiplierEnabled) {
-				finalMass = 8500000000.0f / myParam.particlesSpawning.particleAmountMultiplier * randomMassMultiplier;
+				finalMass = 8500000000.0f / myVar.particleAmountMultiplier * randomMassMultiplier;
 			}
 			else {
 				finalMass = 8500000000.0f * randomMassMultiplier;
@@ -875,7 +875,7 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 
 	if (isSPHEnabled) {
 		if (SPHWater) {
-			for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
+			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
@@ -889,7 +889,7 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 				float finalMass = 0.0f;
 
 				if (myParam.particlesSpawning.massMultiplierEnabled) {
-					finalMass = (8500000000.0f * water.massMult) / myParam.particlesSpawning.particleAmountMultiplier;
+					finalMass = (8500000000.0f * water.massMult) / myVar.particleAmountMultiplier;
 				}
 				else {
 					finalMass = (8500000000.0f * water.massMult);
@@ -915,7 +915,7 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 		}
 
 		if (SPHRock) {
-			for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
+			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
@@ -929,7 +929,7 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 				float finalMass = 0.0f;
 
 				if (myParam.particlesSpawning.massMultiplierEnabled) {
-					finalMass = (8500000000.0f * rock.massMult) / myParam.particlesSpawning.particleAmountMultiplier;
+					finalMass = (8500000000.0f * rock.massMult) / myVar.particleAmountMultiplier;
 				}
 				else {
 					finalMass = (8500000000.0f * rock.massMult);
@@ -985,7 +985,7 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 		}
 
 		if (SPHIron) {
-			for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
+			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
@@ -999,7 +999,7 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 				float finalMass = 0.0f;
 
 				if (myParam.particlesSpawning.massMultiplierEnabled) {
-					finalMass = (8500000000.0f * iron.massMult) / myParam.particlesSpawning.particleAmountMultiplier;
+					finalMass = (8500000000.0f * iron.massMult) / myVar.particleAmountMultiplier;
 				}
 				else {
 					finalMass = (8500000000.0f * iron.massMult);
@@ -1055,7 +1055,7 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 		}
 
 		if (SPHSand) {
-			for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
+			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
@@ -1069,7 +1069,7 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 				float finalMass = 0.0f;
 
 				if (myParam.particlesSpawning.massMultiplierEnabled) {
-					finalMass = (8500000000.0f * sand.massMult) / myParam.particlesSpawning.particleAmountMultiplier;
+					finalMass = (8500000000.0f * sand.massMult) / myVar.particleAmountMultiplier;
 				}
 				else {
 					finalMass = (8500000000.0f * sand.massMult);
@@ -1125,7 +1125,7 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 		}
 
 		if (SPHSoil) {
-			for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
+			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
@@ -1139,7 +1139,7 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 				float finalMass = 0.0f;
 
 				if (myParam.particlesSpawning.massMultiplierEnabled) {
-					finalMass = (8500000000.0f * soil.massMult) / myParam.particlesSpawning.particleAmountMultiplier;
+					finalMass = (8500000000.0f * soil.massMult) / myVar.particleAmountMultiplier;
 				}
 				else {
 					finalMass = (8500000000.0f * soil.massMult);
@@ -1195,7 +1195,7 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 		}
 
 		if (SPHIce) {
-			for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
+			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
@@ -1209,7 +1209,7 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 				float finalMass = 0.0f;
 
 				if (myParam.particlesSpawning.massMultiplierEnabled) {
-					finalMass = (8500000000.0f * water.massMult) / myParam.particlesSpawning.particleAmountMultiplier;
+					finalMass = (8500000000.0f * water.massMult) / myVar.particleAmountMultiplier;
 				}
 				else {
 					finalMass = (8500000000.0f * water.massMult);
@@ -1236,7 +1236,7 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 		}
 
 		if (SPHMud) {
-			for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
+			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
@@ -1250,7 +1250,7 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 				float finalMass = 0.0f;
 
 				if (myParam.particlesSpawning.massMultiplierEnabled) {
-					finalMass = (8500000000.0f * mud.massMult) / myParam.particlesSpawning.particleAmountMultiplier;
+					finalMass = (8500000000.0f * mud.massMult) / myVar.particleAmountMultiplier;
 				}
 				else {
 					finalMass = (8500000000.0f * mud.massMult);
@@ -1306,7 +1306,7 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 		}
 
 		if (SPHRubber) {
-			for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
+			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
@@ -1320,7 +1320,7 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 				float finalMass = 0.0f;
 
 				if (myParam.particlesSpawning.massMultiplierEnabled) {
-					finalMass = (8500000000.0f * rubber.massMult) / myParam.particlesSpawning.particleAmountMultiplier;
+					finalMass = (8500000000.0f * rubber.massMult) / myVar.particleAmountMultiplier;
 				}
 				else {
 					finalMass = (8500000000.0f * rubber.massMult);
@@ -1376,7 +1376,7 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 		}
 
 		if (SPHGas) {
-			for (int i = 0; i < static_cast<int>(140 * myParam.particlesSpawning.particleAmountMultiplier); i++) {
+			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
@@ -1390,7 +1390,7 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 				float finalMass = 0.0f;
 
 				if (myParam.particlesSpawning.massMultiplierEnabled) {
-					finalMass = (8500000000.0f * water.massMult) / myParam.particlesSpawning.particleAmountMultiplier;
+					finalMass = (8500000000.0f * water.massMult) / myVar.particleAmountMultiplier;
 				}
 				else {
 					finalMass = (8500000000.0f * water.massMult);
@@ -1426,7 +1426,7 @@ void Brush3D::brushSize() {
 	}
 }
 
-void Brush3D::brushPosLogic(UpdateParameters& myParam) {
+glm::vec3 Brush3D::brushPosLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 
 	Vector2 mousePos = GetMousePosition();
 
@@ -1443,6 +1443,12 @@ void Brush3D::brushPosLogic(UpdateParameters& myParam) {
 			mouseRay.position.y + mouseRay.direction.y * spawnDistance,
 			mouseRay.position.z + mouseRay.direction.z * spawnDistance
 	};
+
+	if (!myParam.pParticles3D.empty() && !myVar.isBrushDrawing) {
+		ClusterHelper::clusterMouseHelper(myParam.myCamera3D.cam3D, spawnDistance);
+	}
+
+	return brushPos;
 }
 
 void Brush3D::drawBrush(float& domainHeight) {
@@ -1454,5 +1460,81 @@ void Brush3D::drawBrush(float& domainHeight) {
 		{ 5.0f, cubeHeight, 5.0f },
 		{ 12, 82, 172, 50 }
 	);
+}
+
+void Brush3D::particlesGrabber(UpdateVariables& myVar, UpdateParameters& myParam) {
+
+	glm::vec3 brushDelta = brushPos - lastBrushPos;
+
+	lastBrushVelocity = brushDelta;
+
+	if (IO::shortcutPress(KEY_M) || (IO::mousePress(0) && myVar.toolMove)) {
+		dragging = true;
+
+		for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
+
+			float dist = glm::distance(myParam.pParticles3D[i].pos, brushPos);
+
+			if (dist < brushRadius) {
+				myParam.rParticles3D[i].isGrabbed = true;
+			}
+		}
+	}
+
+	if (dragging) {
+		for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
+			if (myParam.rParticles3D[i].isGrabbed) {
+
+				myParam.pParticles3D[i].pos += brushDelta;
+
+				myParam.pParticles3D[i].acc = { 0.0f, 0.0f, 0.0f };
+				myParam.pParticles3D[i].vel = { 0.0f, 0.0f, 0.0f };
+
+				myParam.pParticles3D[i].prevVel = myParam.pParticles3D[i].pos;
+			}
+		}
+	}
+
+	if (IO::shortcutReleased(KEY_M) || (IO::mouseReleased(0) && myVar.toolMove)) {
+
+		float impulseFactor = 1.0f;
+
+		for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
+			if (myParam.rParticles3D[i].isGrabbed) {
+
+				myParam.pParticles3D[i].vel = lastBrushVelocity * impulseFactor;
+
+				myParam.pParticles3D[i].prevVel = myParam.pParticles3D[i].pos - myParam.pParticles3D[i].vel;
+
+				myParam.rParticles3D[i].isGrabbed = false;
+			}
+		}
+		dragging = false;
+	}
+
+	lastBrushPos = brushPos;
+}
+
+void Brush3D::eraseBrush(UpdateVariables& myVar, UpdateParameters& myParam) {
+
+	if ((IO::shortcutDown(KEY_X) && IO::mouseDown(2)) || IO::mouseDown(0) && myVar.toolErase) {
+		for (size_t i = 0; i < myParam.pParticles3D.size();) {
+			glm::vec3 distanceFromBrush = myParam.pParticles3D[i].pos - brushPos;
+
+			float distance = sqrt(distanceFromBrush.x * distanceFromBrush.x +
+				distanceFromBrush.y * distanceFromBrush.y + distanceFromBrush.z * distanceFromBrush.z);
+
+			if (distance < brushRadius) {
+				std::swap(myParam.pParticles3D[i], myParam.pParticles3D.back());
+				std::swap(myParam.rParticles3D[i], myParam.rParticles3D.back());
+
+				myParam.pParticles3D.pop_back();
+				myParam.rParticles3D.pop_back();
+			}
+			else {
+				i++;
+			}
+		}
+	}
 }
 

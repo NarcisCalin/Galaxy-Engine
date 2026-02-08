@@ -14,26 +14,18 @@ struct UpdateVariables;
 struct UpdateParameters;
 
 struct Physics;
+struct Physics3D;
 struct Quadtree;
 
 class ParticlesSpawning {
 public:
 
-	float heavyParticleWeightMultiplier = 1.0f;
-	int predictPathLength = 1000;
-
-	float particleAmountMultiplier = 1.0;
-	float DMAmountMultiplier = 1.0f;
-
 	const int correctionSubsteps = 32;
 	bool particlesIterating = false;
 
-	bool enablePathPrediction = false;
 	bool isSpawningAllowed = true;
 
 	bool massMultiplierEnabled = true;
-
-	float massScatter = 0.75f;
 
 	void particlesInitialConditions(Physics& physics, UpdateVariables& myVar, UpdateParameters& myParam);
 
@@ -48,26 +40,24 @@ private:
 class ParticlesSpawning3D {
 public:
 
-	float heavyParticleWeightMultiplier = 1.0f;
-	int predictPathLength = 1000;
-
-	float particleAmountMultiplier = 1.0;
-	float DMAmountMultiplier = 1.0f;
-
 	const int correctionSubsteps = 24;
 	bool particlesIterating = false;
 
-	bool enablePathPrediction = false;
 	bool isSpawningAllowed = true;
 
 	bool massMultiplierEnabled = true;
 
-	float massScatter = 0.75f;
+	float diskAxisX = 90.0f;
+	float diskAxisY = 0.0f;
+	float diskAxisZ = 0.0f;
 
-	void particlesInitialConditions(Physics& physics, UpdateVariables& myVar, UpdateParameters& myParam);
+	void particlesInitialConditions(Physics3D& physics3D, UpdateVariables& myVar, UpdateParameters& myParam);
 
-	void predictTrajectory(const std::vector<ParticlePhysics>& actualParticles,
-		SceneCamera& myCamera, Physics physics, UpdateVariables& myVar, Slingshot& slingshot);
+	void predictTrajectory(const std::vector<ParticlePhysics3D>& pParticles,
+		SceneCamera3D& myCamera, Physics3D physics3D,
+		UpdateVariables& myVar, UpdateParameters& myParam, Slingshot3D& slingshot);
+
+	void drawGalaxyDisplay(UpdateParameters& myParam);
 
 private:
 

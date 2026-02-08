@@ -211,7 +211,7 @@ struct ColorVisuals {
 			for (int64_t i = 0; i < pParticles3D.size(); i++) {
 
 				float particleVelSq = pParticles3D[i].vel.x * pParticles3D[i].vel.x +
-					pParticles3D[i].vel.y * pParticles3D[i].vel.y;
+					pParticles3D[i].vel.y * pParticles3D[i].vel.y + pParticles3D[i].vel.z * pParticles3D[i].vel.z;
 
 				float clampedVel = std::clamp(particleVelSq, minVel, maxVel);
 				float normalizedVel = clampedVel / maxVel;
@@ -261,7 +261,7 @@ struct ColorVisuals {
 				}
 
 				float particleAccSq = pParticles3D[i].acc.x * pParticles3D[i].acc.x +
-					pParticles3D[i].acc.y * pParticles3D[i].acc.y;
+					pParticles3D[i].acc.y * pParticles3D[i].acc.y + pParticles3D[i].acc.z * pParticles3D[i].acc.z;
 
 				float clampedAcc = std::clamp(sqrt(particleAccSq), minColorAcc, maxColorAcc);
 				float normalizedAcc = clampedAcc / maxColorAcc;
@@ -302,9 +302,9 @@ struct ColorVisuals {
 		else if (shockwaveColor && is3DMode) {
 			for (size_t i = 0; i < pParticles3D.size(); i++) {
 
-				glm::vec2 shockwave = pParticles3D[i].acc;
+				glm::vec3 shockwave = pParticles3D[i].acc;
 
-				float shockMag = std::sqrt(shockwave.x * shockwave.x + shockwave.y * shockwave.y);
+				float shockMag = std::sqrt(shockwave.x * shockwave.x + shockwave.y * shockwave.y + shockwave.z * shockwave.z);
 
 				float clampedShock = std::clamp(shockMag, ShockwaveMinAcc, ShockwaveMaxAcc);
 				float normalizedShock = clampedShock / ShockwaveMaxAcc;
@@ -368,17 +368,17 @@ struct ColorVisuals {
 		else if (turbulenceColor && is3DMode) {
 			for (size_t i = 0; i < pParticles3D.size(); i++) {
 
-				if (rParticles[i].isDarkMatter) {
+				if (rParticles3D[i].isDarkMatter) {
 					continue;
 				}
 
 				if (timeFactor != 0.0f) {
-					float pTotalVel = sqrt(pParticles3D[i].vel.x * pParticles3D[i].vel.x + pParticles3D[i].vel.y * pParticles3D[i].vel.y);
-					float pTotalPrevVel = sqrt(pParticles3D[i].prevVel.x * pParticles3D[i].prevVel.x + pParticles3D[i].prevVel.y * pParticles3D[i].prevVel.y);
+					float pTotalVel = sqrt(pParticles3D[i].vel.x * pParticles3D[i].vel.x + pParticles3D[i].vel.y * pParticles3D[i].vel.y + pParticles3D[i].vel.z * pParticles3D[i].vel.z);
+					float pTotalPrevVel = sqrt(pParticles3D[i].prevVel.x * pParticles3D[i].prevVel.x + pParticles3D[i].prevVel.y * pParticles3D[i].prevVel.y + pParticles3D[i].prevVel.z * pParticles3D[i].prevVel.z);
 
 					rParticles3D[i].turbulence += std::abs(pTotalVel - pTotalPrevVel);
 
-					glm::vec2 velDiff = pParticles[i].vel - pParticles[i].prevVel;
+					glm::vec2 velDiff = pParticles3D[i].vel - pParticles3D[i].prevVel;
 					rParticles3D[i].turbulence += glm::length(velDiff);
 
 					rParticles3D[i].turbulence *= 1.0f - turbulenceFadeRate;
@@ -386,7 +386,7 @@ struct ColorVisuals {
 					rParticles3D[i].turbulence = std::max(0.0f, rParticles3D[i].turbulence);
 				}
 
-				float clampedTurbulence = std::clamp(rParticles[i].turbulence, minColorTurbulence, maxColorTurbulence);
+				float clampedTurbulence = std::clamp(rParticles3D[i].turbulence, minColorTurbulence, maxColorTurbulence);
 				float normalizedTurbulence = pow(clampedTurbulence / maxColorTurbulence, turbulenceContrast);
 
 				if (turbulenceCustomCol) {

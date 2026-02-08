@@ -45,9 +45,9 @@ void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar,
 	paramIO(filename, out, "Min Dynamic Size", myParam.densitySize.minSize);
 	paramIO(filename, out, "MaxSizeNeighbors", myParam.densitySize.maxNeighbors);
 	paramIO(filename, out, "ParticleSizeMult", myVar.particleSizeMultiplier);
-	paramIO(filename, out, "VisiblePAmountMult", myParam.particlesSpawning.particleAmountMultiplier);
-	paramIO(filename, out, "DMPAmountMult", myParam.particlesSpawning.DMAmountMultiplier);
-	paramIO(filename, out, "MassRandomMultiplier", myParam.particlesSpawning.massScatter);
+	paramIO(filename, out, "VisiblePAmountMult", myVar.particleAmountMultiplier);
+	paramIO(filename, out, "DMPAmountMult", myVar.DMAmountMultiplier);
+	paramIO(filename, out, "MassRandomMultiplier", myVar.massScatter);
 	paramIO(filename, out, "MassMultiplierToggle", myParam.particlesSpawning.massMultiplierEnabled);
 
 	// ----- Colors -----
@@ -87,7 +87,7 @@ void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar,
 	paramIO(filename, out, "Theta", myVar.theta);
 	paramIO(filename, out, "TimeMult", myVar.timeStepMultiplier);
 	paramIO(filename, out, "GravityMultiplier", myVar.gravityMultiplier);
-	paramIO(filename, out, "HeavyParticlesMass", myParam.particlesSpawning.heavyParticleWeightMultiplier);
+	paramIO(filename, out, "HeavyParticlesMass", myVar.heavyParticleWeightMultiplier);
 	paramIO(filename, out, "TemperatureSimulation", myVar.isTempEnabled);
 	paramIO(filename, out, "AmbientTemperature", myVar.ambientTemp);
 	paramIO(filename, out, "AmbientHeatRate", myVar.globalAmbientHeatRate);

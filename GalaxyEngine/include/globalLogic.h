@@ -56,6 +56,7 @@ struct ParticleBounds {
 void selectedParticleDebug();
 
 void pinParticles();
+void pinParticles3D();
 
 void buildKernels();
 
@@ -63,7 +64,10 @@ void freeGPUMemory();
 
 void updateScene();
 
-void mode3D(Texture2D& particleBlurTex);
+void mode3D();
+
+void drawMode3DRecording(Texture2D& particleBlurTex);
+void drawMode3DNonRecording();
 
 void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myRayTracingTexture,
 	RenderTexture2D& myUITexture, RenderTexture2D& myMiscTexture, bool& fadeActive, bool& introActive);

@@ -8,6 +8,7 @@
 #include "Particles/particleSelection.h"
 #include "Particles/particlesSpawning.h"
 #include "Particles/neighborSearch.h"
+#include "Particles/clusterMouseHelper.h"
 
 #include "Physics/morton.h"
 
@@ -82,7 +83,7 @@ struct UpdateVariables {
 
 	glm::vec2 domainSize = { 3840.0f, 2160.0f };
 
-	glm::vec3 domainSize3D = { 960.0f,  960.0f,  960.0f };
+	glm::vec3 domainSize3D = { 1300.0f,  1300.0f,  1300.0f };
 
 	float halfDomainWidth = domainSize.x * 0.5f;
 	float halfDomainHeight = domainSize.y * 0.5f;
@@ -274,4 +275,14 @@ struct UpdateVariables {
 	bool is3DMode = true;
 
 	bool hasAVX2 = false;
+
+	float heavyParticleWeightMultiplier = 1.0f;
+	int predictPathLength = 1000;
+
+	float particleAmountMultiplier = 1.0;
+	float DMAmountMultiplier = 1.0f;
+
+	float massScatter = 0.75f;
+
+	bool enablePathPrediction = false;
 };

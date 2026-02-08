@@ -135,7 +135,7 @@ void Physics::calculateForceFromGrid(UpdateVariables& myVar) {
 
 			if ((gridSizeSq < thetaSq * distanceSq) || isSubgridsEmty) {
 
-				if ((grid.endIndex - grid.startIndex) == 1) {
+				if (((grid.endIndex - grid.startIndex) <= 16 /*Max Leaf Particles*/ && grid.size <= 2.0f) /*Max Non-Dense Size*/ || (grid.endIndex - grid.startIndex) == 1) {
 					if (std::abs(posX[grid.startIndex] - posX[i]) < 0.001f && std::abs(posY[grid.startIndex] - posY[i]) < 0.001f) {
 						gridIdx += grid.next + 1;
 						continue;
@@ -859,6 +859,10 @@ void Physics::integrateStart(std::vector<ParticlePhysics>& pParticles, std::vect
 	for (size_t i = 0; i < pParticles.size(); i++) {
 		ParticlePhysics& p = pParticles[i];
 
+		if (rParticles[i].isPinned) {
+			continue;
+		}
+
 		p.prevVel = p.vel;
 
 		p.vel += p.acc * halfDt;
@@ -891,10 +895,15 @@ void Physics::integrateStart(std::vector<ParticlePhysics>& pParticles, std::vect
 	}
 }
 
-void Physics::integrateEnd(std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar) {
+void Physics::integrateEnd(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles, UpdateVariables& myVar) {
 
 #pragma omp parallel for schedule(dynamic)
 	for (size_t i = 0; i < pParticles.size(); i++) {
+
+		if (rParticles[i].isPinned) {
+			continue;
+		}
+
 		pParticles[i].vel += pParticles[i].acc * (myVar.timeFactor * 0.5f);
 	}
 }

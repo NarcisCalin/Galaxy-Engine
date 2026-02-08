@@ -41,7 +41,7 @@ struct DensitySize {
 					}
 
 					float particleAccSq = pParticles3D[i].acc.x * pParticles3D[i].acc.x +
-						pParticles3D[i].acc.y * pParticles3D[i].acc.y;
+						pParticles3D[i].acc.y * pParticles3D[i].acc.y + pParticles3D[i].acc.z * pParticles3D[i].acc.z;
 
 					float clampedAcc = std::clamp(sqrt(particleAccSq), 0.0f, sizeAcc);
 					float normalizedAcc = clampedAcc / sizeAcc;

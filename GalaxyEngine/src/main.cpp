@@ -309,7 +309,13 @@ void main() {
             rlEnableBackfaceCulling();
             rlEnableDepthMask();
 
-            mode3D(particleBlurTex);
+            mode3D();
+
+            drawMode3DRecording(particleBlurTex);
+
+            if (!myVar.isRecording) {
+                drawMode3DNonRecording();
+            }
 
             EndMode3D();
         }

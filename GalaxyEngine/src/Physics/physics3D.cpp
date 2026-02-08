@@ -42,65 +42,135 @@ void Physics3D::flattenParticles3D(std::vector<ParticlePhysics3D>& pParticles3D)
 	}
 }
 
+// This is used in predict trajectory inside particleSpawning.cpp
+glm::vec3 Physics3D::calculateForceFromGrid3DOld(std::vector<ParticlePhysics3D>& pParticles,
+	UpdateVariables& myVar,
+	ParticlePhysics3D& pParticle) {
+
+	glm::vec3 totalForce = { 0.0f, 0.0f, 0.0f };
+	uint32_t gridIdx = 0;
+
+	const uint32_t nodeCount = static_cast<uint32_t>(globalNodes3D.size());
+
+	const float thetaSq = myVar.theta * myVar.theta;
+	const float softeningSq = myVar.softening * myVar.softening;
+
+	const float Gf = static_cast<float>(myVar.G);
+
+	const float pmass = pParticle.mass;
+
+	auto* particlesPtr = pParticles.data();
+
+	while (gridIdx < nodeCount) {
+		Node3D& grid = globalNodes3D[gridIdx];
+		float gridMass = grid.gridMass;
+
+		if (gridMass <= 0.0f) {
+			gridIdx += grid.next + 1;
+			continue;
+		}
+
+		const glm::vec3 gridCOM = grid.centerOfMass;
+		const float gridSize = grid.size;
+		glm::vec3 d = gridCOM - pParticle.pos;
+
+		if (myVar.isPeriodicBoundaryEnabled) {
+			d.x -= myVar.domainSize3D.x * ((d.x > myVar.halfDomain3DWidth) - (d.x < -myVar.halfDomain3DWidth));
+			d.y -= myVar.domainSize3D.y * ((d.y > myVar.halfDomain3DHeight) - (d.y < -myVar.halfDomain3DHeight));
+			d.z -= myVar.domainSize3D.z * ((d.z > myVar.halfDomain3DDepth) - (d.z < -myVar.halfDomain3DDepth));
+		}
+
+		float distanceSq = d.x * d.x + d.y * d.y + d.z * d.z + softeningSq;
+
+		bool isSubgridsEmpty = true;
+		for (int i = 0; i < 2; ++i) {
+			for (int j = 0; j < 2; ++j) {
+				for (int k = 0; k < 2; ++k) {
+					if (grid.subGrids[i][j][k] != UINT32_MAX) {
+						isSubgridsEmpty = false;
+						break;
+					}
+				}
+				if (!isSubgridsEmpty) break;
+			}
+			if (!isSubgridsEmpty) break;
+		}
+
+		float gridSizeSq = gridSize * gridSize;
+
+		if ((gridSizeSq < thetaSq * distanceSq) || isSubgridsEmpty) {
+			if ((grid.endIndex - grid.startIndex) == 1) {
+				const ParticlePhysics3D& other = particlesPtr[grid.startIndex];
+				if (std::abs(other.pos.x - pParticle.pos.x) < 0.001f &&
+					std::abs(other.pos.y - pParticle.pos.y) < 0.001f &&
+					std::abs(other.pos.z - pParticle.pos.z) < 0.001f) {
+					gridIdx += grid.next + 1;
+					continue;
+				}
+			}
+
+			float invDistance = 1.0f / std::sqrtf(distanceSq);
+			float invDist2 = invDistance * invDistance;
+			float invDist3 = invDist2 * invDistance;
+			float forceMagnitude = Gf * pmass * gridMass * invDist3;
+			totalForce += d * forceMagnitude;
+
+			gridIdx += grid.next + 1;
+		}
+		else {
+			++gridIdx;
+		}
+	}
+
+	return totalForce;
+}
+
 void Physics3D::calculateForceFromGrid3D(UpdateVariables& myVar) {
-	// Parallelize the outer loop over all particles
 #pragma omp parallel for schedule(dynamic)
 	for (size_t i = 0; i < posX.size(); i++) {
 
-		// 1. Initialize Total Force as a 3D vector
 		glm::vec3 totalForce = { 0.0f, 0.0f, 0.0f };
 
 		uint32_t gridIdx = 0;
 		const uint32_t nodeCount = static_cast<uint32_t>(globalNodes3D.size());
 
-		// Pre-calculate squared constants for performance
 		const float thetaSq = myVar.theta * myVar.theta;
 		const float softeningSq = myVar.softening * myVar.softening;
 		const float Gf = myVar.G;
 		const float pmass = mass[i];
 
-		// Barnes-Hut Tree Traversal
 		while (gridIdx < nodeCount) {
 			Node3D& grid = globalNodes3D[gridIdx];
 
 			float gridMass = grid.gridMass;
 
-			// Optimization: If a node has no mass, it exerts no force. 
-			// Skip it and all its children.
 			if (gridMass <= 0.0f) {
 				gridIdx += grid.next + 1;
 				continue;
 			}
 
-			// 2. Get 3D Center of Mass and calculate distance vector
 			const glm::vec3 gridCOM = grid.centerOfMass;
 			const float gridSize = grid.size;
 
-			// Vector d points FROM particle i TO the grid center
 			glm::vec3 d = gridCOM - glm::vec3{ posX[i], posY[i], posZ[i] };
 
-			// 3. Periodic Boundary Handling (Added Z-axis)
 			if (myVar.isPeriodicBoundaryEnabled) {
-				// X Axis
+				
 				d.x -= myVar.domainSize3D.x * ((d.x > myVar.halfDomain3DWidth) - (d.x < -myVar.halfDomain3DWidth));
-				// Y Axis
 				d.y -= myVar.domainSize3D.y * ((d.y > myVar.halfDomain3DHeight) - (d.y < -myVar.halfDomain3DHeight));
-				// Z Axis (New)
 				d.z -= myVar.domainSize3D.z * ((d.z > myVar.halfDomain3DDepth) - (d.z < -myVar.halfDomain3DDepth));
 			}
 
-			// 4. Distance Squared in 3D (x*x + y*y + z*z)
 			float distanceSq = d.x * d.x + d.y * d.y + d.z * d.z + softeningSq;
 
-			// 5. Check if this node is a Leaf (has no children)
-			// In 3D, we have [2][2][2] children. We check if they are all empty.
+
 			bool isSubgridsEmpty = true;
 			for (int x = 0; x < 2; ++x) {
 				for (int y = 0; y < 2; ++y) {
 					for (int z = 0; z < 2; ++z) {
 						if (grid.subGrids[x][y][z] != UINT32_MAX) {
 							isSubgridsEmpty = false;
-							goto skip_check; // Break out of nested loops early
+							goto skip_check;
 						}
 					}
 				}
@@ -109,14 +179,10 @@ void Physics3D::calculateForceFromGrid3D(UpdateVariables& myVar) {
 
 			float gridSizeSq = gridSize * gridSize;
 
-			// Barnes-Hut Condition:
-			// If the node is far enough away (size < theta * dist) OR it is a leaf...
 			if ((gridSizeSq < thetaSq * distanceSq) || isSubgridsEmpty) {
 
-				// Self-Interaction Check:
-				// If it's a leaf containing only 1 particle, check if it is THIS particle.
-				if ((grid.endIndex - grid.startIndex) == 1) {
-					// Added Z-check
+				if (((grid.endIndex - grid.startIndex) <= 16 /*Max Leaf Particles*/ && grid.size <= 2.0f) /*Max Non-Dense Size*/ || (grid.endIndex - grid.startIndex) == 1) {
+
 					if (std::abs(posX[grid.startIndex] - posX[i]) < 0.001f &&
 						std::abs(posY[grid.startIndex] - posY[i]) < 0.001f &&
 						std::abs(posZ[grid.startIndex] - posZ[i]) < 0.001f) {
@@ -126,14 +192,12 @@ void Physics3D::calculateForceFromGrid3D(UpdateVariables& myVar) {
 					}
 				}
 
-				// Calculate Force Magnitude
 				float invDistance = 1.0f / std::sqrtf(distanceSq);
 				float invDist2 = invDistance * invDistance;
 				float invDist3 = invDist2 * invDistance;
 
 				float forceMagnitude = Gf * pmass * gridMass * invDist3;
 
-				// Accumulate 3D Force
 				totalForce += d * forceMagnitude;
 
 				// 6. Heat Transfer (Optional)
@@ -154,30 +218,25 @@ void Physics3D::calculateForceFromGrid3D(UpdateVariables& myVar) {
 				//	}
 				//}
 
-				// Skip the children of this node (we already approximated them)
 				gridIdx += grid.next + 1;
 			}
 			else {
-				// The node is too close and is not a leaf. Open it and check children.
 				++gridIdx;
 			}
 		}
 
-		// 7. Apply Acceleration to Struct-of-Arrays
 		accX[i] = totalForce.x / mass[i];
 		accY[i] = totalForce.y / mass[i];
-		accZ[i] = totalForce.z / mass[i]; // Apply Z acceleration
+		accZ[i] = totalForce.z / mass[i];
 	}
 }
 
 void Physics3D::naiveGravity3D(std::vector<ParticlePhysics3D>& pParticles3D, UpdateVariables& myVar) {
 	int n = static_cast<int>(posX.size());
 
-	// Load Gravity Constant and Softening into vectors
 	__m256 gVec = _mm256_set1_ps(myVar.G);
 	__m256 softVec = _mm256_set1_ps(myVar.softening);
 
-	// Load pointers for fast access
 	const float* posXPtr = posX.data();
 	const float* posYPtr = posY.data();
 	const float* posZPtr = posZ.data();
@@ -187,7 +246,6 @@ void Physics3D::naiveGravity3D(std::vector<ParticlePhysics3D>& pParticles3D, Upd
 	float* accYPtr = accY.data();
 	float* accZPtr = accZ.data();
 
-	// Domain constants for Periodic Boundaries
 	__m256 domainSizeX = _mm256_set1_ps(myVar.domainSize3D.x);
 	__m256 domainSizeY = _mm256_set1_ps(myVar.domainSize3D.y);
 	__m256 domainSizeZ = _mm256_set1_ps(myVar.domainSize3D.z);
@@ -200,11 +258,9 @@ void Physics3D::naiveGravity3D(std::vector<ParticlePhysics3D>& pParticles3D, Upd
 	__m256 negHalfDomainHeight = _mm256_set1_ps(-myVar.halfDomain3DHeight);
 	__m256 negHalfDomainDepth = _mm256_set1_ps(-myVar.halfDomain3DDepth);
 
-	// Constants for Newton-Raphson iteration (for rsqrt accuracy)
 	__m256 threeHalfs = _mm256_set1_ps(1.5f);
 	__m256 pointFive = _mm256_set1_ps(0.5f);
 
-	// Initialize acceleration arrays to 0
 #pragma omp parallel for schedule(static)
 	for (int i = 0; i < n; i++) {
 		accXPtr[i] = 0.0f;
@@ -227,7 +283,7 @@ void Physics3D::naiveGravity3D(std::vector<ParticlePhysics3D>& pParticles3D, Upd
 		__m256 totalAccZ = _mm256_setzero_ps();
 
 		int j;
-		// Main AVX Loop (Processes 8 particles at a time)
+
 		for (j = 0; j <= n - 8; j += 8) {
 			__m256 pxj = _mm256_loadu_ps(&posXPtr[j]);
 			__m256 pyj = _mm256_loadu_ps(&posYPtr[j]);
@@ -238,7 +294,6 @@ void Physics3D::naiveGravity3D(std::vector<ParticlePhysics3D>& pParticles3D, Upd
 			__m256 dy = _mm256_sub_ps(pyj, pyi);
 			__m256 dz = _mm256_sub_ps(pzj, pzi);
 
-			// Periodic Boundary Correction (Minimum Image Convention)
 			if (myVar.isPeriodicBoundaryEnabled) {
 				dx = _mm256_sub_ps(dx,
 					_mm256_sub_ps(
@@ -259,7 +314,6 @@ void Physics3D::naiveGravity3D(std::vector<ParticlePhysics3D>& pParticles3D, Upd
 					));
 			}
 
-			// Distance Squared = dx*dx + dy*dy + dz*dz + softening
 			__m256 distSq =
 				_mm256_add_ps(
 					_mm256_add_ps(
@@ -269,40 +323,25 @@ void Physics3D::naiveGravity3D(std::vector<ParticlePhysics3D>& pParticles3D, Upd
 						_mm256_mul_ps(dz, dz),
 						softVec));
 
-			// ---------------------------------------------------------
-			// OPTIMIZATION: Fast Inverse Square Root (1 / sqrt(distSq))
-			// ---------------------------------------------------------
-
-			// 1. Initial approximation (fast but low precision)
 			__m256 invDist = _mm256_rsqrt_ps(distSq);
 
-			// 2. Newton-Raphson Iteration: y = y * (1.5 - 0.5 * x * y * y)
-			// This step corrects the error from the approximation.
-			// Calculate (0.5 * x * y * y)
 			__m256 nrTerm = _mm256_mul_ps(pointFive, distSq);
 			nrTerm = _mm256_mul_ps(nrTerm, invDist);
 			nrTerm = _mm256_mul_ps(nrTerm, invDist);
 
-			// Calculate (1.5 - nrTerm)
 			__m256 nrFactor = _mm256_sub_ps(threeHalfs, nrTerm);
 
-			// Final invDist
 			invDist = _mm256_mul_ps(invDist, nrFactor);
-			// ---------------------------------------------------------
 
-			// invDist3 = invDist * invDist * invDist
 			__m256 invDist3 = _mm256_mul_ps(invDist, _mm256_mul_ps(invDist, invDist));
 
-			// Force Factor = G * mass * invDist^3
 			__m256 factor = _mm256_mul_ps(gVec, _mm256_mul_ps(mj, invDist3));
 
-			// Accumulate Acceleration
 			totalAccX = _mm256_add_ps(totalAccX, _mm256_mul_ps(dx, factor));
 			totalAccY = _mm256_add_ps(totalAccY, _mm256_mul_ps(dy, factor));
 			totalAccZ = _mm256_add_ps(totalAccZ, _mm256_mul_ps(dz, factor));
 		}
 
-		// Horizontal Sum: Reduce the 8-wide AVX vectors into single float values
 		float accX_array[8], accY_array[8], accZ_array[8];
 		_mm256_storeu_ps(accX_array, totalAccX);
 		_mm256_storeu_ps(accY_array, totalAccY);
@@ -318,7 +357,6 @@ void Physics3D::naiveGravity3D(std::vector<ParticlePhysics3D>& pParticles3D, Upd
 			finalAccZ += accZ_array[k];
 		}
 
-		// Remainder Loop (For particles that didn't fit in the group of 8)
 		for (; j < n; j++) {
 			float dx = posXPtr[j] - p_ix;
 			float dy = posYPtr[j] - p_iy;
@@ -332,7 +370,6 @@ void Physics3D::naiveGravity3D(std::vector<ParticlePhysics3D>& pParticles3D, Upd
 
 			float distSq = dx * dx + dy * dy + dz * dz + myVar.softening;
 
-			// Standard scalar math for remainder
 			float invDist = 1.0f / std::sqrt(distSq);
 			float invDist3 = invDist * invDist * invDist;
 			float factor = myVar.G * massPtr[j] * invDist3;
@@ -387,14 +424,14 @@ void Physics3D::integrateStart3D(
 	for (size_t i = 0; i < pParticles3D.size(); i++) {
 		ParticlePhysics3D& p = pParticles3D[i];
 
-		// 1. Velocity Verlet / Leapfrog Integration Step 1
-		// Save previous velocity for other calculations (like drag or collisions)
+		if (rParticles3D[i].isPinned) {
+			continue;
+		}
+
 		p.prevVel = p.vel;
 
-		// Update velocity by half a timestep based on current acceleration
 		p.vel += p.acc * halfDt;
 
-		// 2. Velocity Clamping (Safety measure for SPH/Gravity stability)
 		if (myVar.isSPHEnabled) {
 			float vSq =
 				p.vel.x * p.vel.x +
@@ -402,7 +439,6 @@ void Physics3D::integrateStart3D(
 				p.vel.z * p.vel.z;
 
 			if (vSq > sphMaxVelSq) {
-				// Clamp Previous Velocity
 				float prevVSq =
 					p.prevVel.x * p.prevVel.x +
 					p.prevVel.y * p.prevVel.y +
@@ -413,46 +449,42 @@ void Physics3D::integrateStart3D(
 					p.prevVel *= invPrevLen;
 				}
 
-				// Clamp Current Velocity
 				float invLen = myVar.sphMaxVel / sqrtf(vSq);
 				p.vel *= invLen;
 			}
 		}
 
-		// 3. Update Position
 		p.pos += p.vel * dt;
 
-		// 4. Periodic Boundary Conditions (Centered at 0)
-		// We check against -HalfWidth and +HalfWidth instead of 0 and Width.
 		if (myVar.isPeriodicBoundaryEnabled) {
-			// --- X Axis ---
-			// If particle goes too far left (past -50)
+
 			if (p.pos.x < -myVar.halfDomain3DWidth)
-				p.pos.x += myVar.domainSize3D.x; // Teleport to right (+50)
+				p.pos.x += myVar.domainSize3D.x;
 
-			// If particle goes too far right (past +50)
-			// FIX: Changed from domainSize3D.x to halfDomain3DWidth
 			else if (p.pos.x >= myVar.halfDomain3DWidth)
-				p.pos.x -= myVar.domainSize3D.x; // Teleport to left (-50)
+				p.pos.x -= myVar.domainSize3D.x;
 
-			// --- Y Axis ---
 			if (p.pos.y < -myVar.halfDomain3DHeight)
 				p.pos.y += myVar.domainSize3D.y;
-			else if (p.pos.y >= myVar.halfDomain3DHeight) // FIX
+			else if (p.pos.y >= myVar.halfDomain3DHeight)
 				p.pos.y -= myVar.domainSize3D.y;
 
-			// --- Z Axis ---
 			if (p.pos.z < -myVar.halfDomain3DDepth)
 				p.pos.z += myVar.domainSize3D.z;
-			else if (p.pos.z >= myVar.halfDomain3DDepth) // FIX
+			else if (p.pos.z >= myVar.halfDomain3DDepth)
 				p.pos.z -= myVar.domainSize3D.z;
 		}
 	}
 }
 
-void Physics3D::integrateEnd3D(std::vector<ParticlePhysics3D>& pParticles3D, UpdateVariables& myVar) {
+void Physics3D::integrateEnd3D(std::vector<ParticlePhysics3D>& pParticles3D, std::vector<ParticleRendering3D>& rParticles3D, UpdateVariables& myVar) {
 #pragma omp parallel for schedule(dynamic)
 	for (size_t i = 0; i < pParticles3D.size(); i++) {
+
+		if (rParticles3D[i].isPinned) {
+			continue;
+		}
+
 		pParticles3D[i].vel += pParticles3D[i].acc * (myVar.timeFactor * 0.5f);
 	}
 }

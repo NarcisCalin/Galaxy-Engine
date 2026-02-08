@@ -24,6 +24,10 @@ struct Physics3D {
 
 	void flattenParticles3D(std::vector<ParticlePhysics3D>& pParticles3D);
 
+	glm::vec3 calculateForceFromGrid3DOld(std::vector<ParticlePhysics3D>& pParticles,
+		UpdateVariables& myVar,
+		ParticlePhysics3D& pParticle);
+
 	void calculateForceFromGrid3D(UpdateVariables& myVar);
 
 	void naiveGravity3D(std::vector<ParticlePhysics3D>& pParticles3D, UpdateVariables& myVar);
@@ -32,5 +36,5 @@ struct Physics3D {
 
 	void integrateStart3D(std::vector<ParticlePhysics3D>& pParticles3D, std::vector<ParticleRendering3D>& rParticles3D, UpdateVariables& myVar);
 
-	void integrateEnd3D(std::vector<ParticlePhysics3D>& pParticles3D, UpdateVariables& myVar);
+	void integrateEnd3D(std::vector<ParticlePhysics3D>& pParticles3D, std::vector<ParticleRendering3D>& rParticles3D, UpdateVariables& myVar);
 };

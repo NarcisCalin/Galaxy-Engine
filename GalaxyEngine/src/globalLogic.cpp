@@ -105,6 +105,42 @@ void pinParticles() {
 	}
 }
 
+void pinParticles3D() {
+
+	if (myVar.pinFlag) {
+		for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
+			if (myParam.rParticles3D[i].isSelected) {
+				myParam.rParticles3D[i].isPinned = true;
+				myParam.pParticles3D[i].vel *= 0.0f;
+				myParam.pParticles3D[i].prevVel *= 0.0f;
+				myParam.pParticles3D[i].acc *= 0.0f;
+				myParam.pParticles3D[i].ke *= 0.0f;
+				myParam.pParticles3D[i].prevKe *= 0.0f;
+			}
+		}
+		myVar.pinFlag = false;
+	}
+
+	if (myVar.unPinFlag) {
+		for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
+			if (myParam.rParticles3D[i].isSelected) {
+				myParam.rParticles3D[i].isPinned = false;
+			}
+		}
+		myVar.unPinFlag = false;
+	}
+
+	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+		if (myParam.rParticles3D[i].isPinned) {
+			myParam.pParticles3D[i].vel *= 0.0f;
+			myParam.pParticles3D[i].prevVel *= 0.0f;
+			myParam.pParticles3D[i].acc *= 0.0f;
+			myParam.pParticles3D[i].ke *= 0.0f;
+			myParam.pParticles3D[i].prevKe *= 0.0f;
+		}
+	}
+}
+
 void plyFileCreation(std::ofstream& file) {
 	uint32_t visibleParticles = 0;
 
@@ -1113,7 +1149,7 @@ void updateScene() {
 			myParam.neighborSearch.idToIndexTable[myParam.pParticles[i].id] = i;
 		}
 	}
-	
+
 	if (!myVar.is3DMode) {
 		myParam.brush.brushSize();
 	}
@@ -1172,17 +1208,6 @@ void updateScene() {
 			if (!myVar.isGPUEnabled) {
 
 				if (!myVar.naiveSIMD) {
-					//#pragma omp parallel for schedule(dynamic)
-										//for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-
-										//	if ((myParam.rParticles[i].isBeingDrawn && myVar.isBrushDrawing && myVar.isSPHEnabled) || myParam.rParticles[i].isPinned) {
-										//		continue;
-										//	}
-
-										//	//glm::vec2 netForce = physics.calculateForceFromGrid(myParam.pParticles, myVar, myParam.pParticles[i]);
-
-										//	//myParam.pParticles[i].acc = netForce / myParam.pParticles[i].mass;
-										//}
 
 					physics.flattenParticles(myParam.pParticles);
 
@@ -1219,7 +1244,7 @@ void updateScene() {
 			physics.temperatureCalculation(myParam.pParticles, myParam.rParticles, myVar);
 		}
 
-		physics.integrateEnd(myParam.pParticles, myVar);
+		physics.integrateEnd(myParam.pParticles, myParam.rParticles, myVar);
 
 	}
 	else {
@@ -1325,10 +1350,8 @@ uint32_t gridRootIndex3D;
 
 glm::vec4 bb3D = { 0.0f, 0.0f, 0.0f, 0.0f };
 
-void mode3D(Texture2D& particleBlurTex) {
+void mode3D() {
 
-	Camera3D& cam3D = myParam.myCamera3D.cam3D;
-	
 	physics3D.integrateStart3D(myParam.pParticles3D, myParam.rParticles3D, myVar);
 
 	if (myVar.timeFactor != 0.0f && !myVar.naiveSIMD) {
@@ -1356,7 +1379,7 @@ void mode3D(Texture2D& particleBlurTex) {
 
 			Node3D& q = globalNodes3D[i];
 
-			DrawCubeWiresV({ q.pos.x, q.pos.y, q.pos.z }, { q.size, q.size, q.size }, {128,128,128,128});
+			DrawCubeWiresV({ q.pos.x, q.pos.y, q.pos.z }, { q.size, q.size, q.size }, { 128,128,128,32 });
 
 			/*if (q.gridMass > 0.0f) {
 				DrawCircleV({ q.centerOfMass.x, q.centerOfMass.y }, 2.0f, { 180,50,50,128 });
@@ -1373,7 +1396,7 @@ void mode3D(Texture2D& particleBlurTex) {
 		myVar.isMergerEnabled ||
 		myParam.colorVisuals.densityColor ||
 		myVar.isDensitySizeEnabled ||
-	myParam.colorVisuals.densityColor && myVar.timeFactor > 0.0f && !myVar.isGravityFieldEnabled) {
+		myParam.colorVisuals.densityColor && myVar.timeFactor > 0.0f && !myVar.isGravityFieldEnabled) {
 
 		/*myParam.neighborSearch3D.UpdateNeighbors(myParam.pParticles3D, myParam.rParticles3D);
 
@@ -1403,20 +1426,60 @@ void mode3D(Texture2D& particleBlurTex) {
 		}
 	}
 
-	myParam.brush3D.brushPosLogic(myParam);
+	myParam.brush3D.brushPosLogic(myParam, myVar);
 	myParam.brush3D.brushSize();
 
-	myParam.particlesSpawning3D.particlesInitialConditions(physics, myVar, myParam);
+	myParam.particlesSpawning3D.particlesInitialConditions(physics3D, myVar, myParam);
 
-	physics3D.flattenParticles3D(myParam.pParticles3D);
+	if ((myVar.timeFactor != 0.0f /*&& myVar.gridExists*/)) {
 
-	physics3D.calculateForceFromGrid3D(myVar);
+#pragma omp parallel for schedule(dynamic)
+		for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
+			myParam.pParticles3D[i].acc = { 0.0f, 0.0f, 0.0f };
+		}
 
-	//physics3D.naiveGravity3D(myParam.pParticles3D, myVar);
+		if (myVar.gravityMultiplier != 0.0f || myVar.isTempEnabled) {
 
-	physics3D.readFlattenBack3D(myParam.pParticles3D);
 
-	physics3D.integrateEnd3D(myParam.pParticles3D, myVar);
+			if (!myVar.naiveSIMD) {
+
+				physics3D.flattenParticles3D(myParam.pParticles3D);
+
+				physics3D.calculateForceFromGrid3D(myVar);
+
+				physics3D.readFlattenBack3D(myParam.pParticles3D);
+			}
+			else {
+				physics3D.flattenParticles3D(myParam.pParticles3D);
+
+				physics3D.naiveGravity3D(myParam.pParticles3D, myVar);
+
+				physics3D.readFlattenBack3D(myParam.pParticles3D);
+
+			}
+		}
+
+		/*if (myVar.isMergerEnabled)
+			physics.mergerSolver(myParam.pParticles, myParam.rParticles, myVar, myParam);
+
+		if (myVar.isSPHEnabled) {
+			sph.pcisphSolver(myVar, myParam);
+		}*/
+
+		/*physics.constraints(myParam.pParticles, myParam.rParticles, myVar);
+
+		ship.spaceshipLogic(myParam.pParticles, myParam.rParticles, myVar.isShipGasEnabled);
+
+		if (myVar.isTempEnabled) {
+			physics.temperatureCalculation(myParam.pParticles, myParam.rParticles, myVar);
+		}*/
+
+		physics3D.integrateEnd3D(myParam.pParticles3D, myParam.rParticles3D, myVar);
+
+	}
+	/*else {
+		physics.constraints(myParam.pParticles, myParam.rParticles, myVar);
+	}*/
 
 	// --- //
 
@@ -1439,10 +1502,15 @@ void mode3D(Texture2D& particleBlurTex) {
 	myParam.particleDeletion.deleteSelected(myParam.pParticles, myParam.rParticles, myParam.pParticles3D, myParam.rParticles3D, myVar.is3DMode);
 	myParam.particleDeletion.deleteStrays(myParam.pParticles, myParam.rParticles, myVar.isSPHEnabled, myParam.pParticles3D, myParam.rParticles3D, myVar.is3DMode);
 
+	myParam.brush3D.particlesGrabber(myVar, myParam);
+	myParam.brush3D.eraseBrush(myVar, myParam);
 
+	pinParticles3D();
+}
 
-	// DRAW 3D
+void drawMode3DRecording(Texture2D& particleBlurTex) {
 
+	Camera3D& cam3D = myParam.myCamera3D.cam3D;
 
 	myParam.colorVisuals.particlesColorVisuals(myParam.pParticles, myParam.rParticles, myParam.pParticles3D, myParam.rParticles3D, myVar.isTempEnabled, myVar.timeFactor, myVar.is3DMode);
 
@@ -1489,10 +1557,26 @@ void mode3D(Texture2D& particleBlurTex) {
 	}
 
 	myParam.trails.drawTrail3D(myParam.rParticles3D, particleBlurTex, myParam.myCamera3D.cam3D);
+}
 
-	DrawCubeWiresV({ 0.0f, 0.0f, 0.0f }, { myVar.domainSize3D.x, myVar.domainSize3D.y, myVar.domainSize3D.z }, GRAY);
+void drawMode3DNonRecording() {
+
+	DrawCubeWiresV({ 0.0f, 0.0f, 0.0f }, { myVar.domainSize3D.x, myVar.domainSize3D.y, myVar.domainSize3D.z }, GRAY); // Domain
 
 	myParam.brush3D.drawBrush(myVar.domainSize3D.y);
+
+	if (myVar.toolSpawnBigGalaxy) {
+		myParam.particlesSpawning3D.drawGalaxyDisplay(myParam);
+	}
+
+	// Z-Curves debug toggle
+	if (myParam.pParticles3D.size() > 1 && myVar.drawZCurves) {
+		for (size_t i = 0; i < myParam.pParticles3D.size() - 1; i++) {
+			DrawLine3D({ myParam.pParticles3D[i].pos.x, myParam.pParticles3D[i].pos.y, myParam.pParticles3D[i].pos.z }, { myParam.pParticles3D[i + 1].pos.x,myParam.pParticles3D[i + 1].pos.y, myParam.pParticles3D[i + 1].pos.z }, WHITE);
+
+			//DrawText(TextFormat("%i", i), static_cast<int>(myParam.pParticles3D[i].pos.x), static_cast<int>(myParam.pParticles3D[i].pos.y) - 10, 10, { 128,128,128,128 });
+		}
+	}
 }
 
 void drawConstraints() {
@@ -1745,6 +1829,8 @@ void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myRayTracingTexture,
 
 		EndMode2D();
 
+
+
 		EndTextureMode();
 
 
@@ -1757,6 +1843,7 @@ void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myRayTracingTexture,
 
 
 		//EVERYTHING NOT INTENDED TO APPEAR WHILE RECORDING BELOW
+
 		BeginTextureMode(myUITexture);
 
 		ClearBackground({ 0,0,0,0 });

@@ -493,7 +493,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 	buttonHelper("Highlight Selected", "Highlight selected particles", myParam.colorVisuals.selectedColor, -1.0f, settingsButtonY, true, enabled);
 	buttonHelper("Glow", "Enables glow shader", myVar.isGlowEnabled, -1.0f, settingsButtonY, true, enabled);
-	buttonHelper("Predict Path", "Predicts the trajectory of heavy particles before launching them", myParam.particlesSpawning.enablePathPrediction, -1.0f, settingsButtonY, true, enabled);
+	buttonHelper("Predict Path", "Predicts the trajectory of heavy particles before launching them", myVar.enablePathPrediction, -1.0f, settingsButtonY, true, enabled);
 
 	ImGui::GetStyle().ItemSpacing.y = oldSpacingY; // End the settings buttons spacing
 
@@ -743,13 +743,13 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			ImGui::Separator();
 			ImGui::Spacing();
 
-			sliderHelper("Path Prediction Length", "Controls how long is the predicted path", myParam.particlesSpawning.predictPathLength, 100, 2000, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Visible P. Amount Multiplier", "Controls the spawn amount of visible particles", myParam.particlesSpawning.particleAmountMultiplier, 0.1f, 100.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("DM P. Amount Multiplier", "Controls the spawn amount of dark matter particles", myParam.particlesSpawning.DMAmountMultiplier, 0.1f, 100.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Path Prediction Length", "Controls how long is the predicted path", myVar.predictPathLength, 100, 2000, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Visible P. Amount Multiplier", "Controls the spawn amount of visible particles", myVar.particleAmountMultiplier, 0.1f, 100.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("DM P. Amount Multiplier", "Controls the spawn amount of dark matter particles", myVar.DMAmountMultiplier, 0.1f, 100.0f, parametersSliderX, parametersSliderY, enabled);
 
 			bool isSPHDisabled = !myVar.isSPHEnabled;
 
-			sliderHelper("Random Mass multiplier", "Controls how much mass can vary for each particle", myParam.particlesSpawning.massScatter, 0.0f, 1.0f, parametersSliderX, parametersSliderY, isSPHDisabled);
+			sliderHelper("Random Mass multiplier", "Controls how much mass can vary for each particle", myVar.massScatter, 0.0f, 1.0f, parametersSliderX, parametersSliderY, isSPHDisabled);
 
 			static bool prevSPHState = false;
 			static bool prevMassMultiplierEnabled = false;
@@ -758,14 +758,14 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			if (myVar.isSPHEnabled != prevSPHState) {
 				if (myVar.isSPHEnabled) {
 					prevMassMultiplierEnabled = myParam.particlesSpawning.massMultiplierEnabled;
-					prevMassScatter = myParam.particlesSpawning.massScatter;
+					prevMassScatter = myVar.massScatter;
 
 					myParam.particlesSpawning.massMultiplierEnabled = false;
-					myParam.particlesSpawning.massScatter = 0.0f;
+					myVar.massScatter = 0.0f;
 				}
 				else {
 					myParam.particlesSpawning.massMultiplierEnabled = prevMassMultiplierEnabled;
-					myParam.particlesSpawning.massScatter = prevMassScatter;
+					myVar.massScatter = prevMassScatter;
 				}
 			}
 
@@ -811,7 +811,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			sliderHelper("Time Scale", "Controls how fast time passes", myVar.timeStepMultiplier, 0.0f, 15.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Softening", "Controls the smoothness of the gravity forces", myVar.softening, 0.5f, 30.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Gravity Strength", "Controls how much particles attract eachother", myVar.gravityMultiplier, 0.0f, 100.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Black Hole Init Mass", "Controls the mass of black holes when spawned", myParam.particlesSpawning.heavyParticleWeightMultiplier, 0.005f, 15.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Black Hole Init Mass", "Controls the mass of black holes when spawned", myVar.heavyParticleWeightMultiplier, 0.005f, 15.0f, parametersSliderX, parametersSliderY, enabled);
 
 			ImGui::Spacing();
 			ImGui::Separator();
@@ -1246,11 +1246,11 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 	// Particle tab
 	if (ImGui::BeginTabItem("Particle")) {
+
 		ToolButton particleTools[] = {
 			{ "Draw Particles", "Draw particles with the brush", &myVar.toolDrawParticles },
 			{ "Black Hole", "Throw a black hole particle", &myVar.toolSpawnHeavyParticle },
 			{ "Big Galaxy", "Spawn a large galaxy", &myVar.toolSpawnBigGalaxy },
-			{ "Small Galaxy", "Spawn a small galaxy", &myVar.toolSpawnSmallGalaxy },
 			{ "Star", "Spawn a small star. This is not meant for fluid mode", &myVar.toolSpawnStar },
 			{ "Big Bang", "Spawn the Big Bang", &myVar.toolSpawnBigBang }
 		};
@@ -1282,6 +1282,12 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		}
 
 		ImGui::EndTabItem();
+
+		if (myVar.toolSpawnBigGalaxy) {
+			sliderHelper("Disk Rotation X", "Controls rotation of disk in the X axist", myParam.particlesSpawning3D.diskAxisX, 0.0f, 180.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Disk Rotation Y", "Controls rotation of disk in the Y axist", myParam.particlesSpawning3D.diskAxisY, 0.0f, 180.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Disk Rotation Z", "Controls rotation of disk in the Z axist", myParam.particlesSpawning3D.diskAxisZ, 0.0f, 180.0f, parametersSliderX, parametersSliderY, enabled);
+		}
 	}
 
 	// Brush tab
