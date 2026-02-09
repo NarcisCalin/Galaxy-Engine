@@ -309,7 +309,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				if (colorModesArray[i] == &myParam.colorVisuals.SPHColor) {
 					currentColorMode = i;
 
-					myParam.brush.SPHWater = true;
+					myVar.SPHWater = true;
 				}
 			}
 		}
@@ -350,15 +350,15 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	ImGui::Spacing();
 
 	bool* materialsArray[] = {
-		&myParam.brush.SPHWater,
-		&myParam.brush.SPHRock,
-		&myParam.brush.SPHIron,
-		&myParam.brush.SPHSand,
-		&myParam.brush.SPHSoil,
-		&myParam.brush.SPHIce,
-		&myParam.brush.SPHMud,
-		&myParam.brush.SPHRubber,
-		&myParam.brush.SPHGas
+		&myVar.SPHWater,
+		&myVar.SPHRock,
+		&myVar.SPHIron,
+		&myVar.SPHSand,
+		&myVar.SPHSoil,
+		&myVar.SPHIce,
+		&myVar.SPHMud,
+		&myVar.SPHRubber,
+		&myVar.SPHGas
 	};
 
 	const char* materials[] = { "Water", "Rock", "Iron", "Sand", "Soil", "Ice", "Mud", "Rubber", "Gas" };
@@ -797,8 +797,16 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			ImGui::Spacing();
 
 			sliderHelper("Theta", "Controls the quality of the gravity calculation. Higher means lower quality", myVar.theta, 0.1f, 5.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Domain Width", "Controls the width of the global container", myVar.domainSize.x, 200.0f, 3840.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Domain Height", "Controls the height of the global container", myVar.domainSize.y, 200.0f, 2160.0f, parametersSliderX, parametersSliderY, enabled);
+
+			if (!myVar.is3DMode) {
+				sliderHelper("Domain Width", "Controls the width of the global container", myVar.domainSize.x, 200.0f, 3840.0f, parametersSliderX, parametersSliderY, enabled);
+				sliderHelper("Domain Height", "Controls the height of the global container", myVar.domainSize.y, 200.0f, 2160.0f, parametersSliderX, parametersSliderY, enabled);
+			}
+			else {
+				sliderHelper("Domain Width", "Controls the width of the global container", myVar.domainSize3D.x, 200.0f, 3840.0f, parametersSliderX, parametersSliderY, enabled);
+				sliderHelper("Domain Height", "Controls the height of the global container", myVar.domainSize3D.y, 200.0f, 2160.0f, parametersSliderX, parametersSliderY, enabled);
+				sliderHelper("Domain Depth", "Controls the depth of the global container", myVar.domainSize3D.z, 200.0f, 2160.0f, parametersSliderX, parametersSliderY, enabled);
+			}
 
 			ImGui::Spacing();
 			ImGui::Separator();
@@ -844,12 +852,12 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			ImGui::Separator();
 			ImGui::Spacing();
 
-			sliderHelper("Fluid Vertical Gravity", "Controls the vertical gravity strength in Fluid Ground Mode", sph.verticalGravity, 0.0f, 10.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Fluid Mass Multiplier", "Controls the fluid mass of particles", sph.mass, 0.005f, 0.15f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Fluid Viscosity", "Controls how viscous particles are", sph.viscosity, 0.01f, 15.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Fluid Stiffness", "Controls how stiff particles are", sph.stiffMultiplier, 0.01f, 15.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Fluid Cohesion", "Controls how sticky particles are", sph.cohesionCoefficient, 0.0f, 10.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Fluid Delta", "Controls the scaling factor in the pressure solver to enforce fluid incompressibility", sph.delta, 500.0f, 20000.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Fluid Vertical Gravity", "Controls the vertical gravity strength in Fluid Ground Mode", myVar.verticalGravity, 0.0f, 10.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Fluid Mass Multiplier", "Controls the fluid mass of particles", myVar.mass, 0.005f, 0.15f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Fluid Viscosity", "Controls how viscous particles are", myVar.viscosity, 0.01f, 15.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Fluid Stiffness", "Controls how stiff particles are", myVar.stiffMultiplier, 0.01f, 15.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Fluid Cohesion", "Controls how sticky particles are", myVar.cohesionCoefficient, 0.0f, 10.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Fluid Delta", "Controls the scaling factor in the pressure solver to enforce fluid incompressibility", myVar.delta, 500.0f, 20000.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Fluid Max Velocity", "Controls the maximum velocity a particle can have in Fluid mode", myVar.sphMaxVel, 0.0f, 2000.0f, parametersSliderX, parametersSliderY, enabled);
 		}
 

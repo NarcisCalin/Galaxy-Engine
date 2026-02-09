@@ -7,6 +7,7 @@ Physics physics;
 Physics3D physics3D;
 ParticleSpaceship ship;
 SPH sph;
+SPH3D sph3D;
 SaveSystem save;
 GESound geSound;
 Lighting lighting;
@@ -190,6 +191,54 @@ void plyFileCreation(std::ofstream& file) {
 	file << buffer;
 }
 
+void plyFileCreation3D(std::ofstream& file) {
+	uint32_t visibleParticles = 0;
+
+	for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
+		if (myParam.rParticles3D[i].isDarkMatter) {
+			continue;
+		}
+
+		visibleParticles++;
+	}
+
+	constexpr size_t headerSize = 200;
+	constexpr size_t avgLineSize = 90;
+	std::string buffer;
+	buffer.reserve(headerSize + visibleParticles * avgLineSize);
+
+	buffer += "ply\nformat ascii 1.0\nelement vertex ";
+	buffer += std::to_string(visibleParticles);
+	buffer += "\nproperty float x\nproperty float y\nproperty float z\nproperty uchar red\nproperty uchar green\nproperty uchar blue\nproperty float radius\nend_header\n";
+
+	char lineBuffer[64];
+	for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
+
+		ParticlePhysics3D& p = myParam.pParticles3D[i];
+		ParticleRendering3D& r = myParam.rParticles3D[i];
+
+		if (r.isDarkMatter) {
+			continue;
+		}
+
+		float posX = p.pos.x;
+		float posY = p.pos.y;
+		float posZ = p.pos.z;
+
+		float sizeMultiplier = 1.0f;
+
+		posX *= sizeMultiplier;
+		posY *= sizeMultiplier;
+		posZ *= sizeMultiplier;
+
+		int len = sprintf(lineBuffer, "%.6g %.6g %.6g %d %d %d %.6g\n",
+			posX, posY, posZ, static_cast<int>(r.color.r), static_cast<int>(r.color.g), static_cast<int>(r.color.b), r.size);
+		buffer.append(lineBuffer, len);
+	}
+
+	file << buffer;
+}
+
 void exportPly() {
 
 	static bool wasExportingLastFrame = false;
@@ -254,7 +303,12 @@ void exportPly() {
 			return;
 		}
 
-		plyFileCreation(plyFile);
+		if (!myVar.is3DMode) {
+			plyFileCreation(plyFile);
+		}
+		else {
+			plyFileCreation3D(plyFile);
+		}
 
 		plyFile.close();
 		std::cout << "Particles at frame " << currentFrameNumber
@@ -323,7 +377,12 @@ void exportPly() {
 			return;
 		}
 
-		plyFileCreation(plyFile);
+		if (!myVar.is3DMode) {
+			plyFileCreation(plyFile);
+		}
+		else {
+			plyFileCreation3D(plyFile);
+		}
 
 		plyFile.close();
 		std::cout << "ply export successful! File saved as: " << filePath << std::endl;
@@ -1396,25 +1455,8 @@ void mode3D() {
 		myVar.isMergerEnabled ||
 		myParam.colorVisuals.densityColor ||
 		myVar.isDensitySizeEnabled ||
+		myVar.isSPHEnabled ||
 		myParam.colorVisuals.densityColor && myVar.timeFactor > 0.0f && !myVar.isGravityFieldEnabled) {
-
-		/*myParam.neighborSearch3D.UpdateNeighbors(myParam.pParticles3D, myParam.rParticles3D);
-
-		uint32_t maxPossibleId = 50000000;
-
-		if (myVar.isMergerEnabled) {
-			myParam.neighborSearch3D.densityRadius = 10.0f;
-		}
-		else {
-			myParam.neighborSearch3D.densityRadius = myParam.neighborSearch3D.originalDensityRadius;
-		}
-
-		myParam.neighborSearch3D.idToIndexTable.resize(maxPossibleId + 1);
-
-#pragma omp parallel for
-		for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
-			myParam.neighborSearch3D.idToIndexTable[myParam.pParticles3D[i].id] = i;
-		}*/
 
 		if (!myVar.hasAVX2) {
 			myParam.neighborSearch3DV2.newGrid(myParam.pParticles3D);
@@ -1430,6 +1472,16 @@ void mode3D() {
 	myParam.brush3D.brushSize();
 
 	myParam.particlesSpawning3D.particlesInitialConditions(physics3D, myVar, myParam);
+
+	if (myVar.constraintsEnabled && !myVar.isBrushDrawing) {
+		physics3D.createConstraints(myParam.pParticles3D, myParam.rParticles3D, myVar.constraintAfterDrawingFlag, myVar, myParam);
+	}
+	else if (!myVar.constraintsEnabled && !myVar.isBrushDrawing) {
+		physics3D.constraintMap.clear();
+		physics3D.particleConstraints.clear();
+
+		physics3D.idToIndexTable.clear();
+	}
 
 	if ((myVar.timeFactor != 0.0f /*&& myVar.gridExists*/)) {
 
@@ -1459,27 +1511,24 @@ void mode3D() {
 			}
 		}
 
-		/*if (myVar.isMergerEnabled)
-			physics.mergerSolver(myParam.pParticles, myParam.rParticles, myVar, myParam);
-
 		if (myVar.isSPHEnabled) {
-			sph.pcisphSolver(myVar, myParam);
-		}*/
+			sph3D.pcisphSolver(myVar, myParam);
+		}
 
-		/*physics.constraints(myParam.pParticles, myParam.rParticles, myVar);
+		physics3D.constraints(myParam.pParticles3D, myParam.rParticles3D, myVar);
 
-		ship.spaceshipLogic(myParam.pParticles, myParam.rParticles, myVar.isShipGasEnabled);
+		//ship.spaceshipLogic(myParam.pParticles, myParam.rParticles, myVar.isShipGasEnabled);*/
 
 		if (myVar.isTempEnabled) {
-			physics.temperatureCalculation(myParam.pParticles, myParam.rParticles, myVar);
-		}*/
+			physics3D.temperatureCalculation(myParam.pParticles3D, myParam.rParticles3D, myVar);
+		}
 
 		physics3D.integrateEnd3D(myParam.pParticles3D, myParam.rParticles3D, myVar);
 
 	}
-	/*else {
-		physics.constraints(myParam.pParticles, myParam.rParticles, myVar);
-	}*/
+	else {
+		physics3D.constraints(myParam.pParticles3D, myParam.rParticles3D, myVar);
+	}
 
 	// --- //
 
@@ -1508,22 +1557,157 @@ void mode3D() {
 	pinParticles3D();
 }
 
+void drawConstraints3D() {
+
+	if (myVar.visualizeMesh) {
+		for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
+			ParticlePhysics3D& pi = myParam.pParticles3D[i];
+
+			std::vector<size_t> neighborIndices = QueryNeighbors3D::queryNeighbors3D(myParam, myVar.hasAVX2, 64, pi.pos);
+
+			for (size_t j : neighborIndices) {
+				size_t neighborIndex = j;
+
+				if (neighborIndex == i) continue;
+
+				ParticlePhysics3D& pj = myParam.pParticles3D[neighborIndex];
+
+				if (pi.id < pj.id) {
+					glm::vec3 delta = pj.pos - pi.pos;
+					glm::vec3 periodicDelta = delta;
+
+					if (abs(delta.x) > myVar.domainSize3D.x * 0.5f) {
+						periodicDelta.x += (delta.x > 0) ? -myVar.domainSize3D.x : myVar.domainSize3D.x;
+					}
+					if (abs(delta.y) > myVar.domainSize3D.y * 0.5f) {
+						periodicDelta.y += (delta.y > 0) ? -myVar.domainSize3D.y : myVar.domainSize3D.y;
+					}
+					if (abs(delta.z) > myVar.domainSize3D.z * 0.5f) {
+						periodicDelta.z += (delta.z > 0) ? -myVar.domainSize3D.z : myVar.domainSize3D.z;
+					}
+
+					glm::vec3 pjCorrectedPos = pi.pos + periodicDelta;
+
+					Color lineColor = ColorLerp(myParam.rParticles3D[i].color, myParam.rParticles3D[neighborIndex].color, 0.5f);
+
+					DrawLine3D({ pi.pos.x, pi.pos.y, pi.pos.z }, { pjCorrectedPos.x,pjCorrectedPos.y,pjCorrectedPos.z }, lineColor);
+				}
+			}
+		}
+	}
+
+	if (myVar.drawConstraints && !physics3D.particleConstraints.empty()) {
+		std::vector<size_t> sortedConstraintIndices(physics3D.particleConstraints.size());
+		for (size_t i = 0; i < sortedConstraintIndices.size(); ++i) {
+			sortedConstraintIndices[i] = i;
+		}
+
+		std::sort(sortedConstraintIndices.begin(), sortedConstraintIndices.end(), [&](size_t a, size_t b) {
+			auto& constraintA = physics3D.particleConstraints[a];
+			auto& constraintB = physics3D.particleConstraints[b];
+
+			if (constraintA.id1 >= physics3D.idToIndexTable.size() || constraintA.id2 >= physics3D.idToIndexTable.size()) return false;
+			if (constraintB.id1 >= physics3D.idToIndexTable.size() || constraintB.id2 >= physics3D.idToIndexTable.size()) return false;
+
+			int64_t idx1A = physics3D.idToIndexTable[constraintA.id1];
+			int64_t idx2A = physics3D.idToIndexTable[constraintA.id2];
+			int64_t idx1B = physics3D.idToIndexTable[constraintB.id1];
+			int64_t idx2B = physics3D.idToIndexTable[constraintB.id2];
+
+			if (idx1A == -1 || idx2A == -1) return false;
+			if (idx1B == -1 || idx2B == -1) return false;
+
+			glm::vec3 midA = (myParam.pParticles3D[idx1A].pos + myParam.pParticles3D[idx2A].pos) * 0.5f;
+			glm::vec3 midB = (myParam.pParticles3D[idx1B].pos + myParam.pParticles3D[idx2B].pos) * 0.5f;
+
+			Vector3 posA = { midA.x, midA.y, midA.z };
+			Vector3 posB = { midB.x, midB.y, midB.z };
+
+			float distA = Vector3DistanceSqr(posA, myParam.myCamera3D.cam3D.position);
+			float distB = Vector3DistanceSqr(posB, myParam.myCamera3D.cam3D.position);
+
+			return distA > distB;
+			});
+
+		for (size_t i = 0; i < sortedConstraintIndices.size(); i++) {
+			size_t idx = sortedConstraintIndices[i];
+			auto& constraint = physics3D.particleConstraints[idx];
+
+			if (constraint.id1 >= physics3D.idToIndexTable.size() || constraint.id2 >= physics3D.idToIndexTable.size()) continue;
+			int64_t idx1 = physics3D.idToIndexTable[constraint.id1];
+			int64_t idx2 = physics3D.idToIndexTable[constraint.id2];
+			if (idx1 == -1 || idx2 == -1) {
+				continue;
+			}
+
+			ParticlePhysics3D& pi = myParam.pParticles3D[idx1];
+			ParticlePhysics3D& pj = myParam.pParticles3D[idx2];
+			glm::vec3 delta = pj.pos - pi.pos;
+			glm::vec3 periodicDelta = delta;
+			if (abs(delta.x) > myVar.domainSize3D.x * 0.5f) {
+				periodicDelta.x += (delta.x > 0) ? -myVar.domainSize3D.x : myVar.domainSize3D.x;
+			}
+			if (abs(delta.y) > myVar.domainSize3D.y * 0.5f) {
+				periodicDelta.y += (delta.y > 0) ? -myVar.domainSize3D.y : myVar.domainSize3D.y;
+			}
+			if (abs(delta.z) > myVar.domainSize3D.z * 0.5f) {
+				periodicDelta.z += (delta.z > 0) ? -myVar.domainSize3D.z : myVar.domainSize3D.z;
+			}
+			glm::vec3 pjCorrectedPos = pi.pos + periodicDelta;
+
+			Color lineColor;
+			if (myVar.constraintStressColor) {
+				float maxStress = 0.0f;
+				if (myVar.constraintMaxStressColor > 0.0f) {
+					maxStress = myVar.constraintMaxStressColor;
+				}
+				else {
+					maxStress = constraint.resistance * myVar.globalConstraintResistance * constraint.restLength * 0.18f;
+				}
+				float stressMag = std::abs(constraint.displacement);
+				float clampedStress = std::clamp(stressMag, 0.0f, maxStress);
+				float normalizedStress = clampedStress / maxStress;
+				float hue = (1.0f - normalizedStress) * 240.0f;
+				lineColor = ColorFromHSV(hue, 1.0f, 1.0f);
+			}
+			else {
+				lineColor = ColorLerp(myParam.rParticles3D[idx1].color, myParam.rParticles3D[idx2].color, 0.5f);
+			}
+			DrawLine3D({ pi.pos.x, pi.pos.y, pi.pos.z }, { pjCorrectedPos.x, pjCorrectedPos.y, pjCorrectedPos.z }, lineColor);
+		}
+	}
+}
+
 void drawMode3DRecording(Texture2D& particleBlurTex) {
 
 	Camera3D& cam3D = myParam.myCamera3D.cam3D;
 
 	myParam.colorVisuals.particlesColorVisuals(myParam.pParticles, myParam.rParticles, myParam.pParticles3D, myParam.rParticles3D, myVar.isTempEnabled, myVar.timeFactor, myVar.is3DMode);
 
-	Rectangle sourceRec = { 0.0f, 0.0f, (float)particleBlurTex.width, (float)particleBlurTex.height };
+	drawConstraints3D();
 
-	for (int i = 0; i < myParam.pParticles3D.size(); ++i) {
-		ParticlePhysics3D& pParticle3D = myParam.pParticles3D[i];
-		ParticleRendering3D& rParticle3D = myParam.rParticles3D[i];
+	std::vector<int> sortedIndices(myParam.pParticles3D.size());
+	for (int i = 0; i < sortedIndices.size(); ++i) {
+		sortedIndices[i] = i;
+	}
+
+	std::sort(sortedIndices.begin(), sortedIndices.end(), [&](int a, int b) {
+		Vector3 posA = { myParam.pParticles3D[a].pos.x, myParam.pParticles3D[a].pos.y, myParam.pParticles3D[a].pos.z };
+		Vector3 posB = { myParam.pParticles3D[b].pos.x, myParam.pParticles3D[b].pos.y, myParam.pParticles3D[b].pos.z };
+
+		float distA = Vector3DistanceSqr(posA, cam3D.position);
+		float distB = Vector3DistanceSqr(posB, cam3D.position);
+
+		return distA > distB;
+		});
+
+	Rectangle sourceRec = { 0.0f, 0.0f, (float)particleBlurTex.width, (float)particleBlurTex.height };
+	for (int idx : sortedIndices) {
+		ParticlePhysics3D& pParticle3D = myParam.pParticles3D[idx];
+		ParticleRendering3D& rParticle3D = myParam.rParticles3D[idx];
 
 		float sizeValue = particleBlurTex.width * rParticle3D.size;
-
 		Vector2 size = { sizeValue, sizeValue };
-
 		Vector2 origin = { sizeValue / 2.0f, sizeValue / 2.0f };
 
 		DrawBillboardPro(
@@ -1852,6 +2036,7 @@ void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myRayTracingTexture,
 
 		myVar.mouseWorldPos = glm::vec2(GetScreenToWorld2D(GetMousePosition(), myParam.myCamera.camera).x,
 			GetScreenToWorld2D(GetMousePosition(), myParam.myCamera.camera).y);
+
 		if (!myVar.is3DMode) {
 			myParam.brush.drawBrush(myVar.mouseWorldPos);
 		}

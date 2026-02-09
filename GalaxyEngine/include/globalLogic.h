@@ -16,6 +16,7 @@
 #include "Physics/physics.h"
 #include "Physics/physics3D.h"
 #include "Physics/SPH.h"
+#include "Physics/SPH3D.h"
 #include "Physics/light.h"
 #include "Physics/field.h"
 
@@ -41,6 +42,7 @@ extern Physics physics;
 extern Physics3D physics3D;
 extern ParticleSpaceship ship;
 extern SPH sph;
+extern SPH3D sph3D;
 extern SaveSystem save;
 extern GESound geSound;
 extern Lighting lighting;
@@ -80,6 +82,7 @@ void fullscreenToggle(int& lastScreenWidth, int& lastScreenHeight,
 
 void drawConstraints();
 
+void drawConstraints3D();
 
 void saveConfigIfChanged();
 

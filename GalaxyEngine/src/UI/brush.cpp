@@ -16,17 +16,17 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& cons
 	// But I'm too lazy to change this for now. Will change it some time in the future
 
 	if (!isSPHEnabled) {
-		SPHWater = false;
-		SPHRock = false;
-		SPHIron = false;
-		SPHSand = false;
-		SPHSoil = false;
-		SPHIce = false;
-		SPHMud = false;
-		SPHRubber = false;
+		myVar.SPHWater = false;
+		myVar.SPHRock = false;
+		myVar.SPHIron = false;
+		myVar.SPHSand = false;
+		myVar.SPHSoil = false;
+		myVar.SPHIce = false;
+		myVar.SPHMud = false;
+		myVar.SPHRubber = false;
 	}
 
-	if (!SPHWater && !SPHRock && !SPHSand && !SPHSoil && !SPHIce && !SPHMud && !SPHGas && !SPHIron && !SPHRubber) {
+	if (!myVar.SPHWater && !myVar.SPHRock && !myVar.SPHSand && !myVar.SPHSoil && !myVar.SPHIce && !myVar.SPHMud && !myVar.SPHGas && !myVar.SPHIron && !myVar.SPHRubber) {
 		for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
 			float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 			float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
@@ -73,7 +73,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& cons
 	}
 
 	if (isSPHEnabled) {
-		if (SPHWater) {
+		if (myVar.SPHWater) {
 			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
@@ -113,7 +113,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& cons
 			}
 		}
 
-		if (SPHRock) {
+		if (myVar.SPHRock) {
 			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
@@ -183,7 +183,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& cons
 			}
 		}
 
-		if (SPHIron) {
+		if (myVar.SPHIron) {
 			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
@@ -253,7 +253,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& cons
 			}
 		}
 
-		if (SPHSand) {
+		if (myVar.SPHSand) {
 			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
@@ -323,7 +323,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& cons
 			}
 		}
 
-		if (SPHSoil) {
+		if (myVar.SPHSoil) {
 			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
@@ -393,7 +393,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& cons
 			}
 		}
 
-		if (SPHIce) {
+		if (myVar.SPHIce) {
 			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
@@ -434,7 +434,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& cons
 			}
 		}
 
-		if (SPHMud) {
+		if (myVar.SPHMud) {
 			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
@@ -504,7 +504,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& cons
 			}
 		}
 
-		if (SPHRubber) {
+		if (myVar.SPHRubber) {
 			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
@@ -574,7 +574,7 @@ void Brush::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& cons
 			}
 		}
 
-		if (SPHGas) {
+		if (myVar.SPHGas) {
 			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
 				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
 				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
@@ -809,19 +809,20 @@ void Brush::temperatureBrush(UpdateVariables& myVar, UpdateParameters& myParam) 
 void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& constraintAfterDrawing, float& massScatter, UpdateVariables& myVar) {
 
 	if (!isSPHEnabled) {
-		SPHWater = false;
-		SPHRock = false;
-		SPHIron = false;
-		SPHSand = false;
-		SPHSoil = false;
-		SPHIce = false;
-		SPHMud = false;
-		SPHRubber = false;
+		myVar.SPHWater = false;
+		myVar.SPHRock = false;
+		myVar.SPHIron = false;
+		myVar.SPHSand = false;
+		myVar.SPHSoil = false;
+		myVar.SPHIce = false;
+		myVar.SPHMud = false;
+		myVar.SPHRubber = false;
 	}
 
-	if (!SPHWater && !SPHRock && !SPHSand && !SPHSoil && !SPHIce && !SPHMud && !SPHGas && !SPHIron && !SPHRubber) {
+	if (!myVar.SPHWater && !myVar.SPHRock && !myVar.SPHSand && !myVar.SPHSoil && !myVar.SPHIce && !myVar.SPHMud && !myVar.SPHGas && !myVar.SPHIron && !myVar.SPHRubber) {
 
 		for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
+
 			float theta = static_cast<float>(rand()) / RAND_MAX * 2.0f * 3.14159265f;
 			float phi = acosf(1.0f - 2.0f * (static_cast<float>(rand()) / RAND_MAX));
 			float distance = sqrtf(static_cast<float>(rand()) / RAND_MAX) * brushRadius;
@@ -874,17 +875,20 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 	}
 
 	if (isSPHEnabled) {
-		if (SPHWater) {
+		if (myVar.SPHWater) {
 			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
-				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
-				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
-				glm::vec2 randomOffset = {
-					cos(angle) * distance,
-					sin(angle) * distance
+				float theta = static_cast<float>(rand()) / RAND_MAX * 2.0f * 3.14159265f;
+				float phi = acosf(1.0f - 2.0f * (static_cast<float>(rand()) / RAND_MAX));
+				float distance = sqrtf(static_cast<float>(rand()) / RAND_MAX) * brushRadius;
+
+				glm::vec3 randomOffset = {
+					sinf(phi) * cosf(theta) * distance,
+					sinf(phi) * sinf(theta) * distance,
+					cosf(phi) * distance
 				};
 
-				glm::vec2 particlePos = myParam.myCamera.mouseWorldPos + randomOffset;
+				glm::vec3 particlePos = brushPos + randomOffset;
 
 				float finalMass = 0.0f;
 
@@ -895,8 +899,8 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 					finalMass = (8500000000.0f * water.massMult);
 				}
 
-				myParam.pParticles.emplace_back(particlePos,
-					glm::vec2{ 0, 0 },
+				myParam.pParticles3D.emplace_back(particlePos,
+					glm::vec3{ 0.0f, 0.0f, 0.0f },
 					finalMass,
 
 					water.restDens,
@@ -904,27 +908,30 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 					water.visc,
 					water.cohesion);
 
-				myParam.rParticles.emplace_back(water.color, 0.125f, false, false, false, true, true, false, true, -1.0f, water.id);
+				myParam.rParticles3D.emplace_back(water.color, 0.125f, false, false, false, true, true, false, true, -1.0f, water.id);
 
-				myParam.rParticles.back().sphColor = water.color;
+				myParam.rParticles3D.back().sphColor = water.color;
 
-				myParam.rParticles.back().spawnCorrectIter = 0;
+				myParam.rParticles3D.back().spawnCorrectIter = 0;
 
-				myParam.rParticles.back().isBeingDrawn = true;
+				myParam.rParticles3D.back().isBeingDrawn = true;
 			}
 		}
 
-		if (SPHRock) {
+		if (myVar.SPHRock) {
 			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
-				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
-				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
-				glm::vec2 randomOffset = {
-					cos(angle) * distance,
-					sin(angle) * distance
+				float theta = static_cast<float>(rand()) / RAND_MAX * 2.0f * 3.14159265f;
+				float phi = acosf(1.0f - 2.0f * (static_cast<float>(rand()) / RAND_MAX));
+				float distance = sqrtf(static_cast<float>(rand()) / RAND_MAX) * brushRadius;
+
+				glm::vec3 randomOffset = {
+					sinf(phi) * cosf(theta) * distance,
+					sinf(phi) * sinf(theta) * distance,
+					cosf(phi) * distance
 				};
 
-				glm::vec2 particlePos = myParam.myCamera.mouseWorldPos + randomOffset;
+				glm::vec3 particlePos = brushPos + randomOffset;
 
 				float finalMass = 0.0f;
 
@@ -935,8 +942,8 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 					finalMass = (8500000000.0f * rock.massMult);
 				}
 
-				myParam.pParticles.emplace_back(particlePos,
-					glm::vec2{ 0, 0 },
+				myParam.pParticles3D.emplace_back(particlePos,
+					glm::vec3{ 0.0f, 0.0f, 0.0f },
 					finalMass,
 
 					rock.restDens,
@@ -951,7 +958,7 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 					return static_cast<unsigned char>(value);
 					};
 
-				myParam.rParticles.emplace_back(
+				myParam.rParticles3D.emplace_back(
 					Color{
 						addRandom(rock.color.r),
 						addRandom(rock.color.g),
@@ -971,30 +978,33 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 					rock.id
 				);
 
-				myParam.rParticles.back().sphColor = Color{
+				myParam.rParticles3D.back().sphColor = Color{
 						addRandom(rock.color.r),
 						addRandom(rock.color.g),
 						addRandom(rock.color.b),
 						rock.color.a
 				};
 
-				myParam.rParticles.back().spawnCorrectIter = 0;
+				myParam.rParticles3D.back().spawnCorrectIter = 0;
 
-				myParam.rParticles.back().isBeingDrawn = true;
+				myParam.rParticles3D.back().isBeingDrawn = true;
 			}
 		}
 
-		if (SPHIron) {
+		if (myVar.SPHIron) {
 			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
-				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
-				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
-				glm::vec2 randomOffset = {
-					cos(angle) * distance,
-					sin(angle) * distance
+				float theta = static_cast<float>(rand()) / RAND_MAX * 2.0f * 3.14159265f;
+				float phi = acosf(1.0f - 2.0f * (static_cast<float>(rand()) / RAND_MAX));
+				float distance = sqrtf(static_cast<float>(rand()) / RAND_MAX) * brushRadius;
+
+				glm::vec3 randomOffset = {
+					sinf(phi) * cosf(theta) * distance,
+					sinf(phi) * sinf(theta) * distance,
+					cosf(phi) * distance
 				};
 
-				glm::vec2 particlePos = myParam.myCamera.mouseWorldPos + randomOffset;
+				glm::vec3 particlePos = brushPos + randomOffset;
 
 				float finalMass = 0.0f;
 
@@ -1005,8 +1015,8 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 					finalMass = (8500000000.0f * iron.massMult);
 				}
 
-				myParam.pParticles.emplace_back(particlePos,
-					glm::vec2{ 0, 0 },
+				myParam.pParticles3D.emplace_back(particlePos,
+					glm::vec3{ 0.0f, 0.0f, 0.0f },
 					finalMass,
 
 					iron.restDens,
@@ -1021,7 +1031,7 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 					return static_cast<unsigned char>(value);
 					};
 
-				myParam.rParticles.emplace_back(
+				myParam.rParticles3D.emplace_back(
 					Color{
 						addRandom(iron.color.r),
 						addRandom(iron.color.g),
@@ -1041,30 +1051,33 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 					iron.id
 				);
 
-				myParam.rParticles.back().sphColor = Color{
+				myParam.rParticles3D.back().sphColor = Color{
 						addRandom(iron.color.r),
 						addRandom(iron.color.g),
 						addRandom(iron.color.b),
 						iron.color.a
 				};
 
-				myParam.rParticles.back().spawnCorrectIter = 0;
+				myParam.rParticles3D.back().spawnCorrectIter = 0;
 
-				myParam.rParticles.back().isBeingDrawn = true;
+				myParam.rParticles3D.back().isBeingDrawn = true;
 			}
 		}
 
-		if (SPHSand) {
+		if (myVar.SPHSand) {
 			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
-				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
-				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
-				glm::vec2 randomOffset = {
-					cos(angle) * distance,
-					sin(angle) * distance
+				float theta = static_cast<float>(rand()) / RAND_MAX * 2.0f * 3.14159265f;
+				float phi = acosf(1.0f - 2.0f * (static_cast<float>(rand()) / RAND_MAX));
+				float distance = sqrtf(static_cast<float>(rand()) / RAND_MAX) * brushRadius;
+
+				glm::vec3 randomOffset = {
+					sinf(phi) * cosf(theta) * distance,
+					sinf(phi) * sinf(theta) * distance,
+					cosf(phi) * distance
 				};
 
-				glm::vec2 particlePos = myParam.myCamera.mouseWorldPos + randomOffset;
+				glm::vec3 particlePos = brushPos + randomOffset;
 
 				float finalMass = 0.0f;
 
@@ -1075,8 +1088,8 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 					finalMass = (8500000000.0f * sand.massMult);
 				}
 
-				myParam.pParticles.emplace_back(particlePos,
-					glm::vec2{ 0, 0 },
+				myParam.pParticles3D.emplace_back(particlePos,
+					glm::vec3{ 0.0f, 0.0f, 0.0f },
 					finalMass,
 
 					sand.restDens,
@@ -1091,7 +1104,7 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 					return static_cast<unsigned char>(value);
 					};
 
-				myParam.rParticles.emplace_back(
+				myParam.rParticles3D.emplace_back(
 					Color{
 						addRandom(sand.color.r),
 						addRandom(sand.color.g),
@@ -1111,30 +1124,33 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 					sand.id
 				);
 
-				myParam.rParticles.back().sphColor = Color{
+				myParam.rParticles3D.back().sphColor = Color{
 						addRandom(sand.color.r),
 						addRandom(sand.color.g),
 						addRandom(sand.color.b),
 						sand.color.a
 				};
 
-				myParam.rParticles.back().spawnCorrectIter = 0;
+				myParam.rParticles3D.back().spawnCorrectIter = 0;
 
-				myParam.rParticles.back().isBeingDrawn = true;
+				myParam.rParticles3D.back().isBeingDrawn = true;
 			}
 		}
 
-		if (SPHSoil) {
+		if (myVar.SPHSoil) {
 			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
-				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
-				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
-				glm::vec2 randomOffset = {
-					cos(angle) * distance,
-					sin(angle) * distance
+				float theta = static_cast<float>(rand()) / RAND_MAX * 2.0f * 3.14159265f;
+				float phi = acosf(1.0f - 2.0f * (static_cast<float>(rand()) / RAND_MAX));
+				float distance = sqrtf(static_cast<float>(rand()) / RAND_MAX) * brushRadius;
+
+				glm::vec3 randomOffset = {
+					sinf(phi) * cosf(theta) * distance,
+					sinf(phi) * sinf(theta) * distance,
+					cosf(phi) * distance
 				};
 
-				glm::vec2 particlePos = myParam.myCamera.mouseWorldPos + randomOffset;
+				glm::vec3 particlePos = brushPos + randomOffset;
 
 				float finalMass = 0.0f;
 
@@ -1145,8 +1161,8 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 					finalMass = (8500000000.0f * soil.massMult);
 				}
 
-				myParam.pParticles.emplace_back(particlePos,
-					glm::vec2{ 0, 0 },
+				myParam.pParticles3D.emplace_back(particlePos,
+					glm::vec3{ 0.0f, 0.0f, 0.0f },
 					finalMass,
 
 					soil.restDens,
@@ -1161,7 +1177,7 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 					return static_cast<unsigned char>(value);
 					};
 
-				myParam.rParticles.emplace_back(
+				myParam.rParticles3D.emplace_back(
 					Color{
 						addRandom(soil.color.r),
 						addRandom(soil.color.g),
@@ -1181,30 +1197,33 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 					soil.id
 				);
 
-				myParam.rParticles.back().sphColor = Color{
+				myParam.rParticles3D.back().sphColor = Color{
 						addRandom(soil.color.r),
 						addRandom(soil.color.g),
 						addRandom(soil.color.b),
 						soil.color.a
 				};
 
-				myParam.rParticles.back().spawnCorrectIter = 0;
+				myParam.rParticles3D.back().spawnCorrectIter = 0;
 
-				myParam.rParticles.back().isBeingDrawn = true;
+				myParam.rParticles3D.back().isBeingDrawn = true;
 			}
 		}
 
-		if (SPHIce) {
+		if (myVar.SPHIce) {
 			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
-				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
-				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
-				glm::vec2 randomOffset = {
-					cos(angle) * distance,
-					sin(angle) * distance
+				float theta = static_cast<float>(rand()) / RAND_MAX * 2.0f * 3.14159265f;
+				float phi = acosf(1.0f - 2.0f * (static_cast<float>(rand()) / RAND_MAX));
+				float distance = sqrtf(static_cast<float>(rand()) / RAND_MAX) * brushRadius;
+
+				glm::vec3 randomOffset = {
+					sinf(phi) * cosf(theta) * distance,
+					sinf(phi) * sinf(theta) * distance,
+					cosf(phi) * distance
 				};
 
-				glm::vec2 particlePos = myParam.myCamera.mouseWorldPos + randomOffset;
+				glm::vec3 particlePos = brushPos + randomOffset;
 
 				float finalMass = 0.0f;
 
@@ -1215,8 +1234,8 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 					finalMass = (8500000000.0f * water.massMult);
 				}
 
-				myParam.pParticles.emplace_back(particlePos,
-					glm::vec2{ 0, 0 },
+				myParam.pParticles3D.emplace_back(particlePos,
+					glm::vec3{ 0.0f, 0.0f, 0.f },
 					finalMass,
 
 					water.restDens,
@@ -1224,28 +1243,31 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 					water.visc,
 					water.cohesion);
 
-				myParam.rParticles.emplace_back(water.color, 0.125f, false, false, false, true, true, false, true, -1.0f, water.id);
+				myParam.rParticles3D.emplace_back(water.color, 0.125f, false, false, false, true, true, false, true, -1.0f, water.id);
 
-				myParam.rParticles.back().sphColor = water.color;
-				myParam.pParticles.back().temp = 1.0f;
+				myParam.rParticles3D.back().sphColor = water.color;
+				myParam.pParticles3D.back().temp = 1.0f;
 
-				myParam.rParticles.back().spawnCorrectIter = 0;
+				myParam.rParticles3D.back().spawnCorrectIter = 0;
 
-				myParam.rParticles.back().isBeingDrawn = true;
+				myParam.rParticles3D.back().isBeingDrawn = true;
 			}
 		}
 
-		if (SPHMud) {
+		if (myVar.SPHMud) {
 			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
-				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
-				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
-				glm::vec2 randomOffset = {
-					cos(angle) * distance,
-					sin(angle) * distance
+				float theta = static_cast<float>(rand()) / RAND_MAX * 2.0f * 3.14159265f;
+				float phi = acosf(1.0f - 2.0f * (static_cast<float>(rand()) / RAND_MAX));
+				float distance = sqrtf(static_cast<float>(rand()) / RAND_MAX) * brushRadius;
+
+				glm::vec3 randomOffset = {
+					sinf(phi) * cosf(theta) * distance,
+					sinf(phi) * sinf(theta) * distance,
+					cosf(phi) * distance
 				};
 
-				glm::vec2 particlePos = myParam.myCamera.mouseWorldPos + randomOffset;
+				glm::vec3 particlePos = brushPos + randomOffset;
 
 				float finalMass = 0.0f;
 
@@ -1256,8 +1278,8 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 					finalMass = (8500000000.0f * mud.massMult);
 				}
 
-				myParam.pParticles.emplace_back(particlePos,
-					glm::vec2{ 0, 0 },
+				myParam.pParticles3D.emplace_back(particlePos,
+					glm::vec3{ 0.0f, 0.0f, 0.0f },
 					finalMass,
 
 					mud.restDens,
@@ -1272,7 +1294,7 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 					return static_cast<unsigned char>(value);
 					};
 
-				myParam.rParticles.emplace_back(
+				myParam.rParticles3D.emplace_back(
 					Color{
 						addRandom(mud.color.r),
 						addRandom(mud.color.g),
@@ -1292,30 +1314,33 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 					mud.id
 				);
 
-				myParam.rParticles.back().sphColor = Color{
+				myParam.rParticles3D.back().sphColor = Color{
 						addRandom(mud.color.r),
 						addRandom(mud.color.g),
 						addRandom(mud.color.b),
 						mud.color.a
 				};
 
-				myParam.rParticles.back().spawnCorrectIter = 0;
+				myParam.rParticles3D.back().spawnCorrectIter = 0;
 
-				myParam.rParticles.back().isBeingDrawn = true;
+				myParam.rParticles3D.back().isBeingDrawn = true;
 			}
 		}
 
-		if (SPHRubber) {
+		if (myVar.SPHRubber) {
 			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
-				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
-				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
-				glm::vec2 randomOffset = {
-					cos(angle) * distance,
-					sin(angle) * distance
+				float theta = static_cast<float>(rand()) / RAND_MAX * 2.0f * 3.14159265f;
+				float phi = acosf(1.0f - 2.0f * (static_cast<float>(rand()) / RAND_MAX));
+				float distance = sqrtf(static_cast<float>(rand()) / RAND_MAX) * brushRadius;
+
+				glm::vec3 randomOffset = {
+					sinf(phi) * cosf(theta) * distance,
+					sinf(phi) * sinf(theta) * distance,
+					cosf(phi) * distance
 				};
 
-				glm::vec2 particlePos = myParam.myCamera.mouseWorldPos + randomOffset;
+				glm::vec3 particlePos = brushPos + randomOffset;
 
 				float finalMass = 0.0f;
 
@@ -1326,8 +1351,8 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 					finalMass = (8500000000.0f * rubber.massMult);
 				}
 
-				myParam.pParticles.emplace_back(particlePos,
-					glm::vec2{ 0, 0 },
+				myParam.pParticles3D.emplace_back(particlePos,
+					glm::vec3{ 0.0f, 0.0f, 0.0f },
 					finalMass,
 
 					rubber.restDens,
@@ -1342,7 +1367,7 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 					return static_cast<unsigned char>(value);
 					};
 
-				myParam.rParticles.emplace_back(
+				myParam.rParticles3D.emplace_back(
 					Color{
 						addRandom(rubber.color.r),
 						addRandom(rubber.color.g),
@@ -1362,30 +1387,33 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 					rubber.id
 				);
 
-				myParam.rParticles.back().sphColor = Color{
+				myParam.rParticles3D.back().sphColor = Color{
 						addRandom(rubber.color.r),
 						addRandom(rubber.color.g),
 						addRandom(rubber.color.b),
 						rubber.color.a
 				};
 
-				myParam.rParticles.back().spawnCorrectIter = 0;
+				myParam.rParticles3D.back().spawnCorrectIter = 0;
 
-				myParam.rParticles.back().isBeingDrawn = true;
+				myParam.rParticles3D.back().isBeingDrawn = true;
 			}
 		}
 
-		if (SPHGas) {
+		if (myVar.SPHGas) {
 			for (int i = 0; i < static_cast<int>(140 * myVar.particleAmountMultiplier); i++) {
-				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
-				float distance = sqrt(static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * brushRadius;
 
-				glm::vec2 randomOffset = {
-					cos(angle) * distance,
-					sin(angle) * distance
+				float theta = static_cast<float>(rand()) / RAND_MAX * 2.0f * 3.14159265f;
+				float phi = acosf(1.0f - 2.0f * (static_cast<float>(rand()) / RAND_MAX));
+				float distance = sqrtf(static_cast<float>(rand()) / RAND_MAX) * brushRadius;
+
+				glm::vec3 randomOffset = {
+					sinf(phi) * cosf(theta) * distance,
+					sinf(phi) * sinf(theta) * distance,
+					cosf(phi) * distance
 				};
 
-				glm::vec2 particlePos = myParam.myCamera.mouseWorldPos + randomOffset;
+				glm::vec3 particlePos = brushPos + randomOffset;
 
 				float finalMass = 0.0f;
 
@@ -1396,8 +1424,8 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 					finalMass = (8500000000.0f * water.massMult);
 				}
 
-				myParam.pParticles.emplace_back(particlePos,
-					glm::vec2{ 0, 0 },
+				myParam.pParticles3D.emplace_back(particlePos,
+					glm::vec3{ 0.0f, 0.0f, 0.0f },
 					finalMass,
 
 					water.restDens,
@@ -1405,14 +1433,14 @@ void Brush3D::brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& co
 					water.visc,
 					water.cohesion);
 
-				myParam.rParticles.emplace_back(water.color, 0.125f, false, false, false, true, true, false, true, -1.0f, water.id);
+				myParam.rParticles3D.emplace_back(water.color, 0.125f, false, false, false, true, true, false, true, -1.0f, water.id);
 
-				myParam.rParticles.back().sphColor = water.color;
-				myParam.pParticles.back().temp = 440.0f;
+				myParam.rParticles3D.back().sphColor = water.color;
+				myParam.pParticles3D.back().temp = 440.0f;
 
-				myParam.rParticles.back().spawnCorrectIter = 0;
+				myParam.rParticles3D.back().spawnCorrectIter = 0;
 
-				myParam.rParticles.back().isBeingDrawn = true;
+				myParam.rParticles3D.back().isBeingDrawn = true;
 			}
 		}
 	}
@@ -1444,7 +1472,7 @@ glm::vec3 Brush3D::brushPosLogic(UpdateParameters& myParam, UpdateVariables& myV
 			mouseRay.position.z + mouseRay.direction.z * spawnDistance
 	};
 
-	if (!myParam.pParticles3D.empty() && !myVar.isBrushDrawing) {
+	if (!myParam.pParticles3D.empty() && !myVar.isBrushDrawing && !dragging) {
 		ClusterHelper::clusterMouseHelper(myParam.myCamera3D.cam3D, spawnDistance);
 	}
 
@@ -1452,8 +1480,8 @@ glm::vec3 Brush3D::brushPosLogic(UpdateParameters& myParam, UpdateVariables& myV
 }
 
 void Brush3D::drawBrush(float& domainHeight) {
-	DrawSphere({ brushPos.x,brushPos.y, brushPos.z }, brushRadius, {12, 82, 172, 50});
-	
+	DrawSphere({ brushPos.x,brushPos.y, brushPos.z }, brushRadius, { 12, 82, 172, 50 });
+
 	float cubeHeight = brushPos.y - brushRadius + domainHeight * 0.5f;
 	DrawCubeV(
 		{ brushPos.x, -domainHeight * 0.5f + cubeHeight * 0.5f, brushPos.z },
@@ -1497,7 +1525,7 @@ void Brush3D::particlesGrabber(UpdateVariables& myVar, UpdateParameters& myParam
 
 	if (IO::shortcutReleased(KEY_M) || (IO::mouseReleased(0) && myVar.toolMove)) {
 
-		float impulseFactor = 1.0f;
+		float impulseFactor = 2.0f;
 
 		for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
 			if (myParam.rParticles3D[i].isGrabbed) {

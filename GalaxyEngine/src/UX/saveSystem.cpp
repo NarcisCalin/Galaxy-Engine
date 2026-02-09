@@ -72,15 +72,15 @@ void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar,
 	paramIO(filename, out, "Merger", myVar.isMergerEnabled);
 
 	// ----- SPH Materials -----
-	paramIO(filename, out, "SPHWater", myParam.brush.SPHWater);
-	paramIO(filename, out, "SPHRock", myParam.brush.SPHRock);
-	paramIO(filename, out, "SPHIron", myParam.brush.SPHIron);
-	paramIO(filename, out, "SPHSand", myParam.brush.SPHSand);
-	paramIO(filename, out, "SPHSoil", myParam.brush.SPHSoil);
-	paramIO(filename, out, "SPHIce", myParam.brush.SPHIce);
-	paramIO(filename, out, "SPHMud", myParam.brush.SPHMud);
-	paramIO(filename, out, "SPHRubber", myParam.brush.SPHRubber);
-	paramIO(filename, out, "SPHGas", myParam.brush.SPHGas);
+	paramIO(filename, out, "SPHWater", myVar.SPHWater);
+	paramIO(filename, out, "SPHRock", myVar.SPHRock);
+	paramIO(filename, out, "SPHIron", myVar.SPHIron);
+	paramIO(filename, out, "SPHSand", myVar.SPHSand);
+	paramIO(filename, out, "SPHSoil", myVar.SPHSoil);
+	paramIO(filename, out, "SPHIce", myVar.SPHIce);
+	paramIO(filename, out, "SPHMud", myVar.SPHMud);
+	paramIO(filename, out, "SPHRubber", myVar.SPHRubber);
+	paramIO(filename, out, "SPHGas", myVar.SPHGas);
 
 	// ----- Physics params -----
 	paramIO(filename, out, "Softening", myVar.softening);
@@ -94,14 +94,14 @@ void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar,
 	paramIO(filename, out, "HeatConductivityMultiplier", myVar.globalHeatConductivity);
 
 	// ----- SPH -----
-	paramIO(filename, out, "SPHGravity", sph.verticalGravity);
+	paramIO(filename, out, "SPHGravity", myVar.verticalGravity);
 	paramIO(filename, out, "SPHRadiusMult", sph.radiusMultiplier);
-	paramIO(filename, out, "SPHMass", sph.mass);
-	paramIO(filename, out, "SPHViscosity", sph.viscosity);
-	paramIO(filename, out, "SPHStiffness", sph.stiffMultiplier);
-	paramIO(filename, out, "SPHCohesion", sph.cohesionCoefficient);
+	paramIO(filename, out, "SPHMass", myVar.mass);
+	paramIO(filename, out, "SPHViscosity", myVar.viscosity);
+	paramIO(filename, out, "SPHStiffness", myVar.stiffMultiplier);
+	paramIO(filename, out, "SPHCohesion", myVar.cohesionCoefficient);
 	paramIO(filename, out, "SPHGround", myVar.sphGround);
-	paramIO(filename, out, "SPHDelta", sph.delta);
+	paramIO(filename, out, "SPHDelta", myVar.delta);
 	paramIO(filename, out, "SPHMaxVel", myVar.sphMaxVel);
 
 	// ----- Domain size -----

@@ -285,4 +285,21 @@ struct UpdateVariables {
 	float massScatter = 0.75f;
 
 	bool enablePathPrediction = false;
+
+	bool SPHWater = false;
+	bool SPHRock = false;
+	bool SPHIron = false;
+	bool SPHSand = false;
+	bool SPHSoil = false;
+	bool SPHIce = false;
+	bool SPHMud = false;
+	bool SPHRubber = false;
+	bool SPHGas = false;
+
+	float mass = 0.03f;
+	float stiffMultiplier = 1.0f;
+	float viscosity = 0.3f;
+	float cohesionCoefficient = 1.0f;
+	float delta = 19000.0f;
+	float verticalGravity = 3.0f;
 };

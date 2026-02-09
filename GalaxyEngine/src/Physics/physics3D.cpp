@@ -16,6 +16,7 @@ void Physics3D::flattenParticles3D(std::vector<ParticlePhysics3D>& pParticles3D)
 	prevVelY.resize(particleCount);
 	prevVelZ.resize(particleCount);
 	mass.resize(particleCount);
+	temp.resize(particleCount);
 
 #pragma omp parallel for schedule(static)
 	for (int i = 0; i < static_cast<int>(particleCount); i++) {
@@ -39,6 +40,8 @@ void Physics3D::flattenParticles3D(std::vector<ParticlePhysics3D>& pParticles3D)
 		prevVelZ[i] = particle.prevVel.z;
 
 		mass[i] = particle.mass;
+
+		temp[i] = particle.temp;
 	}
 }
 
@@ -200,23 +203,21 @@ void Physics3D::calculateForceFromGrid3D(UpdateVariables& myVar) {
 
 				totalForce += d * forceMagnitude;
 
-				// 6. Heat Transfer (Optional)
-				//if (myVar.isTempEnabled) {
-				//	uint32_t count = grid.endIndex - grid.startIndex;
-				//	if (count > 0) {
-				//		float gridAverageTemp = grid.gridTemp / static_cast<float>(count);
-				//		float temperatureDifference = gridAverageTemp - temp[i];
+				if (myVar.isTempEnabled) {
+					uint32_t count = grid.endIndex - grid.startIndex;
+					if (count > 0) {
+						float gridAverageTemp = grid.gridTemp / static_cast<float>(count);
+						float temperatureDifference = gridAverageTemp - temp[i];
 
-				//		float distance = 0.0f;
-				//		// Avoid division by zero
-				//		if (distanceSq > 1e-16f) distance = 1.0f / invDistance;
+						float distance = 0.0f;
+						if (distanceSq > 1e-16f) distance = 1.0f / invDistance;
 
-				//		if (distance > 1e-8f) {
-				//			float heatTransfer = myVar.globalHeatConductivity * temperatureDifference / distance;
-				//			temp[i] += heatTransfer * myVar.timeFactor;
-				//		}
-				//	}
-				//}
+						if (distance > 1e-8f) {
+							float heatTransfer = myVar.globalHeatConductivity * temperatureDifference / distance;
+							temp[i] += heatTransfer * myVar.timeFactor;
+						}
+					}
+				}
 
 				gridIdx += grid.next + 1;
 			}
@@ -385,6 +386,93 @@ void Physics3D::naiveGravity3D(std::vector<ParticlePhysics3D>& pParticles3D, Upd
 	}
 }
 
+void Physics3D::temperatureCalculation(std::vector<ParticlePhysics3D>& pParticles, std::vector<ParticleRendering3D>& rParticles, UpdateVariables& myVar) {
+
+	for (size_t i = 0; i < pParticles.size(); i++) {
+		ParticlePhysics3D& p = pParticles[i];
+		auto it = SPHMaterials::idToMaterial.find(rParticles[i].sphLabel);
+		if (it != SPHMaterials::idToMaterial.end()) {
+			SPHMaterial* pMat = it->second;
+
+			float pTotalVel = sqrtf(p.vel.x * p.vel.x + p.vel.y * p.vel.y);
+			float pTotalPrevVel = sqrtf(p.prevVel.x * p.prevVel.x + p.prevVel.y * p.prevVel.y);
+
+			p.ke = 0.5f * p.sphMass * pTotalVel * pTotalVel;
+			p.prevKe = 0.5f * p.sphMass * pTotalPrevVel * pTotalPrevVel;
+
+			float q = std::abs(p.ke - p.prevKe);
+
+			float dTemp = q / (2.0f * pMat->heatConductivity * p.sphMass + 1.0f);
+			p.temp += dTemp;
+
+			float tempDifference = p.temp - myVar.ambientTemp;
+			float dTempCooling = -(pMat->heatConductivity * myVar.globalAmbientHeatRate) * tempDifference * myVar.timeFactor;
+			p.temp += dTempCooling;
+
+
+			if (p.temp >= pMat->hotPoint) {
+				p.sphMass = pMat->hotMassMult;
+				p.mass = UpdateVariables::particleBaseMass * p.sphMass;
+				p.restDens = pMat->hotRestDens;
+				p.stiff = pMat->hotStiff;
+				p.visc = pMat->hotVisc;
+				p.cohesion = pMat->hotCohesion;
+				if (pMat->coldPoint == 0.0f) {
+					p.isHotPoint = true;
+				}
+			}
+			else if (p.temp <= pMat->coldPoint) {
+				p.sphMass = pMat->coldMassMult;
+				p.mass = UpdateVariables::particleBaseMass * p.sphMass;
+				p.restDens = pMat->coldRestDens;
+				p.stiff = pMat->coldStiff;
+				p.visc = pMat->coldVisc;
+				p.cohesion = pMat->coldCohesion;
+			}
+			else {
+				p.sphMass = pMat->massMult;
+				p.mass = UpdateVariables::particleBaseMass * p.sphMass;
+				p.restDens = pMat->restDens;
+				p.stiff = pMat->stiff;
+				p.visc = pMat->visc;
+				p.cohesion = pMat->cohesion;
+				if (pMat->coldPoint != 0.0f) {
+					p.isHotPoint = true;
+				}
+			}
+
+			if (pMat->coldPoint == 0.0f) {
+				if (p.temp <= pMat->hotPoint && p.isHotPoint) {
+					p.hasSolidified = true;
+					p.isHotPoint = false;
+				}
+			}
+			else {
+				if (p.temp <= pMat->coldPoint && p.isHotPoint) {
+					p.hasSolidified = true;
+					p.isHotPoint = false;
+				}
+			}
+		}
+		else {
+			float pTotalVel = sqrtf(p.vel.x * p.vel.x + p.vel.y * p.vel.y + p.vel.z * p.vel.z);
+			float pTotalPrevVel = sqrtf(p.prevVel.x * p.prevVel.x + p.prevVel.y * p.prevVel.y + p.prevVel.z * p.prevVel.z);
+
+			p.ke = 0.5f * p.sphMass * pTotalVel * pTotalVel;
+			p.prevKe = 0.5f * p.sphMass * pTotalPrevVel * pTotalPrevVel;
+
+			float q = std::abs(p.ke - p.prevKe);
+
+			float dTemp = q / (2.0f * 0.05f * p.sphMass + 1.0f);
+			p.temp += dTemp;
+
+			float tempDifference = p.temp - myVar.ambientTemp;
+			float dTempCooling = -(0.05f * myVar.globalAmbientHeatRate) * tempDifference * myVar.timeFactor;
+			p.temp += dTempCooling;
+		}
+	}
+}
+
 void Physics3D::readFlattenBack3D(std::vector<ParticlePhysics3D>& pParticles3D) {
 	size_t particleCount = pParticles3D.size();
 
@@ -408,6 +496,8 @@ void Physics3D::readFlattenBack3D(std::vector<ParticlePhysics3D>& pParticles3D) 
 		pParticles3D[i].prevVel.z = prevVelZ[i];
 
 		pParticles3D[i].mass = mass[i];
+
+		pParticles3D[i].temp = temp[i];
 	}
 }
 
@@ -477,6 +567,330 @@ void Physics3D::integrateStart3D(
 	}
 }
 
+void Physics3D::createConstraints(std::vector<ParticlePhysics3D>& pParticles, std::vector<ParticleRendering3D>& rParticles, bool& constraintCreateSpecialFlag,
+	UpdateVariables& myVar, UpdateParameters& myParam) {
+
+	bool shouldCreateConstraints = IO::shortcutPress(KEY_P) || myVar.constraintAllSolids || constraintCreateSpecialFlag || myVar.constraintSelected;
+
+	for (size_t i = 0; i < pParticles.size(); i++) {
+		ParticlePhysics3D& pi = pParticles[i];
+
+		if (constraintCreateSpecialFlag) {
+			if (!rParticles[i].isBeingDrawn) {
+				continue;
+			}
+		}
+
+		if (myVar.constraintSelected) {
+			if (!rParticles[i].isSelected) {
+				continue;
+			}
+		}
+
+		SPHMaterial* pMatI = nullptr;
+		auto matItI = SPHMaterials::idToMaterial.find(rParticles[i].sphLabel);
+		if (matItI != SPHMaterials::idToMaterial.end()) {
+			pMatI = matItI->second;
+		}
+
+		if (shouldCreateConstraints) {
+			if (pMatI) {
+				if (pMatI->coldPoint == 0.0f) {
+					if (pi.temp >= pMatI->hotPoint) continue;
+				}
+				else {
+					if (pi.temp >= pMatI->coldPoint) continue;
+				}
+			}
+		}
+		else {
+			if (!pi.hasSolidified) continue;
+			constraintMap.clear();
+			pi.hasSolidified = false;
+		}
+
+		std::vector<size_t> neighborIndices = QueryNeighbors3D::queryNeighbors3D(myParam, myVar.hasAVX2, 64, pi.pos);
+
+		for (size_t j : neighborIndices) {
+			size_t neighborIndex = j;
+
+			if (neighborIndex == i) continue;
+
+			ParticlePhysics3D& pj = myParam.pParticles3D[neighborIndex];
+
+			float distSq = glm::dot(pj.pos - pi.pos, pj.pos - pi.pos);
+
+			if (distSq > 12.0f) {
+				continue;
+			}
+
+			if (constraintCreateSpecialFlag) {
+				if (!rParticles[neighborIndex].isBeingDrawn) {
+					continue;
+				}
+			}
+
+			if (myVar.constraintSelected) {
+				if (!rParticles[neighborIndex].isSelected) {
+					continue;
+				}
+			}
+
+			SPHMaterial* pMatJ = nullptr;
+			auto matItJ = SPHMaterials::idToMaterial.find(rParticles[neighborIndex].sphLabel);
+			if (matItJ != SPHMaterials::idToMaterial.end()) {
+				pMatJ = matItJ->second;
+			}
+
+			if (pMatI && pMatJ && pMatI->coldPoint == 0.0f && pMatJ->coldPoint != 0.0f) {
+				continue;
+			}
+
+			uint64_t key = makeKey(pi.id, pj.id);
+			if (constraintMap.find(key) != constraintMap.end()) {
+				continue;
+			}
+
+			float resistance = 0.6f;
+			if (pMatI && pMatJ) {
+				resistance = (pMatI->constraintResistance + pMatJ->constraintResistance) * 0.5f;
+			}
+
+			float plasticityPoint = 0.6f;
+			if (pMatI && pMatJ) {
+				plasticityPoint = (pMatI->constraintPlasticPoint + pMatJ->constraintPlasticPoint) * 0.5f;
+			}
+
+			if (pi.id < pj.id) {
+
+				float currentDist = glm::distance(pi.pos, pj.pos);
+				bool broken = false;
+				if (pMatI && pMatJ) {
+					particleConstraints.push_back({ pi.id, pj.id, currentDist, currentDist, pMatI->constraintStiffness, resistance, 0.0f, plasticityPoint, broken });
+				}
+				else {
+					float defaultStiffness = 60.0f;
+					particleConstraints.push_back({ pi.id, pj.id, currentDist, currentDist, defaultStiffness, resistance, 0.0f, plasticityPoint, broken });
+				}
+				constraintMap[key] = &particleConstraints.back();
+			}
+		}
+	}
+
+	constraintCreateSpecialFlag = false;
+	myVar.constraintAllSolids = false;
+	myVar.constraintSelected = false;
+}
+
+void Physics3D::constraints(std::vector<ParticlePhysics3D>& pParticles, std::vector<ParticleRendering3D>& rParticles, UpdateVariables& myVar) {
+
+	if (myVar.deleteAllConstraints) {
+		particleConstraints.clear();
+		constraintMap.clear();
+		myVar.deleteAllConstraints = false;
+		return;
+	}
+
+	uint32_t maxId = 0;
+	for (const auto& p : pParticles) if (p.id > maxId) maxId = p.id;
+
+	idToIndexTable.assign(maxId + 1, -1);
+	for (size_t i = 0; i < pParticles.size(); i++) {
+		idToIndexTable[pParticles[i].id] = i;
+	}
+
+	auto getIdx = [&](uint32_t id) -> int64_t {
+		if (id >= idToIndexTable.size()) return -1;
+		return idToIndexTable[id];
+		};
+
+	if (myVar.deleteSelectedConstraints) {
+		for (auto& constraint : particleConstraints) {
+			int64_t idx1 = getIdx(constraint.id1);
+			int64_t idx2 = getIdx(constraint.id2);
+
+			if (idx1 == -1 || idx2 == -1) {
+				constraint.isBroken = true;
+			}
+			else if (rParticles[idx1].isSelected || rParticles[idx2].isSelected) {
+				constraint.isBroken = true;
+			}
+		}
+		myVar.deleteSelectedConstraints = false;
+	}
+
+	if (!particleConstraints.empty()) {
+		auto new_end = std::remove_if(particleConstraints.begin(), particleConstraints.end(),
+			[&](const auto& constraint) {
+				int64_t idx1 = getIdx(constraint.id1);
+				int64_t idx2 = getIdx(constraint.id2);
+				return idx1 == -1 || idx2 == -1 || constraint.isBroken;
+			});
+
+		for (auto it = new_end; it != particleConstraints.end(); ++it) {
+			constraintMap.erase(makeKey(it->id1, it->id2));
+		}
+		particleConstraints.erase(new_end, particleConstraints.end());
+
+		bool enforceTriangles = true;
+
+		myVar.frameCount++;
+		if (enforceTriangles && !particleConstraints.empty() && myVar.frameCount % 5 == 0) {
+
+			std::vector<std::vector<uint32_t>> adjacency(maxId + 1);
+
+			for (const auto& c : particleConstraints) {
+				if (c.isBroken) continue;
+
+				if (c.id1 <= maxId && c.id2 <= maxId) {
+					adjacency[c.id1].push_back(c.id2);
+					adjacency[c.id2].push_back(c.id1);
+				}
+			}
+
+			for (auto& constraint : particleConstraints) {
+				if (constraint.isBroken) continue;
+
+				uint32_t idA = constraint.id1;
+				uint32_t idB = constraint.id2;
+
+				bool partOfTriangle = false;
+
+				const std::vector<uint32_t>& neighborsOfA = adjacency[idA];
+				const std::vector<uint32_t>& neighborsOfB = adjacency[idB];
+
+				for (uint32_t neighborA : neighborsOfA) {
+
+					for (uint32_t neighborB : neighborsOfB) {
+						if (neighborA == neighborB) {
+							partOfTriangle = true;
+							break;
+						}
+					}
+					if (partOfTriangle) break;
+				}
+
+				if (!partOfTriangle) {
+					constraint.isBroken = true;
+				}
+			}
+		}
+
+		const int substeps = 15;
+		for (int step = 0; step < substeps; step++) {
+
+#pragma omp parallel for schedule(dynamic)
+			for (int64_t i = 0; i < (int64_t)particleConstraints.size(); i++) {
+				auto& constraint = particleConstraints[i];
+
+				if (constraint.isBroken) continue;
+
+				int64_t idx1 = getIdx(constraint.id1);
+				int64_t idx2 = getIdx(constraint.id2);
+
+				if (idx1 == -1 || idx2 == -1) {
+					constraint.isBroken = true;
+					continue;
+				}
+
+				ParticlePhysics3D& pi = pParticles[idx1];
+				ParticlePhysics3D& pj = pParticles[idx2];
+
+				SPHMaterial* pMatI = SPHMaterials::idToMaterial[rParticles[idx1].sphLabel];
+				SPHMaterial* pMatJ = SPHMaterials::idToMaterial[rParticles[idx2].sphLabel];
+
+				glm::vec3 delta = pj.pos - pi.pos;
+
+				if (myVar.isPeriodicBoundaryEnabled) {
+					delta.x = fmod(delta.x + myVar.domainSize.x * 1.5f, myVar.domainSize.x) - myVar.domainSize.x * 0.5f;
+					delta.y = fmod(delta.y + myVar.domainSize.y * 1.5f, myVar.domainSize.y) - myVar.domainSize.y * 0.5f;
+				}
+
+				float currentLength = glm::length(delta);
+				if (currentLength < 0.0001f) continue;
+
+				glm::vec3 dir = delta / currentLength;
+				constraint.displacement = currentLength - constraint.restLength;
+
+				if (!myVar.unbreakableConstraints) {
+					if (pMatI && pMatJ) {
+						if (!pMatI->isPlastic || !pMatJ->isPlastic) {
+							constraint.isPlastic = false;
+							float limit = (constraint.resistance * myVar.globalConstraintResistance) * constraint.restLength;
+							if (std::abs(constraint.displacement) >= limit) {
+								constraint.isBroken = true;
+							}
+						}
+						else {
+							constraint.isPlastic = true;
+							if (std::abs(constraint.displacement) >= constraint.plasticityPoint * constraint.originalLength) {
+								constraint.restLength += constraint.displacement;
+							}
+
+							float breakLimit = (constraint.originalLength + constraint.originalLength * (constraint.resistance * myVar.globalConstraintResistance)) * (pMatI->constraintPlasticPointMult + pMatJ->constraintPlasticPointMult) * 0.5f;
+
+							if (std::abs(constraint.restLength) >= breakLimit) {
+								constraint.isBroken = true;
+							}
+						}
+
+						if (pi.isHotPoint || pj.isHotPoint) constraint.isBroken = true;
+					}
+				}
+
+				if (myVar.timeFactor > 0.0f && myVar.gridExists && !constraint.isBroken) {
+
+					glm::vec3 springForce = constraint.stiffness * constraint.displacement * dir * pi.mass * myVar.globalConstraintStiffnessMult;
+					glm::vec3 relVel = pj.vel - pi.vel;
+					glm::vec3 dampForce = -globalConstraintDamping * glm::dot(relVel, dir) * dir * pi.mass;
+					glm::vec3 totalForce = springForce + dampForce;
+
+#pragma omp atomic
+					pi.acc.x += totalForce.x / pi.mass;
+#pragma omp atomic
+					pi.acc.y += totalForce.y / pi.mass;
+#pragma omp atomic
+					pi.acc.z += totalForce.z / pi.mass;
+#pragma omp atomic
+					pj.acc.x -= totalForce.x / pj.mass;
+#pragma omp atomic
+					pj.acc.y -= totalForce.y / pj.mass;
+#pragma omp atomic
+					pj.acc.z -= totalForce.z / pj.mass;
+
+					float correctionFactor = constraint.stiffness * stiffCorrectionRatio * myVar.globalConstraintStiffnessMult;
+					glm::vec3 correction = dir * constraint.displacement * correctionFactor;
+					float massSum = pi.mass + pj.mass;
+					glm::vec3 correctionI = correction * (pj.mass / massSum);
+					glm::vec3 correctionJ = correction * (pi.mass / massSum);
+
+#pragma omp atomic
+					pi.pos.x += correctionI.x;
+#pragma omp atomic
+					pi.pos.y += correctionI.y;
+#pragma omp atomic
+					pi.pos.z += correctionI.z;
+#pragma omp atomic
+					pj.pos.x -= correctionJ.x;
+#pragma omp atomic
+					pj.pos.y -= correctionJ.y;
+#pragma omp atomic
+					pj.pos.z -= correctionJ.z;
+				}
+			}
+		}
+	}
+}
+
+void Physics3D::pausedConstraints(std::vector<ParticlePhysics3D>& pParticles, std::vector<ParticleRendering3D>& rParticles, UpdateVariables& myVar) {
+
+	for (size_t i = 0; i < particleConstraints.size(); i++) {
+		auto& constraint = particleConstraints[i];
+
+		float prevLength = constraint.restLength;
+	}
+}
+
 void Physics3D::integrateEnd3D(std::vector<ParticlePhysics3D>& pParticles3D, std::vector<ParticleRendering3D>& rParticles3D, UpdateVariables& myVar) {
 #pragma omp parallel for schedule(dynamic)
 	for (size_t i = 0; i < pParticles3D.size(); i++) {
@@ -486,5 +900,58 @@ void Physics3D::integrateEnd3D(std::vector<ParticlePhysics3D>& pParticles3D, std
 		}
 
 		pParticles3D[i].vel += pParticles3D[i].acc * (myVar.timeFactor * 0.5f);
+	}
+}
+
+void Physics3D::spawnCorrection(UpdateParameters& myParam, bool& hasAVX2, const int& iterations) {
+
+#pragma omp parallel for
+	for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
+
+		ParticlePhysics3D& pi = myParam.pParticles3D[i];
+
+		std::vector<size_t> neighborIndices =
+			QueryNeighbors3D::queryNeighbors3D(myParam, hasAVX2, 64, pi.pos);
+
+		for (size_t j : neighborIndices) {
+			size_t neighborIndex = j;
+
+			if (neighborIndex == i) continue;
+
+			ParticlePhysics3D& pj = myParam.pParticles3D[neighborIndex];
+
+			if (!myParam.rParticles3D[neighborIndex].isBeingDrawn || !myParam.rParticles3D[i].isBeingDrawn) continue;
+
+			glm::vec3 d = pj.pos - pi.pos;
+
+			float dSq = glm::dot(d, d);
+
+			const float minDist = 2.4f;
+			const float minDistSq = minDist * minDist;
+
+			if (dSq > 0.000001f && dSq < minDistSq) {
+
+				float dist = std::sqrt(dSq);
+
+				glm::vec3 dir = -d / dist;
+
+				float penetration = minDist - dist;
+
+				float totalMass = pi.mass + pj.mass;
+
+				if (totalMass > 0.0f) {
+
+					float piMove = pj.mass / totalMass;
+					float pjMove = pi.mass / totalMass;
+
+					glm::vec3 correction = dir * penetration;
+
+					pi.pos += correction * piMove;
+					pj.pos -= correction * pjMove;
+				}
+			}
+		}
+
+		myParam.rParticles3D[i].spawnCorrectIter++;
 	}
 }

@@ -36,6 +36,7 @@ set(
     Physics/quadtree.cpp
     Physics/slingshot.cpp
     Physics/SPH.cpp
+    Physics/SPH3D.cpp
     Physics/light.cpp
     Sound/sound.cpp
     UI/brush.cpp

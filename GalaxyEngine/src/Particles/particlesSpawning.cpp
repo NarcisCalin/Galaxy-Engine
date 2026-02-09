@@ -763,10 +763,21 @@ void ParticlesSpawning3D::particlesInitialConditions(Physics3D& physics3D, Updat
 
 					particlesIterating = true;
 
-					//#pragma omp parallel for
-					//					for (int i = 0; i < correctionSubsteps; i++) {
-					//						physics.buildGrid(myParam.pParticles, myParam.rParticles, physics, myVar.domainSize, correctionSubsteps);
-					//					}
+					for (int i = 0; i < correctionSubsteps; i++) {
+
+						if (i % 2 == 0) {
+							if (!myVar.hasAVX2) {
+								myParam.neighborSearch3DV2.newGrid(myParam.pParticles3D);
+								myParam.neighborSearch3DV2.neighborAmount(myParam.pParticles3D, myParam.rParticles3D);
+							}
+							else {
+								myParam.neighborSearch3DV2AVX2.newGridAVX2(myParam.pParticles3D);
+								myParam.neighborSearch3DV2AVX2.neighborAmount(myParam.pParticles3D, myParam.rParticles3D);
+							}
+						}
+
+						physics3D.spawnCorrection(myParam, myVar.hasAVX2, 1);
+					}
 				}
 			}
 		}
@@ -783,10 +794,23 @@ void ParticlesSpawning3D::particlesInitialConditions(Physics3D& physics3D, Updat
 				}
 
 				if (particlesIterating) {
-					//#pragma omp parallel for
-										/*for (int i = 0; i < correctionSubsteps * 2; i++) {
-											physics.buildGrid(myParam.pParticles, myParam.rParticles, physics, myVar.domainSize, correctionSubsteps);
-										}*/
+
+					for (int i = 0; i < correctionSubsteps * 8; i++) {
+
+						if (i % 4 == 0) {
+							if (!myVar.hasAVX2) {
+								myParam.neighborSearch3DV2.newGrid(myParam.pParticles3D);
+								myParam.neighborSearch3DV2.neighborAmount(myParam.pParticles3D, myParam.rParticles3D);
+							}
+							else {
+								myParam.neighborSearch3DV2AVX2.newGridAVX2(myParam.pParticles3D);
+								myParam.neighborSearch3DV2AVX2.neighborAmount(myParam.pParticles3D, myParam.rParticles3D);
+							}
+						}
+
+						physics3D.spawnCorrection(myParam, myVar.hasAVX2, 1);
+						particlesIterating = false;
+					}
 				}
 				else {
 
@@ -795,13 +819,14 @@ void ParticlesSpawning3D::particlesInitialConditions(Physics3D& physics3D, Updat
 					}
 
 					if (myVar.constraintAfterDrawingFlag && myVar.constraintAfterDrawing) {
-						physics.createConstraints(myParam.pParticles, myParam.rParticles,
+						physics3D.createConstraints(myParam.pParticles, myParam.rParticles,
 							myVar.constraintAfterDrawingFlag, myVar, myParam);
 					}*/
 
 					for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
 						myParam.rParticles3D[i].isBeingDrawn = false;
 					}
+
 					myVar.isBrushDrawing = false;
 				}
 			}

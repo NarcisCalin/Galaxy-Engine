@@ -17,16 +17,6 @@ class Brush {
 public:
 	glm::vec2 mouseWorldPos;
 
-	bool SPHWater = false;
-	bool SPHRock = false;
-	bool SPHIron = false;
-	bool SPHSand = false;
-	bool SPHSoil = false;
-	bool SPHIce = false;
-	bool SPHMud = false;
-	bool SPHRubber = false;
-	bool SPHGas = false;
-
 	void brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& constraintAfterDrawing, float& massScatter, UpdateVariables& myVar);
 
 	void brushSize();
@@ -60,16 +50,6 @@ private:
 class Brush3D {
 public:
 	glm::vec2 mouseWorldPos;
-
-	bool SPHWater = false;
-	bool SPHRock = false;
-	bool SPHIron = false;
-	bool SPHSand = false;
-	bool SPHSoil = false;
-	bool SPHIce = false;
-	bool SPHMud = false;
-	bool SPHRubber = false;
-	bool SPHGas = false;
 
 	void brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& constraintAfterDrawing, float& massScatter, UpdateVariables& myVar);
 

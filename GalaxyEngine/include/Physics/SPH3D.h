@@ -8,15 +8,11 @@
 struct UpdateVariables;
 struct UpdateVariables;
 
-struct GridCell {
-	std::vector<size_t> particleIndices;
-};
-
-class SPH {
+class SPH3D {
 public:
 	float radiusMultiplier = 3.0f;
 	const float boundDamping = -0.1f;
-	float boundaryFriction = 0.8f;
+	float boundaryFriction = 0.9f;
 
 	float densTolerance = 0.08f;
 
@@ -27,20 +23,13 @@ public:
 
 	float cellSize;
 
-	SPH() : cellSize(radiusMultiplier) {}
-
-	void computeViscCohesionForcesWithCache(
-		std::vector<ParticlePhysics>& pParticles,
-		std::vector<ParticleRendering>& rParticles,
-		std::vector<glm::vec2>& forces,
-		const std::vector<std::vector<size_t>>& neighborCache,
-		size_t N);
+	SPH3D() : cellSize(radiusMultiplier) {}
 
 	float smoothingKernel(float dst, float radiusMultiplier) {
 		if (dst >= radiusMultiplier) return 0.0f;
 
-		float volume = (PI * pow(radiusMultiplier, 4.0f)) / 6.0f;
-		return (radiusMultiplier - dst) * (radiusMultiplier - dst) / volume;
+		float volume = (2.0f * PI * pow(radiusMultiplier, 5.0f)) / 15.0f;
+		return pow(radiusMultiplier - dst, 2.0f) / volume;
 	}
 
 	float spikyKernelDerivative(float dst, float radiusMultiplier) {
@@ -54,35 +43,14 @@ public:
 		if (dst >= radiusMultiplier) return 0.0f;
 
 		float scale = 45.0f / (PI * pow(radiusMultiplier, 6.0f));
-		return scale;
+		return scale * (radiusMultiplier - dst);
 	}
 
 	float smoothingKernelCohesion(float r, float h) {
 		if (r >= h) return 0.0f;
 
 		float q = r / h;
-		return (1.0f - q) * (0.5f - q) * (0.5f - q) * 30.0f / (PI * h * h);
-	}
-
-	// Currently unused
-	float computeDelta(const std::vector<glm::vec2>& kernelGradients, float dt, float mass, float restDensity) {
-		float beta = (dt * dt * mass * mass) / (restDensity * restDensity);
-
-		glm::vec2 sumGradW = { 0.0f, 0.0f };
-		float sumGradW_dot = 0.0f;
-
-		for (const glm::vec2& gradW : kernelGradients) {
-			sumGradW.x += gradW.x;
-			sumGradW.y += gradW.y;
-
-			sumGradW_dot += gradW.x * gradW.x + gradW.y * gradW.y;
-		}
-
-		float sumDot = sumGradW.x * sumGradW.x + sumGradW.y * sumGradW.y;
-
-		float delta = -1.0f / (beta * (-sumDot - sumGradW_dot));
-
-		return delta;
+		return (1.0f - q) * (0.5f - q) * (0.5f - q) * 30.0f / (PI * h * h * h);
 	}
 
 	// New Grid Search
@@ -613,11 +581,10 @@ void main() {
 
 	void readFlattenBack(std::vector<ParticlePhysics>& pParticles);
 
-	void computeViscCohesionForces(UpdateVariables& myVar, UpdateParameters& myParam, std::vector<glm::vec2>& sphForce, size_t& N);
+	void computeViscCohesionForces(UpdateVariables& myVar, UpdateParameters& myParam, std::vector<glm::vec3>& sphForce, size_t& N);
 
-	void groundModeBoundary(std::vector<ParticlePhysics>& pParticles,
-		std::vector<ParticleRendering>& rParticles,
-		glm::vec2 domainSize, UpdateVariables& myVar);
+	void groundModeBoundary(std::vector<ParticlePhysics3D>& pParticles,
+		std::vector<ParticleRendering3D>& rParticles, glm::vec3 domainSize, UpdateVariables& myVar);
 
 	void PCISPH(UpdateVariables& myVar, UpdateParameters& myParam);
 
@@ -628,7 +595,7 @@ void main() {
 		PCISPH(myVar, myParam);
 
 		if (myVar.sphGround) {
-			groundModeBoundary(myParam.pParticles, myParam.rParticles, myVar.domainSize, myVar);
+			groundModeBoundary(myParam.pParticles3D, myParam.rParticles3D, myVar.domainSize3D, myVar);
 		}
 	}
 };
