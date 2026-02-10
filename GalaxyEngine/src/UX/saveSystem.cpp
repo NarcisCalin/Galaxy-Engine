@@ -1,6 +1,7 @@
 #include "UX/saveSystem.h"
 
-void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar, UpdateParameters& myParam, SPH& sph, Physics& physics, Lighting& lighting, Field& field) {
+void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar, UpdateParameters& myParam, SPH& sph, 
+	Physics& physics, Physics3D& physics3D, Lighting& lighting, Field& field) {
 
 	YAML::Emitter out;
 	/*out << YAML::BeginMap;*/
@@ -64,12 +65,23 @@ void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar,
 	// ----- Misc Toggles -----
 	paramIO(filename, out, "DarkMatter", myVar.isDarkMatterEnabled);
 	paramIO(filename, out, "LoopingSpace", myVar.isPeriodicBoundaryEnabled);
+	paramIO(filename, out, "InfiniteDomain", myVar.infiniteDomain);
 	paramIO(filename, out, "SPHEnabled", myVar.isSPHEnabled);
 	paramIO(filename, out, "DensitySize", myVar.isDensitySizeEnabled);
 	paramIO(filename, out, "ForceSize", myVar.isForceSizeEnabled);
 	paramIO(filename, out, "Glow", myVar.isGlowEnabled);
 	paramIO(filename, out, "ShipGas", myVar.isShipGasEnabled);
 	paramIO(filename, out, "Merger", myVar.isMergerEnabled);
+	paramIO(filename, out, "is3DMode", myVar.is3DMode);
+
+	paramIO(filename, out, "ClipSelectedX", myVar.clipSelectedX);
+	paramIO(filename, out, "ClipSelectedY", myVar.clipSelectedY);
+	paramIO(filename, out, "ClipSelectedZ", myVar.clipSelectedZ);
+
+	paramIO(filename, out, "ClipSelectedXInv", myVar.clipSelectedXInv);
+	paramIO(filename, out, "ClipSelectedYInv", myVar.clipSelectedYInv);
+	paramIO(filename, out, "ClipSelectedZInv", myVar.clipSelectedZInv);
+
 
 	// ----- SPH Materials -----
 	paramIO(filename, out, "SPHWater", myVar.SPHWater);
@@ -108,12 +120,41 @@ void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar,
 	paramIO(filename, out, "DomainWidth", myVar.domainSize.x);
 	paramIO(filename, out, "DomainHeight", myVar.domainSize.y);
 
+	paramIO(filename, out, "DomainWidth3D", myVar.domainSize3D.x);
+	paramIO(filename, out, "DomainHeight3D", myVar.domainSize3D.y);
+	paramIO(filename, out, "DomainDepth3D", myVar.domainSize3D.z);
+
 	// ----- Camera -----
 	paramIO(filename, out, "CameraTargetX", myParam.myCamera.camera.target.x);
 	paramIO(filename, out, "CameraTargetY", myParam.myCamera.camera.target.y);
 	paramIO(filename, out, "CameraOffsetX", myParam.myCamera.camera.offset.x);
 	paramIO(filename, out, "CameraOffsetY", myParam.myCamera.camera.offset.y);
 	paramIO(filename, out, "CameraZoom", myParam.myCamera.camera.zoom);
+	paramIO(filename, out, "CameraIsFollowing", myParam.myCamera.isFollowing);
+
+	// ----- Camera 3D -----
+	paramIO(filename, out, "CameraTarget3DX", myParam.myCamera3D.cam3D.target.x);
+	paramIO(filename, out, "CameraTarget3DY", myParam.myCamera3D.cam3D.target.y);
+	paramIO(filename, out, "CameraTarget3DZ", myParam.myCamera3D.cam3D.target.z);
+	paramIO(filename, out, "CameraPosition3DX", myParam.myCamera3D.cam3D.position.x);
+	paramIO(filename, out, "CameraPosition3DY", myParam.myCamera3D.cam3D.position.y);
+	paramIO(filename, out, "CameraPosition3DZ", myParam.myCamera3D.cam3D.position.z);
+
+	paramIO(filename, out, "CameraCurrentSmoothedTarget3DX", myParam.myCamera3D.currentSmoothedTarget.x);
+	paramIO(filename, out, "CameraCurrentSmoothedTarget3DY", myParam.myCamera3D.currentSmoothedTarget.y);
+	paramIO(filename, out, "CameraCurrentSmoothedTarget3DZ", myParam.myCamera3D.currentSmoothedTarget.z);
+
+	paramIO(filename, out, "CameraPanFollowingOffset3DX", myParam.myCamera3D.panFollowingOffset.x);
+	paramIO(filename, out, "CameraPanFollowingOffset3DY", myParam.myCamera3D.panFollowingOffset.y);
+	paramIO(filename, out, "CameraPanFollowingOffset3DZ", myParam.myCamera3D.panFollowingOffset.z);
+
+	paramIO(filename, out, "CameraFollowPosition3DX", myParam.myCamera3D.followPosition.x);
+	paramIO(filename, out, "CameraFollowPosition3DY", myParam.myCamera3D.followPosition.y);
+	paramIO(filename, out, "CameraFollowPosition3DZ", myParam.myCamera3D.followPosition.z);
+
+	paramIO(filename, out, "CameraDistance3D", myParam.myCamera3D.distance);
+
+	paramIO(filename, out, "CameraIsFollowing3D", myParam.myCamera3D.isFollowing);
 
 	// ----- Constraints -----
 	paramIO(filename, out, "ParticleConstraints", myVar.constraintsEnabled);
@@ -223,69 +264,140 @@ void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar,
 		file.write(reinterpret_cast<const char*>(&globalShapeId), sizeof(globalShapeId));
 		file.write(reinterpret_cast<const char*>(&globalWallId), sizeof(globalWallId));
 
-		uint32_t particleCount = myParam.pParticles.size();
-		file.write(reinterpret_cast<const char*>(&particleCount), sizeof(particleCount));
+		if (!myVar.is3DMode) {
+			uint32_t particleCount = myParam.pParticles.size();
+			file.write(reinterpret_cast<const char*>(&particleCount), sizeof(particleCount));
 
-		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-			const ParticlePhysics& p = myParam.pParticles[i];
-			const ParticleRendering& r = myParam.rParticles[i];
+			for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+				const ParticlePhysics& p = myParam.pParticles[i];
+				const ParticleRendering& r = myParam.rParticles[i];
 
-			file.write(reinterpret_cast<const char*>(&p.pos), sizeof(p.pos));
-			file.write(reinterpret_cast<const char*>(&p.predPos), sizeof(p.predPos));
-			file.write(reinterpret_cast<const char*>(&p.vel), sizeof(p.vel));
-			file.write(reinterpret_cast<const char*>(&p.prevVel), sizeof(p.prevVel));
-			file.write(reinterpret_cast<const char*>(&p.predVel), sizeof(p.predVel));
-			file.write(reinterpret_cast<const char*>(&p.acc), sizeof(p.acc));
-			file.write(reinterpret_cast<const char*>(&p.mass), sizeof(p.mass));
-			file.write(reinterpret_cast<const char*>(&p.press), sizeof(p.press));
-			file.write(reinterpret_cast<const char*>(&p.pressTmp), sizeof(p.pressTmp));
-			file.write(reinterpret_cast<const char*>(&p.pressF), sizeof(p.pressF));
-			file.write(reinterpret_cast<const char*>(&p.dens), sizeof(p.dens));
-			file.write(reinterpret_cast<const char*>(&p.predDens), sizeof(p.predDens));
-			file.write(reinterpret_cast<const char*>(&p.sphMass), sizeof(p.sphMass));
-			file.write(reinterpret_cast<const char*>(&p.restDens), sizeof(p.restDens));
-			file.write(reinterpret_cast<const char*>(&p.stiff), sizeof(p.stiff));
-			file.write(reinterpret_cast<const char*>(&p.visc), sizeof(p.visc));
-			file.write(reinterpret_cast<const char*>(&p.cohesion), sizeof(p.cohesion));
-			file.write(reinterpret_cast<const char*>(&p.temp), sizeof(p.temp));
-			file.write(reinterpret_cast<const char*>(&p.ke), sizeof(p.ke));
-			file.write(reinterpret_cast<const char*>(&p.prevKe), sizeof(p.prevKe));
-			file.write(reinterpret_cast<const char*>(&p.mortonKey), sizeof(p.mortonKey));
-			file.write(reinterpret_cast<const char*>(&p.id), sizeof(p.id));
-			file.write(reinterpret_cast<const char*>(&p.isHotPoint), sizeof(p.isHotPoint));
-			file.write(reinterpret_cast<const char*>(&p.hasSolidified), sizeof(p.hasSolidified));
+				file.write(reinterpret_cast<const char*>(&p.pos), sizeof(p.pos));
+				file.write(reinterpret_cast<const char*>(&p.predPos), sizeof(p.predPos));
+				file.write(reinterpret_cast<const char*>(&p.vel), sizeof(p.vel));
+				file.write(reinterpret_cast<const char*>(&p.prevVel), sizeof(p.prevVel));
+				file.write(reinterpret_cast<const char*>(&p.predVel), sizeof(p.predVel));
+				file.write(reinterpret_cast<const char*>(&p.acc), sizeof(p.acc));
+				file.write(reinterpret_cast<const char*>(&p.mass), sizeof(p.mass));
+				file.write(reinterpret_cast<const char*>(&p.press), sizeof(p.press));
+				file.write(reinterpret_cast<const char*>(&p.pressTmp), sizeof(p.pressTmp));
+				file.write(reinterpret_cast<const char*>(&p.pressF), sizeof(p.pressF));
+				file.write(reinterpret_cast<const char*>(&p.dens), sizeof(p.dens));
+				file.write(reinterpret_cast<const char*>(&p.predDens), sizeof(p.predDens));
+				file.write(reinterpret_cast<const char*>(&p.sphMass), sizeof(p.sphMass));
+				file.write(reinterpret_cast<const char*>(&p.restDens), sizeof(p.restDens));
+				file.write(reinterpret_cast<const char*>(&p.stiff), sizeof(p.stiff));
+				file.write(reinterpret_cast<const char*>(&p.visc), sizeof(p.visc));
+				file.write(reinterpret_cast<const char*>(&p.cohesion), sizeof(p.cohesion));
+				file.write(reinterpret_cast<const char*>(&p.temp), sizeof(p.temp));
+				file.write(reinterpret_cast<const char*>(&p.ke), sizeof(p.ke));
+				file.write(reinterpret_cast<const char*>(&p.prevKe), sizeof(p.prevKe));
+				file.write(reinterpret_cast<const char*>(&p.mortonKey), sizeof(p.mortonKey));
+				file.write(reinterpret_cast<const char*>(&p.id), sizeof(p.id));
+				file.write(reinterpret_cast<const char*>(&p.isHotPoint), sizeof(p.isHotPoint));
+				file.write(reinterpret_cast<const char*>(&p.hasSolidified), sizeof(p.hasSolidified));
 
-			file.write(reinterpret_cast<const char*>(&r.color), sizeof(r.color));
-			file.write(reinterpret_cast<const char*>(&r.pColor), sizeof(r.pColor));
-			file.write(reinterpret_cast<const char*>(&r.sColor), sizeof(r.sColor));
-			file.write(reinterpret_cast<const char*>(&r.sphColor), sizeof(r.sphColor));
-			file.write(reinterpret_cast<const char*>(&r.size), sizeof(r.size));
-			file.write(reinterpret_cast<const char*>(&r.uniqueColor), sizeof(r.uniqueColor));
-			file.write(reinterpret_cast<const char*>(&r.isSolid), sizeof(r.isSolid));
-			file.write(reinterpret_cast<const char*>(&r.canBeSubdivided), sizeof(r.canBeSubdivided));
-			file.write(reinterpret_cast<const char*>(&r.canBeResized), sizeof(r.canBeResized));
-			file.write(reinterpret_cast<const char*>(&r.isDarkMatter), sizeof(r.isDarkMatter));
-			file.write(reinterpret_cast<const char*>(&r.isSPH), sizeof(r.isSPH));
-			file.write(reinterpret_cast<const char*>(&r.isSelected), sizeof(r.isSelected));
-			file.write(reinterpret_cast<const char*>(&r.isGrabbed), sizeof(r.isGrabbed));
-			file.write(reinterpret_cast<const char*>(&r.previousSize), sizeof(r.previousSize));
-			file.write(reinterpret_cast<const char*>(&r.neighbors), sizeof(r.neighbors));
-			file.write(reinterpret_cast<const char*>(&r.totalRadius), sizeof(r.totalRadius));
-			file.write(reinterpret_cast<const char*>(&r.lifeSpan), sizeof(r.lifeSpan));
-			file.write(reinterpret_cast<const char*>(&r.sphLabel), sizeof(r.sphLabel));
-			file.write(reinterpret_cast<const char*>(&r.isPinned), sizeof(r.isPinned));
-			file.write(reinterpret_cast<const char*>(&r.isBeingDrawn), sizeof(r.isBeingDrawn));
-			file.write(reinterpret_cast<const char*>(&r.spawnCorrectIter), sizeof(r.spawnCorrectIter));
-			file.write(reinterpret_cast<const char*>(&r.turbulence), sizeof(r.turbulence));
+				file.write(reinterpret_cast<const char*>(&r.color), sizeof(r.color));
+				file.write(reinterpret_cast<const char*>(&r.pColor), sizeof(r.pColor));
+				file.write(reinterpret_cast<const char*>(&r.sColor), sizeof(r.sColor));
+				file.write(reinterpret_cast<const char*>(&r.sphColor), sizeof(r.sphColor));
+				file.write(reinterpret_cast<const char*>(&r.size), sizeof(r.size));
+				file.write(reinterpret_cast<const char*>(&r.uniqueColor), sizeof(r.uniqueColor));
+				file.write(reinterpret_cast<const char*>(&r.isSolid), sizeof(r.isSolid));
+				file.write(reinterpret_cast<const char*>(&r.canBeSubdivided), sizeof(r.canBeSubdivided));
+				file.write(reinterpret_cast<const char*>(&r.canBeResized), sizeof(r.canBeResized));
+				file.write(reinterpret_cast<const char*>(&r.isDarkMatter), sizeof(r.isDarkMatter));
+				file.write(reinterpret_cast<const char*>(&r.isSPH), sizeof(r.isSPH));
+				file.write(reinterpret_cast<const char*>(&r.isSelected), sizeof(r.isSelected));
+				file.write(reinterpret_cast<const char*>(&r.isGrabbed), sizeof(r.isGrabbed));
+				file.write(reinterpret_cast<const char*>(&r.previousSize), sizeof(r.previousSize));
+				file.write(reinterpret_cast<const char*>(&r.neighbors), sizeof(r.neighbors));
+				file.write(reinterpret_cast<const char*>(&r.totalRadius), sizeof(r.totalRadius));
+				file.write(reinterpret_cast<const char*>(&r.lifeSpan), sizeof(r.lifeSpan));
+				file.write(reinterpret_cast<const char*>(&r.sphLabel), sizeof(r.sphLabel));
+				file.write(reinterpret_cast<const char*>(&r.isPinned), sizeof(r.isPinned));
+				file.write(reinterpret_cast<const char*>(&r.isBeingDrawn), sizeof(r.isBeingDrawn));
+				file.write(reinterpret_cast<const char*>(&r.spawnCorrectIter), sizeof(r.spawnCorrectIter));
+				file.write(reinterpret_cast<const char*>(&r.turbulence), sizeof(r.turbulence));
+			}
+		}
+		else {
+			uint32_t particleCount = myParam.pParticles3D.size();
+			file.write(reinterpret_cast<const char*>(&particleCount), sizeof(particleCount));
+
+			for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
+				const ParticlePhysics3D& p = myParam.pParticles3D[i];
+				const ParticleRendering3D& r = myParam.rParticles3D[i];
+
+				file.write(reinterpret_cast<const char*>(&p.pos), sizeof(p.pos));
+				file.write(reinterpret_cast<const char*>(&p.predPos), sizeof(p.predPos));
+				file.write(reinterpret_cast<const char*>(&p.vel), sizeof(p.vel));
+				file.write(reinterpret_cast<const char*>(&p.prevVel), sizeof(p.prevVel));
+				file.write(reinterpret_cast<const char*>(&p.predVel), sizeof(p.predVel));
+				file.write(reinterpret_cast<const char*>(&p.acc), sizeof(p.acc));
+				file.write(reinterpret_cast<const char*>(&p.mass), sizeof(p.mass));
+				file.write(reinterpret_cast<const char*>(&p.press), sizeof(p.press));
+				file.write(reinterpret_cast<const char*>(&p.pressTmp), sizeof(p.pressTmp));
+				file.write(reinterpret_cast<const char*>(&p.pressF), sizeof(p.pressF));
+				file.write(reinterpret_cast<const char*>(&p.dens), sizeof(p.dens));
+				file.write(reinterpret_cast<const char*>(&p.predDens), sizeof(p.predDens));
+				file.write(reinterpret_cast<const char*>(&p.sphMass), sizeof(p.sphMass));
+				file.write(reinterpret_cast<const char*>(&p.restDens), sizeof(p.restDens));
+				file.write(reinterpret_cast<const char*>(&p.stiff), sizeof(p.stiff));
+				file.write(reinterpret_cast<const char*>(&p.visc), sizeof(p.visc));
+				file.write(reinterpret_cast<const char*>(&p.cohesion), sizeof(p.cohesion));
+				file.write(reinterpret_cast<const char*>(&p.temp), sizeof(p.temp));
+				file.write(reinterpret_cast<const char*>(&p.ke), sizeof(p.ke));
+				file.write(reinterpret_cast<const char*>(&p.prevKe), sizeof(p.prevKe));
+				file.write(reinterpret_cast<const char*>(&p.mortonKey), sizeof(p.mortonKey));
+				file.write(reinterpret_cast<const char*>(&p.id), sizeof(p.id));
+				file.write(reinterpret_cast<const char*>(&p.isHotPoint), sizeof(p.isHotPoint));
+				file.write(reinterpret_cast<const char*>(&p.hasSolidified), sizeof(p.hasSolidified));
+
+				file.write(reinterpret_cast<const char*>(&r.color), sizeof(r.color));
+				file.write(reinterpret_cast<const char*>(&r.pColor), sizeof(r.pColor));
+				file.write(reinterpret_cast<const char*>(&r.sColor), sizeof(r.sColor));
+				file.write(reinterpret_cast<const char*>(&r.sphColor), sizeof(r.sphColor));
+				file.write(reinterpret_cast<const char*>(&r.size), sizeof(r.size));
+				file.write(reinterpret_cast<const char*>(&r.uniqueColor), sizeof(r.uniqueColor));
+				file.write(reinterpret_cast<const char*>(&r.isSolid), sizeof(r.isSolid));
+				file.write(reinterpret_cast<const char*>(&r.canBeSubdivided), sizeof(r.canBeSubdivided));
+				file.write(reinterpret_cast<const char*>(&r.canBeResized), sizeof(r.canBeResized));
+				file.write(reinterpret_cast<const char*>(&r.isDarkMatter), sizeof(r.isDarkMatter));
+				file.write(reinterpret_cast<const char*>(&r.isSPH), sizeof(r.isSPH));
+				file.write(reinterpret_cast<const char*>(&r.isSelected), sizeof(r.isSelected));
+				file.write(reinterpret_cast<const char*>(&r.isGrabbed), sizeof(r.isGrabbed));
+				file.write(reinterpret_cast<const char*>(&r.previousSize), sizeof(r.previousSize));
+				file.write(reinterpret_cast<const char*>(&r.neighbors), sizeof(r.neighbors));
+				file.write(reinterpret_cast<const char*>(&r.totalRadius), sizeof(r.totalRadius));
+				file.write(reinterpret_cast<const char*>(&r.lifeSpan), sizeof(r.lifeSpan));
+				file.write(reinterpret_cast<const char*>(&r.sphLabel), sizeof(r.sphLabel));
+				file.write(reinterpret_cast<const char*>(&r.isPinned), sizeof(r.isPinned));
+				file.write(reinterpret_cast<const char*>(&r.isBeingDrawn), sizeof(r.isBeingDrawn));
+				file.write(reinterpret_cast<const char*>(&r.spawnCorrectIter), sizeof(r.spawnCorrectIter));
+				file.write(reinterpret_cast<const char*>(&r.turbulence), sizeof(r.turbulence));
+			}
 		}
 
-		uint32_t numConstraints = physics.particleConstraints.size();
-		file.write(reinterpret_cast<const char*>(&numConstraints), sizeof(numConstraints));
-		if (numConstraints > 0) {
-			file.write(
-				reinterpret_cast<const char*>(physics.particleConstraints.data()),
-				numConstraints * sizeof(ParticleConstraint)
-			);
+		if (!myVar.is3DMode) {
+			uint32_t numConstraints = physics.particleConstraints.size();
+			file.write(reinterpret_cast<const char*>(&numConstraints), sizeof(numConstraints));
+			if (numConstraints > 0) {
+				file.write(
+					reinterpret_cast<const char*>(physics.particleConstraints.data()),
+					numConstraints * sizeof(ParticleConstraint)
+				);
+			}
+		}
+		else {
+			uint32_t numConstraints = physics3D.particleConstraints.size();
+			file.write(reinterpret_cast<const char*>(&numConstraints), sizeof(numConstraints));
+			if (numConstraints > 0) {
+				file.write(
+					reinterpret_cast<const char*>(physics3D.particleConstraints.data()),
+					numConstraints * sizeof(ParticleConstraint)
+				);
+			}
 		}
 
 		uint32_t wallCount = lighting.walls.size();
@@ -461,10 +573,10 @@ void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar,
 		file.close();
 	}
 
-	deserializeParticleSystem(filename, yamlString, myVar, myParam, sph, physics, lighting, loadFlag);
+	deserializeParticleSystem(filename, yamlString, myVar, myParam, sph, physics, physics3D, lighting, loadFlag);
 }
 
-void SaveSystem::saveLoadLogic(UpdateVariables& myVar, UpdateParameters& myParam, SPH& sph, Physics& physics, Lighting& lighting, Field& field) {
+void SaveSystem::saveLoadLogic(UpdateVariables& myVar, UpdateParameters& myParam, SPH& sph, Physics& physics, Physics3D& physics3D, Lighting& lighting, Field& field) {
 	if (saveFlag) {
 		if (!std::filesystem::exists("Saves")) {
 			std::filesystem::create_directory("Saves");
@@ -488,7 +600,7 @@ void SaveSystem::saveLoadLogic(UpdateVariables& myVar, UpdateParameters& myParam
 
 		std::string savePath = "Saves/Save_" + std::to_string(nextAvailableIndex) + ".bin";
 
-		saveSystem(savePath.c_str(), myVar, myParam, sph, physics, lighting, field);
+		saveSystem(savePath.c_str(), myVar, myParam, sph, physics, physics3D, lighting, field);
 
 		saveIndex++;
 
@@ -583,7 +695,7 @@ void SaveSystem::saveLoadLogic(UpdateVariables& myVar, UpdateParameters& myParam
 			bool enabled = true;
 
 			if (UI::buttonHelper(fullPath.c_str(), "Select scene file", placeHolder, ImGui::GetContentRegionAvail().x, buttonHeight, enabled, enabled)) {
-				saveSystem(fullPath.c_str(), myVar, myParam, sph, physics, lighting, field);
+				saveSystem(fullPath.c_str(), myVar, myParam, sph, physics, physics3D, lighting, field);
 				loadFlag = false;
 			}
 

@@ -28,7 +28,7 @@ glm::vec2 Physics::calculateForceFromGridOld(std::vector<ParticlePhysics>& pPart
 
 		glm::vec2 d = gridCOM - pParticle.pos;
 
-		if (myVar.isPeriodicBoundaryEnabled) {
+		if (myVar.isPeriodicBoundaryEnabled && !myVar.infiniteDomain) {
 			d.x -= myVar.domainSize.x * ((d.x > myVar.halfDomainWidth) - (d.x < -myVar.halfDomainWidth));
 			d.y -= myVar.domainSize.y * ((d.y > myVar.halfDomainHeight) - (d.y < -myVar.halfDomainHeight));
 		}
@@ -115,7 +115,7 @@ void Physics::calculateForceFromGrid(UpdateVariables& myVar) {
 
 			glm::vec2 d = gridCOM - glm::vec2{ posX[i], posY[i] };
 
-			if (myVar.isPeriodicBoundaryEnabled) {
+			if (myVar.isPeriodicBoundaryEnabled && !myVar.infiniteDomain) {
 				d.x -= myVar.domainSize.x * ((d.x > myVar.halfDomainWidth) - (d.x < -myVar.halfDomainWidth));
 				d.y -= myVar.domainSize.y * ((d.y > myVar.halfDomainHeight) - (d.y < -myVar.halfDomainHeight));
 			}
@@ -255,7 +255,7 @@ void Physics::naiveGravity(std::vector<ParticlePhysics>& pParticles, UpdateVaria
 			__m256 dx = _mm256_sub_ps(pxj, pxi);
 			__m256 dy = _mm256_sub_ps(pyj, pyi);
 
-			if (myVar.isPeriodicBoundaryEnabled) {
+			if (myVar.isPeriodicBoundaryEnabled && !myVar.infiniteDomain) {
 				__m256 mask_pos_x = _mm256_cmp_ps(dx, halfDomainWidth, _CMP_GT_OQ);
 				__m256 mask_neg_x = _mm256_cmp_ps(dx, negHalfDomainWidth, _CMP_LT_OQ);
 				__m256 correction_x = _mm256_sub_ps(
@@ -305,7 +305,7 @@ void Physics::naiveGravity(std::vector<ParticlePhysics>& pParticles, UpdateVaria
 			float dx = posXPtr[j] - p_ix;
 			float dy = posYPtr[j] - p_iy;
 
-			if (myVar.isPeriodicBoundaryEnabled) {
+			if (myVar.isPeriodicBoundaryEnabled && !myVar.infiniteDomain) {
 				dx -= myVar.domainSize.x * ((dx > myVar.halfDomainWidth) - (dx < -myVar.halfDomainWidth));
 				dy -= myVar.domainSize.y * ((dy > myVar.halfDomainHeight) - (dy < -myVar.halfDomainHeight));
 			}
@@ -669,7 +669,7 @@ void Physics::constraints(std::vector<ParticlePhysics>& pParticles, std::vector<
 
 				glm::vec2 delta = pj.pos - pi.pos;
 
-				if (myVar.isPeriodicBoundaryEnabled) {
+				if (myVar.isPeriodicBoundaryEnabled && !myVar.infiniteDomain) {
 					delta.x = fmod(delta.x + myVar.domainSize.x * 1.5f, myVar.domainSize.x) - myVar.domainSize.x * 0.5f;
 					delta.y = fmod(delta.y + myVar.domainSize.y * 1.5f, myVar.domainSize.y) - myVar.domainSize.y * 0.5f;
 				}
@@ -885,7 +885,7 @@ void Physics::integrateStart(std::vector<ParticlePhysics>& pParticles, std::vect
 
 		p.pos += p.vel * dt;
 
-		if (myVar.isPeriodicBoundaryEnabled) {
+		if (myVar.isPeriodicBoundaryEnabled && !myVar.infiniteDomain) {
 			if (p.pos.x < 0.0f) p.pos.x += myVar.domainSize.x;
 			else if (p.pos.x >= myVar.domainSize.x) p.pos.x -= myVar.domainSize.x;
 

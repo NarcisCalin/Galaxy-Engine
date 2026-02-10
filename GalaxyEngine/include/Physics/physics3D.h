@@ -57,6 +57,8 @@ struct Physics3D {
 
 	void integrateStart3D(std::vector<ParticlePhysics3D>& pParticles3D, std::vector<ParticleRendering3D>& rParticles3D, UpdateVariables& myVar);
 
+	void pruneParticles(std::vector<ParticlePhysics3D>& pParticles, std::vector<ParticleRendering3D>& rParticles, UpdateVariables& myVar);
+
 	void integrateEnd3D(std::vector<ParticlePhysics3D>& pParticles3D, std::vector<ParticleRendering3D>& rParticles3D, UpdateVariables& myVar);
 
 	void createConstraints(std::vector<ParticlePhysics3D>& pParticles, std::vector<ParticleRendering3D>& rParticles, bool& constraintCreateSpecialFlag,

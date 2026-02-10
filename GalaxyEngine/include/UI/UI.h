@@ -6,6 +6,8 @@
 #include "Physics/SPH.h"
 #include "Physics/light.h"
 
+#include "Particles/particleSpaceship.h"
+
 #include "UX/saveSystem.h"
 
 #include "Sound/sound.h"
@@ -49,7 +51,8 @@ public:
 	bool prevSPHState = false;
 	bool prevMassMultiplier = false;
 
-	void uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, SaveSystem& save, GESound& geSound, Lighting& lighting, Field& field);
+	void uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, SaveSystem& save, 
+		GESound& geSound, Lighting& lighting, Field& field, ParticleSpaceship& ship);
 
 	void statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar);
 

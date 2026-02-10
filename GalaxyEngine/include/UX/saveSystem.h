@@ -6,6 +6,7 @@
 
 #include "Physics/SPH.h"
 #include "Physics/physics.h"
+#include "Physics/physics3D.h"
 #include "UI/UI.h"
 
 #include "parameters.h"
@@ -112,7 +113,8 @@ public:
 		}
 	}
 
-	void saveSystem(const std::string& filename, UpdateVariables& myVar, UpdateParameters& myParam, SPH& sph, Physics& physics, Lighting& lighting, Field& field);
+	void saveSystem(const std::string& filename, UpdateVariables& myVar, UpdateParameters& myParam, SPH& sph, Physics& physics, Physics3D& physics3D,
+		Lighting& lighting, Field& field);
 
 	bool deserializeParticleSystem(const std::string& filename,
 		std::string& yamlString,
@@ -120,6 +122,7 @@ public:
 		UpdateParameters& myParam,
 		SPH& sph,
 		Physics& physics,
+		Physics3D& physics3D,
 		Lighting& lighting,
 		bool loadFlag) {
 		if (!loadFlag) return false;
@@ -163,10 +166,10 @@ public:
 		}
 
 		if (loadedVersion == currentVersion) {
-			deserializeVersion180(file, myParam, physics, lighting);
+			deserializeVersion180(file, myParam, physics, physics3D, lighting, myVar.is3DMode);
 		}
 		else if (loadedVersion == version173) {
-			deserializeVersion180(file, myParam, physics, lighting);
+			deserializeVersion180(file, myParam, physics, physics3D, lighting, myVar.is3DMode);
 		}
 		
 
@@ -195,91 +198,188 @@ public:
 		return true;
 	}
 
-	bool deserializeVersion180(std::istream& file, UpdateParameters& myParam, Physics& physics, Lighting& lighting) {
+	bool deserializeVersion180(std::istream& file, UpdateParameters& myParam, Physics& physics, Physics3D& physics3D, Lighting& lighting, bool& is3DMode) {
 
 		file.read(reinterpret_cast<char*>(&globalId), sizeof(globalId));
 		file.read(reinterpret_cast<char*>(&globalShapeId), sizeof(globalShapeId));
 		file.read(reinterpret_cast<char*>(&globalWallId), sizeof(globalWallId));
 
-		uint32_t particleCount;
-		file.read(reinterpret_cast<char*>(&particleCount), sizeof(particleCount));
-
 		myParam.pParticles.clear();
 		myParam.rParticles.clear();
-		myParam.pParticles.reserve(particleCount);
-		myParam.rParticles.reserve(particleCount);
 
-		for (uint32_t i = 0; i < particleCount; i++) {
-			ParticlePhysics p;
-			ParticleRendering r;
+		myParam.pParticles3D.clear();
+		myParam.rParticles3D.clear();
 
-			file.read(reinterpret_cast<char*>(&p.pos), sizeof(p.pos));
-			file.read(reinterpret_cast<char*>(&p.predPos), sizeof(p.predPos));
-			file.read(reinterpret_cast<char*>(&p.vel), sizeof(p.vel));
-			file.read(reinterpret_cast<char*>(&p.prevVel), sizeof(p.prevVel));
-			file.read(reinterpret_cast<char*>(&p.predVel), sizeof(p.predVel));
-			file.read(reinterpret_cast<char*>(&p.acc), sizeof(p.acc));
-			file.read(reinterpret_cast<char*>(&p.mass), sizeof(p.mass));
-			file.read(reinterpret_cast<char*>(&p.press), sizeof(p.press));
-			file.read(reinterpret_cast<char*>(&p.pressTmp), sizeof(p.pressTmp));
-			file.read(reinterpret_cast<char*>(&p.pressF), sizeof(p.pressF));
-			file.read(reinterpret_cast<char*>(&p.dens), sizeof(p.dens));
-			file.read(reinterpret_cast<char*>(&p.predDens), sizeof(p.predDens));
-			file.read(reinterpret_cast<char*>(&p.sphMass), sizeof(p.sphMass));
-			file.read(reinterpret_cast<char*>(&p.restDens), sizeof(p.restDens));
-			file.read(reinterpret_cast<char*>(&p.stiff), sizeof(p.stiff));
-			file.read(reinterpret_cast<char*>(&p.visc), sizeof(p.visc));
-			file.read(reinterpret_cast<char*>(&p.cohesion), sizeof(p.cohesion));
-			file.read(reinterpret_cast<char*>(&p.temp), sizeof(p.temp));
-			file.read(reinterpret_cast<char*>(&p.ke), sizeof(p.ke));
-			file.read(reinterpret_cast<char*>(&p.prevKe), sizeof(p.prevKe));
-			file.read(reinterpret_cast<char*>(&p.mortonKey), sizeof(p.mortonKey));
-			file.read(reinterpret_cast<char*>(&p.id), sizeof(p.id));
-			file.read(reinterpret_cast<char*>(&p.isHotPoint), sizeof(p.isHotPoint));
-			file.read(reinterpret_cast<char*>(&p.hasSolidified), sizeof(p.hasSolidified));
+		myParam.pParticlesSelected.clear();
+		myParam.rParticlesSelected.clear();
 
-			file.read(reinterpret_cast<char*>(&r.color), sizeof(r.color));
-			file.read(reinterpret_cast<char*>(&r.pColor), sizeof(r.pColor));
-			file.read(reinterpret_cast<char*>(&r.sColor), sizeof(r.sColor));
-			file.read(reinterpret_cast<char*>(&r.sphColor), sizeof(r.sphColor));
-			file.read(reinterpret_cast<char*>(&r.size), sizeof(r.size));
-			file.read(reinterpret_cast<char*>(&r.uniqueColor), sizeof(r.uniqueColor));
-			file.read(reinterpret_cast<char*>(&r.isSolid), sizeof(r.isSolid));
-			file.read(reinterpret_cast<char*>(&r.canBeSubdivided), sizeof(r.canBeSubdivided));
-			file.read(reinterpret_cast<char*>(&r.canBeResized), sizeof(r.canBeResized));
-			file.read(reinterpret_cast<char*>(&r.isDarkMatter), sizeof(r.isDarkMatter));
-			file.read(reinterpret_cast<char*>(&r.isSPH), sizeof(r.isSPH));
-			file.read(reinterpret_cast<char*>(&r.isSelected), sizeof(r.isSelected));
-			file.read(reinterpret_cast<char*>(&r.isGrabbed), sizeof(r.isGrabbed));
-			file.read(reinterpret_cast<char*>(&r.previousSize), sizeof(r.previousSize));
-			file.read(reinterpret_cast<char*>(&r.neighbors), sizeof(r.neighbors));
-			file.read(reinterpret_cast<char*>(&r.totalRadius), sizeof(r.totalRadius));
-			file.read(reinterpret_cast<char*>(&r.lifeSpan), sizeof(r.lifeSpan));
-			file.read(reinterpret_cast<char*>(&r.sphLabel), sizeof(r.sphLabel));
-			file.read(reinterpret_cast<char*>(&r.isPinned), sizeof(r.isPinned));
-			file.read(reinterpret_cast<char*>(&r.isBeingDrawn), sizeof(r.isBeingDrawn));
-			file.read(reinterpret_cast<char*>(&r.spawnCorrectIter), sizeof(r.spawnCorrectIter));
-			file.read(reinterpret_cast<char*>(&r.turbulence), sizeof(r.turbulence));
+		myParam.pParticlesSelected3D.clear();
+		myParam.rParticlesSelected3D.clear();
 
-			myParam.pParticles.push_back(p);
-			myParam.rParticles.push_back(r);
+		if (!is3DMode) {
+			uint32_t particleCount;
+			file.read(reinterpret_cast<char*>(&particleCount), sizeof(particleCount));
+
+			myParam.pParticles.reserve(particleCount);
+			myParam.rParticles.reserve(particleCount);
+
+			for (uint32_t i = 0; i < particleCount; i++) {
+				ParticlePhysics p;
+				ParticleRendering r;
+
+				file.read(reinterpret_cast<char*>(&p.pos), sizeof(p.pos));
+				file.read(reinterpret_cast<char*>(&p.predPos), sizeof(p.predPos));
+				file.read(reinterpret_cast<char*>(&p.vel), sizeof(p.vel));
+				file.read(reinterpret_cast<char*>(&p.prevVel), sizeof(p.prevVel));
+				file.read(reinterpret_cast<char*>(&p.predVel), sizeof(p.predVel));
+				file.read(reinterpret_cast<char*>(&p.acc), sizeof(p.acc));
+				file.read(reinterpret_cast<char*>(&p.mass), sizeof(p.mass));
+				file.read(reinterpret_cast<char*>(&p.press), sizeof(p.press));
+				file.read(reinterpret_cast<char*>(&p.pressTmp), sizeof(p.pressTmp));
+				file.read(reinterpret_cast<char*>(&p.pressF), sizeof(p.pressF));
+				file.read(reinterpret_cast<char*>(&p.dens), sizeof(p.dens));
+				file.read(reinterpret_cast<char*>(&p.predDens), sizeof(p.predDens));
+				file.read(reinterpret_cast<char*>(&p.sphMass), sizeof(p.sphMass));
+				file.read(reinterpret_cast<char*>(&p.restDens), sizeof(p.restDens));
+				file.read(reinterpret_cast<char*>(&p.stiff), sizeof(p.stiff));
+				file.read(reinterpret_cast<char*>(&p.visc), sizeof(p.visc));
+				file.read(reinterpret_cast<char*>(&p.cohesion), sizeof(p.cohesion));
+				file.read(reinterpret_cast<char*>(&p.temp), sizeof(p.temp));
+				file.read(reinterpret_cast<char*>(&p.ke), sizeof(p.ke));
+				file.read(reinterpret_cast<char*>(&p.prevKe), sizeof(p.prevKe));
+				file.read(reinterpret_cast<char*>(&p.mortonKey), sizeof(p.mortonKey));
+				file.read(reinterpret_cast<char*>(&p.id), sizeof(p.id));
+				file.read(reinterpret_cast<char*>(&p.isHotPoint), sizeof(p.isHotPoint));
+				file.read(reinterpret_cast<char*>(&p.hasSolidified), sizeof(p.hasSolidified));
+
+				file.read(reinterpret_cast<char*>(&r.color), sizeof(r.color));
+				file.read(reinterpret_cast<char*>(&r.pColor), sizeof(r.pColor));
+				file.read(reinterpret_cast<char*>(&r.sColor), sizeof(r.sColor));
+				file.read(reinterpret_cast<char*>(&r.sphColor), sizeof(r.sphColor));
+				file.read(reinterpret_cast<char*>(&r.size), sizeof(r.size));
+				file.read(reinterpret_cast<char*>(&r.uniqueColor), sizeof(r.uniqueColor));
+				file.read(reinterpret_cast<char*>(&r.isSolid), sizeof(r.isSolid));
+				file.read(reinterpret_cast<char*>(&r.canBeSubdivided), sizeof(r.canBeSubdivided));
+				file.read(reinterpret_cast<char*>(&r.canBeResized), sizeof(r.canBeResized));
+				file.read(reinterpret_cast<char*>(&r.isDarkMatter), sizeof(r.isDarkMatter));
+				file.read(reinterpret_cast<char*>(&r.isSPH), sizeof(r.isSPH));
+				file.read(reinterpret_cast<char*>(&r.isSelected), sizeof(r.isSelected));
+				file.read(reinterpret_cast<char*>(&r.isGrabbed), sizeof(r.isGrabbed));
+				file.read(reinterpret_cast<char*>(&r.previousSize), sizeof(r.previousSize));
+				file.read(reinterpret_cast<char*>(&r.neighbors), sizeof(r.neighbors));
+				file.read(reinterpret_cast<char*>(&r.totalRadius), sizeof(r.totalRadius));
+				file.read(reinterpret_cast<char*>(&r.lifeSpan), sizeof(r.lifeSpan));
+				file.read(reinterpret_cast<char*>(&r.sphLabel), sizeof(r.sphLabel));
+				file.read(reinterpret_cast<char*>(&r.isPinned), sizeof(r.isPinned));
+				file.read(reinterpret_cast<char*>(&r.isBeingDrawn), sizeof(r.isBeingDrawn));
+				file.read(reinterpret_cast<char*>(&r.spawnCorrectIter), sizeof(r.spawnCorrectIter));
+				file.read(reinterpret_cast<char*>(&r.turbulence), sizeof(r.turbulence));
+
+				myParam.pParticles.push_back(p);
+				myParam.rParticles.push_back(r);
+			}
+		}
+		else {
+			uint32_t particleCount;
+			file.read(reinterpret_cast<char*>(&particleCount), sizeof(particleCount));
+
+			myParam.pParticles3D.reserve(particleCount);
+			myParam.rParticles3D.reserve(particleCount);
+
+			for (uint32_t i = 0; i < particleCount; i++) {
+				ParticlePhysics3D p;
+				ParticleRendering3D r;
+
+				file.read(reinterpret_cast<char*>(&p.pos), sizeof(p.pos));
+				file.read(reinterpret_cast<char*>(&p.predPos), sizeof(p.predPos));
+				file.read(reinterpret_cast<char*>(&p.vel), sizeof(p.vel));
+				file.read(reinterpret_cast<char*>(&p.prevVel), sizeof(p.prevVel));
+				file.read(reinterpret_cast<char*>(&p.predVel), sizeof(p.predVel));
+				file.read(reinterpret_cast<char*>(&p.acc), sizeof(p.acc));
+				file.read(reinterpret_cast<char*>(&p.mass), sizeof(p.mass));
+				file.read(reinterpret_cast<char*>(&p.press), sizeof(p.press));
+				file.read(reinterpret_cast<char*>(&p.pressTmp), sizeof(p.pressTmp));
+				file.read(reinterpret_cast<char*>(&p.pressF), sizeof(p.pressF));
+				file.read(reinterpret_cast<char*>(&p.dens), sizeof(p.dens));
+				file.read(reinterpret_cast<char*>(&p.predDens), sizeof(p.predDens));
+				file.read(reinterpret_cast<char*>(&p.sphMass), sizeof(p.sphMass));
+				file.read(reinterpret_cast<char*>(&p.restDens), sizeof(p.restDens));
+				file.read(reinterpret_cast<char*>(&p.stiff), sizeof(p.stiff));
+				file.read(reinterpret_cast<char*>(&p.visc), sizeof(p.visc));
+				file.read(reinterpret_cast<char*>(&p.cohesion), sizeof(p.cohesion));
+				file.read(reinterpret_cast<char*>(&p.temp), sizeof(p.temp));
+				file.read(reinterpret_cast<char*>(&p.ke), sizeof(p.ke));
+				file.read(reinterpret_cast<char*>(&p.prevKe), sizeof(p.prevKe));
+				file.read(reinterpret_cast<char*>(&p.mortonKey), sizeof(p.mortonKey));
+				file.read(reinterpret_cast<char*>(&p.id), sizeof(p.id));
+				file.read(reinterpret_cast<char*>(&p.isHotPoint), sizeof(p.isHotPoint));
+				file.read(reinterpret_cast<char*>(&p.hasSolidified), sizeof(p.hasSolidified));
+
+				file.read(reinterpret_cast<char*>(&r.color), sizeof(r.color));
+				file.read(reinterpret_cast<char*>(&r.pColor), sizeof(r.pColor));
+				file.read(reinterpret_cast<char*>(&r.sColor), sizeof(r.sColor));
+				file.read(reinterpret_cast<char*>(&r.sphColor), sizeof(r.sphColor));
+				file.read(reinterpret_cast<char*>(&r.size), sizeof(r.size));
+				file.read(reinterpret_cast<char*>(&r.uniqueColor), sizeof(r.uniqueColor));
+				file.read(reinterpret_cast<char*>(&r.isSolid), sizeof(r.isSolid));
+				file.read(reinterpret_cast<char*>(&r.canBeSubdivided), sizeof(r.canBeSubdivided));
+				file.read(reinterpret_cast<char*>(&r.canBeResized), sizeof(r.canBeResized));
+				file.read(reinterpret_cast<char*>(&r.isDarkMatter), sizeof(r.isDarkMatter));
+				file.read(reinterpret_cast<char*>(&r.isSPH), sizeof(r.isSPH));
+				file.read(reinterpret_cast<char*>(&r.isSelected), sizeof(r.isSelected));
+				file.read(reinterpret_cast<char*>(&r.isGrabbed), sizeof(r.isGrabbed));
+				file.read(reinterpret_cast<char*>(&r.previousSize), sizeof(r.previousSize));
+				file.read(reinterpret_cast<char*>(&r.neighbors), sizeof(r.neighbors));
+				file.read(reinterpret_cast<char*>(&r.totalRadius), sizeof(r.totalRadius));
+				file.read(reinterpret_cast<char*>(&r.lifeSpan), sizeof(r.lifeSpan));
+				file.read(reinterpret_cast<char*>(&r.sphLabel), sizeof(r.sphLabel));
+				file.read(reinterpret_cast<char*>(&r.isPinned), sizeof(r.isPinned));
+				file.read(reinterpret_cast<char*>(&r.isBeingDrawn), sizeof(r.isBeingDrawn));
+				file.read(reinterpret_cast<char*>(&r.spawnCorrectIter), sizeof(r.spawnCorrectIter));
+				file.read(reinterpret_cast<char*>(&r.turbulence), sizeof(r.turbulence));
+
+				myParam.pParticles3D.push_back(p);
+				myParam.rParticles3D.push_back(r);
+			}
 		}
 
 		physics.particleConstraints.clear();
-		uint32_t numConstraints = 0;
-		file.read(reinterpret_cast<char*>(&numConstraints), sizeof(numConstraints));
-		if (numConstraints > 0) {
+		physics3D.particleConstraints.clear();
 
-			physics.particleConstraints.resize(numConstraints);
-			file.read(
-				reinterpret_cast<char*>(physics.particleConstraints.data()),
-				numConstraints * sizeof(ParticleConstraint)
-			);
+		if (!is3DMode) {
+			uint32_t numConstraints = 0;
+			file.read(reinterpret_cast<char*>(&numConstraints), sizeof(numConstraints));
+			if (numConstraints > 0) {
 
-			physics.constraintMap.clear();
-			for (auto& constraint : physics.particleConstraints) {
-				uint64_t key = physics.makeKey(constraint.id1, constraint.id2);
-				physics.constraintMap[key] = &constraint;
+				physics.particleConstraints.resize(numConstraints);
+				file.read(
+					reinterpret_cast<char*>(physics.particleConstraints.data()),
+					numConstraints * sizeof(ParticleConstraint)
+				);
+
+				physics.constraintMap.clear();
+				for (auto& constraint : physics.particleConstraints) {
+					uint64_t key = physics.makeKey(constraint.id1, constraint.id2);
+					physics.constraintMap[key] = &constraint;
+				}
+			}
+		}
+		else {
+			uint32_t numConstraints = 0;
+			file.read(reinterpret_cast<char*>(&numConstraints), sizeof(numConstraints));
+			if (numConstraints > 0) {
+
+				physics3D.particleConstraints.resize(numConstraints);
+				file.read(
+					reinterpret_cast<char*>(physics3D.particleConstraints.data()),
+					numConstraints * sizeof(ParticleConstraint)
+				);
+
+				physics3D.constraintMap.clear();
+				for (auto& constraint : physics3D.particleConstraints) {
+					uint64_t key = physics3D.makeKey(constraint.id1, constraint.id2);
+					physics3D.constraintMap[key] = &constraint;
+				}
 			}
 		}
 
@@ -496,7 +596,7 @@ public:
 	}
 
 
-	void saveLoadLogic(UpdateVariables& myVar, UpdateParameters& myParam, SPH& sph, Physics& physics, Lighting& lighting, Field& field);
+	void saveLoadLogic(UpdateVariables& myVar, UpdateParameters& myParam, SPH& sph, Physics& physics, Physics3D& physics3D, Lighting& lighting, Field& field);
 
 private:
 

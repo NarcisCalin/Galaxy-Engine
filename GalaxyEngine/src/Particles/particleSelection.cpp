@@ -181,7 +181,7 @@ void ParticleSelection::manyClustersSelection(UpdateVariables& myVar, UpdatePara
 	}
 }
 
-void ParticleSelection::boxSelection(UpdateParameters& myParam) {
+void ParticleSelection::boxSelection(UpdateParameters& myParam, bool& is3DMode) {
 
 	if ((IsKeyDown(KEY_LEFT_CONTROL) && IsMouseButtonDown(2)) || (IsKeyDown(KEY_LEFT_ALT) && IsMouseButtonDown(2))) {
 		if (IO::shortcutPress(KEY_LEFT_CONTROL) || IsMouseButtonPressed(2)) {
@@ -195,7 +195,9 @@ void ParticleSelection::boxSelection(UpdateParameters& myParam) {
 		float boxWidth = fabs(currentMousePos.x - boxInitialPos.x);
 		float boxHeight = fabs(currentMousePos.y - boxInitialPos.y);
 		DrawRectangleV({ boxX, boxY }, { boxWidth, boxHeight }, { 40,40,40,80 });
-		DrawRectangleLinesEx({ boxX, boxY , boxWidth, boxHeight }, 0.6f, WHITE);
+		if (!is3DMode) {
+			DrawRectangleLinesEx({ boxX, boxY , boxWidth, boxHeight }, 0.6f, WHITE);
+		}
 
 	}
 
@@ -483,8 +485,6 @@ void ParticleSelection3D::boxSelection(UpdateParameters& myParam) {
 		float boxY = fmin(boxInitialPos.y, currentMousePos.y);
 		float boxWidth = fabs(currentMousePos.x - boxInitialPos.x);
 		float boxHeight = fabs(currentMousePos.y - boxInitialPos.y);
-		DrawRectangleV({ boxX, boxY }, { boxWidth, boxHeight }, { 40,40,40,80 });
-		DrawRectangleLinesEx({ boxX, boxY , boxWidth, boxHeight }, 0.6f, WHITE);
 
 	}
 

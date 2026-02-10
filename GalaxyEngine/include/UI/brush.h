@@ -37,7 +37,7 @@ public:
 
 private:
 
-	float spinForce = 140.0f;
+	float spinForce = 40.0f;
 
 	glm::vec2 attractorForce = { 0.0f, 0.0f };
 
@@ -62,13 +62,13 @@ public:
 
 	void eraseBrush(UpdateVariables& myVar, UpdateParameters& myParam);
 
-	//void particlesAttractor(UpdateVariables& myVar, UpdateParameters& myParam);
+	void particlesAttractor(UpdateVariables& myVar, UpdateParameters& myParam);
 
-	//void particlesSpinner(UpdateVariables& myVar, UpdateParameters& myParam);
+	void particlesSpinner(UpdateVariables& myVar, UpdateParameters& myParam);
 
 	void particlesGrabber(UpdateVariables& myVar, UpdateParameters& myParam);
 
-	//void temperatureBrush(UpdateVariables& myVar, UpdateParameters& myParam);
+	void temperatureBrush(UpdateVariables& myVar, UpdateParameters& myParam);
 
 	float brushRadius = 25.0f;
 
@@ -81,9 +81,9 @@ private:
 
 	bool wasEmpty = true;
 
-	float spinForce = 140.0f;
+	float spinForce = 40.0f;
 
-	glm::vec2 attractorForce = { 0.0f, 0.0f };
+	glm::vec3 attractorForce = { 0.0f, 0.0f, 0.0f };
 
 	bool dragging = false;
 	glm::vec3 lastBrushVelocity = { 0.0f, 0.0f, 0.0f };

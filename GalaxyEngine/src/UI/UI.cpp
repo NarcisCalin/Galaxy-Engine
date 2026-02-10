@@ -1,6 +1,7 @@
 #include "UI/UI.h"
 
-void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, SaveSystem& save, GESound& geSound, Lighting& lighting, Field& field) {
+void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, SaveSystem& save, GESound& geSound, 
+	Lighting& lighting, Field& field, ParticleSpaceship& ship) {
 
 	if (IO::shortcutPress(KEY_U)) {
 		showSettings = !showSettings;
@@ -86,8 +87,14 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		myParam.pParticles.clear();
 		myParam.rParticles.clear();
 
+		myParam.pParticlesSelected.clear();
+		myParam.rParticlesSelected.clear();
+
 		myParam.pParticles3D.clear();
 		myParam.rParticles3D.clear();
+
+		myParam.pParticlesSelected3D.clear();
+		myParam.rParticlesSelected3D.clear();
 
 		myParam.trails.segments.clear();
 		myParam.trails.segments3D.clear();
@@ -427,6 +434,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 	buttonHelper("Fluid Ground Mode", "Adds vertical gravity and makes particles collide with the domain walls", myVar.sphGround, -1.0f, settingsButtonY, true, myVar.isSPHEnabled);
 	buttonHelper("Looping Space", "Particles disappearing on one side will appear on the other side", myVar.isPeriodicBoundaryEnabled, -1.0f, settingsButtonY, true, enabled);
+	buttonHelper("Infinite Domain", "Enables or disables the domain boundaries that contain the simulation", myVar.infiniteDomain, -1.0f, settingsButtonY, true, enabled);
 
 	ImGui::Spacing();
 	ImGui::Separator();
@@ -667,6 +675,26 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			ImGui::Spacing();
 			ImGui::Separator();
 
+			ImGui::TextColored(UpdateVariables::colMenuInformation, "Particle Clipping");
+
+			ImGui::Separator();
+			ImGui::Spacing();
+
+			buttonHelper("Clip Selected X", "Hides half of the selected particles on the X axis", myVar.clipSelectedX, 240.0f, 30.0f, true, enabled);
+			ImGui::SameLine();
+			buttonHelper("Invert X", "Inverts X half", myVar.clipSelectedXInv, 75.0f, 30.0f, true, enabled);
+
+			buttonHelper("Clip Selected Y", "Hides half of the selected particles on the Y axis", myVar.clipSelectedY, 240.0f, 30.0f, true, enabled);
+			ImGui::SameLine();
+			buttonHelper("Invert Y", "Inverts Y half", myVar.clipSelectedYInv, 75.0f, 30.0f, true, enabled);
+
+			buttonHelper("Clip Selected Z", "Hides half of the selected particles on the Z axis", myVar.clipSelectedZ, 240.0f, 30.0f, true, enabled);
+			ImGui::SameLine();
+			buttonHelper("Invert Z", "Inverts Z half", myVar.clipSelectedZInv, 75.0f, 30.0f, true, enabled);
+
+			ImGui::Spacing();
+			ImGui::Separator();
+
 			ImGui::TextColored(UpdateVariables::colMenuInformation, "Neighbor Search");
 
 			ImGui::Separator();
@@ -744,8 +772,6 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			ImGui::Spacing();
 
 			sliderHelper("Path Prediction Length", "Controls how long is the predicted path", myVar.predictPathLength, 100, 2000, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Visible P. Amount Multiplier", "Controls the spawn amount of visible particles", myVar.particleAmountMultiplier, 0.1f, 100.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("DM P. Amount Multiplier", "Controls the spawn amount of dark matter particles", myVar.DMAmountMultiplier, 0.1f, 100.0f, parametersSliderX, parametersSliderY, enabled);
 
 			bool isSPHDisabled = !myVar.isSPHEnabled;
 
@@ -819,7 +845,6 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			sliderHelper("Time Scale", "Controls how fast time passes", myVar.timeStepMultiplier, 0.0f, 15.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Softening", "Controls the smoothness of the gravity forces", myVar.softening, 0.5f, 30.0f, parametersSliderX, parametersSliderY, enabled);
 			sliderHelper("Gravity Strength", "Controls how much particles attract eachother", myVar.gravityMultiplier, 0.0f, 100.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Black Hole Init Mass", "Controls the mass of black holes when spawned", myVar.heavyParticleWeightMultiplier, 0.005f, 15.0f, parametersSliderX, parametersSliderY, enabled);
 
 			ImGui::Spacing();
 			ImGui::Separator();
@@ -1234,7 +1259,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 	// Tools Menu //
 
-	ImVec2 toolsSize = { 200.0f, 370.0f };
+	ImVec2 toolsSize = { 250.0f, 370.0f };
 	ImGui::SetNextWindowSize(toolsSize, ImGuiCond_Once);
 	ImGui::SetNextWindowPos(ImVec2(parametersWindowSizeX + 20.0f, 0.0f), ImGuiCond_Once);
 	ImGui::Begin("Tools", nullptr);
@@ -1258,7 +1283,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		ToolButton particleTools[] = {
 			{ "Draw Particles", "Draw particles with the brush", &myVar.toolDrawParticles },
 			{ "Black Hole", "Throw a black hole particle", &myVar.toolSpawnHeavyParticle },
-			{ "Big Galaxy", "Spawn a large galaxy", &myVar.toolSpawnBigGalaxy },
+			{ "Galaxy", "Spawn a large galaxy", &myVar.toolSpawnGalaxy },
 			{ "Star", "Spawn a small star. This is not meant for fluid mode", &myVar.toolSpawnStar },
 			{ "Big Bang", "Spawn the Big Bang", &myVar.toolSpawnBigBang }
 		};
@@ -1291,22 +1316,113 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 		ImGui::EndTabItem();
 
-		if (myVar.toolSpawnBigGalaxy) {
-			sliderHelper("Disk Rotation X", "Controls rotation of disk in the X axist", myParam.particlesSpawning3D.diskAxisX, 0.0f, 180.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Disk Rotation Y", "Controls rotation of disk in the Y axist", myParam.particlesSpawning3D.diskAxisY, 0.0f, 180.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Disk Rotation Z", "Controls rotation of disk in the Z axist", myParam.particlesSpawning3D.diskAxisZ, 0.0f, 180.0f, parametersSliderX, parametersSliderY, enabled);
+		ImGui::Spacing();
+		ImGui::Separator();
+
+		ImGui::TextColored(UpdateVariables::colMenuInformation, "ParticleAmount");
+
+		ImGui::Separator();
+		ImGui::Spacing();
+
+		sliderHelper("Visible P. Amount Multiplier", "Controls the spawn amount of visible particles", myVar.particleAmountMultiplier, 0.1f, 100.0f, parametersSliderX, parametersSliderY, enabled);
+		sliderHelper("DM P. Amount Multiplier", "Controls the spawn amount of dark matter particles", myVar.DMAmountMultiplier, 0.1f, 100.0f, parametersSliderX, parametersSliderY, enabled);
+
+		if (myVar.toolSpawnGalaxy) {
+			if(!myVar.is3DMode){
+
+				ImGui::Spacing();
+				ImGui::Separator();
+
+				ImGui::TextColored(UpdateVariables::colMenuInformation, "Disk");
+
+				ImGui::Separator();
+				ImGui::Spacing();
+
+				sliderHelper("Galaxy Outer Radius", "Controls the outer limit of the galaxy", myParam.particlesSpawning.outerRadius, 10.0f, 500.0f, parametersSliderX, parametersSliderY, enabled);
+				sliderHelper("Galaxy Radius", "Controls the radius of the galaxy core", myParam.particlesSpawning.scaleLength, 10.0f, 500.0f, parametersSliderX, parametersSliderY, enabled);
+
+				ImGui::Spacing();
+				ImGui::Separator();
+
+				ImGui::TextColored(UpdateVariables::colMenuInformation, "Dark Matter");
+
+				ImGui::Separator();
+				ImGui::Spacing();
+
+				sliderHelper("DM Halo Size", "Controls the size of the galaxy dark matter halo", myParam.particlesSpawning.outerRadiusDM, 500.0f, 12000.0f, parametersSliderX, parametersSliderY, enabled);
+				sliderHelper("DM Halo Core Size", "Controls the size of the galaxy dark matter halo core", myParam.particlesSpawning.radiusCoreDM, 0.5f, 15.0f, parametersSliderX, parametersSliderY, enabled);
+			}
+			else {
+				ImGui::Spacing();
+				ImGui::Separator();
+
+				ImGui::TextColored(UpdateVariables::colMenuInformation, "Rotation");
+
+				ImGui::Separator();
+				ImGui::Spacing();
+				
+				sliderHelper("Disk Rotation X", "Controls rotation of disk in the X axist", myParam.particlesSpawning3D.diskAxisX, 0.0f, 180.0f, parametersSliderX, parametersSliderY, enabled);
+				sliderHelper("Disk Rotation Y", "Controls rotation of disk in the Y axist", myParam.particlesSpawning3D.diskAxisY, 0.0f, 180.0f, parametersSliderX, parametersSliderY, enabled);
+				
+				ImGui::Spacing();
+				ImGui::Separator();
+
+				ImGui::TextColored(UpdateVariables::colMenuInformation, "Disk");
+
+				ImGui::Separator();
+				ImGui::Spacing();
+				
+				sliderHelper("Galaxy Outer Radius", "Controls the outer limit of the galaxy", myParam.particlesSpawning3D.outerRadius, 10.0f, 500.0f, parametersSliderX, parametersSliderY, enabled);
+				sliderHelper("Galaxy Core Radius", "Controls the radius of the galaxy core", myParam.particlesSpawning3D.radiusCore, 0.1f, 700.0f, parametersSliderX, parametersSliderY, enabled);
+				sliderHelper("Galaxy Thickness", "Controls the thickness of the galaxy", myParam.particlesSpawning3D.diskThickness, 0.05f, 12.0f, parametersSliderX, parametersSliderY, enabled);
+				
+				ImGui::Spacing();
+				ImGui::Separator();
+
+				ImGui::TextColored(UpdateVariables::colMenuInformation, "Bulge");
+
+				ImGui::Separator();
+				ImGui::Spacing();
+
+				sliderHelper("Galaxy Bulge Size", "Controls the size of the galaxy central bulge", myParam.particlesSpawning3D.bulgeSize, 10.0f, 4000.0f, parametersSliderX, parametersSliderY, enabled);
+				sliderHelper("Galaxy Bulge Thickness", "Controls the thickness of the galaxy central bulge", myParam.particlesSpawning3D.bulgeThickness, 0.5f, 15.0f, parametersSliderX, parametersSliderY, enabled);
+				
+				ImGui::Spacing();
+				ImGui::Separator();
+
+				ImGui::TextColored(UpdateVariables::colMenuInformation, "Dark Matter");
+
+				ImGui::Separator();
+				ImGui::Spacing();
+
+				sliderHelper("DM Halo Size", "Controls the size of the galaxy dark matter halo", myParam.particlesSpawning3D.outerRadiusDM, 500.0f, 12000.0f, parametersSliderX, parametersSliderY, enabled);
+				sliderHelper("DM Halo Core Size", "Controls the size of the galaxy dark matter halo core", myParam.particlesSpawning3D.radiusCoreDM, 0.5f, 15.0f, parametersSliderX, parametersSliderY, enabled);
+			}
+		}
+
+		if (myVar.toolSpawnHeavyParticle) {
+
+			ImGui::Spacing();
+			ImGui::Separator();
+
+			ImGui::TextColored(UpdateVariables::colMenuInformation, "Black Hole");
+
+			ImGui::Separator();
+			ImGui::Spacing();
+
+			sliderHelper("Black Hole Init Mass", "Controls the mass of black holes when spawned", myVar.heavyParticleWeightMultiplier, 0.005f, 15.0f, parametersSliderX, parametersSliderY, enabled);
 		}
 	}
 
 	// Brush tab
 	if (ImGui::BeginTabItem("Brush")) {
 		ToolButton brushTools[] = {
-			{ "Eraser", "Erase particles with the brush", &myVar.toolErase },
-			{ "Radial Force", "Push particles away. Hold LCTRL to invert.", &myVar.toolRadialForce },
-			{ "Spin", "Spins particles. Hold LCTRL to invert.", &myVar.toolSpin },
-			{ "Grab", "Grab particles inside the brush", &myVar.toolMove },
-			{ "Heat", "Heats the particles inside the brush", &myVar.toolRaiseTemp },
-			{ "Cool", "Cools the particles inside the brush", &myVar.toolLowerTemp }
+			{ "Eraser Brush", "Erase particles with the brush", &myVar.toolErase },
+			{ "Gravity Brush", "Push particles away. Hold LCTRL to invert.", &myVar.toolRadialForce },
+			{ "Spin Brush", "Spins particles. Hold LCTRL to invert.", &myVar.toolSpin },
+			{ "Grab Brush", "Grab particles inside the brush", &myVar.toolMove },
+			{ "Heat Brush", "Heats the particles inside the brush", &myVar.toolRaiseTemp },
+			{ "Cool Brush", "Cools the particles inside the brush", &myVar.toolLowerTemp }
 		};
 
 		for (int i = 0; i < IM_ARRAYSIZE(brushTools); ++i) {
@@ -1315,8 +1431,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 				myVar.toolDrawParticles = false;
 				myVar.toolSpawnHeavyParticle = false;
-				myVar.toolSpawnBigGalaxy = false;
-				myVar.toolSpawnSmallGalaxy = false;
+				myVar.toolSpawnGalaxy = false;
 				myVar.toolSpawnStar = false;
 				myVar.toolSpawnBigBang = false;
 
@@ -1336,6 +1451,9 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		}
 
 		ImGui::EndTabItem();
+
+		sliderHelper("Gravity Brush Force", "Controls the force of the gravity brush", myVar.brushAttractForceMult, 0.01f, 10.0f, parametersSliderX, parametersSliderY, enabled);
+		sliderHelper("Spin Brush Force", "Controls the force of the spin brush", myVar.brushSpinForceMult, 0.01f, 10.0f, parametersSliderX, parametersSliderY, enabled);
 	}
 
 	// Optics tab
@@ -1359,8 +1477,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 				myVar.toolDrawParticles = false;
 				myVar.toolSpawnHeavyParticle = false;
-				myVar.toolSpawnBigGalaxy = false;
-				myVar.toolSpawnSmallGalaxy = false;
+				myVar.toolSpawnGalaxy = false;
 				myVar.toolSpawnStar = false;
 				myVar.toolSpawnBigBang = false;
 
@@ -1391,8 +1508,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 		//		myVar.toolDrawParticles = false;
 		//		myVar.toolSpawnHeavyParticle = false;
-		//		myVar.toolSpawnBigGalaxy = false;
-		//		myVar.toolSpawnSmallGalaxy = false;
+		//		myVar.toolSpawnGalaxy = false;
 		//		myVar.toolSpawnStar = false;
 		//		myVar.toolSpawnBigBang = false;
 
@@ -1416,19 +1532,43 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		//	}
 		//}
 
-		buttonHelper("Long Exposure Duration", "Controls the duration of the long exposure shot", myVar.longExposureFlag, -1.0f, settingsButtonY, enabled, enabled);
+		ImGui::Spacing();
+		ImGui::Separator();
 
+		ImGui::TextColored(UpdateVariables::colMenuInformation, "Long Exposure");
+
+		ImGui::Separator();
+		ImGui::Spacing();
+
+		buttonHelper("Long Exposure Duration", "Controls the duration of the long exposure shot", myVar.longExposureFlag, -1.0f, settingsButtonY, enabled, enabled);
 		sliderHelper("Long Exposure Duration", "Controls the duration of the long exposure shot", myVar.longExposureDuration, 2, 1000, parametersSliderX, parametersSliderY, enabled);
 
-		buttonHelper("Ship Gas", "Enables gas particles coming from the ship when controlling particles", myVar.isShipGasEnabled, -1.0f, settingsButtonY, true, enabled);
+		ImGui::Spacing();
+		ImGui::Separator();
+
+		ImGui::TextColored(UpdateVariables::colMenuInformation, ".PLY Export");
+
+		ImGui::Separator();
+		ImGui::Spacing();
 
 		buttonHelper("Export .ply File", "Exports particles to a .ply file", myVar.exportPlyFlag, -1.0f, settingsButtonY, true, enabled);
-
 		buttonHelper("Export .ply Seq.", "Exports particles to a .ply file each frame, creating a .ply sequence", myVar.exportPlySeqFlag, -1.0f, settingsButtonY, true, enabled);
 
 		if (myVar.plyFrameNumber != 0) {
 			ImGui::TextColored(UpdateVariables::colMenuInformation, "%s%d", "Frames Exported: ", myVar.plyFrameNumber);
 		}
+
+		ImGui::Spacing();
+		ImGui::Separator();
+
+		ImGui::TextColored(UpdateVariables::colMenuInformation, "Spaceship");
+
+		ImGui::Separator();
+		ImGui::Spacing();
+
+		buttonHelper("Enable Spaceship", "Enables controlling particles", ship.isShipEnabled, -1.0f, settingsButtonY, true, enabled);
+		buttonHelper("Ship Gas", "Enables gas particles coming from the ship when controlling particles", myVar.isShipGasEnabled, -1.0f, settingsButtonY, true, enabled);
+		sliderHelper("Spaceship Acceleration", "Controls the acceleration of the spaceship when controlling particles",ship.acceleration, 1.0f, 16.0f, parametersSliderX, parametersSliderY, enabled);
 
 		ImGui::EndTabItem();
 	}
@@ -1490,52 +1630,106 @@ void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 	float rubberAmount = 0.0f;
 
 	// This is not the ideal way to do it, but I'm using this for now because there are not many materials
-	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-		ParticleRendering& r = myParam.rParticles[i];
-		if (myParam.pParticlesSelected.size() == 0) {
-			if (r.sphLabel == 1) {
-				waterAmount++;
+
+	if (!myVar.is3DMode) {
+		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+			ParticleRendering& r = myParam.rParticles[i];
+			if (myParam.pParticlesSelected.size() == 0) {
+				if (r.sphLabel == 1) {
+					waterAmount++;
+				}
+				else if (r.sphLabel == 2) {
+					rockAmount++;
+				}
+				else if (r.sphLabel == 3) {
+					ironAmount++;
+				}
+				else if (r.sphLabel == 4) {
+					sandAmount++;
+				}
+				else if (r.sphLabel == 5) {
+					soilAmount++;
+				}
+				else if (r.sphLabel == 6) {
+					mudAmount++;
+				}
+				else if (r.sphLabel == 7) {
+					rubberAmount++;
+				}
 			}
-			else if (r.sphLabel == 2) {
-				rockAmount++;
-			}
-			else if (r.sphLabel == 3) {
-				ironAmount++;
-			}
-			else if (r.sphLabel == 4) {
-				sandAmount++;
-			}
-			else if (r.sphLabel == 5) {
-				soilAmount++;
-			}
-			else if (r.sphLabel == 6) {
-				mudAmount++;
-			}
-			else if (r.sphLabel == 7) {
-				rubberAmount++;
+			else {
+				if (r.sphLabel == 1 && r.isSelected) {
+					waterAmount++;
+				}
+				else if (r.sphLabel == 2 && r.isSelected) {
+					rockAmount++;
+				}
+				else if (r.sphLabel == 3 && r.isSelected) {
+					ironAmount++;
+				}
+				else if (r.sphLabel == 4 && r.isSelected) {
+					sandAmount++;
+				}
+				else if (r.sphLabel == 5 && r.isSelected) {
+					soilAmount++;
+				}
+				else if (r.sphLabel == 6 && r.isSelected) {
+					mudAmount++;
+				}
+				else if (r.sphLabel == 7 && r.isSelected) {
+					rubberAmount++;
+				}
 			}
 		}
-		else {
-			if (r.sphLabel == 1 && r.isSelected) {
-				waterAmount++;
+	}
+	else {
+		for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
+			ParticleRendering3D& r = myParam.rParticles3D[i];
+			if (myParam.pParticlesSelected3D.size() == 0) {
+				if (r.sphLabel == 1) {
+					waterAmount++;
+				}
+				else if (r.sphLabel == 2) {
+					rockAmount++;
+				}
+				else if (r.sphLabel == 3) {
+					ironAmount++;
+				}
+				else if (r.sphLabel == 4) {
+					sandAmount++;
+				}
+				else if (r.sphLabel == 5) {
+					soilAmount++;
+				}
+				else if (r.sphLabel == 6) {
+					mudAmount++;
+				}
+				else if (r.sphLabel == 7) {
+					rubberAmount++;
+				}
 			}
-			else if (r.sphLabel == 2 && r.isSelected) {
-				rockAmount++;
-			}
-			else if (r.sphLabel == 3 && r.isSelected) {
-				ironAmount++;
-			}
-			else if (r.sphLabel == 4 && r.isSelected) {
-				sandAmount++;
-			}
-			else if (r.sphLabel == 5 && r.isSelected) {
-				soilAmount++;
-			}
-			else if (r.sphLabel == 6 && r.isSelected) {
-				mudAmount++;
-			}
-			else if (r.sphLabel == 7 && r.isSelected) {
-				rubberAmount++;
+			else {
+				if (r.sphLabel == 1 && r.isSelected) {
+					waterAmount++;
+				}
+				else if (r.sphLabel == 2 && r.isSelected) {
+					rockAmount++;
+				}
+				else if (r.sphLabel == 3 && r.isSelected) {
+					ironAmount++;
+				}
+				else if (r.sphLabel == 4 && r.isSelected) {
+					sandAmount++;
+				}
+				else if (r.sphLabel == 5 && r.isSelected) {
+					soilAmount++;
+				}
+				else if (r.sphLabel == 6 && r.isSelected) {
+					mudAmount++;
+				}
+				else if (r.sphLabel == 7 && r.isSelected) {
+					rubberAmount++;
+				}
 			}
 		}
 	}
@@ -1573,19 +1767,35 @@ void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 	ImGui::TextColored(UpdateVariables::colMenuInformation, "Mass");
 	ImGui::Spacing();
 
-	double totalMass = 0.0f;
+	double totalMass = 0.0;
 
-	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-		totalMass += myParam.pParticles[i].mass;
+	if (!myVar.is3DMode) {
+		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+			totalMass += myParam.pParticles[i].mass;
+		}
+	}
+	else {
+		for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
+			totalMass += myParam.pParticles3D[i].mass;
+		}
 	}
 
 	ImGui::Text("Total Mass: %.2f", totalMass);
 
-	double selectedMas = 0.0f;
+	double selectedMas = 0.0;
 
-	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-		if (myParam.rParticles[i].isSelected) {
-			selectedMas += myParam.pParticles[i].mass;
+	if (!myVar.is3DMode) {
+		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+			if (myParam.rParticles[i].isSelected) {
+				selectedMas += myParam.pParticles[i].mass;
+			}
+		}
+	}
+	else {
+		for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
+			if (myParam.rParticles3D[i].isSelected) {
+				selectedMas += myParam.pParticles3D[i].mass;
+			}
 		}
 	}
 
@@ -1600,24 +1810,42 @@ void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 	ImGui::TextColored(UpdateVariables::colMenuInformation, "Selected Velocity");
 	ImGui::Spacing();
 
-	glm::vec2 selectedVel = { 0.0f, 0.0f };
+	glm::vec3 selectedVel = { 0.0f, 0.0f, 0.0f };
 	float totalVel = 0.0f;
 
-	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-		if (myParam.rParticles[i].isSelected) {
-			selectedVel += myParam.pParticles[i].vel;
+	if (!myVar.is3DMode) {
+		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+			if (myParam.rParticles[i].isSelected) {
+				selectedVel += glm::vec3{myParam.pParticles[i].vel, 0.0f};
+			}
+		}
+
+		if (myParam.pParticlesSelected.size() > 0) {
+			selectedVel /= myParam.pParticlesSelected.size();
+			totalVel = sqrt(selectedVel.x * selectedVel.x + selectedVel.y * selectedVel.y);
 		}
 	}
+	else {
+		for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
+			if (myParam.rParticles3D[i].isSelected) {
+				selectedVel += myParam.pParticles3D[i].vel;
+			}
+		}
 
-	if (myParam.pParticlesSelected.size() > 0) {
-		selectedVel /= myParam.pParticlesSelected.size();
-		totalVel = sqrt(selectedVel.x * selectedVel.x + selectedVel.y * selectedVel.y);
+		if (myParam.pParticlesSelected3D.size() > 0) {
+			selectedVel /= myParam.pParticlesSelected3D.size();
+			totalVel = sqrt(selectedVel.x * selectedVel.x + selectedVel.y * selectedVel.y + selectedVel.z * selectedVel.z);
+		}
 	}
 
 	plotLinesHelper(myVar.timeFactor, "Velocity X: ", graphHistoryLimit, selectedVel.x, -300.0f, 300.0f, graphDefaultSize);
 	ImGui::Spacing();
 	plotLinesHelper(myVar.timeFactor, "Velocity Y: ", graphHistoryLimit, selectedVel.y, -300.0f, 300.0f, graphDefaultSize);
 	ImGui::Spacing();
+	if (myVar.is3DMode) {
+		plotLinesHelper(myVar.timeFactor, "Velocity Z: ", graphHistoryLimit, selectedVel.z, -300.0f, 300.0f, graphDefaultSize);
+		ImGui::Spacing();
+	}
 	plotLinesHelper(myVar.timeFactor, "Total Velocity: ", graphHistoryLimit, totalVel, -300.0f, 300.0f, graphDefaultSize);
 
 	ImGui::Spacing();
@@ -1629,24 +1857,42 @@ void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 	ImGui::TextColored(UpdateVariables::colMenuInformation, "Selected Acceleration");
 	ImGui::Spacing();
 
-	glm::vec2 selectedAcc = { 0.0f, 0.0f };
+	glm::vec3 selectedAcc = { 0.0f, 0.0f, 0.0f };
 	float totalAcc = 0.0f;
 
-	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-		if (myParam.rParticles[i].isSelected) {
-			selectedAcc += myParam.pParticles[i].acc;
+	if (!myVar.is3DMode) {
+		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+			if (myParam.rParticles[i].isSelected) {
+				selectedAcc += glm::vec3{ myParam.pParticles[i].acc, 0.0f };
+			}
+		}
+
+		if (myParam.pParticlesSelected.size() > 0) {
+			selectedAcc /= myParam.pParticlesSelected.size();
+			totalAcc = sqrt(selectedAcc.x * selectedAcc.x + selectedAcc.y * selectedAcc.y);
 		}
 	}
+	else {
+		for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
+			if (myParam.rParticles3D[i].isSelected) {
+				selectedAcc += myParam.pParticles3D[i].acc;
+			}
+		}
 
-	if (myParam.pParticlesSelected.size() > 0) {
-		selectedAcc /= myParam.pParticlesSelected.size();
-		totalAcc = sqrt(selectedAcc.x * selectedAcc.x + selectedAcc.y * selectedAcc.y);
+		if (myParam.pParticlesSelected3D.size() > 0) {
+			selectedAcc /= myParam.pParticlesSelected3D.size();
+			totalAcc = sqrt(selectedAcc.x * selectedAcc.x + selectedAcc.y * selectedAcc.y + selectedAcc.z * selectedAcc.z);
+		}
 	}
 
 	plotLinesHelper(myVar.timeFactor, "Acceleration X: ", graphHistoryLimit, selectedAcc.x, -300.0f, 300.0f, graphDefaultSize);
 	ImGui::Spacing();
 	plotLinesHelper(myVar.timeFactor, "Acceleration Y: ", graphHistoryLimit, selectedAcc.y, -300.0f, 300.0f, graphDefaultSize);
 	ImGui::Spacing();
+	if (myVar.is3DMode) {
+		plotLinesHelper(myVar.timeFactor, "Acceleration Z: ", graphHistoryLimit, selectedAcc.z, -300.0f, 300.0f, graphDefaultSize);
+		ImGui::Spacing();
+	}
 	plotLinesHelper(myVar.timeFactor, "Total Acceleration: ", graphHistoryLimit, totalAcc, -300.0f, 300.0f, graphDefaultSize);
 
 	ImGui::Spacing();
@@ -1660,14 +1906,27 @@ void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 
 	float totalPress = 0.0f;
 
-	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-		if (myParam.rParticles[i].isSelected) {
-			totalPress += myParam.pParticles[i].press;
+	if (!myVar.is3DMode) {
+		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+			if (myParam.rParticles[i].isSelected) {
+				totalPress += myParam.pParticles[i].press;
+			}
+		}
+
+		if (myParam.pParticlesSelected.size() > 0) {
+			totalPress /= myParam.pParticlesSelected.size();
 		}
 	}
+	else {
+		for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
+			if (myParam.rParticles3D[i].isSelected) {
+				totalPress += myParam.pParticles3D[i].press;
+			}
+		}
 
-	if (myParam.pParticlesSelected.size() > 0) {
-		totalPress /= myParam.pParticlesSelected.size();
+		if (myParam.pParticlesSelected3D.size() > 0) {
+			totalPress /= myParam.pParticlesSelected3D.size();
+		}
 	}
 
 	plotLinesHelper(myVar.timeFactor, "Pressure: ", graphHistoryLimit, totalPress, 0.0f, 100.0f, graphDefaultSize);
@@ -1683,14 +1942,27 @@ void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {
 
 	float totalTemp = 0.0f;
 
-	for (size_t i = 0; i < myParam.pParticles.size(); i++) {
-		if (myParam.rParticles[i].isSelected) {
-			totalTemp += myParam.pParticles[i].temp;
+	if (!myVar.is3DMode) {
+		for (size_t i = 0; i < myParam.pParticles.size(); i++) {
+			if (myParam.rParticles[i].isSelected) {
+				totalTemp += myParam.pParticles[i].temp;
+			}
+		}
+
+		if (myParam.pParticlesSelected.size() > 0) {
+			totalTemp /= myParam.pParticlesSelected.size();
 		}
 	}
+	else {
+		for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
+			if (myParam.rParticles3D[i].isSelected) {
+				totalTemp += myParam.pParticles3D[i].temp;
+			}
+		}
 
-	if (myParam.pParticlesSelected.size() > 0) {
-		totalTemp /= myParam.pParticlesSelected.size();
+		if (myParam.pParticlesSelected3D.size() > 0) {
+			totalTemp /= myParam.pParticlesSelected3D.size();
+		}
 	}
 
 	plotLinesHelper(myVar.timeFactor, "Temperature: ", graphHistoryLimit, totalTemp, 0.0f, 100.0f, graphDefaultSize);

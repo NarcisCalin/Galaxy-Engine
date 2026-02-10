@@ -1098,12 +1098,27 @@ glm::vec3 bb = { 0.0f, 0.0f, 0.0f };
 
 void updateScene() {
 
-	// If menu is active, do not use mouse input for non-menu stuff. I keep raylib's own mouse input for the menu but the custom IO for non-menu stuff
-	if (myParam.rightClickSettings.isMenuActive) {
-		ImGui::GetIO().WantCaptureMouse = true;
+	if (!myVar.is3DMode) {
+		// If menu is active, do not use mouse input for non-menu stuff. I keep raylib's own mouse input for the menu but the custom IO for non-menu stuff
+		if (myParam.rightClickSettings.isMenuActive) {
+			ImGui::GetIO().WantCaptureMouse = true;
+		}
 	}
 
 	if (myVar.isOpticsEnabled) {
+
+		if (!myParam.pParticles.empty()) {
+			myParam.pParticles.clear();
+			myParam.rParticles.clear();
+		}
+
+		if (!myParam.pParticles3D.empty()) {
+			myParam.pParticles3D.clear();
+			myParam.rParticles3D.clear();
+		}
+
+		myVar.is3DMode = false;
+
 		lighting.rayLogic(myVar, myParam);
 	}
 
@@ -1120,7 +1135,7 @@ void updateScene() {
 	if (myVar.timeFactor != 0.0f) {
 		physics.integrateStart(myParam.pParticles, myParam.rParticles, myVar);
 
-		if (!myVar.isPeriodicBoundaryEnabled && !myVar.sphGround) {
+		if (!myVar.isPeriodicBoundaryEnabled && !myVar.sphGround && !myVar.infiniteDomain) {
 			physics.pruneParticles(myParam.pParticles, myParam.rParticles, myVar);
 		}
 	}
@@ -1253,8 +1268,10 @@ void updateScene() {
 		physics.idToIndexTable.clear();
 	}
 
-	copyPaste.copyPasteParticles(myVar, myParam, physics);
-	copyPaste.copyPasteOptics(myParam, lighting);
+	if (!myVar.is3DMode) {
+		copyPaste.copyPasteParticles(myVar, myParam, physics);
+		copyPaste.copyPasteOptics(myParam, lighting);
+	}
 
 	if ((myVar.timeFactor != 0.0f /*&& myVar.gridExists*/) || myVar.isGPUEnabled) {
 
@@ -1322,7 +1339,7 @@ void updateScene() {
 
 	myParam.particleSelection.manyClustersSelection(myVar, myParam);
 
-	myParam.particleSelection.boxSelection(myParam);
+	myParam.particleSelection.boxSelection(myParam, myVar.is3DMode);
 
 	myParam.particleSelection.invertSelection(myParam.rParticles);
 
@@ -1383,16 +1400,23 @@ void updateScene() {
 	}*/
 
 	myParam.myCamera.hasCamMoved();
+
+	if (myVar.sphGround) {
+		myVar.infiniteDomain = false;
+		myVar.isPeriodicBoundaryEnabled = false;
+	}
 }
 
 float boundingBox3DSize = 0.0f;
 glm::vec3 boundingBox3DPos = { 0.0f, 0.0f, 0.0f };
 
-glm::vec4 boundingBox3D() {
+glm::vec4 boundingBox3D(std::vector<ParticlePhysics3D>& pParticles) {
 	glm::vec3 min = glm::vec3(std::numeric_limits<float>::max());
 	glm::vec3 max = glm::vec3(std::numeric_limits<float>::lowest());
 
-	for (const ParticlePhysics3D& particle : myParam.pParticles3D) {
+	for (size_t i = 0; i < pParticles.size(); i++) {
+		ParticlePhysics3D& particle = pParticles[i];
+
 		min = glm::min(min, particle.pos);
 		max = glm::max(max, particle.pos);
 	}
@@ -1409,12 +1433,94 @@ uint32_t gridRootIndex3D;
 
 glm::vec4 bb3D = { 0.0f, 0.0f, 0.0f, 0.0f };
 
+void particleBoxClipping() {
+
+	glm::vec3 avgPos = { 0.0f, 0.0f, 0.0f };
+
+	for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
+		ParticlePhysics3D& p = myParam.pParticles3D[i];
+		ParticleRendering3D& r = myParam.rParticles3D[i];
+
+		if (!r.isSelected) {
+			continue;
+		}
+
+		avgPos += p.pos;
+	}
+
+	avgPos /= myParam.pParticlesSelected3D.size();
+
+	for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
+		ParticlePhysics3D& p = myParam.pParticles3D[i];
+		ParticleRendering3D& r = myParam.rParticles3D[i];
+
+		if (!r.isSelected) {
+			continue;
+		}
+
+		if (myVar.clipSelectedX) {
+
+			if (!myVar.clipSelectedXInv) {
+				if (p.pos.x >= avgPos.x) {
+					r.color = { 0,0,0,0 };
+				}
+			}
+			else {
+				if (p.pos.x <= avgPos.x) {
+					r.color = { 0,0,0,0 };
+				}
+			}
+		}
+
+		if (myVar.clipSelectedY) {
+
+			if (!myVar.clipSelectedYInv) {
+				if (p.pos.y >= avgPos.y) {
+					r.color = { 0,0,0,0 };
+				}
+			}
+			else {
+				if (p.pos.y <= avgPos.y) {
+					r.color = { 0,0,0,0 };
+				}
+			}
+		}
+
+		if (myVar.clipSelectedZ) {
+
+			if (!myVar.clipSelectedZInv) {
+				if (p.pos.z >= avgPos.z) {
+					r.color = { 0,0,0,0 };
+				}
+			}
+			else {
+				if (p.pos.z <= avgPos.z) {
+					r.color = { 0,0,0,0 };
+				}
+			}
+		}
+	}
+}
+
 void mode3D() {
 
-	physics3D.integrateStart3D(myParam.pParticles3D, myParam.rParticles3D, myVar);
+	if (myVar.is3DMode) {
+		// If menu is active, do not use mouse input for non-menu stuff. I keep raylib's own mouse input for the menu but the custom IO for non-menu stuff
+		if (myParam.rightClickSettings.isMenuActive) {
+			ImGui::GetIO().WantCaptureMouse = true;
+		}
+	}
+
+	if (myVar.timeFactor != 0.0f) {
+		physics3D.integrateStart3D(myParam.pParticles3D, myParam.rParticles3D, myVar);
+
+		if (!myVar.isPeriodicBoundaryEnabled && !myVar.sphGround && !myVar.infiniteDomain) {
+			physics3D.pruneParticles(myParam.pParticles3D, myParam.rParticles3D, myVar);
+		}
+	}
 
 	if (myVar.timeFactor != 0.0f && !myVar.naiveSIMD) {
-		bb3D = boundingBox3D();
+		bb3D = boundingBox3D(myParam.pParticles3D);
 
 		globalNodes3D.clear();
 
@@ -1517,7 +1623,7 @@ void mode3D() {
 
 		physics3D.constraints(myParam.pParticles3D, myParam.rParticles3D, myVar);
 
-		//ship.spaceshipLogic(myParam.pParticles, myParam.rParticles, myVar.isShipGasEnabled);*/
+		ship.spaceshipLogic3D(myParam.pParticles3D, myParam.rParticles3D, myVar.isShipGasEnabled, myParam.myCamera3D.cam3D);
 
 		if (myVar.isTempEnabled) {
 			physics3D.temperatureCalculation(myParam.pParticles3D, myParam.rParticles3D, myVar);
@@ -1529,8 +1635,6 @@ void mode3D() {
 	else {
 		physics3D.constraints(myParam.pParticles3D, myParam.rParticles3D, myVar);
 	}
-
-	// --- //
 
 	myParam.trails.trailLogic3D(myVar, myParam);
 
@@ -1553,6 +1657,11 @@ void mode3D() {
 
 	myParam.brush3D.particlesGrabber(myVar, myParam);
 	myParam.brush3D.eraseBrush(myVar, myParam);
+	myParam.brush3D.temperatureBrush(myVar, myParam);
+	myParam.brush3D.particlesAttractor(myVar, myParam);
+	myParam.brush3D.particlesSpinner(myVar, myParam);
+
+	copyPaste.copyPasteParticles3D(myVar, myParam, physics3D);
 
 	pinParticles3D();
 }
@@ -1678,13 +1787,101 @@ void drawConstraints3D() {
 	}
 }
 
+struct PlaybackParticle {
+	glm::vec3 pos;
+	float size;
+	Color color;
+};
+
+std::vector<std::vector<PlaybackParticle>> pParticleFrames;
+size_t playbackFrame = 0;
+
+int frames = 1000;
+
 void drawMode3DRecording(Texture2D& particleBlurTex) {
 
 	Camera3D& cam3D = myParam.myCamera3D.cam3D;
 
 	myParam.colorVisuals.particlesColorVisuals(myParam.pParticles, myParam.rParticles, myParam.pParticles3D, myParam.rParticles3D, myVar.isTempEnabled, myVar.timeFactor, myVar.is3DMode);
 
+	particleBoxClipping();
+
 	drawConstraints3D();
+
+	/*if (!myParam.pParticles3D.empty() && pParticleFrames.size() < frames) {
+
+		std::vector<PlaybackParticle> playbackParticles;
+
+		for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
+
+			ParticlePhysics3D& p = myParam.pParticles3D[i];
+			ParticleRendering3D& r = myParam.rParticles3D[i];
+
+			playbackParticles.emplace_back(PlaybackParticle{ p.pos, particleBlurTex.width * r.size, r.color });
+		}
+
+		pParticleFrames.push_back(playbackParticles);
+	}
+
+	if (pParticleFrames.size() >= frames) {
+
+		myParam.pParticles3D.clear();
+		myParam.rParticles3D.clear();
+
+		if (playbackFrame >= pParticleFrames.size())
+			playbackFrame = 0;
+
+		std::vector<int> sortedIndices(pParticleFrames[playbackFrame].size());
+		for (int i = 0; i < sortedIndices.size(); ++i) {
+			sortedIndices[i] = i;
+		}
+
+		std::sort(sortedIndices.begin(), sortedIndices.end(), [&](int a, int b) {
+			Vector3 posA = { pParticleFrames[playbackFrame][a].pos.x, pParticleFrames[playbackFrame][a].pos.y, pParticleFrames[playbackFrame][a].pos.z };
+			Vector3 posB = { pParticleFrames[playbackFrame][b].pos.x, pParticleFrames[playbackFrame][b].pos.y, pParticleFrames[playbackFrame][b].pos.z };
+
+			float distA = Vector3DistanceSqr(posA, cam3D.position);
+			float distB = Vector3DistanceSqr(posB, cam3D.position);
+
+			return distA > distB;
+			});
+
+		Rectangle sourceRec = { 0.0f, 0.0f, (float)particleBlurTex.width, (float)particleBlurTex.height };
+		for (int idx : sortedIndices) {
+			PlaybackParticle& p = pParticleFrames[playbackFrame][idx];
+
+			float sizeValue = p.size;
+			Vector2 size = { sizeValue, sizeValue };
+			Vector2 origin = { sizeValue / 2.0f, sizeValue / 2.0f };
+
+			DrawBillboardPro(
+				cam3D,
+				particleBlurTex,
+				sourceRec,
+				{ p.pos.x, p.pos.y, p.pos.z },
+				cam3D.up,
+				size,
+				origin,
+				0.0f,
+				p.color
+			);
+		}
+
+		playbackFrame++;
+
+		size_t totalParticles = 0;
+
+		for (size_t i = 0; i < pParticleFrames.size(); i++) {
+			totalParticles += pParticleFrames[i].size();
+		}
+
+		size_t totalBytes = totalParticles * sizeof(PlaybackParticle);
+
+		double totalMB = totalBytes / (1024.0 * 1024.0);
+
+		std::cout << "Stored Physics Particle Data: "
+			<< totalMB << " MB\n";
+	}*/
 
 	std::vector<int> sortedIndices(myParam.pParticles3D.size());
 	for (int i = 0; i < sortedIndices.size(); ++i) {
@@ -1740,16 +1937,20 @@ void drawMode3DRecording(Texture2D& particleBlurTex) {
 		}
 	}
 
+	myParam.subdivision.subdivideParticles3D(myVar, myParam);
+
 	myParam.trails.drawTrail3D(myParam.rParticles3D, particleBlurTex, myParam.myCamera3D.cam3D);
 }
 
 void drawMode3DNonRecording() {
 
-	DrawCubeWiresV({ 0.0f, 0.0f, 0.0f }, { myVar.domainSize3D.x, myVar.domainSize3D.y, myVar.domainSize3D.z }, GRAY); // Domain
+	if (!myVar.infiniteDomain) {
+		DrawCubeWiresV({ 0.0f, 0.0f, 0.0f }, { myVar.domainSize3D.x, myVar.domainSize3D.y, myVar.domainSize3D.z }, GRAY); // Domain
+	}
 
 	myParam.brush3D.drawBrush(myVar.domainSize3D.y);
 
-	if (myVar.toolSpawnBigGalaxy) {
+	if (myVar.toolSpawnGalaxy) {
 		myParam.particlesSpawning3D.drawGalaxyDisplay(myParam);
 	}
 
@@ -2000,159 +2201,168 @@ void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myRayTracingTexture,
 				wall.drawWall();
 			}
 		}
-
-		EndTextureMode();
-
-		// Ray Tracing
-
-		BeginTextureMode(myRayTracingTexture);
-
-		ClearBackground({ 0,0,0,0 });
-
-		BeginMode2D(myParam.myCamera.camera);
-
-		EndMode2D();
-
-
-
-		EndTextureMode();
-
-
-		//EVERYTHING INTENDED TO APPEAR WHILE RECORDING ABOVE
-
-
-		//END OF PARTICLES RENDER PASS
-		//-------------------------------------------------//
-		//BEGINNNG OF UI RENDER PASS
-
-
-		//EVERYTHING NOT INTENDED TO APPEAR WHILE RECORDING BELOW
-
-		BeginTextureMode(myUITexture);
-
-		ClearBackground({ 0,0,0,0 });
-
-		BeginMode2D(myParam.myCamera.camera);
-
-		myVar.mouseWorldPos = glm::vec2(GetScreenToWorld2D(GetMousePosition(), myParam.myCamera.camera).x,
-			GetScreenToWorld2D(GetMousePosition(), myParam.myCamera.camera).y);
-
-		if (!myVar.is3DMode) {
-			myParam.brush.drawBrush(myVar.mouseWorldPos);
-		}
-
-		if (!myVar.is3DMode) {
-			DrawRectangleLinesEx({ 0,0, myVar.domainSize.x, myVar.domainSize.y }, 3, GRAY);
-		}
-
-		// Z-Curves debug toggle
-		if (myParam.pParticles.size() > 1 && myVar.drawZCurves) {
-			for (size_t i = 0; i < myParam.pParticles.size() - 1; i++) {
-				DrawLineV({ myParam.pParticles[i].pos.x, myParam.pParticles[i].pos.y }, { myParam.pParticles[i + 1].pos.x,myParam.pParticles[i + 1].pos.y }, WHITE);
-
-				DrawText(TextFormat("%i", i), static_cast<int>(myParam.pParticles[i].pos.x), static_cast<int>(myParam.pParticles[i].pos.y) - 10, 10, { 128,128,128,128 });
-			}
-		}
-
-		if (myVar.isOpticsEnabled) {
-			lighting.drawScene();
-			lighting.drawMisc(myVar, myParam);
-		}
-
-		EndMode2D();
-
-		// EVERYTHING NON-STATIC RELATIVE TO CAMERA ABOVE
-
-		// EVERYTHING STATIC RELATIVE TO CAMERA BELOW
-
-		if (!introActive) {
-			myUI.uiLogic(myParam, myVar, sph, save, geSound, lighting, field);
-		}
-
-		save.saveLoadLogic(myVar, myParam, sph, physics, lighting, field);
-
-		myParam.subdivision.subdivideParticles(myVar, myParam);
-
-		EndTextureMode();
-
-		BeginTextureMode(myMiscTexture);
-
-		ClearBackground({ 0,0,0,0 });
-
-		// ---- Intro screen ---- //
-
-		if (introActive) {
-
-			if (introStartTime == 0.0f) {
-				introStartTime = GetTime();
-			}
-
-			float introElapsedTime = GetTime() - introStartTime;
-			float fadeProgress = introElapsedTime / introDuration;
-
-			if (introElapsedTime >= introDuration) {
-				introActive = false;
-				fadeStartTime = GetTime();
-			}
-
-			DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), BLACK);
-
-			const char* text = nullptr;
-
-			if (messageIndex < introMessages.size()) {
-				text = introMessages[messageIndex].first.c_str();
-			}
-			else {
-				text = "Welcome back to Galaxy Engine, friend";
-			}
-
-			int fontSize = myVar.introFontSize;
-
-			Font fontToUse = (myVar.customFont.texture.id != 0) ? myVar.customFont : GetFontDefault();
-
-			Vector2 textSize = MeasureTextEx(fontToUse, text, fontSize, 1.0f);
-			int posX = (GetScreenWidth() - textSize.x) * 0.5f;
-			int posY = (GetScreenHeight() - textSize.y) * 0.5f;
-
-			float textAlpha;
-			if (fadeProgress < 0.2f) {
-				textAlpha = fadeProgress / 0.2f;
-			}
-			else if (fadeProgress > 0.8f) {
-				textAlpha = 1.0f - ((fadeProgress - 0.8f) / 0.2f);
-			}
-			else {
-				textAlpha = 1.0f;
-			}
-
-			Color textColor = Fade(WHITE, textAlpha);
-
-			DrawTextEx(fontToUse, text, { static_cast<float>(posX), static_cast<float>(posY) }, fontSize, 1.0f, textColor);
-		}
-		else if (fadeActive) {
-			float fadeElapsedTime = GetTime() - fadeStartTime;
-
-			if (fadeElapsedTime >= fadeDuration) {
-				fadeActive = false;
-			}
-			else {
-				float alpha = 1.0f - (fadeElapsedTime / fadeDuration);
-				alpha = Clamp(alpha, 0.0f, 1.0f);
-				DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(BLACK, alpha));
-			}
-		}
-
-		if (firstTimeOpened && !introActive) {
-			messageIndex++;
-			messageIndex = std::min(static_cast<size_t>(messageIndex), introMessages.size());
-
-			firstTimeOpened = false;
-		}
-
-		// ---- Intro screen ---- //
-
-		EndTextureMode();
 	}
+	else {
+		myVar.infiniteDomain = false;
+	}
+
+	EndTextureMode();
+
+	// Ray Tracing
+
+	BeginTextureMode(myRayTracingTexture);
+
+	ClearBackground({ 0,0,0,0 });
+
+	BeginMode2D(myParam.myCamera.camera);
+
+	EndMode2D();
+
+
+
+	EndTextureMode();
+
+
+	//EVERYTHING INTENDED TO APPEAR WHILE RECORDING ABOVE
+
+
+	//END OF PARTICLES RENDER PASS
+	//-------------------------------------------------//
+	//BEGINNNG OF UI RENDER PASS
+
+
+	//EVERYTHING NOT INTENDED TO APPEAR WHILE RECORDING BELOW
+
+	BeginTextureMode(myUITexture);
+
+	ClearBackground({ 0,0,0,0 });
+
+	BeginMode2D(myParam.myCamera.camera);
+
+	myVar.mouseWorldPos = glm::vec2(GetScreenToWorld2D(GetMousePosition(), myParam.myCamera.camera).x,
+		GetScreenToWorld2D(GetMousePosition(), myParam.myCamera.camera).y);
+
+	if (!myVar.is3DMode) {
+		myParam.brush.drawBrush(myVar.mouseWorldPos);
+	}
+
+	if (myVar.toolSpawnGalaxy && !myVar.is3DMode) {
+		myParam.particlesSpawning.drawGalaxyDisplay(myParam);
+	}
+
+	if (!myVar.is3DMode && !myVar.infiniteDomain) {
+		DrawRectangleLinesEx({ 0,0, myVar.domainSize.x, myVar.domainSize.y }, 3, GRAY);
+	}
+
+	// Z-Curves debug toggle
+	if (myParam.pParticles.size() > 1 && myVar.drawZCurves) {
+		for (size_t i = 0; i < myParam.pParticles.size() - 1; i++) {
+			DrawLineV({ myParam.pParticles[i].pos.x, myParam.pParticles[i].pos.y }, { myParam.pParticles[i + 1].pos.x,myParam.pParticles[i + 1].pos.y }, WHITE);
+
+			DrawText(TextFormat("%i", i), static_cast<int>(myParam.pParticles[i].pos.x), static_cast<int>(myParam.pParticles[i].pos.y) - 10, 10, { 128,128,128,128 });
+		}
+	}
+
+	if (myVar.isOpticsEnabled) {
+		lighting.drawScene();
+		lighting.drawMisc(myVar, myParam);
+	}
+
+	EndMode2D();
+
+	// EVERYTHING NON-STATIC RELATIVE TO CAMERA ABOVE
+
+	// EVERYTHING STATIC RELATIVE TO CAMERA BELOW
+
+	if (!introActive) {
+		myUI.uiLogic(myParam, myVar, sph, save, geSound, lighting, field, ship);
+	}
+
+	save.saveLoadLogic(myVar, myParam, sph, physics, physics3D, lighting, field);
+
+	if (!myVar.is3DMode) {
+		myParam.subdivision.subdivideParticles(myVar, myParam);
+	}
+
+	EndTextureMode();
+
+	BeginTextureMode(myMiscTexture);
+
+	ClearBackground({ 0,0,0,0 });
+
+	// ---- Intro screen ---- //
+
+	if (introActive) {
+
+		if (introStartTime == 0.0f) {
+			introStartTime = GetTime();
+		}
+
+		float introElapsedTime = GetTime() - introStartTime;
+		float fadeProgress = introElapsedTime / introDuration;
+
+		if (introElapsedTime >= introDuration) {
+			introActive = false;
+			fadeStartTime = GetTime();
+		}
+
+		DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), BLACK);
+
+		const char* text = nullptr;
+
+		if (messageIndex < introMessages.size()) {
+			text = introMessages[messageIndex].first.c_str();
+		}
+		else {
+			text = "Welcome back to Galaxy Engine, friend";
+		}
+
+		int fontSize = myVar.introFontSize;
+
+		Font fontToUse = (myVar.customFont.texture.id != 0) ? myVar.customFont : GetFontDefault();
+
+		Vector2 textSize = MeasureTextEx(fontToUse, text, fontSize, 1.0f);
+		int posX = (GetScreenWidth() - textSize.x) * 0.5f;
+		int posY = (GetScreenHeight() - textSize.y) * 0.5f;
+
+		float textAlpha;
+		if (fadeProgress < 0.2f) {
+			textAlpha = fadeProgress / 0.2f;
+		}
+		else if (fadeProgress > 0.8f) {
+			textAlpha = 1.0f - ((fadeProgress - 0.8f) / 0.2f);
+		}
+		else {
+			textAlpha = 1.0f;
+		}
+
+		Color textColor = Fade(WHITE, textAlpha);
+
+		DrawTextEx(fontToUse, text, { static_cast<float>(posX), static_cast<float>(posY) }, fontSize, 1.0f, textColor);
+	}
+	else if (fadeActive) {
+		float fadeElapsedTime = GetTime() - fadeStartTime;
+
+		if (fadeElapsedTime >= fadeDuration) {
+			fadeActive = false;
+		}
+		else {
+			float alpha = 1.0f - (fadeElapsedTime / fadeDuration);
+			alpha = Clamp(alpha, 0.0f, 1.0f);
+			DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(BLACK, alpha));
+		}
+	}
+
+	if (firstTimeOpened && !introActive) {
+		messageIndex++;
+		messageIndex = std::min(static_cast<size_t>(messageIndex), introMessages.size());
+
+		firstTimeOpened = false;
+	}
+
+	// ---- Intro screen ---- //
+
+	EndTextureMode();
 }
 
 float lastGlobalVolume = -1.0f;

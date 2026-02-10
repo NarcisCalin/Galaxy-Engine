@@ -25,7 +25,7 @@ public:
 
 	void manyClustersSelection(UpdateVariables& myVar, UpdateParameters& myParam);
 
-	void boxSelection(UpdateParameters& myParam);
+	void boxSelection(UpdateParameters& myParam, bool& is3DMode);
 
 	void invertSelection(std::vector<ParticleRendering>& rParticles);
 

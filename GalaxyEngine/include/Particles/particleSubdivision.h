@@ -12,6 +12,7 @@ struct ParticleSubdivision {
 	bool subdivideSelected = false;
 
 	void subdivideParticles(UpdateVariables& myVar, UpdateParameters& myParam);
+	void subdivideParticles3D(UpdateVariables& myVar, UpdateParameters& myParam);
 
 private:
 	bool confirmState = false;

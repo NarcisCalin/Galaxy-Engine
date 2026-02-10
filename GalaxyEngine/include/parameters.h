@@ -100,7 +100,7 @@ struct UpdateVariables {
 
 	float G = 6.674e-11;
 	float gravityMultiplier = 1.0f;
-	float softening = 2.5f;
+	float softening = 1.5f;
 	float theta = 0.8f;
 	float timeStepMultiplier = 1.0f;
 	float sphMaxVel = 250.0f;
@@ -242,8 +242,7 @@ struct UpdateVariables {
 
 	bool toolSpawnHeavyParticle = false;
 	bool toolDrawParticles = true;
-	bool toolSpawnSmallGalaxy = false;
-	bool toolSpawnBigGalaxy = false;
+	bool toolSpawnGalaxy = false;
 	bool toolSpawnStar = false;
 	bool toolSpawnBigBang = false;
 
@@ -302,4 +301,17 @@ struct UpdateVariables {
 	float cohesionCoefficient = 1.0f;
 	float delta = 19000.0f;
 	float verticalGravity = 3.0f;
+
+	bool infiniteDomain = true;
+
+	float brushSpinForceMult = 1.0f;
+	float brushAttractForceMult = 1.0f;
+
+	bool clipSelectedX = false;
+	bool clipSelectedY = false;
+	bool clipSelectedZ = false;
+
+	bool clipSelectedXInv = false;
+	bool clipSelectedYInv = false;
+	bool clipSelectedZInv = false;
 };

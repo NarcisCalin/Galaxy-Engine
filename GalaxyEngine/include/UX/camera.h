@@ -50,10 +50,14 @@ public:
 	glm::vec3 currentSmoothedTarget = { 0.0f, 0.0f, 0.0f };
 
 	glm::vec3 followPosition;
-	glm::vec3 panFollowingOffset;
+	Vector3 panFollowingOffset;
 	float defaultCamDist = 500.0f;
 
 	Vector3 target = { 0.0f, 0.0f, 0.0f };
+
+	Vector3 panOffsetRight = { 0.0f, 0.0f, 0.0f };
+	Vector3 panOffsetUp = { 0.0f, 0.0f, 0.0f };
+
 	float distance = defaultCamDist;
 	float angleX = 45.0f;
 	float angleY = 30.0f;

@@ -695,8 +695,8 @@ void Brush::particlesAttractor(UpdateVariables& myVar, UpdateParameters& myParam
 				attractorForce = { -attractorForce.x, -attractorForce.y };
 			}
 
-			myParam.pParticles[i].vel.x += attractorForce.x * myVar.timeFactor;
-			myParam.pParticles[i].vel.y += attractorForce.y * myVar.timeFactor;
+			myParam.pParticles[i].vel.x += attractorForce.x * myVar.timeFactor * myVar.brushAttractForceMult;
+			myParam.pParticles[i].vel.y += attractorForce.y * myVar.timeFactor * myVar.brushAttractForceMult;
 		}
 	}
 }
@@ -720,12 +720,11 @@ void Brush::particlesSpinner(UpdateVariables& myVar, UpdateParameters& myParam) 
 					spinDirection = { -spinDirection.x, -spinDirection.y };
 				}
 
-				pParticle.vel.x += spinDirection.x * spinForce * falloff * myVar.timeFactor;
-				pParticle.vel.y += spinDirection.y * spinForce * falloff * myVar.timeFactor;
+				pParticle.vel.x += spinDirection.x * spinForce * falloff * myVar.timeFactor * myVar.brushSpinForceMult;
+				pParticle.vel.y += spinDirection.y * spinForce * falloff * myVar.timeFactor * myVar.brushSpinForceMult;
 			}
 		}
 	}
-
 }
 
 void Brush::particlesGrabber(UpdateVariables& myVar, UpdateParameters& myParam) {
@@ -1472,7 +1471,11 @@ glm::vec3 Brush3D::brushPosLogic(UpdateParameters& myParam, UpdateVariables& myV
 			mouseRay.position.z + mouseRay.direction.z * spawnDistance
 	};
 
-	if (!myParam.pParticles3D.empty() && !myVar.isBrushDrawing && !dragging) {
+	if (!myParam.pParticles3D.empty() &&
+		!myVar.isBrushDrawing &&
+		!dragging &&
+		(!IO::shortcutDown(KEY_B) || (!IO::mouseDown(0) && myVar.toolRadialForce)) && 
+		(!IO::shortcutDown(KEY_N) || (!IO::mouseDown(0) && myVar.toolSpin))) {
 		ClusterHelper::clusterMouseHelper(myParam.myCamera3D.cam3D, spawnDistance);
 	}
 
@@ -1480,13 +1483,33 @@ glm::vec3 Brush3D::brushPosLogic(UpdateParameters& myParam, UpdateVariables& myV
 }
 
 void Brush3D::drawBrush(float& domainHeight) {
-	DrawSphere({ brushPos.x,brushPos.y, brushPos.z }, brushRadius, { 12, 82, 172, 50 });
 
-	float cubeHeight = brushPos.y - brushRadius + domainHeight * 0.5f;
-	DrawCubeV(
-		{ brushPos.x, -domainHeight * 0.5f + cubeHeight * 0.5f, brushPos.z },
-		{ 5.0f, cubeHeight, 5.0f },
-		{ 12, 82, 172, 50 }
+	DrawSphere({ brushPos.x, brushPos.y, brushPos.z }, brushRadius, { 12, 82, 172, 50 });
+
+	float domainBottomY = -domainHeight * 0.5f;
+
+	DrawLine3D(
+		{ brushPos.x, brushPos.y, brushPos.z },
+		{ brushPos.x, domainBottomY, brushPos.z },
+		{ 12, 82, 172, 140 }
+	);
+
+	DrawLine3D(
+		{ brushPos.x, brushPos.y, brushPos.z },
+		{ brushPos.x + 10.0f, brushPos.y, brushPos.z },
+		RED
+	);
+
+	DrawLine3D(
+		{ brushPos.x, brushPos.y, brushPos.z },
+		{ brushPos.x, brushPos.y + 10.0f, brushPos.z },
+		GREEN
+	);
+
+	DrawLine3D(
+		{ brushPos.x, brushPos.y, brushPos.z },
+		{ brushPos.x, brushPos.y, brushPos.z + 10.0f },
+		BLUE
 	);
 }
 
@@ -1561,6 +1584,116 @@ void Brush3D::eraseBrush(UpdateVariables& myVar, UpdateParameters& myParam) {
 			}
 			else {
 				i++;
+			}
+		}
+	}
+}
+
+void Brush3D::temperatureBrush(UpdateVariables& myVar, UpdateParameters& myParam) {
+
+	if (IO::shortcutDown(KEY_K) || IO::shortcutDown(KEY_L) || (IO::mouseDown(0) && myVar.toolRaiseTemp) || (IO::mouseDown(0) && myVar.toolLowerTemp)) {
+		for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
+			glm::vec2 distanceFromBrush = { myParam.pParticles3D[i].pos - brushPos };
+
+			float distance = sqrt(distanceFromBrush.x * distanceFromBrush.x +
+				distanceFromBrush.y * distanceFromBrush.y);
+
+			if (IO::shortcutDown(KEY_K) || (IO::mouseDown(0) && myVar.toolRaiseTemp)) {
+				if (distance < brushRadius) {
+					myParam.pParticles3D[i].temp += 40.0f;
+				}
+			}
+
+			if (IO::shortcutDown(KEY_L) || (IO::mouseDown(0) && myVar.toolLowerTemp)) {
+				if (distance < brushRadius && myParam.pParticles3D[i].temp > 1.0f) {
+					myParam.pParticles3D[i].temp -= 40.0f;
+				}
+			}
+		}
+	}
+}
+
+void Brush3D::particlesAttractor(UpdateVariables& myVar, UpdateParameters& myParam) {
+
+	if (IO::shortcutDown(KEY_B) || (IO::mouseDown(0) && myVar.toolRadialForce)) {
+
+		for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
+			glm::vec3 d = myParam.pParticles3D[i].pos - brushPos;
+			float distance = glm::length(d);
+
+			float innerRadius = 0.0f;
+			float outerRadius = brushRadius;
+
+			float falloffFactor = 0.0f;
+			if (distance > innerRadius) {
+				falloffFactor = std::min(0.7f, (distance - innerRadius) / (outerRadius - innerRadius));
+
+				falloffFactor = falloffFactor * falloffFactor;
+			}
+
+			float radiusMultiplier = 0.0f;
+
+			if (distance < 1.0f) {
+				radiusMultiplier = 1.0f;
+			}
+			else {
+				radiusMultiplier = distance;
+			}
+
+
+			float acceleration = static_cast<float>(myVar.G * 600.0f * brushRadius * brushRadius) / (radiusMultiplier * radiusMultiplier);
+
+			acceleration *= falloffFactor;
+
+			attractorForce.x = static_cast<float>(-(d.x / radiusMultiplier) * acceleration * myParam.pParticles3D[i].mass);
+			attractorForce.y = static_cast<float>(-(d.y / radiusMultiplier) * acceleration * myParam.pParticles3D[i].mass);
+			attractorForce.z = static_cast<float>(-(d.z / radiusMultiplier) * acceleration * myParam.pParticles3D[i].mass);
+
+			if (IO::shortcutDown(KEY_LEFT_CONTROL)) {
+				attractorForce = -attractorForce;
+			}
+
+			myParam.pParticles3D[i].vel += attractorForce * myVar.timeFactor * myVar.brushAttractForceMult;
+		}
+	}
+}
+
+void Brush3D::particlesSpinner(UpdateVariables& myVar, UpdateParameters& myParam) {
+	if (IO::shortcutDown(KEY_N) || (IO::mouseDown(0) && myVar.toolSpin)) {
+
+		glm::vec3 cameraUp = { myParam.myCamera3D.cam3D.up.x,myParam.myCamera3D.cam3D.up.y, myParam.myCamera3D.cam3D.up.z };
+
+		glm::vec3 cameraTarget = { myParam.myCamera3D.cam3D.target.x, myParam.myCamera3D.cam3D.target.y, myParam.myCamera3D.cam3D.target.z };
+		glm::vec3 cameraPos = { myParam.myCamera3D.cam3D.position.x,  myParam.myCamera3D.cam3D.position.y,  myParam.myCamera3D.cam3D.position.z };
+
+
+		glm::vec3 cameraForward = glm::normalize(cameraTarget - cameraPos);
+		glm::vec3 cameraRight = glm::normalize(glm::cross(cameraForward, cameraUp));
+
+		for (auto& pParticle : myParam.pParticles3D) {
+			glm::vec3 distanceFromBrush = pParticle.pos - brushPos;
+
+			float screenX = glm::dot(distanceFromBrush, cameraRight);
+			float screenY = glm::dot(distanceFromBrush, cameraUp);
+
+			float distance = sqrt(screenX * screenX + screenY * screenY);
+
+			if (distance < brushRadius) {
+				float falloff = distance / brushRadius;
+				falloff = powf(falloff, 2.0f);
+				float inverseDistance = 1.0f / (distance + myVar.softening);
+
+				glm::vec2 radialScreen = glm::vec2(screenX, screenY) * inverseDistance;
+
+				glm::vec2 spinScreen = glm::vec2(-radialScreen.y, radialScreen.x);
+
+				glm::vec3 spinDirection = spinScreen.x * cameraRight + spinScreen.y * cameraUp;
+
+				if (IO::shortcutDown(KEY_LEFT_CONTROL)) {
+					spinDirection = -spinDirection;
+				}
+
+				pParticle.vel += spinDirection * spinForce * falloff * myVar.timeFactor * myVar.brushSpinForceMult;
 			}
 		}
 	}

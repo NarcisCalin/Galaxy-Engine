@@ -77,7 +77,7 @@ glm::vec3 Physics3D::calculateForceFromGrid3DOld(std::vector<ParticlePhysics3D>&
 		const float gridSize = grid.size;
 		glm::vec3 d = gridCOM - pParticle.pos;
 
-		if (myVar.isPeriodicBoundaryEnabled) {
+		if (myVar.isPeriodicBoundaryEnabled && !myVar.infiniteDomain) {
 			d.x -= myVar.domainSize3D.x * ((d.x > myVar.halfDomain3DWidth) - (d.x < -myVar.halfDomain3DWidth));
 			d.y -= myVar.domainSize3D.y * ((d.y > myVar.halfDomain3DHeight) - (d.y < -myVar.halfDomain3DHeight));
 			d.z -= myVar.domainSize3D.z * ((d.z > myVar.halfDomain3DDepth) - (d.z < -myVar.halfDomain3DDepth));
@@ -157,7 +157,7 @@ void Physics3D::calculateForceFromGrid3D(UpdateVariables& myVar) {
 
 			glm::vec3 d = gridCOM - glm::vec3{ posX[i], posY[i], posZ[i] };
 
-			if (myVar.isPeriodicBoundaryEnabled) {
+			if (myVar.isPeriodicBoundaryEnabled && !myVar.infiniteDomain) {
 				
 				d.x -= myVar.domainSize3D.x * ((d.x > myVar.halfDomain3DWidth) - (d.x < -myVar.halfDomain3DWidth));
 				d.y -= myVar.domainSize3D.y * ((d.y > myVar.halfDomain3DHeight) - (d.y < -myVar.halfDomain3DHeight));
@@ -295,7 +295,7 @@ void Physics3D::naiveGravity3D(std::vector<ParticlePhysics3D>& pParticles3D, Upd
 			__m256 dy = _mm256_sub_ps(pyj, pyi);
 			__m256 dz = _mm256_sub_ps(pzj, pzi);
 
-			if (myVar.isPeriodicBoundaryEnabled) {
+			if (myVar.isPeriodicBoundaryEnabled && !myVar.infiniteDomain) {
 				dx = _mm256_sub_ps(dx,
 					_mm256_sub_ps(
 						_mm256_and_ps(_mm256_cmp_ps(dx, halfDomainWidth, _CMP_GT_OQ), domainSizeX),
@@ -363,7 +363,7 @@ void Physics3D::naiveGravity3D(std::vector<ParticlePhysics3D>& pParticles3D, Upd
 			float dy = posYPtr[j] - p_iy;
 			float dz = posZPtr[j] - p_iz;
 
-			if (myVar.isPeriodicBoundaryEnabled) {
+			if (myVar.isPeriodicBoundaryEnabled && !myVar.infiniteDomain) {
 				dx -= myVar.domainSize3D.x * ((dx > myVar.halfDomain3DWidth) - (dx < -myVar.halfDomain3DWidth));
 				dy -= myVar.domainSize3D.y * ((dy > myVar.halfDomain3DHeight) - (dy < -myVar.halfDomain3DHeight));
 				dz -= myVar.domainSize3D.z * ((dz > myVar.halfDomain3DDepth) - (dz < -myVar.halfDomain3DDepth));
@@ -546,7 +546,7 @@ void Physics3D::integrateStart3D(
 
 		p.pos += p.vel * dt;
 
-		if (myVar.isPeriodicBoundaryEnabled) {
+		if (myVar.isPeriodicBoundaryEnabled && !myVar.infiniteDomain) {
 
 			if (p.pos.x < -myVar.halfDomain3DWidth)
 				p.pos.x += myVar.domainSize3D.x;
@@ -563,6 +563,34 @@ void Physics3D::integrateStart3D(
 				p.pos.z += myVar.domainSize3D.z;
 			else if (p.pos.z >= myVar.halfDomain3DDepth)
 				p.pos.z -= myVar.domainSize3D.z;
+		}
+	}
+}
+
+void Physics3D::pruneParticles(std::vector<ParticlePhysics3D>& pParticles,
+	std::vector<ParticleRendering3D>& rParticles,
+	UpdateVariables& myVar) {
+	for (size_t i = 0; i < pParticles.size(); ) {
+		float x = pParticles[i].pos.x;
+		float y = pParticles[i].pos.y;
+		float z = pParticles[i].pos.z;
+
+		float halfX = myVar.domainSize3D.x * 0.5f;
+		float halfY = myVar.domainSize3D.y * 0.5f;
+		float halfZ = myVar.domainSize3D.z * 0.5f;
+
+		if (x <= -halfX || x >= halfX ||
+			y <= -halfY || y >= halfY ||
+			z <= -halfZ || z >= halfZ) {
+			if (pParticles.size() > 1) {
+				std::swap(pParticles[i], pParticles.back());
+				std::swap(rParticles[i], rParticles.back());
+			}
+			pParticles.pop_back();
+			rParticles.pop_back();
+		}
+		else {
+			i++;
 		}
 	}
 }
@@ -801,7 +829,7 @@ void Physics3D::constraints(std::vector<ParticlePhysics3D>& pParticles, std::vec
 
 				glm::vec3 delta = pj.pos - pi.pos;
 
-				if (myVar.isPeriodicBoundaryEnabled) {
+				if (myVar.isPeriodicBoundaryEnabled && !myVar.infiniteDomain) {
 					delta.x = fmod(delta.x + myVar.domainSize.x * 1.5f, myVar.domainSize.x) - myVar.domainSize.x * 0.5f;
 					delta.y = fmod(delta.y + myVar.domainSize.y * 1.5f, myVar.domainSize.y) - myVar.domainSize.y * 0.5f;
 				}

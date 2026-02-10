@@ -20,10 +20,9 @@ Slingshot Slingshot::particleSlingshot(UpdateVariables& myVar, SceneCamera myCam
 	glm::vec2 mouseWorldPos = glm::vec2(GetScreenToWorld2D(GetMousePosition(), myCamera.camera).x, GetScreenToWorld2D(GetMousePosition(), myCamera.camera).y);
 
 	if ((IsMouseButtonPressed(0) && !IO::shortcutDown(KEY_LEFT_CONTROL) && !IO::shortcutDown(KEY_LEFT_ALT) &&
-		(myVar.toolSpawnHeavyParticle || myVar.toolSpawnBigGalaxy || myVar.toolSpawnSmallGalaxy || myVar.toolSpawnStar)) || 
+		(myVar.toolSpawnHeavyParticle || myVar.toolSpawnGalaxy || myVar.toolSpawnStar)) || 
 		IO::shortcutPress(KEY_ONE) ||
 		IO::shortcutPress(KEY_TWO) || 
-		IO::shortcutPress(KEY_THREE) ||
 		IO::shortcutPress(KEY_J)
 	) {   
 		myVar.isDragging = true;
@@ -66,10 +65,9 @@ Slingshot3D Slingshot3D::particleSlingshot(UpdateVariables& myVar, glm::vec3& br
 	}
 
 	if ((IsMouseButtonPressed(0) && !IO::shortcutDown(KEY_LEFT_CONTROL) && !IO::shortcutDown(KEY_LEFT_ALT) &&
-		(myVar.toolSpawnHeavyParticle || myVar.toolSpawnBigGalaxy || myVar.toolSpawnStar)) ||
+		(myVar.toolSpawnHeavyParticle || myVar.toolSpawnGalaxy || myVar.toolSpawnStar)) ||
 		IO::shortcutPress(KEY_ONE) ||
 		IO::shortcutPress(KEY_TWO) ||
-		IO::shortcutPress(KEY_THREE) ||
 		IO::shortcutPress(KEY_J)
 		) {
 		myVar.isDragging = true;

@@ -8,7 +8,7 @@
 
 void ParticlesSpawning::particlesInitialConditions(Physics& physics, UpdateVariables& myVar, UpdateParameters& myParam) {
 
-	if (myVar.isMouseNotHoveringUI && isSpawningAllowed) {
+	if (myVar.isMouseNotHoveringUI && myVar.isSpawningAllowed) {
 
 		Slingshot slingshot = slingshot.particleSlingshot(myVar, myParam.myCamera);
 
@@ -127,64 +127,59 @@ void ParticlesSpawning::particlesInitialConditions(Physics& physics, UpdateVaria
 			}
 		}
 
-		if ((IO::shortcutReleased(KEY_ONE) || IO::mouseReleased(0) && myVar.toolSpawnBigGalaxy) && myVar.isDragging) {
+		if ((IO::shortcutReleased(KEY_ONE) || IO::mouseReleased(0) && myVar.toolSpawnGalaxy) && myVar.isDragging) {
 
 			// VISIBLE MATTER
 
-			for (int i = 0; i < static_cast<int>(40000 * myVar.particleAmountMultiplier); i++) {
+			std::random_device rd;
+			std::mt19937 gen(rd());
+			std::uniform_real_distribution<float> dis(0.0f, 1.0f);
 
+			float maxRadius = outerRadius + 600.0f;
+			float maxCumulativeProb = 1.0f - std::exp(-maxRadius / scaleLength);
+
+			int totalParticles = static_cast<int>(40000 * myVar.particleAmountMultiplier);
+
+			for (int i = 0; i < totalParticles; i++) {
 				glm::vec2 galaxyCenter = myParam.myCamera.mouseWorldPos;
 
-				float outerRadius = 200.0f;
-
-				float scaleLength = 90.0f;
-
-				float normalizedRand = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-
-				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 * PI;
-
-				float finalRadius = -scaleLength * log(1.0f - normalizedRand);
-
-				finalRadius = std::min(finalRadius, outerRadius + 600.0f);
+				float randVal = dis(gen) * maxCumulativeProb;
+				float finalRadius = -scaleLength * std::log(1.0f - randVal);
 
 				finalRadius = std::max(finalRadius, 0.01f);
 
-				glm::vec2 pos = glm::vec2(galaxyCenter.x + finalRadius * cos(angle), galaxyCenter.y + finalRadius * sin(angle));
+				float angle = dis(gen) * 2.0f * PI;
 
-				glm::vec2 d = pos - galaxyCenter;
+				glm::vec2 dirVector(std::cos(angle), std::sin(angle));
+				glm::vec2 pos = galaxyCenter + (dirVector * finalRadius);
 
-				glm::vec2 tangent = glm::vec2(d.y, -d.x);
+				glm::vec2 tangent(-dirVector.y, dirVector.x);
 
-				float length = sqrt(tangent.x * tangent.x + tangent.y * tangent.y);
-
-				tangent /= length;
-
-				float speed = 10.5f * sqrt(1758.0f / (finalRadius + 54.7f));
-
+				float speed = 10.0f * std::sqrt(1758.0f / (finalRadius + 54.0f));
 				glm::vec2 vel = tangent * speed * 0.85f;
 
 				float finalMass = 0.0f;
+				float massRand = dis(gen);
+				float randomMassMultiplier = 1.0f + (massRand * 2.0f - 1.0f) * myVar.massScatter;
 
-				float rand01 = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-				float randomMassMultiplier = 1.0f + (rand01 * 2.0f - 1.0f) * myVar.massScatter;
-
+				float baseMass = 8500000000.0f;
 				if (massMultiplierEnabled) {
-					finalMass = (8500000000.0f / myVar.particleAmountMultiplier) * randomMassMultiplier;
+					finalMass = (baseMass / myVar.particleAmountMultiplier) * randomMassMultiplier;
 				}
 				else {
-					finalMass = 8500000000.0f * randomMassMultiplier;
+					finalMass = baseMass * randomMassMultiplier;
 				}
 
 				myParam.pParticles.emplace_back(
 					pos,
 					vel + slingshot.norm * slingshot.length * 0.3f,
 					finalMass,
-
 					0.008f,
 					1.0f,
 					1.0f,
 					1.0f
 				);
+
 				myParam.rParticles.emplace_back(
 					Color{ 128, 128, 128, 100 },
 					0.125f,
@@ -200,98 +195,25 @@ void ParticlesSpawning::particlesInitialConditions(Physics& physics, UpdateVaria
 				);
 			}
 
-			/*for (int i = 0; i < static_cast<int>(160000 * particleAmountMultiplier); i++) {
-
-				glm::vec2 galaxyCenter = myParam.myCamera.mouseWorldPos;
-
-				float outerRadius = 200.0f;
-
-				float scaleLength = 90.0f;
-
-				float normalizedRand = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-
-				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 * PI;
-
-				float finalRadius = -scaleLength * log(1.0f - normalizedRand);
-
-				finalRadius = std::min(finalRadius, outerRadius + 600.0f);
-
-				finalRadius = std::max(finalRadius, 0.01f);
-
-				glm::vec2 pos = glm::vec2(galaxyCenter.x + finalRadius * cos(angle), galaxyCenter.y + finalRadius * sin(angle));
-
-				glm::vec2 d = pos - galaxyCenter;
-
-				glm::vec2 tangent = glm::vec2(d.y, -d.x);
-
-				float length = sqrt(tangent.x * tangent.x + tangent.y * tangent.y);
-
-				tangent /= length;
-
-				float speed = 10.5f * sqrt(1758.0f / (finalRadius + 54.7f));
-
-				glm::vec2 vel = tangent * speed * 0.85f;
-
-				float finalMass = 0.0f;
-
-				float rand01 = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-				float randomMassMultiplier = 1.0f + (rand01 * 2.0f - 1.0f) * 0.35f;
-
-				if (massMultiplierEnabled) {
-					finalMass = (8500000000.0f / particleAmountMultiplier) * randomMassMultiplier * 0.25f;
-				}
-				else {
-					finalMass = 8500000000.0f * randomMassMultiplier * 0.25f;
-				}
-
-				myParam.pParticles.emplace_back(
-					pos,
-					vel + slingshot.norm * slingshot.length * 0.3f,
-					finalMass,
-
-					0.008f,
-					1.0f,
-					1.0f,
-					1.0f
-				);
-				myParam.rParticles.emplace_back(
-					Color{ 128, 128, 128, 100 },
-					0.125f,
-					false,
-					false,
-					false,
-					true,
-					true,
-					false,
-					true,
-					-1.0f,
-					0
-				);
-			}*/
-
 			// DARK MATTER
 
 			if (myVar.isDarkMatterEnabled) {
 				for (int i = 0; i < static_cast<int>(12000 * myVar.DMAmountMultiplier); i++) {
 					glm::vec2 galaxyCenter = myParam.myCamera.mouseWorldPos;
 
-					float outerRadius = 2000.0f;
-					float radiusCore = 3.5f;
-
 					float normalizedRand = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
 
-					float radiusMultiplier = radiusCore * sqrt(static_cast<float>(pow(1 + pow(outerRadius / radiusCore, 2), normalizedRand) - 1));
+					float radiusMultiplier = radiusCoreDM * sqrt(static_cast<float>(pow(1 + pow(outerRadiusDM / radiusCoreDM, 2), normalizedRand) - 1));
 
-					float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 * PI;
+					float angle = dis(gen) * 2 * PI;
 
 					glm::vec2 pos = glm::vec2(galaxyCenter.x + radiusMultiplier * cos(angle), galaxyCenter.y + radiusMultiplier * sin(angle));
 
 					glm::vec2 vel = glm::vec2(static_cast<float>(rand() % 60 - 30), static_cast<float>(rand() % 60 - 30)) * 0.85f;
 
 					float finalMass = 0.0f;
-
-					float rand01 = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-					float randomMassMultiplier = 1.0f + (rand01 * 2.0f - 1.0f) * myVar.massScatter;
+					float massRand = dis(gen);
+					float randomMassMultiplier = 1.0f + (massRand * 2.0f - 1.0f) * myVar.massScatter;
 
 					if (massMultiplierEnabled) {
 						finalMass = 141600000000.0f / myVar.DMAmountMultiplier * randomMassMultiplier;
@@ -329,138 +251,7 @@ void ParticlesSpawning::particlesInitialConditions(Physics& physics, UpdateVaria
 			myVar.isDragging = false;
 		}
 
-		if ((IO::shortcutReleased(KEY_TWO) || IO::mouseReleased(0) && myVar.toolSpawnSmallGalaxy) && myVar.isDragging) {
-
-			// VISIBLE MATTER
-
-			for (int i = 0; i < static_cast<int>(12000 * myVar.particleAmountMultiplier); i++) {
-				glm::vec2 galaxyCenter = myParam.myCamera.mouseWorldPos;
-
-				float outerRadius = 100.0f;
-
-				float scaleLength = 45.0f;
-
-				float normalizedRand = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-
-				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 * PI;
-
-				float finalRadius = -scaleLength * log(1.0f - normalizedRand);
-
-				finalRadius = std::min(finalRadius, outerRadius + 300.0f);
-
-				finalRadius = std::max(finalRadius, 0.01f);
-
-				glm::vec2 pos = glm::vec2(galaxyCenter.x + finalRadius * cos(angle), galaxyCenter.y + finalRadius * sin(angle));
-
-				glm::vec2 d = pos - galaxyCenter;
-
-				glm::vec2 tangent = glm::vec2(d.y, -d.x);
-
-				float length = sqrt(tangent.x * tangent.x + tangent.y * tangent.y);
-
-				tangent /= length;
-
-				float speed = 10.5f * sqrt(505.0f / (finalRadius + 54.7f)) * 0.85f;
-
-				glm::vec2 vel = tangent * speed;
-
-				float finalMass = 0.0f;
-
-				float rand01 = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-				float randomMassMultiplier = 1.0f + (rand01 * 2.0f - 1.0f) * myVar.massScatter;
-
-				if (massMultiplierEnabled) {
-					finalMass = 8500000000.0f / myVar.particleAmountMultiplier * randomMassMultiplier;
-				}
-				else {
-					finalMass = 8500000000.0f;
-				}
-
-				myParam.pParticles.emplace_back(
-					pos,
-					vel + slingshot.norm * slingshot.length * 0.3f,
-					finalMass,
-
-					0.008f,
-					1.0f,
-					1.0f,
-					1.0f
-				);
-				myParam.rParticles.emplace_back(
-					Color{ 128, 128, 128, 100 },
-					0.125f,
-					false,
-					false,
-					false,
-					true,
-					true,
-					false,
-					true,
-					-1.0f,
-					0
-				);
-			}
-
-			// DARK MATTER
-			if (myVar.isDarkMatterEnabled) {
-				for (int i = 0; i < static_cast<int>(3600 * myVar.DMAmountMultiplier); i++) {
-					glm::vec2 galaxyCenter = myParam.myCamera.mouseWorldPos;
-
-					float outerRadius = 2000.0f;
-					float radiusCore = 3.5f;
-
-					float normalizedRand = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-
-					float radiusMultiplier = radiusCore * sqrt(static_cast<float>(pow(1 + pow(outerRadius / radiusCore, 2), normalizedRand) - 1));
-
-					float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2 * PI;
-
-					glm::vec2 pos = glm::vec2(galaxyCenter.x + radiusMultiplier * cos(angle), galaxyCenter.y + radiusMultiplier * sin(angle));
-
-					glm::vec2 vel = glm::vec2(static_cast<float>(rand() % 60 - 30), static_cast<float>(rand() % 60 - 30)) * 0.85f;
-
-					float finalMass = 0.0f;
-
-					float rand01 = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-					float randomMassMultiplier = 1.0f + (rand01 * 2.0f - 1.0f) * myVar.massScatter;
-
-					if (massMultiplierEnabled) {
-						finalMass = 141600000000.0f / myVar.DMAmountMultiplier * randomMassMultiplier;
-					}
-					else {
-						finalMass = 141600000000.0f * randomMassMultiplier;
-					}
-
-					myParam.pParticles.emplace_back(
-						pos,
-						vel + slingshot.norm * slingshot.length * 0.3f,
-						finalMass,
-
-						0.008f,
-						1.0f,
-						1.0f,
-						1.0f
-					);
-					myParam.rParticles.emplace_back(
-						Color{ 128, 128, 128, 0 },
-						0.125f,
-						true,
-						false,
-						false,
-						false,
-						true,
-						true,
-						false,
-						-1.0f,
-						0
-					);
-				}
-			}
-
-			myVar.isDragging = false;
-		}
-
-		if ((IO::shortcutReleased(KEY_THREE) || IO::mouseReleased(0) && myVar.toolSpawnStar) && !IO::shortcutDown(KEY_LEFT_CONTROL) && !IO::shortcutDown(KEY_LEFT_ALT)) {
+		if ((IO::shortcutReleased(KEY_TWO) || IO::mouseReleased(0) && myVar.toolSpawnStar) && !IO::shortcutDown(KEY_LEFT_CONTROL) && !IO::shortcutDown(KEY_LEFT_ALT)) {
 
 			for (int i = 0; i < static_cast<int>(10000 * myVar.particleAmountMultiplier); i++) {
 
@@ -511,7 +302,7 @@ void ParticlesSpawning::particlesInitialConditions(Physics& physics, UpdateVaria
 			myVar.isDragging = false;
 		}
 
-		if ((IO::shortcutPress(KEY_FOUR) || IO::mouseReleased(0) && myVar.toolSpawnBigBang) && !IO::shortcutDown(KEY_LEFT_CONTROL) && !IO::shortcutDown(KEY_LEFT_ALT)) {
+		if ((IO::shortcutPress(KEY_THREE) || IO::mouseReleased(0) && myVar.toolSpawnBigBang) && !IO::shortcutDown(KEY_LEFT_CONTROL) && !IO::shortcutDown(KEY_LEFT_ALT)) {
 
 			// VISIBLE MATTER
 
@@ -639,12 +430,12 @@ void ParticlesSpawning::particlesInitialConditions(Physics& physics, UpdateVaria
 	}
 	else {
 		if (IsMouseButtonPressed(0)) {
-			isSpawningAllowed = false;
+			myVar.isSpawningAllowed = false;
 		}
 	}
 
 	if (IsMouseButtonReleased(0)) {
-		isSpawningAllowed = true;
+		myVar.isSpawningAllowed = true;
 		myVar.isDragging = false;
 	}
 }
@@ -687,7 +478,7 @@ void ParticlesSpawning::predictTrajectory(const std::vector<ParticlePhysics>& pP
 
 		p.pos += p.vel * myVar.timeFactor;
 
-		if (myVar.isPeriodicBoundaryEnabled) {
+		if (myVar.isPeriodicBoundaryEnabled && !myVar.infiniteDomain) {
 			if (p.pos.x < 0.0f) p.pos.x += myVar.domainSize.x;
 			else if (p.pos.x >= myVar.domainSize.x) p.pos.x -= myVar.domainSize.x;
 
@@ -708,11 +499,15 @@ void ParticlesSpawning::predictTrajectory(const std::vector<ParticlePhysics>& pP
 	}
 }
 
+void ParticlesSpawning::drawGalaxyDisplay(UpdateParameters& myParam) {
+	DrawCircleLinesV({ myParam.myCamera.mouseWorldPos.x, myParam.myCamera.mouseWorldPos.y }, scaleLength, RED);
+}
+
 // ---- 3D IMPLEMENTATION ---- //
 
 void ParticlesSpawning3D::particlesInitialConditions(Physics3D& physics3D, UpdateVariables& myVar, UpdateParameters& myParam) {
 
-	if (myVar.isMouseNotHoveringUI && isSpawningAllowed) {
+	if (myVar.isMouseNotHoveringUI && myVar.isSpawningAllowed) {
 
 		Slingshot3D slingshot = slingshot.particleSlingshot(myVar, myParam.brush3D.brushPos);
 
@@ -832,7 +627,7 @@ void ParticlesSpawning3D::particlesInitialConditions(Physics3D& physics3D, Updat
 			}
 		}
 
-		if ((IO::shortcutReleased(KEY_ONE) || IO::mouseReleased(0) && myVar.toolSpawnBigGalaxy) && myVar.isDragging) {
+		if ((IO::shortcutReleased(KEY_ONE) || IO::mouseReleased(0) && myVar.toolSpawnGalaxy) && myVar.isDragging) {
 
 			// VISIBLE MATTER
 
@@ -844,47 +639,49 @@ void ParticlesSpawning3D::particlesInitialConditions(Physics3D& physics3D, Updat
 
 			rotationMatrix = glm::rotate(rotationMatrix, diskAxisZ * (PI / 180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 
+			std::random_device rd;
+			std::mt19937 gen(rd());
+			std::uniform_real_distribution<float> dis(0.0f, 1.0f);
+
+			float scaleLength = outerRadius / 4.0f;
+
+			float maxCumulativeProb = 1.0f - std::exp(-outerRadius / scaleLength);
+
 			for (int i = 0; i < static_cast<int>(40000 * myVar.particleAmountMultiplier); i++) {
 
 				glm::vec3 galaxyCenter = myParam.brush3D.brushPos;
 
-				float outerRadius = 120.0f;
-				float radiusCore = 2.5f;
+				float u = dis(gen) * maxCumulativeProb;
 
-				float normalizedRand = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-				float finalRadius = radiusCore * sqrt(static_cast<float>(pow(1 + pow(outerRadius / radiusCore, 2), normalizedRand) - 1));
+				float finalRadius = -scaleLength * std::log(1.0f - u);
 
-				float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * PI;
+				float angle = dis(gen) * 2.0f * PI;
 
-				float u1 = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-				float u2 = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+				float u1 = dis(gen);
+				float u2 = dis(gen);
 				if (u1 < 1e-6f) u1 = 1e-6f;
 
-				float diskThickness = 0.5f;
-				float bulgeThickness = 3.0f;
-				float bulgeSize = 1200.0f;
+				float currentSpread = diskThickness + bulgeThickness * std::exp(-finalRadius / bulgeSize);
 
-				float currentSpread = diskThickness + bulgeThickness * exp(-finalRadius / bulgeSize);
-				float normalRandom = sqrt(-2.0f * log(u1)) * cos(2.0f * PI * u2);
+				float normalRandom = std::sqrt(-2.0f * std::log(u1)) * std::cos(2.0f * PI * u2);
 				float zOffset = normalRandom * currentSpread;
 
 				glm::vec4 localPos = glm::vec4(
-					finalRadius * cos(angle), // x
-					finalRadius * sin(angle), // y
-					zOffset,                  // z
-					1.0f                      // w (Position = 1.0)
+					finalRadius * std::cos(angle), // x
+					finalRadius * std::sin(angle), // y
+					zOffset,                       // z
+					1.0f                           // w
 				);
 
-				glm::vec3 localTangent = glm::vec3(-localPos.y, localPos.x, 0.0f);
-				float length = sqrt(localTangent.x * localTangent.x + localTangent.y * localTangent.y);
-				if (length > 0.0001f) {
-					localTangent /= length;
+				glm::vec3 localTangent;
+				if (finalRadius > 0.0001f) {
+					localTangent = glm::vec3(-localPos.y / finalRadius, localPos.x / finalRadius, 0.0f);
 				}
 				else {
 					localTangent = glm::vec3(1.0f, 0.0f, 0.0f);
 				}
 
-				float speed = 10.5f * sqrt(1758.0f / (finalRadius + 54.0f));
+				float speed = 10.5f * std::sqrt(1758.0f / (finalRadius + 54.0f));
 
 				glm::vec4 localVel = glm::vec4(localTangent * speed * 0.85f, 0.0f);
 
@@ -896,8 +693,8 @@ void ParticlesSpawning3D::particlesInitialConditions(Physics3D& physics3D, Updat
 				glm::vec3 finalVel = glm::vec3(rotatedVel) + (slingshot.norm * slingshot.length * 0.3f);
 
 				float finalMass = 0.0f;
-				float rand01 = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-				float randomMassMultiplier = 1.0f + (rand01 * 2.0f - 1.0f) * myVar.massScatter;
+				float randMass = dis(gen);
+				float randomMassMultiplier = 1.0f + (randMass * 2.0f - 1.0f) * myVar.massScatter;
 
 				if (massMultiplierEnabled) {
 					finalMass = (8500000000.0f / myVar.particleAmountMultiplier) * randomMassMultiplier;
@@ -938,16 +735,13 @@ void ParticlesSpawning3D::particlesInitialConditions(Physics3D& physics3D, Updat
 
 					glm::vec3 galaxyCenter = myParam.brush3D.brushPos;
 
-					float outerRadius = 2000.0f;
-					float radiusCore = 3.5f;
+					float normalizedRand = dis(gen);
 
-					float normalizedRand = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+					float radiusMultiplier = radiusCoreDM * sqrt(static_cast<float>(pow(1 + pow(outerRadiusDM / radiusCoreDM, 2), normalizedRand) - 1));
 
-					float radiusMultiplier = radiusCore * sqrt(static_cast<float>(pow(1 + pow(outerRadius / radiusCore, 2), normalizedRand) - 1));
+					float z = dis(gen) * 2.0f - 1.0f;
 
-					float z = (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * 2.0f - 1.0f;
-
-					float theta = (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * 2.0f * PI;
+					float theta = dis(gen) * 2.0f * PI;
 
 					float radius_xy = sqrt(1.0f - z * z);
 
@@ -968,8 +762,8 @@ void ParticlesSpawning3D::particlesInitialConditions(Physics3D& physics3D, Updat
 
 					float finalMass = 0.0f;
 
-					float rand01 = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
-					float randomMassMultiplier = 1.0f + (rand01 * 2.0f - 1.0f) * myVar.massScatter;
+					float randMass = dis(gen);
+					float randomMassMultiplier = 1.0f + (randMass * 2.0f - 1.0f) * myVar.massScatter;
 
 					if (massMultiplierEnabled) {
 						finalMass = 141600000000.0f / myVar.DMAmountMultiplier * randomMassMultiplier;
@@ -1010,7 +804,7 @@ void ParticlesSpawning3D::particlesInitialConditions(Physics3D& physics3D, Updat
 			myVar.isDragging = false;
 		}
 
-		if ((IO::shortcutReleased(KEY_THREE) || IO::mouseReleased(0) && myVar.toolSpawnStar) && !IO::shortcutDown(KEY_LEFT_CONTROL) && !IO::shortcutDown(KEY_LEFT_ALT)) {
+		if ((IO::shortcutReleased(KEY_TWO) || IO::mouseReleased(0) && myVar.toolSpawnStar) && !IO::shortcutDown(KEY_LEFT_CONTROL) && !IO::shortcutDown(KEY_LEFT_ALT)) {
 			for (int i = 0; i < static_cast<int>(10000 * myVar.particleAmountMultiplier); i++) {
 
 				float theta = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * 2.0f * 3.14159f;
@@ -1064,7 +858,7 @@ void ParticlesSpawning3D::particlesInitialConditions(Physics3D& physics3D, Updat
 			myVar.isDragging = false;
 		}
 
-		if ((IO::shortcutPress(KEY_FOUR) || IO::mouseReleased(0) && myVar.toolSpawnBigBang) && !IO::shortcutDown(KEY_LEFT_CONTROL) && !IO::shortcutDown(KEY_LEFT_ALT)) {
+		if ((IO::shortcutPress(KEY_THREE) || IO::mouseReleased(0) && myVar.toolSpawnBigBang) && !IO::shortcutDown(KEY_LEFT_CONTROL) && !IO::shortcutDown(KEY_LEFT_ALT)) {
 
 			// VISIBLE MATTER
 			for (int i = 0; i < static_cast<int>(40000 * myVar.particleAmountMultiplier); i++) {
@@ -1193,12 +987,12 @@ void ParticlesSpawning3D::particlesInitialConditions(Physics3D& physics3D, Updat
 	}
 	else {
 		if (IsMouseButtonPressed(0)) {
-			isSpawningAllowed = false;
+			myVar.isSpawningAllowed = false;
 		}
 	}
 
 	if (IsMouseButtonReleased(0)) {
-		isSpawningAllowed = true;
+		myVar.isSpawningAllowed = true;
 		myVar.isDragging = false;
 	}
 }
@@ -1237,7 +1031,7 @@ void ParticlesSpawning3D::predictTrajectory(const std::vector<ParticlePhysics3D>
 		p.vel += p.acc * (myVar.timeFactor * 0.5f);
 		p.pos += p.vel * myVar.timeFactor;
 
-		if (myVar.isPeriodicBoundaryEnabled) {
+		if (myVar.isPeriodicBoundaryEnabled && !myVar.infiniteDomain) {
 
 			if (p.pos.x < -myVar.halfDomain3DWidth)
 				p.pos.x += myVar.domainSize3D.x;
@@ -1287,21 +1081,27 @@ void ParticlesSpawning3D::drawGalaxyDisplay(UpdateParameters& myParam) {
 
 	glm::vec3 direction = glm::vec3(rotatedNormal);
 
-
-	float diskVisualThickness = 2.0f;
-
-	glm::vec3 startPos = myParam.brush3D.brushPos - (direction * diskVisualThickness);
-	glm::vec3 endPos = myParam.brush3D.brushPos + (direction * diskVisualThickness);
+	glm::vec3 startPos = myParam.brush3D.brushPos - (direction * diskThickness);
+	glm::vec3 endPos = myParam.brush3D.brushPos + (direction * diskThickness);
 
 	Vector3 raylibStart = { startPos.x, startPos.y, startPos.z };
 	Vector3 raylibEnd = { endPos.x, endPos.y, endPos.z };
 
-	DrawCylinderEx(
+	DrawCylinderWiresEx(
 		raylibStart,
 		raylibEnd,
-		130.0f,
-		130.0f,
+		outerRadius,
+		outerRadius,
 		24,
-		Color{ 255, 0, 0, 100 }
+		{ 255, 0, 0, 100 }
+	);
+
+	DrawCylinderWiresEx(
+		raylibStart,
+		raylibEnd,
+		radiusCore,
+		radiusCore,
+		24,
+		{ 255, 0, 0, 100 }
 	);
 }

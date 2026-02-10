@@ -319,6 +319,7 @@ struct ColorVisuals {
 		}
 
 		if (turbulenceColor && !is3DMode) {
+#pragma omp parallel for schedule(dynamic)
 			for (size_t i = 0; i < pParticles.size(); i++) {
 
 				if (rParticles[i].isDarkMatter) {
@@ -366,6 +367,7 @@ struct ColorVisuals {
 			blendMode = 0;
 		}
 		else if (turbulenceColor && is3DMode) {
+#pragma omp parallel for schedule(dynamic)
 			for (size_t i = 0; i < pParticles3D.size(); i++) {
 
 				if (rParticles3D[i].isDarkMatter) {

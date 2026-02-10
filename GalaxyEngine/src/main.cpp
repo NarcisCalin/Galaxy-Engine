@@ -84,7 +84,7 @@ int main(int argc, char** argv) {
 	}
 
 	save.saveFlag = true;
-	save.saveSystem("Saves/DefaultSettings.bin", myVar, myParam, sph, physics, lighting, field);
+	save.saveSystem("Saves/DefaultSettings.bin", myVar, myParam, sph, physics, physics3D, lighting, field);
 	save.saveFlag = false;
 
 	// ---- ImGui ---- //

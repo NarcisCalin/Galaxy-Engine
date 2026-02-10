@@ -31,14 +31,15 @@ Camera2D SceneCamera::cameraLogic(bool& loadFlag, bool& isMouseNotHoveringUI) {
 	float wheel = GetMouseWheelMove();
 
 	mouseWorldPos = glm::vec2(GetScreenToWorld2D(GetMousePosition(), camera).x,
-			GetScreenToWorld2D(GetMousePosition(), camera).y);
+		GetScreenToWorld2D(GetMousePosition(), camera).y);
 
 	if (wheel != 0 && !IsKeyDown(KEY_LEFT_CONTROL) && !loadFlag && isMouseNotHoveringUI) {
+
 
 		if (isFollowing) {
 			glm::vec2 screenCenter = { GetScreenWidth() * 0.5f, GetScreenHeight() * 0.5f };
 
-			mouseWorldPos = glm::vec2(GetScreenToWorld2D({ screenCenter.x,   screenCenter.y}, camera).x, 
+			mouseWorldPos = glm::vec2(GetScreenToWorld2D({ screenCenter.x,   screenCenter.y }, camera).x,
 				GetScreenToWorld2D({ screenCenter.x,   screenCenter.y }, camera).y);
 
 			camera.offset = { screenCenter.x, screenCenter.y };
@@ -71,7 +72,7 @@ void SceneCamera::cameraFollowObject(UpdateVariables& myVar, UpdateParameters& m
 	static bool isDragging = false;
 	static glm::vec2 dragStartPos = { 0.0f, 0.0f };
 
-	if ((IsMouseButtonPressed(1) && IsKeyDown(KEY_LEFT_CONTROL) && myVar.isMouseNotHoveringUI) || 
+	if ((IsMouseButtonPressed(1) && IsKeyDown(KEY_LEFT_CONTROL) && myVar.isMouseNotHoveringUI) ||
 		(IsMouseButtonPressed(1) && IsKeyDown(KEY_LEFT_ALT) && myVar.isMouseNotHoveringUI)) {
 		dragStartPos = glm::vec2(GetMousePosition().x, GetMousePosition().y);
 		isDragging = false;
@@ -172,7 +173,41 @@ void SceneCamera::hasCamMoved() {
 
 Camera3D SceneCamera3D::cameraLogic(bool& isLoading, bool& isMouseNotHoveringUI) {
 
-	if (isMouseNotHoveringUI && IO::mouseDown(MOUSE_BUTTON_RIGHT)) {
+	if (isMouseNotHoveringUI && IO::mouseDown(1) && IO::shortcutDown(KEY_LEFT_ALT)) {
+		Vector2 mouseDelta = GetMouseDelta();
+
+		float panSpeed = distance * 0.002f;
+
+		float radX = angleX * DEG2RAD;
+		float radY = angleY * DEG2RAD;
+
+		Vector3 forwardVec;
+		forwardVec.x = cosf(radY) * sinf(radX);
+		forwardVec.y = sinf(radY);
+		forwardVec.z = cosf(radY) * cosf(radX);
+		forwardVec = Vector3Normalize(forwardVec);
+
+		Vector3 worldUp = { 0.0f, 1.0f, 0.0f };
+		Vector3 rightVec = Vector3CrossProduct(worldUp, forwardVec);
+		rightVec = Vector3Normalize(rightVec);
+
+		Vector3 upVec = Vector3CrossProduct(forwardVec, rightVec);
+		upVec = Vector3Normalize(upVec);
+
+		Vector3 moveRight = Vector3Scale(rightVec, -mouseDelta.x * panSpeed);
+		Vector3 moveUp = Vector3Scale(upVec, mouseDelta.y * panSpeed);
+
+		Vector3 totalPanMove = Vector3Add(moveRight, moveUp);
+
+		if (isFollowing) {
+			panFollowingOffset = Vector3Add(panFollowingOffset, totalPanMove);
+		}
+		else {
+			target = Vector3Add(target, totalPanMove);
+		}
+	}
+
+	if (isMouseNotHoveringUI && IO::mouseDown(1) && !IO::shortcutDown(KEY_LEFT_ALT)) {
 		Vector2 mouseDelta = GetMouseDelta();
 		angleX -= mouseDelta.x * 0.3f;
 		angleY += mouseDelta.y * 0.3f;
@@ -181,20 +216,18 @@ Camera3D SceneCamera3D::cameraLogic(bool& isLoading, bool& isMouseNotHoveringUI)
 		if (angleY < -89.0f) angleY = -89.0f;
 	}
 
-	if (isMouseNotHoveringUI && !IO::shortcutDown(KEY_LEFT_CONTROL) && !IO::shortcutDown(KEY_LEFT_SHIFT)) {
+	if (isMouseNotHoveringUI &&
+		!IO::shortcutDown(KEY_LEFT_SHIFT) &&
+		!IO::shortcutDown(KEY_LEFT_CONTROL))
+	{
 		float wheel = GetMouseWheelMove();
 
-		float zoomFactor = 1.15f;
+		float zoomSpeed = 0.1f;
 
-		if (wheel > 0) {
-			distance /= powf(zoomFactor, wheel);
-		}
-		else if (wheel < 0) {
-			distance *= powf(zoomFactor, -wheel);
-		}
+		distance *= (1.0f - wheel * zoomSpeed);
 
 		if (distance < 1.0f) distance = 1.0f;
-		if (distance > 5000.0f) distance = 5000.0f;
+		if (distance > 30000.0f) distance = 30000.0f;
 	}
 
 	float smoothSpeed = 0.1f;
@@ -211,7 +244,7 @@ Camera3D SceneCamera3D::cameraLogic(bool& isLoading, bool& isMouseNotHoveringUI)
 	orbitOffset.y = distance * sinf(radY);
 	orbitOffset.z = distance * cosf(radY) * cosf(radX);
 
-	cam3D.target = { currentSmoothedTarget.x,currentSmoothedTarget.y, currentSmoothedTarget.z };
+	cam3D.target = { currentSmoothedTarget.x, currentSmoothedTarget.y, currentSmoothedTarget.z };
 	cam3D.position = Vector3Add(cam3D.target, orbitOffset);
 
 	Vector3 forward = Vector3Subtract(cam3D.target, cam3D.position);
@@ -281,9 +314,15 @@ void SceneCamera3D::cameraFollowObject(UpdateVariables& myVar, UpdateParameters&
 		centerCamera = false;
 	}
 
-	if (IO::shortcutPress(KEY_F) || myParam.pParticles3D.empty()) {
-		isFollowing = false;
+	if (IO::shortcutPress(KEY_F)) {
 		target = { 0.0f, 0.0f, 0.0f };
+		currentSmoothedTarget = { 0.0f, 0.0f, 0.0f };
+
+		distance = defaultCamDist;
+		angleX = 0.0f;
+		angleY = 0.0f;
+
+		isFollowing = false;
 	}
 
 	if (isFollowing) {
@@ -306,6 +345,17 @@ void SceneCamera3D::cameraFollowObject(UpdateVariables& myVar, UpdateParameters&
 			target = Vector3Add(target, { panFollowingOffset.x, panFollowingOffset.y, panFollowingOffset.z });
 		}
 		else {
+			isFollowing = false;
+		}
+
+		if (IO::shortcutPress(KEY_F) || myParam.pParticles3D.empty()) {
+			target = { 0.0f, 0.0f, 0.0f };
+			currentSmoothedTarget = { 0.0f, 0.0f, 0.0f };
+
+			distance = defaultCamDist;
+			angleX = 0.0f;
+			angleY = 0.0f;
+
 			isFollowing = false;
 		}
 	}
