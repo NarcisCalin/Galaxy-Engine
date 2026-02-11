@@ -345,4 +345,8 @@ struct UpdateVariables {
 	bool isPlaybackOn = false;
 
 	float playbackParticlesSizeMult = 1.0f;
+
+	bool playBackOnMemory = false;
+
+	std::string playbackPath = "playbackTemp/playback.bin";
 };

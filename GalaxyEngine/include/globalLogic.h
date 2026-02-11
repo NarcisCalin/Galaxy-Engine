@@ -33,6 +33,8 @@
 #include "UX/randNum.h"
 #include "UX/copyPaste.h"
 
+#include "Renderer/rayMarching.h"
+
 #include "parameters.h"
 
 extern UpdateParameters myParam;
@@ -47,6 +49,8 @@ extern SaveSystem save;
 extern GESound geSound;
 extern Lighting lighting;
 extern CopyPaste copyPaste;
+
+extern RayMarcher rayMarcher;
 
 extern Field field;
 

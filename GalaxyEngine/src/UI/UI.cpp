@@ -950,6 +950,14 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			ImGui::Separator();
 			ImGui::Spacing();
 
+			buttonHelper("Store Playback On Memory", "Stores the playback on memory instead of disk", myVar.playBackOnMemory, -1.0f, settingsButtonY, true, enabled);
+
+			ImGui::Spacing();
+			ImGui::Separator();
+			ImGui::Spacing();
+
+			sliderHelper("Keyframe Interval", "Sets the number of frames in between each stored frame", myVar.keyframeTickInterval, 1, 30, parametersSliderX, parametersSliderY, enabled);
+
 			std::string buttonText;
 			std::string tooltipText;
 
@@ -1019,6 +1027,10 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 				myParam.pParticles3DPlaybackResume.clear();
 				myParam.rParticles3DPlaybackResume.clear();
+
+				if (std::filesystem::exists(myVar.playbackPath)) {
+					std::filesystem::remove(myVar.playbackPath);
+				}
 
 				myVar.deletePlayback = false;
 			}

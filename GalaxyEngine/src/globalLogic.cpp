@@ -13,6 +13,8 @@ GESound geSound;
 Lighting lighting;
 CopyPaste copyPaste;
 
+RayMarcher rayMarcher;
+
 Field field;
 
 std::vector<Node> globalNodes;
@@ -1806,13 +1808,75 @@ struct ParticleDepth {
 	float distSq;
 };
 
-void playBackLogic(Texture2D& particleBlurTex) {
+void savePlaybackToDisk(const std::string& filepath) {
+	std::ofstream outFile(filepath, std::ios::binary);
+	if (!outFile) {
+		return;
+	}
 
+	size_t numFrames = myParam.playbackFrames.size();
+	outFile.write(reinterpret_cast<const char*>(&numFrames), sizeof(numFrames));
+
+	for (const auto& frame : myParam.playbackFrames) {
+		size_t numParticles = frame.size();
+		outFile.write(reinterpret_cast<const char*>(&numParticles), sizeof(numParticles));
+
+		for (const auto& particle : frame) {
+			outFile.write(reinterpret_cast<const char*>(&particle.pos), sizeof(particle.pos));
+			outFile.write(reinterpret_cast<const char*>(&particle.previousSize), sizeof(particle.previousSize));
+			outFile.write(reinterpret_cast<const char*>(&particle.size), sizeof(particle.size));
+			outFile.write(reinterpret_cast<const char*>(&particle.id), sizeof(particle.id));
+			outFile.write(reinterpret_cast<const char*>(&particle.color), sizeof(particle.color));
+		}
+	}
+
+	outFile.close();
+}
+
+void loadPlaybackFromDisk(const std::string& filepath) {
+	std::ifstream inFile(filepath, std::ios::binary);
+	if (!inFile) {
+		return;
+	}
+
+	myParam.playbackFrames.clear();
+
+	size_t numFrames;
+	inFile.read(reinterpret_cast<char*>(&numFrames), sizeof(numFrames));
+
+	myParam.playbackFrames.reserve(numFrames);
+
+	for (size_t i = 0; i < numFrames; ++i) {
+		size_t numParticles;
+		inFile.read(reinterpret_cast<char*>(&numParticles), sizeof(numParticles));
+
+		std::vector<PlaybackParticle> frame;
+		frame.reserve(numParticles);
+
+		for (size_t j = 0; j < numParticles; ++j) {
+			PlaybackParticle particle;
+			inFile.read(reinterpret_cast<char*>(&particle.pos), sizeof(particle.pos));
+			inFile.read(reinterpret_cast<char*>(&particle.previousSize), sizeof(particle.previousSize));
+			inFile.read(reinterpret_cast<char*>(&particle.size), sizeof(particle.size));
+			inFile.read(reinterpret_cast<char*>(&particle.id), sizeof(particle.id));
+			inFile.read(reinterpret_cast<char*>(&particle.color), sizeof(particle.color));
+
+			frame.push_back(particle);
+		}
+
+		myParam.playbackFrames.push_back(std::move(frame));
+	}
+
+	inFile.close();
+}
+
+void playBackLogic(Texture2D& particleBlurTex) {
 	static std::vector<PlaybackParticle> targetState;
 	static std::unordered_map<uint32_t, int> targetMap;
+	static bool diskFramesLoaded = false;
+	static bool wasRecording = false;
 
 	if (!myParam.pParticles3D.empty() && myVar.playbackRecord && myVar.currentFrame % myVar.keyframeTickInterval == 0) {
-
 		std::vector<PlaybackParticle> playbackParticles;
 		playbackParticles.reserve(myParam.pParticles3D.size());
 
@@ -1827,129 +1891,143 @@ void playBackLogic(Texture2D& particleBlurTex) {
 			playbackParticles.emplace_back(PlaybackParticle{ p.pos, r.previousSize, r.size, p.id, r.color });
 		}
 		myParam.playbackFrames.push_back(playbackParticles);
+		wasRecording = true;
 	}
 
 	myVar.currentFrame++;
 
-	if (!myParam.playbackFrames.empty() && !myVar.playbackRecord) {
+	if (wasRecording && !myVar.playbackRecord) {
+		if (!myVar.playBackOnMemory) {
+			savePlaybackToDisk(myVar.playbackPath);
+		}
+		wasRecording = false;
+		diskFramesLoaded = false;
+	}
 
-		targetState.clear();
-		targetMap.clear();
-
-		if (myVar.runPlayback) {
-			myVar.playbackProgress += myVar.playbackSpeed;
+	if (!myVar.playbackRecord) {
+		if (!myVar.playBackOnMemory && !diskFramesLoaded && !wasRecording) {
+			loadPlaybackFromDisk(myVar.playbackPath);
+			diskFramesLoaded = true;
 		}
 
-		int indexA = (int)myVar.playbackProgress;
-		int indexB = indexA + 1;
+		if (!myParam.playbackFrames.empty()) {
+			targetState.clear();
+			targetMap.clear();
 
-		if (indexB >= myParam.playbackFrames.size()) {
-			myVar.playbackProgress = 0.0f;
-			indexA = 0;
-			indexB = 1;
-		}
+			if (myVar.runPlayback) {
+				myVar.playbackProgress += myVar.playbackSpeed;
+			}
 
-		float t = myVar.playbackProgress - indexA;
+			int indexA = (int)myVar.playbackProgress;
+			int indexB = indexA + 1;
 
-		const std::vector<PlaybackParticle>& frameA = myParam.playbackFrames[indexA];
-		const std::vector<PlaybackParticle>& frameB = myParam.playbackFrames[indexB];
+			if (indexB >= myParam.playbackFrames.size()) {
+				myVar.playbackProgress = 0.0f;
+				indexA = 0;
+				indexB = 1;
+			}
 
-		std::unordered_map<uint32_t, const PlaybackParticle*> frameB_Lookup;
-		frameB_Lookup.reserve(frameB.size());
-		for (const auto& p : frameB) {
-			frameB_Lookup[p.id] = &p;
-		}
+			float t = myVar.playbackProgress - indexA;
+
+			const std::vector<PlaybackParticle>& frameA = myParam.playbackFrames[indexA];
+			const std::vector<PlaybackParticle>& frameB = myParam.playbackFrames[indexB];
+
+			std::unordered_map<uint32_t, const PlaybackParticle*> frameB_Lookup;
+			frameB_Lookup.reserve(frameB.size());
+			for (const auto& p : frameB) {
+				frameB_Lookup[p.id] = &p;
+			}
 
 #pragma omp parallel
-		{
-			std::vector<PlaybackParticle> localBuffer;
-			localBuffer.reserve(frameA.size() / omp_get_num_threads());
+			{
+				std::vector<PlaybackParticle> localBuffer;
+				localBuffer.reserve(frameA.size() / omp_get_num_threads());
 
 #pragma omp for nowait
-			for (int i = 0; i < frameA.size(); ++i) {
-				const auto& pA = frameA[i];
+				for (int i = 0; i < frameA.size(); ++i) {
+					const auto& pA = frameA[i];
 
-				auto it = frameB_Lookup.find(pA.id);
-				if (it != frameB_Lookup.end()) {
-					const PlaybackParticle* pB = it->second;
+					auto it = frameB_Lookup.find(pA.id);
+					if (it != frameB_Lookup.end()) {
+						const PlaybackParticle* pB = it->second;
 
-					glm::vec3 finalPos;
-					finalPos.x = pA.pos.x + (pB->pos.x - pA.pos.x) * t;
-					finalPos.y = pA.pos.y + (pB->pos.y - pA.pos.y) * t;
-					finalPos.z = pA.pos.z + (pB->pos.z - pA.pos.z) * t;
+						glm::vec3 finalPos;
+						finalPos.x = pA.pos.x + (pB->pos.x - pA.pos.x) * t;
+						finalPos.y = pA.pos.y + (pB->pos.y - pA.pos.y) * t;
+						finalPos.z = pA.pos.z + (pB->pos.z - pA.pos.z) * t;
 
-					float finalSize = pA.size + (pB->size - pA.size) * t;
+						float finalSize = pA.size + (pB->size - pA.size) * t;
 
-					Color finalColor;
-					finalColor.r = (unsigned char)(pA.color.r + (pB->color.r - pA.color.r) * t);
-					finalColor.g = (unsigned char)(pA.color.g + (pB->color.g - pA.color.g) * t);
-					finalColor.b = (unsigned char)(pA.color.b + (pB->color.b - pA.color.b) * t);
-					finalColor.a = (unsigned char)(pA.color.a + (pB->color.a - pA.color.a) * t);
+						Color finalColor;
+						finalColor.r = (unsigned char)(pA.color.r + (pB->color.r - pA.color.r) * t);
+						finalColor.g = (unsigned char)(pA.color.g + (pB->color.g - pA.color.g) * t);
+						finalColor.b = (unsigned char)(pA.color.b + (pB->color.b - pA.color.b) * t);
+						finalColor.a = (unsigned char)(pA.color.a + (pB->color.a - pA.color.a) * t);
 
-					localBuffer.push_back({ finalPos, pA.previousSize, finalSize, pA.id, finalColor });
+						localBuffer.push_back({ finalPos, pA.previousSize, finalSize, pA.id, finalColor });
+					}
 				}
-			}
 
 #pragma omp critical
-			{
-				targetState.insert(targetState.end(), localBuffer.begin(), localBuffer.end());
-			}
-		}
-
-		targetMap.reserve(targetState.size());
-		for (int i = 0; i < targetState.size(); i++) {
-			targetMap[targetState[i].id] = i;
-		}
-
-		std::vector<bool> targetUsed(targetState.size(), false);
-
-		for (int i = (int)myParam.pParticles3D.size() - 1; i >= 0; i--) {
-			uint32_t currentID = myParam.pParticles3D[i].id;
-
-			auto it = targetMap.find(currentID);
-
-			if (it != targetMap.end()) {
-				int targetIndex = it->second;
-				const PlaybackParticle& target = targetState[targetIndex];
-
-				myParam.pParticles3D[i].pos = target.pos;
-				myParam.rParticles3D[i].color = target.color;
-
-				myParam.rParticles3D[i].previousSize = target.previousSize;
-				myParam.rParticles3D[i].size = target.size * myVar.playbackParticlesSizeMult;
-
-				targetUsed[targetIndex] = true;
-			}
-			else {
-
-				size_t lastIdx = myParam.pParticles3D.size() - 1;
-
-				if (i != lastIdx) {
-					myParam.pParticles3D[i] = myParam.pParticles3D[lastIdx];
-					myParam.rParticles3D[i] = myParam.rParticles3D[lastIdx];
+				{
+					targetState.insert(targetState.end(), localBuffer.begin(), localBuffer.end());
 				}
-
-				myParam.pParticles3D.pop_back();
-				myParam.rParticles3D.pop_back();
 			}
-		}
 
-		for (int i = 0; i < targetState.size(); i++) {
-			if (!targetUsed[i]) {
-				const PlaybackParticle& target = targetState[i];
+			targetMap.reserve(targetState.size());
+			for (int i = 0; i < targetState.size(); i++) {
+				targetMap[targetState[i].id] = i;
+			}
 
-				ParticlePhysics3D newP;
-				newP.id = target.id;
-				newP.pos = target.pos;
+			std::vector<bool> targetUsed(targetState.size(), false);
 
-				ParticleRendering3D newR;
-				newR.color = target.color;
+			for (int i = (int)myParam.pParticles3D.size() - 1; i >= 0; i--) {
+				uint32_t currentID = myParam.pParticles3D[i].id;
 
-				newR.previousSize = target.previousSize;
-				newR.size = target.size;
+				auto it = targetMap.find(currentID);
 
-				myParam.pParticles3D.push_back(newP);
-				myParam.rParticles3D.push_back(newR);
+				if (it != targetMap.end()) {
+					int targetIndex = it->second;
+					const PlaybackParticle& target = targetState[targetIndex];
+
+					myParam.pParticles3D[i].pos = target.pos;
+					myParam.rParticles3D[i].color = target.color;
+
+					myParam.rParticles3D[i].previousSize = target.previousSize;
+					myParam.rParticles3D[i].size = target.size * myVar.playbackParticlesSizeMult;
+
+					targetUsed[targetIndex] = true;
+				}
+				else {
+					size_t lastIdx = myParam.pParticles3D.size() - 1;
+
+					if (i != lastIdx) {
+						myParam.pParticles3D[i] = myParam.pParticles3D[lastIdx];
+						myParam.rParticles3D[i] = myParam.rParticles3D[lastIdx];
+					}
+
+					myParam.pParticles3D.pop_back();
+					myParam.rParticles3D.pop_back();
+				}
+			}
+
+			for (int i = 0; i < targetState.size(); i++) {
+				if (!targetUsed[i]) {
+					const PlaybackParticle& target = targetState[i];
+
+					ParticlePhysics3D newP;
+					newP.id = target.id;
+					newP.pos = target.pos;
+
+					ParticleRendering3D newR;
+					newR.color = target.color;
+
+					newR.previousSize = target.previousSize;
+					newR.size = target.size;
+
+					myParam.pParticles3D.push_back(newP);
+					myParam.rParticles3D.push_back(newR);
+				}
 			}
 		}
 	}
@@ -1957,7 +2035,7 @@ void playBackLogic(Texture2D& particleBlurTex) {
 	if (myParam.colorVisuals.selectedColor && myVar.is3DMode && myVar.isPlaybackOn) {
 		for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
 			if (myParam.rParticles3D[i].isSelected) {
-				myParam.rParticles3D[i].color = { 255, 20,20, 255 };
+				myParam.rParticles3D[i].color = { 255, 20, 20, 255 };
 			}
 		}
 	}
@@ -2319,10 +2397,7 @@ void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myRayTracingTexture,
 
 	EndMode2D();
 
-
-
 	EndTextureMode();
-
 
 	//EVERYTHING INTENDED TO APPEAR WHILE RECORDING ABOVE
 
@@ -2374,6 +2449,10 @@ void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myRayTracingTexture,
 	// EVERYTHING NON-STATIC RELATIVE TO CAMERA ABOVE
 
 	// EVERYTHING STATIC RELATIVE TO CAMERA BELOW
+
+	//rayMarcher.initPixelGrid();
+
+	//rayMarcher.drawPixels();
 
 	if (!introActive) {
 		myUI.uiLogic(myParam, myVar, sph, save, geSound, lighting, field, ship);

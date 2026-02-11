@@ -525,6 +525,10 @@ void main() {
 	// Free compute shader memory
 	freeGPUMemory();
 
+	if (std::filesystem::exists(myVar.playbackPath)) {
+		std::filesystem::remove(myVar.playbackPath);
+	}
+
 	CloseWindow();
 
 
