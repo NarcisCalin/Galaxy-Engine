@@ -18,6 +18,14 @@
 
 #include "UX/screenCapture.h"
 
+struct PlaybackParticle {
+	glm::vec3 pos;
+	float previousSize;
+	float size;
+	uint32_t id;
+	Color color;
+};
+
 struct UpdateParameters {
 	std::vector<ParticlePhysics> pParticles;
 	std::vector<ParticleRendering> rParticles;
@@ -30,6 +38,11 @@ struct UpdateParameters {
 
 	std::vector<ParticlePhysics3D> pParticlesSelected3D;
 	std::vector<ParticleRendering3D> rParticlesSelected3D;
+
+	std::vector<ParticlePhysics3D> pParticles3DPlaybackResume;
+	std::vector<ParticleRendering3D> rParticles3DPlaybackResume;
+
+	std::vector<std::vector<PlaybackParticle>> playbackFrames;
 
 	std::vector<ParticleTrails> trailDots;
 
@@ -57,7 +70,7 @@ struct UpdateParameters {
 	RightClickSettings rightClickSettings;
 
 	Controls controls;
-
+	std::unordered_map<uint32_t, size_t> pParticleLookup;
 	ParticleDeletion particleDeletion;
 
 	ParticlesSpawning particlesSpawning;
@@ -314,4 +327,22 @@ struct UpdateVariables {
 	bool clipSelectedXInv = false;
 	bool clipSelectedYInv = false;
 	bool clipSelectedZInv = false;
+
+
+	bool playbackRecord = false;
+	int frames = 100;
+	int currentFrame = 0;
+
+	int keyframeTickInterval = 5;
+
+	float playbackProgress = 0.0f;
+	float playbackSpeed = 0.2f;
+
+	bool runPlayback = false;
+
+	bool deletePlayback = false;
+
+	bool isPlaybackOn = false;
+
+	float playbackParticlesSizeMult = 1.0f;
 };

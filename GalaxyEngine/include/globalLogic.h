@@ -68,6 +68,8 @@ void updateScene();
 
 void mode3D();
 
+void playBackLogic(Texture2D& particleBlurTex);
+
 void drawMode3DRecording(Texture2D& particleBlurTex);
 void drawMode3DNonRecording();
 

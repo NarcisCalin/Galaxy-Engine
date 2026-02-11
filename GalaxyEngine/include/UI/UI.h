@@ -64,6 +64,14 @@ public:
 	static bool buttonHelper(std::string label, std::string tooltip, bool& parameter, float sizeX, float sizeY, bool canDeactivateSelf, 
 		bool& isEnabled);
 
+	enum ExtraParams {
+		LogSlider
+	};
+
+	// Float Logarithmic Overload
+	static bool sliderHelper(std::string label, std::string tooltip, float& parameter, float minVal, float maxVal,
+		float sizeX, float sizeY, bool& isEnabled, int logarithmic);
+
 	static bool sliderHelper(std::string label, std::string tooltip, float& parameter, float minVal, float maxVal,
 		float sizeX, float sizeY, bool& isEnabled);
 

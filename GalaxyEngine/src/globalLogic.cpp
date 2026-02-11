@@ -1129,7 +1129,12 @@ void updateScene() {
 	myVar.G = 6.674e-11 * myVar.gravityMultiplier;
 
 	if (IO::shortcutPress(KEY_SPACE)) {
-		myVar.isTimePlaying = !myVar.isTimePlaying;
+		if (!myVar.isPlaybackOn) {
+			myVar.isTimePlaying = !myVar.isTimePlaying;
+		}
+		else {
+			myVar.runPlayback = !myVar.runPlayback;
+		}
 	}
 
 	if (myVar.timeFactor != 0.0f) {
@@ -1511,7 +1516,14 @@ void mode3D() {
 		}
 	}
 
-	if (myVar.timeFactor != 0.0f) {
+	if (!myParam.playbackFrames.empty() && !myVar.playbackRecord) {
+		myVar.isPlaybackOn = true;
+	}
+	else {
+		myVar.isPlaybackOn = false;
+	}
+
+	if (myVar.timeFactor != 0.0f && !myVar.isPlaybackOn) {
 		physics3D.integrateStart3D(myParam.pParticles3D, myParam.rParticles3D, myVar);
 
 		if (!myVar.isPeriodicBoundaryEnabled && !myVar.sphGround && !myVar.infiniteDomain) {
@@ -1519,7 +1531,7 @@ void mode3D() {
 		}
 	}
 
-	if (myVar.timeFactor != 0.0f && !myVar.naiveSIMD) {
+	if (myVar.timeFactor != 0.0f && !myVar.naiveSIMD && !myVar.isPlaybackOn) {
 		bb3D = boundingBox3D(myParam.pParticles3D);
 
 		globalNodes3D.clear();
@@ -1539,7 +1551,7 @@ void mode3D() {
 	myVar.halfDomain3DHeight = myVar.domainSize3D.y * 0.5f;
 	myVar.halfDomain3DDepth = myVar.domainSize3D.z * 0.5f;
 
-	if (myVar.drawQuadtree) {
+	if (myVar.drawQuadtree && !myVar.isPlaybackOn) {
 		for (uint32_t i = 0; i < globalNodes3D.size(); i++) {
 
 			Node3D& q = globalNodes3D[i];
@@ -1562,7 +1574,7 @@ void mode3D() {
 		myParam.colorVisuals.densityColor ||
 		myVar.isDensitySizeEnabled ||
 		myVar.isSPHEnabled ||
-		myParam.colorVisuals.densityColor && myVar.timeFactor > 0.0f && !myVar.isGravityFieldEnabled) {
+		myParam.colorVisuals.densityColor && myVar.timeFactor > 0.0f && !myVar.isGravityFieldEnabled && !myVar.isPlaybackOn) {
 
 		if (!myVar.hasAVX2) {
 			myParam.neighborSearch3DV2.newGrid(myParam.pParticles3D);
@@ -1589,7 +1601,7 @@ void mode3D() {
 		physics3D.idToIndexTable.clear();
 	}
 
-	if ((myVar.timeFactor != 0.0f /*&& myVar.gridExists*/)) {
+	if ((myVar.timeFactor != 0.0f /*&& myVar.gridExists*/) && !myVar.isPlaybackOn) {
 
 #pragma omp parallel for schedule(dynamic)
 		for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
@@ -1648,9 +1660,11 @@ void mode3D() {
 	myParam.particleSelection3D.deselection(myParam.rParticles3D);
 	myParam.particleSelection3D.selectedParticlesStoring(myParam);
 
-	myParam.densitySize.sizeByDensity(myParam.pParticles, myParam.rParticles, myParam.pParticles3D, myParam.rParticles3D,
-		myVar.isDensitySizeEnabled, myVar.isForceSizeEnabled,
-		myVar.particleSizeMultiplier, myVar.is3DMode);
+	if (!myVar.runPlayback) {
+		myParam.densitySize.sizeByDensity(myParam.pParticles, myParam.rParticles, myParam.pParticles3D, myParam.rParticles3D,
+			myVar.isDensitySizeEnabled, myVar.isForceSizeEnabled,
+			myVar.particleSizeMultiplier, myVar.is3DMode);
+	}
 
 	myParam.particleDeletion.deleteSelected(myParam.pParticles, myParam.rParticles, myParam.pParticles3D, myParam.rParticles3D, myVar.is3DMode);
 	myParam.particleDeletion.deleteStrays(myParam.pParticles, myParam.rParticles, myVar.isSPHEnabled, myParam.pParticles3D, myParam.rParticles3D, myVar.is3DMode);
@@ -1787,16 +1801,167 @@ void drawConstraints3D() {
 	}
 }
 
-struct PlaybackParticle {
-	glm::vec3 pos;
-	float size;
-	Color color;
+struct ParticleDepth {
+	int index;
+	float distSq;
 };
 
-std::vector<std::vector<PlaybackParticle>> pParticleFrames;
-size_t playbackFrame = 0;
+void playBackLogic(Texture2D& particleBlurTex) {
 
-int frames = 1000;
+	static std::vector<PlaybackParticle> targetState;
+	static std::unordered_map<uint32_t, int> targetMap;
+
+	if (!myParam.pParticles3D.empty() && myVar.playbackRecord && myVar.currentFrame % myVar.keyframeTickInterval == 0) {
+
+		std::vector<PlaybackParticle> playbackParticles;
+		playbackParticles.reserve(myParam.pParticles3D.size());
+
+		for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
+			ParticlePhysics3D& p = myParam.pParticles3D[i];
+			ParticleRendering3D& r = myParam.rParticles3D[i];
+
+			if (r.isDarkMatter) {
+				continue;
+			}
+
+			playbackParticles.emplace_back(PlaybackParticle{ p.pos, r.previousSize, r.size, p.id, r.color });
+		}
+		myParam.playbackFrames.push_back(playbackParticles);
+	}
+
+	myVar.currentFrame++;
+
+	if (!myParam.playbackFrames.empty() && !myVar.playbackRecord) {
+
+		targetState.clear();
+		targetMap.clear();
+
+		if (myVar.runPlayback) {
+			myVar.playbackProgress += myVar.playbackSpeed;
+		}
+
+		int indexA = (int)myVar.playbackProgress;
+		int indexB = indexA + 1;
+
+		if (indexB >= myParam.playbackFrames.size()) {
+			myVar.playbackProgress = 0.0f;
+			indexA = 0;
+			indexB = 1;
+		}
+
+		float t = myVar.playbackProgress - indexA;
+
+		const std::vector<PlaybackParticle>& frameA = myParam.playbackFrames[indexA];
+		const std::vector<PlaybackParticle>& frameB = myParam.playbackFrames[indexB];
+
+		std::unordered_map<uint32_t, const PlaybackParticle*> frameB_Lookup;
+		frameB_Lookup.reserve(frameB.size());
+		for (const auto& p : frameB) {
+			frameB_Lookup[p.id] = &p;
+		}
+
+#pragma omp parallel
+		{
+			std::vector<PlaybackParticle> localBuffer;
+			localBuffer.reserve(frameA.size() / omp_get_num_threads());
+
+#pragma omp for nowait
+			for (int i = 0; i < frameA.size(); ++i) {
+				const auto& pA = frameA[i];
+
+				auto it = frameB_Lookup.find(pA.id);
+				if (it != frameB_Lookup.end()) {
+					const PlaybackParticle* pB = it->second;
+
+					glm::vec3 finalPos;
+					finalPos.x = pA.pos.x + (pB->pos.x - pA.pos.x) * t;
+					finalPos.y = pA.pos.y + (pB->pos.y - pA.pos.y) * t;
+					finalPos.z = pA.pos.z + (pB->pos.z - pA.pos.z) * t;
+
+					float finalSize = pA.size + (pB->size - pA.size) * t;
+
+					Color finalColor;
+					finalColor.r = (unsigned char)(pA.color.r + (pB->color.r - pA.color.r) * t);
+					finalColor.g = (unsigned char)(pA.color.g + (pB->color.g - pA.color.g) * t);
+					finalColor.b = (unsigned char)(pA.color.b + (pB->color.b - pA.color.b) * t);
+					finalColor.a = (unsigned char)(pA.color.a + (pB->color.a - pA.color.a) * t);
+
+					localBuffer.push_back({ finalPos, pA.previousSize, finalSize, pA.id, finalColor });
+				}
+			}
+
+#pragma omp critical
+			{
+				targetState.insert(targetState.end(), localBuffer.begin(), localBuffer.end());
+			}
+		}
+
+		targetMap.reserve(targetState.size());
+		for (int i = 0; i < targetState.size(); i++) {
+			targetMap[targetState[i].id] = i;
+		}
+
+		std::vector<bool> targetUsed(targetState.size(), false);
+
+		for (int i = (int)myParam.pParticles3D.size() - 1; i >= 0; i--) {
+			uint32_t currentID = myParam.pParticles3D[i].id;
+
+			auto it = targetMap.find(currentID);
+
+			if (it != targetMap.end()) {
+				int targetIndex = it->second;
+				const PlaybackParticle& target = targetState[targetIndex];
+
+				myParam.pParticles3D[i].pos = target.pos;
+				myParam.rParticles3D[i].color = target.color;
+
+				myParam.rParticles3D[i].previousSize = target.previousSize;
+				myParam.rParticles3D[i].size = target.size * myVar.playbackParticlesSizeMult;
+
+				targetUsed[targetIndex] = true;
+			}
+			else {
+
+				size_t lastIdx = myParam.pParticles3D.size() - 1;
+
+				if (i != lastIdx) {
+					myParam.pParticles3D[i] = myParam.pParticles3D[lastIdx];
+					myParam.rParticles3D[i] = myParam.rParticles3D[lastIdx];
+				}
+
+				myParam.pParticles3D.pop_back();
+				myParam.rParticles3D.pop_back();
+			}
+		}
+
+		for (int i = 0; i < targetState.size(); i++) {
+			if (!targetUsed[i]) {
+				const PlaybackParticle& target = targetState[i];
+
+				ParticlePhysics3D newP;
+				newP.id = target.id;
+				newP.pos = target.pos;
+
+				ParticleRendering3D newR;
+				newR.color = target.color;
+
+				newR.previousSize = target.previousSize;
+				newR.size = target.size;
+
+				myParam.pParticles3D.push_back(newP);
+				myParam.rParticles3D.push_back(newR);
+			}
+		}
+	}
+
+	if (myParam.colorVisuals.selectedColor && myVar.is3DMode && myVar.isPlaybackOn) {
+		for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
+			if (myParam.rParticles3D[i].isSelected) {
+				myParam.rParticles3D[i].color = { 255, 20,20, 255 };
+			}
+		}
+	}
+}
 
 void drawMode3DRecording(Texture2D& particleBlurTex) {
 
@@ -1804,108 +1969,44 @@ void drawMode3DRecording(Texture2D& particleBlurTex) {
 
 	myParam.colorVisuals.particlesColorVisuals(myParam.pParticles, myParam.rParticles, myParam.pParticles3D, myParam.rParticles3D, myVar.isTempEnabled, myVar.timeFactor, myVar.is3DMode);
 
+	playBackLogic(particleBlurTex);
+
 	particleBoxClipping();
 
 	drawConstraints3D();
 
-	/*if (!myParam.pParticles3D.empty() && pParticleFrames.size() < frames) {
+	static std::vector<ParticleDepth> sortedParticles;
 
-		std::vector<PlaybackParticle> playbackParticles;
-
-		for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
-
-			ParticlePhysics3D& p = myParam.pParticles3D[i];
-			ParticleRendering3D& r = myParam.rParticles3D[i];
-
-			playbackParticles.emplace_back(PlaybackParticle{ p.pos, particleBlurTex.width * r.size, r.color });
-		}
-
-		pParticleFrames.push_back(playbackParticles);
+	size_t particleCount = myParam.pParticles3D.size();
+	if (sortedParticles.size() != particleCount) {
+		sortedParticles.resize(particleCount);
 	}
 
-	if (pParticleFrames.size() >= frames) {
+	Vector3 camPos = cam3D.position;
 
-		myParam.pParticles3D.clear();
-		myParam.rParticles3D.clear();
+#pragma omp parallel for
+	for (int i = 0; i < particleCount; ++i) {
+		const auto& p = myParam.pParticles3D[i];
 
-		if (playbackFrame >= pParticleFrames.size())
-			playbackFrame = 0;
+		Vector3 pPos = { p.pos.x, p.pos.y, p.pos.z };
 
-		std::vector<int> sortedIndices(pParticleFrames[playbackFrame].size());
-		for (int i = 0; i < sortedIndices.size(); ++i) {
-			sortedIndices[i] = i;
-		}
-
-		std::sort(sortedIndices.begin(), sortedIndices.end(), [&](int a, int b) {
-			Vector3 posA = { pParticleFrames[playbackFrame][a].pos.x, pParticleFrames[playbackFrame][a].pos.y, pParticleFrames[playbackFrame][a].pos.z };
-			Vector3 posB = { pParticleFrames[playbackFrame][b].pos.x, pParticleFrames[playbackFrame][b].pos.y, pParticleFrames[playbackFrame][b].pos.z };
-
-			float distA = Vector3DistanceSqr(posA, cam3D.position);
-			float distB = Vector3DistanceSqr(posB, cam3D.position);
-
-			return distA > distB;
-			});
-
-		Rectangle sourceRec = { 0.0f, 0.0f, (float)particleBlurTex.width, (float)particleBlurTex.height };
-		for (int idx : sortedIndices) {
-			PlaybackParticle& p = pParticleFrames[playbackFrame][idx];
-
-			float sizeValue = p.size;
-			Vector2 size = { sizeValue, sizeValue };
-			Vector2 origin = { sizeValue / 2.0f, sizeValue / 2.0f };
-
-			DrawBillboardPro(
-				cam3D,
-				particleBlurTex,
-				sourceRec,
-				{ p.pos.x, p.pos.y, p.pos.z },
-				cam3D.up,
-				size,
-				origin,
-				0.0f,
-				p.color
-			);
-		}
-
-		playbackFrame++;
-
-		size_t totalParticles = 0;
-
-		for (size_t i = 0; i < pParticleFrames.size(); i++) {
-			totalParticles += pParticleFrames[i].size();
-		}
-
-		size_t totalBytes = totalParticles * sizeof(PlaybackParticle);
-
-		double totalMB = totalBytes / (1024.0 * 1024.0);
-
-		std::cout << "Stored Physics Particle Data: "
-			<< totalMB << " MB\n";
-	}*/
-
-	std::vector<int> sortedIndices(myParam.pParticles3D.size());
-	for (int i = 0; i < sortedIndices.size(); ++i) {
-		sortedIndices[i] = i;
+		sortedParticles[i].index = i;
+		sortedParticles[i].distSq = Vector3DistanceSqr(pPos, camPos);
 	}
 
-	std::sort(sortedIndices.begin(), sortedIndices.end(), [&](int a, int b) {
-		Vector3 posA = { myParam.pParticles3D[a].pos.x, myParam.pParticles3D[a].pos.y, myParam.pParticles3D[a].pos.z };
-		Vector3 posB = { myParam.pParticles3D[b].pos.x, myParam.pParticles3D[b].pos.y, myParam.pParticles3D[b].pos.z };
-
-		float distA = Vector3DistanceSqr(posA, cam3D.position);
-		float distB = Vector3DistanceSqr(posB, cam3D.position);
-
-		return distA > distB;
+	std::sort(sortedParticles.begin(), sortedParticles.end(), [](const ParticleDepth& a, const ParticleDepth& b) {
+		return a.distSq > b.distSq;
 		});
 
 	Rectangle sourceRec = { 0.0f, 0.0f, (float)particleBlurTex.width, (float)particleBlurTex.height };
-	for (int idx : sortedIndices) {
+
+	for (const auto& item : sortedParticles) {
+		int idx = item.index;
+
 		ParticlePhysics3D& pParticle3D = myParam.pParticles3D[idx];
 		ParticleRendering3D& rParticle3D = myParam.rParticles3D[idx];
 
 		float sizeValue = particleBlurTex.width * rParticle3D.size;
-		Vector2 size = { sizeValue, sizeValue };
-		Vector2 origin = { sizeValue / 2.0f, sizeValue / 2.0f };
 
 		DrawBillboardPro(
 			cam3D,
@@ -1913,8 +2014,8 @@ void drawMode3DRecording(Texture2D& particleBlurTex) {
 			sourceRec,
 			{ pParticle3D.pos.x, pParticle3D.pos.y, pParticle3D.pos.z },
 			cam3D.up,
-			size,
-			origin,
+			{ sizeValue, sizeValue },
+			{ sizeValue / 2.0f, sizeValue / 2.0f },
 			0.0f,
 			rParticle3D.color
 		);

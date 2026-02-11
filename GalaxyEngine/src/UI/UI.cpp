@@ -710,18 +710,18 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			ImGui::Separator();
 			ImGui::Spacing();
 
-			sliderHelper("Max Force Color", "Controls the acceleration threshold to use the secondary color", myParam.colorVisuals.maxColorAcc, 1.0f, 400.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Max Velocity Color", "Controls the max velocity used to map the colors in the velocity color mode", myParam.colorVisuals.maxVel, 10.0f, 10000.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Max Shockwave Accel", "Controls the acceleration threshold to map the particle color in Shockwave color mode", myParam.colorVisuals.ShockwaveMaxAcc, 1.0f, 120.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Max Force Color", "Controls the acceleration threshold to use the secondary color", myParam.colorVisuals.maxColorAcc, 1.0f, 400.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+			sliderHelper("Max Velocity Color", "Controls the max velocity used to map the colors in the velocity color mode", myParam.colorVisuals.maxVel, 10.0f, 10000.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+			sliderHelper("Max Shockwave Accel", "Controls the acceleration threshold to map the particle color in Shockwave color mode", myParam.colorVisuals.ShockwaveMaxAcc, 1.0f, 120.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
 			ImGui::Separator();
-			sliderHelper("Max Turbulence Color", "Controls the turbulence threshold to use the secondary color", myParam.colorVisuals.maxColorTurbulence, 1.0f, 512.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Turbulence Fade Rate", "Controls how fast turbulence fades away", myParam.colorVisuals.turbulenceFadeRate, 0.00f, 1.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Turbulence Contrast", "Controls how much contrast turbulence color has", myParam.colorVisuals.turbulenceContrast, 0.1f, 4.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Max Turbulence Color", "Controls the turbulence threshold to use the secondary color", myParam.colorVisuals.maxColorTurbulence, 1.0f, 512.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+			sliderHelper("Turbulence Fade Rate", "Controls how fast turbulence fades away", myParam.colorVisuals.turbulenceFadeRate, 0.00f, 1.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+			sliderHelper("Turbulence Contrast", "Controls how much contrast turbulence color has", myParam.colorVisuals.turbulenceContrast, 0.1f, 4.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
 			buttonHelper("Turbulence Custom Colors", "Enables the use of primary and secondary colors for turbulence", myParam.colorVisuals.turbulenceCustomCol, 212.0f, 24.0f, true, enabled);
 			ImGui::Separator();
-			sliderHelper("Max Pressure Color", "Controls the max pressure used to map the colors in the pressure color mode", myParam.colorVisuals.maxPress, 100.0f, 100000.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Max Temperature Color", "Controls the max temperature used to map the colors in the temperature color mode", myParam.colorVisuals.tempColorMaxTemp, 10.0f, 50000.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Max Constraint Stress", "Controls the max constraint stress used to map the colors in the constraints stress color mode. If set to 0, it will set the max stress to the material's breaking limit", myVar.constraintMaxStressColor, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Max Pressure Color", "Controls the max pressure used to map the colors in the pressure color mode", myParam.colorVisuals.maxPress, 100.0f, 100000.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+			sliderHelper("Max Temperature Color", "Controls the max temperature used to map the colors in the temperature color mode", myParam.colorVisuals.tempColorMaxTemp, 10.0f, 50000.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+			sliderHelper("Max Constraint Stress", "Controls the max constraint stress used to map the colors in the constraints stress color mode. If set to 0, it will set the max stress to the material's breaking limit", myVar.constraintMaxStressColor, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
 
 			ImGui::Spacing();
 			ImGui::Separator();
@@ -731,11 +731,11 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			ImGui::Separator();
 			ImGui::Spacing();
 
-			sliderHelper("Max Dynamic Size", "Controls the maximum size particles can have when chaning size dynamically", myParam.densitySize.maxSize, 0.1f, 5.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Min Dynamic Size", "Controls the minimum size particles can have when chaning size dynamically", myParam.densitySize.minSize, 0.001f, 5.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Max Size Force", "Controls the acceleration threshold to map the particle size", myParam.densitySize.sizeAcc, 1.0f, 400.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Max Dynamic Size", "Controls the maximum size particles can have when chaning size dynamically", myParam.densitySize.maxSize, 0.1f, 5.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+			sliderHelper("Min Dynamic Size", "Controls the minimum size particles can have when chaning size dynamically", myParam.densitySize.minSize, 0.001f, 5.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+			sliderHelper("Max Size Force", "Controls the acceleration threshold to map the particle size", myParam.densitySize.sizeAcc, 1.0f, 400.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
 			sliderHelper("Max Size Neighbors", "Controls the neighbors threshold to map the particle size", myParam.densitySize.maxNeighbors, 1, 1000, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Particles Size", "Controls the size of all particles", myVar.particleSizeMultiplier, 0.0f, 5.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Particles Size", "Controls the size of all particles", myVar.particleSizeMultiplier, 0.0f, 5.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
 
 			ImGui::Spacing();
 			ImGui::Separator();
@@ -757,11 +757,11 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			ImGui::Spacing();
 
 			sliderHelper("Field Res", "Controls how much gravity affects the field colors", field.res, 50, 1000, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Gravity Display Threshold", "Controls how much gravity affects the field colors", field.gravityDisplayThreshold, 10.0f, 3000.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Gravity Display Softness", "Controls how soft the gravity display looks", field.gravityDisplaySoftness, 0.4f, 8.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Gravity Display Stretch", "Controls how contrasty the gravity display looks", field.gravityStretchFactor, 1.0f, 10000.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Gravity Display Threshold", "Controls how much gravity affects the field colors", field.gravityDisplayThreshold, 10.0f, 3000.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+			sliderHelper("Gravity Display Softness", "Controls how soft the gravity display looks", field.gravityDisplaySoftness, 0.4f, 8.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+			sliderHelper("Gravity Display Stretch", "Controls how contrasty the gravity display looks", field.gravityStretchFactor, 1.0f, 10000.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
 			buttonHelper("Gravity Custom Colors", "Enables the use of primary and secondary colors for the gravity field", field.gravityCustomColors, 212.0f, 24.0f, true, enabled);
-			sliderHelper("Gravity Custom Color Exp.", "Controls the exposure of the custom color mode for the gravity field", field.gravityExposure, 0.001f, 15.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Gravity Custom Color Exp.", "Controls the exposure of the custom color mode for the gravity field", field.gravityExposure, 0.001f, 15.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
 
 			ImGui::Spacing();
 			ImGui::Separator();
@@ -774,8 +774,6 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			sliderHelper("Path Prediction Length", "Controls how long is the predicted path", myVar.predictPathLength, 100, 2000, parametersSliderX, parametersSliderY, enabled);
 
 			bool isSPHDisabled = !myVar.isSPHEnabled;
-
-			sliderHelper("Random Mass multiplier", "Controls how much mass can vary for each particle", myVar.massScatter, 0.0f, 1.0f, parametersSliderX, parametersSliderY, isSPHDisabled);
 
 			static bool prevSPHState = false;
 			static bool prevMassMultiplierEnabled = false;
@@ -798,8 +796,6 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			prevSPHState = myVar.isSPHEnabled;
 
 			ImGui::Spacing();
-
-			buttonHelper("Mass Multiplier", "Decides if particles' masses should be inversely multiplied by the amount of particles multiplier", myParam.particlesSpawning.massMultiplierEnabled, 240.0f, 30.0f, true, isSPHDisabled);
 		}
 
 		if (bPhysicsSliders) {
@@ -822,7 +818,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			ImGui::Separator();
 			ImGui::Spacing();
 
-			sliderHelper("Theta", "Controls the quality of the gravity calculation. Higher means lower quality", myVar.theta, 0.1f, 5.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Theta", "Controls the quality of the gravity calculation. Higher means lower quality", myVar.theta, 0.1f, 5.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
 
 			if (!myVar.is3DMode) {
 				sliderHelper("Domain Width", "Controls the width of the global container", myVar.domainSize.x, 200.0f, 3840.0f, parametersSliderX, parametersSliderY, enabled);
@@ -842,9 +838,9 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			ImGui::Separator();
 			ImGui::Spacing();
 
-			sliderHelper("Time Scale", "Controls how fast time passes", myVar.timeStepMultiplier, 0.0f, 15.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Softening", "Controls the smoothness of the gravity forces", myVar.softening, 0.5f, 30.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Gravity Strength", "Controls how much particles attract eachother", myVar.gravityMultiplier, 0.0f, 100.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Time Scale", "Controls how fast time passes", myVar.timeStepMultiplier, 0.0f, 15.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+			sliderHelper("Softening", "Controls the smoothness of the gravity forces", myVar.softening, 0.5f, 30.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+			sliderHelper("Gravity Strength", "Controls how much particles attract eachother", myVar.gravityMultiplier, 0.0f, 100.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
 
 			ImGui::Spacing();
 			ImGui::Separator();
@@ -854,9 +850,9 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			ImGui::Separator();
 			ImGui::Spacing();
 
-			sliderHelper("Ambient Temperature", "Controls the desired temperature of the scene in Kelvin. 1 is near absolute zero. The default value is set just high enough to allow liquid water", myVar.ambientTemp, 1.0f, 2500.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Ambient Heat Rate", "Controls how fast particles' temperature try to match ambient temperature", myVar.globalAmbientHeatRate, 0.0f, 10.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Heat Conductivity Multiplier", "Controls the global heat conductivity of particles", myVar.globalHeatConductivity, 0.001f, 1.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Ambient Temperature", "Controls the desired temperature of the scene in Kelvin. 1 is near absolute zero. The default value is set just high enough to allow liquid water", myVar.ambientTemp, 1.0f, 2500.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+			sliderHelper("Ambient Heat Rate", "Controls how fast particles' temperature try to match ambient temperature", myVar.globalAmbientHeatRate, 0.0f, 10.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+			sliderHelper("Heat Conductivity Multiplier", "Controls the global heat conductivity of particles", myVar.globalHeatConductivity, 0.001f, 1.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
 
 			ImGui::Spacing();
 			ImGui::Separator();
@@ -866,8 +862,8 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			ImGui::Separator();
 			ImGui::Spacing();
 
-			sliderHelper("Constraints Stiffness Multiplier", "Controls the global stiffness multiplier for constraints", myVar.globalConstraintStiffnessMult, 0.001f, 3.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Constraints Resistance Multiplier", "Controls the global resistance multiplier for constraints", myVar.globalConstraintResistance, 0.001f, 30.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Constraints Stiffness Multiplier", "Controls the global stiffness multiplier for constraints", myVar.globalConstraintStiffnessMult, 0.001f, 3.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+			sliderHelper("Constraints Resistance Multiplier", "Controls the global resistance multiplier for constraints", myVar.globalConstraintResistance, 0.001f, 30.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
 
 			ImGui::Spacing();
 			ImGui::Separator();
@@ -877,13 +873,13 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			ImGui::Separator();
 			ImGui::Spacing();
 
-			sliderHelper("Fluid Vertical Gravity", "Controls the vertical gravity strength in Fluid Ground Mode", myVar.verticalGravity, 0.0f, 10.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Fluid Mass Multiplier", "Controls the fluid mass of particles", myVar.mass, 0.005f, 0.15f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Fluid Viscosity", "Controls how viscous particles are", myVar.viscosity, 0.01f, 15.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Fluid Stiffness", "Controls how stiff particles are", myVar.stiffMultiplier, 0.01f, 15.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Fluid Cohesion", "Controls how sticky particles are", myVar.cohesionCoefficient, 0.0f, 10.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Fluid Delta", "Controls the scaling factor in the pressure solver to enforce fluid incompressibility", myVar.delta, 500.0f, 20000.0f, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Fluid Max Velocity", "Controls the maximum velocity a particle can have in Fluid mode", myVar.sphMaxVel, 0.0f, 2000.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Fluid Vertical Gravity", "Controls the vertical gravity strength in Fluid Ground Mode", myVar.verticalGravity, 0.0f, 10.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+			sliderHelper("Fluid Mass Multiplier", "Controls the fluid mass of particles", myVar.mass, 0.005f, 0.15f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+			sliderHelper("Fluid Viscosity", "Controls how viscous particles are", myVar.viscosity, 0.01f, 15.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+			sliderHelper("Fluid Stiffness", "Controls how stiff particles are", myVar.stiffMultiplier, 0.01f, 15.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+			sliderHelper("Fluid Cohesion", "Controls how sticky particles are", myVar.cohesionCoefficient, 0.0f, 10.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+			sliderHelper("Fluid Delta", "Controls the scaling factor in the pressure solver to enforce fluid incompressibility", myVar.delta, 500.0f, 20000.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+			sliderHelper("Fluid Max Velocity", "Controls the maximum velocity a particle can have in Fluid mode", myVar.sphMaxVel, 0.0f, 2000.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
 		}
 
 		if (bSoundWindow) {
@@ -935,17 +931,103 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			buttonHelper("Pause After Recording", "Pauses the simulation after recording is finished", myVar.pauseAfterRecording, -1.0f, settingsButtonY, true, enabled);
 			buttonHelper("Clean Scene After Recording", "Clears all particles from the scene after recording is finished", myVar.cleanSceneAfterRecording, -1.0f, settingsButtonY, true, enabled);
 
-			ImGui::Separator(); // Add a separator
+			ImGui::Separator();
 
 			bool isEnabled = true;
-			if (myVar.isRecording) { // Check if recording is active
-				isEnabled = false; // Disable the slider
+			if (myVar.isRecording) {
+				isEnabled = false;
 			}
 			sliderHelper("Recording Time Limit", "Set a time limit for the recording. 0 means no limit.", myVar.recordingTimeLimit, 0.0f, 60.0f, parametersSliderX, parametersSliderY, isEnabled);
 
 
-			ImGui::GetStyle().ItemSpacing.y =
-				oldSpacingY; // End the recording settings buttons spacing
+			ImGui::GetStyle().ItemSpacing.y = oldSpacingY;
+
+			ImGui::Spacing();
+			ImGui::Separator();
+
+			ImGui::TextColored(UpdateVariables::colMenuInformation, "Simulation Recording");
+
+			ImGui::Separator();
+			ImGui::Spacing();
+
+			std::string buttonText;
+			std::string tooltipText;
+
+			if (myVar.playbackRecord)
+			{
+				buttonText = "Stop Recording";
+				tooltipText = "Stop simulation recording";
+			}
+			else if (!myParam.playbackFrames.empty())
+			{
+				buttonText = "Resume Simulation";
+				tooltipText = "Resume recording the simulation";
+			}
+			else
+			{
+				buttonText = "Record Simulation";
+				tooltipText = "Start recording simulation frames";
+			}
+
+			if (buttonHelper(buttonText.c_str(), tooltipText.c_str(), myVar.playbackRecord, -1.0f, settingsButtonY, true, enabled)) {
+				
+				if (!myVar.playbackRecord) {
+					myVar.runPlayback = true;
+
+					std::swap(myParam.pParticles3D, myParam.pParticles3DPlaybackResume);
+					std::swap(myParam.rParticles3D, myParam.rParticles3DPlaybackResume);
+				}
+
+
+				if (!myParam.playbackFrames.empty() && myVar.playbackRecord) {
+
+					std::swap(myParam.pParticles3D, myParam.pParticles3DPlaybackResume);
+					std::swap(myParam.rParticles3D, myParam.rParticles3DPlaybackResume);
+
+					myParam.pParticles3DPlaybackResume.clear();
+					myParam.rParticles3DPlaybackResume.clear();
+				}
+			}
+
+			bool enablePlaybackControls = false;
+
+			if (!myParam.playbackFrames.empty() && !myVar.playbackRecord) {
+				enablePlaybackControls = true;
+			}
+
+			if (myVar.playbackRecord) {
+				myVar.runPlayback = false;
+			}
+
+			buttonHelper("Run Playback", "Plays the recorded simulation", myVar.runPlayback, -1.0f, settingsButtonY, true, enablePlaybackControls);
+
+			sliderHelper("Playback speed", "Sets how fast the playback is played", myVar.playbackSpeed, 0.0f, 20.0f, parametersSliderX, parametersSliderY, enablePlaybackControls, LogSlider);
+
+			if (sliderHelper("Playback Timeline", "Scroll through the playback frames", myVar.playbackProgress, 0.0f, static_cast<float>(myParam.playbackFrames.size() - 2), parametersSliderX, parametersSliderY, enablePlaybackControls)) {
+				myVar.runPlayback = false;
+			}
+
+			sliderHelper("Playback Particles Size", "Modifies the size of playback particles", myVar.playbackParticlesSizeMult, 0.0f, 5.0f, parametersSliderX, parametersSliderY, enablePlaybackControls, LogSlider);
+
+			if (buttonHelper("Delete Playback", "Deletes playback and resumes simulation", myVar.deletePlayback, -1.0f, settingsButtonY, true, enabled) && !myVar.playbackRecord) {
+				myVar.runPlayback = false;
+
+				myParam.playbackFrames.clear();
+
+				std::swap(myParam.pParticles3D, myParam.pParticles3DPlaybackResume);
+				std::swap(myParam.rParticles3D, myParam.rParticles3DPlaybackResume);
+
+				myParam.pParticles3DPlaybackResume.clear();
+				myParam.rParticles3DPlaybackResume.clear();
+
+				myVar.deletePlayback = false;
+			}
+		
+			size_t totalBytes = 0;
+			for (const auto& frame : myParam.playbackFrames) totalBytes += frame.size() * sizeof(PlaybackParticle);
+			double totalMB = totalBytes / (1024.0 * 1024.0);
+
+			ImGui::Text("Total Space: %.2f MB", totalMB);
 		}
 
 		if (bStatsWindow) {
@@ -1042,7 +1124,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			ImGui::Separator();
 			ImGui::Spacing();
 
-			if (sliderHelper("Light Gain", "Controls lights brightness", lighting.lightGain, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled)) {
+			if (sliderHelper("Light Gain", "Controls lights brightness", lighting.lightGain, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled, LogSlider)) {
 				lighting.isSliderLightGain = true;
 			}
 
@@ -1324,8 +1406,13 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		ImGui::Separator();
 		ImGui::Spacing();
 
-		sliderHelper("Visible P. Amount Multiplier", "Controls the spawn amount of visible particles", myVar.particleAmountMultiplier, 0.1f, 100.0f, parametersSliderX, parametersSliderY, enabled);
-		sliderHelper("DM P. Amount Multiplier", "Controls the spawn amount of dark matter particles", myVar.DMAmountMultiplier, 0.1f, 100.0f, parametersSliderX, parametersSliderY, enabled);
+		sliderHelper("Visible P. Amount Multiplier", "Controls the spawn amount of visible particles", myVar.particleAmountMultiplier, 0.1f, 100.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+		sliderHelper("DM P. Amount Multiplier", "Controls the spawn amount of dark matter particles", myVar.DMAmountMultiplier, 0.1f, 100.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+
+		bool isSPHDisabled = !myVar.isSPHEnabled;
+
+		sliderHelper("Random Mass multiplier", "Controls how much mass can vary for each particle", myVar.massScatter, 0.0f, 1.0f, parametersSliderX, parametersSliderY, isSPHDisabled);
+		buttonHelper("Mass Multiplier", "Decides if particles' masses should be inversely multiplied by the amount of particles multiplier", myParam.particlesSpawning.massMultiplierEnabled, 240.0f, 30.0f, true, isSPHDisabled);
 
 		if (myVar.toolSpawnGalaxy) {
 			if(!myVar.is3DMode){
@@ -1338,8 +1425,8 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				ImGui::Separator();
 				ImGui::Spacing();
 
-				sliderHelper("Galaxy Outer Radius", "Controls the outer limit of the galaxy", myParam.particlesSpawning.outerRadius, 10.0f, 500.0f, parametersSliderX, parametersSliderY, enabled);
-				sliderHelper("Galaxy Radius", "Controls the radius of the galaxy core", myParam.particlesSpawning.scaleLength, 10.0f, 500.0f, parametersSliderX, parametersSliderY, enabled);
+				sliderHelper("Galaxy Outer Radius", "Controls the outer limit of the galaxy", myParam.particlesSpawning.outerRadius, 10.0f, 500.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+				sliderHelper("Galaxy Radius", "Controls the radius of the galaxy core", myParam.particlesSpawning.scaleLength, 10.0f, 500.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
 
 				ImGui::Spacing();
 				ImGui::Separator();
@@ -1349,8 +1436,8 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				ImGui::Separator();
 				ImGui::Spacing();
 
-				sliderHelper("DM Halo Size", "Controls the size of the galaxy dark matter halo", myParam.particlesSpawning.outerRadiusDM, 500.0f, 12000.0f, parametersSliderX, parametersSliderY, enabled);
-				sliderHelper("DM Halo Core Size", "Controls the size of the galaxy dark matter halo core", myParam.particlesSpawning.radiusCoreDM, 0.5f, 15.0f, parametersSliderX, parametersSliderY, enabled);
+				sliderHelper("DM Halo Size", "Controls the size of the galaxy dark matter halo", myParam.particlesSpawning.outerRadiusDM, 500.0f, 12000.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+				sliderHelper("DM Halo Core Size", "Controls the size of the galaxy dark matter halo core", myParam.particlesSpawning.radiusCoreDM, 0.5f, 15.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
 			}
 			else {
 				ImGui::Spacing();
@@ -1372,9 +1459,9 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				ImGui::Separator();
 				ImGui::Spacing();
 				
-				sliderHelper("Galaxy Outer Radius", "Controls the outer limit of the galaxy", myParam.particlesSpawning3D.outerRadius, 10.0f, 500.0f, parametersSliderX, parametersSliderY, enabled);
-				sliderHelper("Galaxy Core Radius", "Controls the radius of the galaxy core", myParam.particlesSpawning3D.radiusCore, 0.1f, 700.0f, parametersSliderX, parametersSliderY, enabled);
-				sliderHelper("Galaxy Thickness", "Controls the thickness of the galaxy", myParam.particlesSpawning3D.diskThickness, 0.05f, 12.0f, parametersSliderX, parametersSliderY, enabled);
+				sliderHelper("Galaxy Outer Radius", "Controls the outer limit of the galaxy", myParam.particlesSpawning3D.outerRadius, 10.0f, 500.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+				sliderHelper("Galaxy Core Radius", "Controls the radius of the galaxy core", myParam.particlesSpawning3D.radiusCore, 0.1f, 700.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+				sliderHelper("Galaxy Thickness", "Controls the thickness of the galaxy", myParam.particlesSpawning3D.diskThickness, 0.05f, 12.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
 				
 				ImGui::Spacing();
 				ImGui::Separator();
@@ -1384,8 +1471,8 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				ImGui::Separator();
 				ImGui::Spacing();
 
-				sliderHelper("Galaxy Bulge Size", "Controls the size of the galaxy central bulge", myParam.particlesSpawning3D.bulgeSize, 10.0f, 4000.0f, parametersSliderX, parametersSliderY, enabled);
-				sliderHelper("Galaxy Bulge Thickness", "Controls the thickness of the galaxy central bulge", myParam.particlesSpawning3D.bulgeThickness, 0.5f, 15.0f, parametersSliderX, parametersSliderY, enabled);
+				sliderHelper("Galaxy Bulge Size", "Controls the size of the galaxy central bulge", myParam.particlesSpawning3D.bulgeSize, 10.0f, 4000.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+				sliderHelper("Galaxy Bulge Thickness", "Controls the thickness of the galaxy central bulge", myParam.particlesSpawning3D.bulgeThickness, 0.5f, 15.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
 				
 				ImGui::Spacing();
 				ImGui::Separator();
@@ -1395,8 +1482,8 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				ImGui::Separator();
 				ImGui::Spacing();
 
-				sliderHelper("DM Halo Size", "Controls the size of the galaxy dark matter halo", myParam.particlesSpawning3D.outerRadiusDM, 500.0f, 12000.0f, parametersSliderX, parametersSliderY, enabled);
-				sliderHelper("DM Halo Core Size", "Controls the size of the galaxy dark matter halo core", myParam.particlesSpawning3D.radiusCoreDM, 0.5f, 15.0f, parametersSliderX, parametersSliderY, enabled);
+				sliderHelper("DM Halo Size", "Controls the size of the galaxy dark matter halo", myParam.particlesSpawning3D.outerRadiusDM, 500.0f, 12000.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+				sliderHelper("DM Halo Core Size", "Controls the size of the galaxy dark matter halo core", myParam.particlesSpawning3D.radiusCoreDM, 0.5f, 15.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
 			}
 		}
 
@@ -1410,7 +1497,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			ImGui::Separator();
 			ImGui::Spacing();
 
-			sliderHelper("Black Hole Init Mass", "Controls the mass of black holes when spawned", myVar.heavyParticleWeightMultiplier, 0.005f, 15.0f, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Black Hole Init Mass", "Controls the mass of black holes when spawned", myVar.heavyParticleWeightMultiplier, 0.005f, 15.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
 		}
 	}
 
@@ -1452,8 +1539,8 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 		ImGui::EndTabItem();
 
-		sliderHelper("Gravity Brush Force", "Controls the force of the gravity brush", myVar.brushAttractForceMult, 0.01f, 10.0f, parametersSliderX, parametersSliderY, enabled);
-		sliderHelper("Spin Brush Force", "Controls the force of the spin brush", myVar.brushSpinForceMult, 0.01f, 10.0f, parametersSliderX, parametersSliderY, enabled);
+		sliderHelper("Gravity Brush Force", "Controls the force of the gravity brush", myVar.brushAttractForceMult, 0.01f, 10.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+		sliderHelper("Spin Brush Force", "Controls the force of the spin brush", myVar.brushSpinForceMult, 0.01f, 10.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
 	}
 
 	// Optics tab
@@ -1568,7 +1655,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 		buttonHelper("Enable Spaceship", "Enables controlling particles", ship.isShipEnabled, -1.0f, settingsButtonY, true, enabled);
 		buttonHelper("Ship Gas", "Enables gas particles coming from the ship when controlling particles", myVar.isShipGasEnabled, -1.0f, settingsButtonY, true, enabled);
-		sliderHelper("Spaceship Acceleration", "Controls the acceleration of the spaceship when controlling particles",ship.acceleration, 1.0f, 16.0f, parametersSliderX, parametersSliderY, enabled);
+		sliderHelper("Spaceship Acceleration", "Controls the acceleration of the spaceship when controlling particles",ship.acceleration, 1.0f, 16.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
 
 		ImGui::EndTabItem();
 	}
@@ -2163,7 +2250,7 @@ bool UI::buttonHelper(std::string label, std::string tooltip, bool& parameter,
 
 
 bool UI::sliderHelper(std::string label, std::string tooltip, float& parameter, float minVal, float maxVal,
-	float sizeX, float sizeY, bool& isEnabled) {
+	float sizeX, float sizeY, bool& isEnabled, int logarithmic) {
 
 	bool isSliderUsed = false;
 
@@ -2197,6 +2284,185 @@ bool UI::sliderHelper(std::string label, std::string tooltip, float& parameter, 
 	ImGui::Text("%s", label.c_str());
 
 	if (ImGui::SliderFloat(("##" + label).c_str(), &parameter, minVal, maxVal, "%.3f", ImGuiSliderFlags_Logarithmic)) {
+		isSliderUsed = true;
+	}
+
+	std::vector<Sound>* soundPool = nullptr;
+
+	static bool hasBeenPressed = false;
+
+	if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+
+		hasBeenPressed = true;
+
+		soundPool = &GESound::soundButtonEnablePool;
+
+		if (soundPool && !soundPool->empty()) {
+			bool played = false;
+
+			for (Sound& sound : *soundPool) {
+				if (!IsSoundPlaying(sound)) {
+					PlaySound(sound);
+					played = true;
+					break;
+				}
+			}
+
+			if (!played) {
+				PlaySound(soundPool->back());
+			}
+		}
+	}
+
+	if (hasBeenPressed && ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
+
+		soundPool = &GESound::soundButtonDisablePool;
+
+		if (soundPool && !soundPool->empty()) {
+			bool played = false;
+
+			for (Sound& sound : *soundPool) {
+				if (!IsSoundPlaying(sound)) {
+					PlaySound(sound);
+					played = true;
+					break;
+				}
+			}
+
+			if (!played) {
+				PlaySound(soundPool->back());
+			}
+		}
+
+		hasBeenPressed = false;
+	}
+
+	static float prevValue = parameter;
+	static bool wasPlaying = false;
+	static ImVec2 lastMousePos = ImGui::GetMousePos();
+
+	if (ImGui::IsItemActive()) {
+		ImVec2 currentMousePos = ImGui::GetMousePos();
+		float mouseDelta = abs(currentMousePos.x - lastMousePos.x) + abs(currentMousePos.y - lastMousePos.y);
+
+		if (mouseDelta > 2.0f) {
+			if (!wasPlaying || parameter != prevValue) {
+				soundPool = &GESound::soundSliderSlidePool;
+				if (soundPool && !soundPool->empty()) {
+					bool played = false;
+					for (Sound& sound : *soundPool) {
+						if (!IsSoundPlaying(sound)) {
+							PlaySound(sound);
+							played = true;
+							wasPlaying = true;
+							lastMousePos = currentMousePos;
+							break;
+						}
+					}
+					if (!played) {
+						PlaySound(soundPool->back());
+						wasPlaying = true;
+						lastMousePos = currentMousePos;
+					}
+				}
+			}
+		}
+		prevValue = parameter;
+	}
+	else {
+		wasPlaying = false;
+	}
+
+	bool isHovered = ImGui::IsItemHovered();
+
+	if (isHovered) {
+		ImGui::SetTooltip("%s", tooltip.c_str());
+
+		int randSoundNum = rand() % 3;
+
+		if (!hoverStates[sliderId]) {
+			std::vector<Sound>* soundPool = nullptr;
+
+			switch (randSoundNum) {
+			case 0:
+				soundPool = &GESound::soundButtonHover1Pool;
+				break;
+			case 1:
+				soundPool = &GESound::soundButtonHover2Pool;
+				break;
+			case 2:
+				soundPool = &GESound::soundButtonHover3Pool;
+				break;
+			}
+
+			if (soundPool && !soundPool->empty()) {
+				bool played = false;
+
+				for (Sound& sound : *soundPool) {
+					if (!IsSoundPlaying(sound)) {
+						PlaySound(sound);
+						played = true;
+						break;
+					}
+				}
+
+				if (!played) {
+					PlaySound(soundPool->back());
+				}
+			}
+		}
+	}
+
+	hoverStates[sliderId] = isHovered;
+
+	if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+		parameter = defaultValues[sliderId];
+
+		isSliderUsed = true;
+	}
+
+	if (!isEnabled) {
+		ImGui::EndDisabled();
+	}
+
+	return isSliderUsed;
+}
+
+bool UI::sliderHelper(std::string label, std::string tooltip, float& parameter, float minVal, float maxVal,
+	float sizeX, float sizeY, bool& isEnabled) {
+
+	bool isSliderUsed = false;
+
+	ImGuiID sliderId = ImGui::GetID(label.c_str());
+	static std::unordered_map<ImGuiID, bool> hoverStates;
+	static std::unordered_map<ImGuiID, float> defaultValues;
+
+	if (!isEnabled) {
+		ImGui::BeginDisabled();
+	}
+
+	if (defaultValues.find(sliderId) == defaultValues.end()) {
+		defaultValues[sliderId] = parameter;
+	}
+
+	ImVec2 sliderSize;
+
+	if (sizeX > 0.0f && sizeY > 0.0f) {
+		sliderSize = ImVec2(sizeX, sizeY);
+	}
+	else if (sizeX < 0.0f && sizeY > 0.0f) {
+		sliderSize = ImVec2(ImGui::GetContentRegionAvail().x, sizeY);
+	}
+	else if (sizeX > 0.0f && sizeY < 0.0f) {
+		sliderSize = ImVec2(sizeX, ImGui::GetContentRegionAvail().y);
+	}
+	else {
+		sliderSize = ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y);
+	}
+
+	ImGui::Text("%s", label.c_str());
+
+	if (ImGui::SliderFloat(("##" + label).c_str(), &parameter, minVal, maxVal, "%.3f")) {
 		isSliderUsed = true;
 	}
 
