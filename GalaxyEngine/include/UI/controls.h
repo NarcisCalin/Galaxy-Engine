@@ -14,7 +14,7 @@ struct Controls {
 
 	void showInfo(bool& fullscreen);
 
-	std::array<std::string, 51> controlsArray = {
+	std::array<std::string, 57> controlsArray = {
 	"----PARTICLES CREATION----",
 	"1. Hold MMB: Paint particles",
 	"2. Hold 1 and Drag: Create big galaxy",
@@ -38,6 +38,12 @@ struct Controls {
 	"12. Z: Center camera on selected particles",
 	"13. F: Reset camera ",
 	"14. D: Deselect all particles",
+	"",
+	"----3D CAMERA----",
+	"1. Orbit with RMB",
+	"2. Pan with RMB + ALT",
+	"3. Zoom with mouse wheel",
+	"4. Use arrows to move",
 	"",
 	"----UTILITY----",
 	"1. TAB: Toggle fullscreen",

@@ -348,5 +348,11 @@ struct UpdateVariables {
 
 	bool playBackOnMemory = false;
 
+	bool firstPerson = false;
+
 	std::string playbackPath = "playbackTemp/playback.bin";
+
+	bool lowResRayMarching = false;
+
+	bool isRayMarcherOn = false;
 };

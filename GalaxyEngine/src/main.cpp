@@ -248,9 +248,15 @@ void main() {
 	skybox.materials[0].shader = LoadShader(TextFormat("Shaders/skybox.vs", GLSL_VERSION),
 		TextFormat("Shaders/skybox.fs", GLSL_VERSION));
 
-	SetShaderValue(skybox.materials[0].shader, GetShaderLocation(skybox.materials[0].shader, "environmentMap"), (int[1]) { MATERIAL_MAP_CUBEMAP }, SHADER_UNIFORM_INT);
-	SetShaderValue(skybox.materials[0].shader, GetShaderLocation(skybox.materials[0].shader, "doGamma"), (int[1]) 0, SHADER_UNIFORM_INT);
-	SetShaderValue(skybox.materials[0].shader, GetShaderLocation(skybox.materials[0].shader, "vflipped"), (int[1]) 0, SHADER_UNIFORM_INT);
+	int environmentMap = MATERIAL_MAP_CUBEMAP;
+	SetShaderValue(skybox.materials[0].shader, GetShaderLocation(skybox.materials[0].shader, "environmentMap"), &environmentMap, SHADER_UNIFORM_INT);
+
+	int doGamma = 0;
+	SetShaderValue(skybox.materials[0].shader, GetShaderLocation(skybox.materials[0].shader, "doGamma"), &doGamma, SHADER_UNIFORM_INT);
+
+	int vflipped = 0;
+	SetShaderValue(skybox.materials[0].shader, GetShaderLocation(skybox.materials[0].shader, "vflipped"), &vflipped, SHADER_UNIFORM_INT);
+
 
 	Image faces[6] = {
 		LoadImage("Textures/sky_pos_x.png"),   // +X
@@ -305,7 +311,7 @@ void main() {
 
 		if (myVar.is3DMode) {
 
-			BeginMode3D(myParam.myCamera3D.cameraLogic(save.loadFlag, myVar.isMouseNotHoveringUI));
+			BeginMode3D(myParam.myCamera3D.cameraLogic(save.loadFlag, myVar.isMouseNotHoveringUI, myVar.firstPerson, ship.isShipEnabled));
 
 			rlDisableBackfaceCulling();
 			rlDisableDepthMask();

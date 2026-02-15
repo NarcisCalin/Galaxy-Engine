@@ -83,6 +83,10 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 	SimilarTypeButton::buttonIterator(gpuSimd, -1.0f, settingsButtonY, true, enabled);
 
+	if (myVar.is3DMode) {
+		myVar.isGPUEnabled = false;
+	}
+
 	if (buttonHelper("3D Mode (BETA)", "Enables 3D simulation", myVar.is3DMode, -1.0f, settingsButtonY, true, enabled)) {
 		myParam.pParticles.clear();
 		myParam.rParticles.clear();
@@ -485,10 +489,17 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	ImGui::Separator();
 	ImGui::Spacing();
 
-	if (buttonHelper("Gravity Field", "Enables the gravity field visualization mode (IT IS RECOMMENDED TO USE SMALLER DOMAIN SIZES)", myVar.isGravityFieldEnabled, -1.0f, settingsButtonY, true, enabled)) {
+	bool isNot3DMode = !myVar.is3DMode;
+
+	if (isNot3DMode) {
+		myVar.isGravityFieldEnabled = false;
+		myVar.gravityFieldDMParticles = false;
+	}
+
+	if (buttonHelper("Gravity Field", "Enables the gravity field visualization mode (IT IS RECOMMENDED TO USE SMALLER DOMAIN SIZES)", myVar.isGravityFieldEnabled, -1.0f, settingsButtonY, true, isNot3DMode)) {
 		field.computeField = true;
 	}
-	buttonHelper("DM Particles", "Enables ignores Dark Matter particles for the gravity field", myVar.gravityFieldDMParticles, -1.0f, settingsButtonY, true, enabled);
+	buttonHelper("DM Particles", "Enables ignores Dark Matter particles for the gravity field", myVar.gravityFieldDMParticles, -1.0f, settingsButtonY, true, isNot3DMode);
 
 	ImGui::Spacing();
 	ImGui::Separator();
@@ -671,6 +682,18 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				myParam.colorVisuals.sColor.b = secondaryColors.b;
 				myParam.colorVisuals.sColor.a = secondaryColors.a;
 			}
+
+			ImGui::Spacing();
+			ImGui::Separator();
+
+			ImGui::TextColored(UpdateVariables::colMenuInformation, "Camera");
+
+			ImGui::Separator();
+			ImGui::Spacing();
+
+			buttonHelper("First Person Camera", "Enables first person mode. Use the arrow buttons to move", myVar.firstPerson, 240.0f, 30.0f, true, enabled);
+
+			sliderHelper("Camera Arrows Speed", "Controls the speed of the camera when moving with arrows", myParam.myCamera3D.arrowMoveSpeed, 0.001f, 5000.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
 
 			ImGui::Spacing();
 			ImGui::Separator();

@@ -171,34 +171,24 @@ void SceneCamera::hasCamMoved() {
 
 // ---- 3D IMPLEMENTATION ---- //
 
-Camera3D SceneCamera3D::cameraLogic(bool& isLoading, bool& isMouseNotHoveringUI) {
+Camera3D SceneCamera3D::cameraLogic(bool& isLoading, bool& isMouseNotHoveringUI, bool& firstPerson, bool& isShipEnabled) {
 
-	if (isMouseNotHoveringUI && IO::mouseDown(1) && IO::shortcutDown(KEY_LEFT_ALT)) {
+	if (isMouseNotHoveringUI && IO::mouseDown(1) && IO::shortcutDown(KEY_LEFT_ALT) && !firstPerson) {
 		Vector2 mouseDelta = GetMouseDelta();
-
 		float panSpeed = distance * 0.002f;
-
-		float radX = angleX * DEG2RAD;
-		float radY = angleY * DEG2RAD;
-
-		Vector3 forwardVec;
-		forwardVec.x = cosf(radY) * sinf(radX);
-		forwardVec.y = sinf(radY);
-		forwardVec.z = cosf(radY) * cosf(radX);
-		forwardVec = Vector3Normalize(forwardVec);
-
-		Vector3 worldUp = { 0.0f, 1.0f, 0.0f };
-		Vector3 rightVec = Vector3CrossProduct(worldUp, forwardVec);
-		rightVec = Vector3Normalize(rightVec);
-
-		Vector3 upVec = Vector3CrossProduct(forwardVec, rightVec);
-		upVec = Vector3Normalize(upVec);
-
-		Vector3 moveRight = Vector3Scale(rightVec, -mouseDelta.x * panSpeed);
-		Vector3 moveUp = Vector3Scale(upVec, mouseDelta.y * panSpeed);
-
+		float radNormX = angleX * DEG2RAD;
+		float radNormY = angleY * DEG2RAD;
+		camNormal.x = cosf(radNormY) * sinf(radNormX);
+		camNormal.y = sinf(radNormY);
+		camNormal.z = cosf(radNormY) * cosf(radNormX);
+		camNormal = glm::normalize(camNormal);
+		camRight = glm::cross(worldUp, camNormal);
+		camRight = glm::normalize(camRight);
+		camUp = glm::cross(camNormal, camRight);
+		camUp = glm::normalize(camUp);
+		Vector3 moveRight = Vector3Scale({ camRight.x,camRight.y, camRight.z }, -mouseDelta.x * panSpeed);
+		Vector3 moveUp = Vector3Scale({ camUp.x, camUp.y, camUp.z }, mouseDelta.y * panSpeed);
 		Vector3 totalPanMove = Vector3Add(moveRight, moveUp);
-
 		if (isFollowing) {
 			panFollowingOffset = Vector3Add(panFollowingOffset, totalPanMove);
 		}
@@ -211,54 +201,116 @@ Camera3D SceneCamera3D::cameraLogic(bool& isLoading, bool& isMouseNotHoveringUI)
 		Vector2 mouseDelta = GetMouseDelta();
 		angleX -= mouseDelta.x * 0.3f;
 		angleY += mouseDelta.y * 0.3f;
-
 		if (angleY > 89.0f) angleY = 89.0f;
 		if (angleY < -89.0f) angleY = -89.0f;
 	}
 
+	if (isMouseNotHoveringUI && !isShipEnabled) {
+		Vector3 arrowMove = { 0.0f, 0.0f, 0.0f };
+
+		float radNormX = angleX * DEG2RAD;
+		float radNormY = angleY * DEG2RAD;
+		camNormal.x = cosf(radNormY) * sinf(radNormX);
+		camNormal.y = sinf(radNormY);
+		camNormal.z = cosf(radNormY) * cosf(radNormX);
+		camNormal = glm::normalize(camNormal);
+		camRight = glm::cross(worldUp, camNormal);
+		camRight = glm::normalize(camRight);
+
+
+		if (IsKeyDown(KEY_RIGHT)) {
+			Vector3 moveRight = Vector3Scale({ camRight.x, camRight.y, camRight.z }, arrowMoveSpeed);
+			arrowMove += moveRight * GetFrameTime();
+		}
+
+		if (IsKeyDown(KEY_LEFT)) {
+			Vector3 moveLeft = Vector3Scale({ camRight.x, camRight.y, camRight.z }, -arrowMoveSpeed);
+			arrowMove += moveLeft * GetFrameTime();
+		}
+
+		if (IsKeyDown(KEY_UP)) {
+			Vector3 moveForward = Vector3Scale({ camNormal.x, camNormal.y, camNormal.z }, -arrowMoveSpeed);
+			arrowMove += moveForward * GetFrameTime();
+		}
+
+		if (IsKeyDown(KEY_DOWN)) {
+			Vector3 moveBackward = Vector3Scale({ camNormal.x, camNormal.y, camNormal.z }, arrowMoveSpeed);
+			arrowMove += moveBackward * GetFrameTime();
+		}
+
+		if (arrowMove.x != 0.0f || arrowMove.y != 0.0f || arrowMove.z != 0.0f) {
+			if (firstPerson) {
+				firstPersonPosition = Vector3Add(firstPersonPosition, arrowMove);
+			}
+			else {
+				if (isFollowing) {
+					panFollowingOffset = Vector3Add(panFollowingOffset, arrowMove);
+				}
+				else {
+					target = Vector3Add(target, arrowMove);
+				}
+			}
+		}
+	}
+
 	if (isMouseNotHoveringUI &&
 		!IO::shortcutDown(KEY_LEFT_SHIFT) &&
-		!IO::shortcutDown(KEY_LEFT_CONTROL))
+		!IO::shortcutDown(KEY_LEFT_CONTROL) &&
+		!firstPerson)
 	{
 		float wheel = GetMouseWheelMove();
-
 		float zoomSpeed = 0.1f;
-
 		distance *= (1.0f - wheel * zoomSpeed);
-
 		if (distance < 1.0f) distance = 1.0f;
 		if (distance > 30000.0f) distance = 30000.0f;
 	}
 
-	float smoothSpeed = 0.1f;
+	if (!firstPerson) {
 
-	currentSmoothedTarget.x += (target.x - currentSmoothedTarget.x) * smoothSpeed;
-	currentSmoothedTarget.y += (target.y - currentSmoothedTarget.y) * smoothSpeed;
-	currentSmoothedTarget.z += (target.z - currentSmoothedTarget.z) * smoothSpeed;
+		float smoothSpeed = 0.1f;
+		currentSmoothedTarget.x += (target.x - currentSmoothedTarget.x) * smoothSpeed;
+		currentSmoothedTarget.y += (target.y - currentSmoothedTarget.y) * smoothSpeed;
+		currentSmoothedTarget.z += (target.z - currentSmoothedTarget.z) * smoothSpeed;
+
+		float radX = angleX * DEG2RAD;
+		float radY = angleY * DEG2RAD;
+		Vector3 orbitOffset;
+		orbitOffset.x = distance * cosf(radY) * sinf(radX);
+		orbitOffset.y = distance * sinf(radY);
+		orbitOffset.z = distance * cosf(radY) * cosf(radX);
+
+		cam3D.target = { currentSmoothedTarget.x, currentSmoothedTarget.y, currentSmoothedTarget.z };
+		cam3D.position = Vector3Add(cam3D.target, orbitOffset);
+	}
+	else {
+
+		float radX = angleX * DEG2RAD;
+		float radY = angleY * DEG2RAD;
+
+		cam3D.position = firstPersonPosition;
+
+		Vector3 lookDirection;
+		lookDirection.x = cosf(radY) * sinf(radX);
+		lookDirection.y = sinf(radY);
+		lookDirection.z = cosf(radY) * cosf(radX);
+
+		cam3D.target = Vector3Add(cam3D.position, Vector3Scale(lookDirection, -1.0f));
+	}
 
 	float radX = angleX * DEG2RAD;
 	float radY = angleY * DEG2RAD;
+	camNormal.x = cosf(radY) * sinf(radX);
+	camNormal.y = sinf(radY);
+	camNormal.z = cosf(radY) * cosf(radX);
+	camNormal = glm::normalize(camNormal);
+	camRight = glm::cross(worldUp, camNormal);
+	camRight = glm::normalize(camRight);
+	camUp = glm::cross(camNormal, camRight);
+	camUp = glm::normalize(camUp);
 
-	Vector3 orbitOffset;
-	orbitOffset.x = distance * cosf(radY) * sinf(radX);
-	orbitOffset.y = distance * sinf(radY);
-	orbitOffset.z = distance * cosf(radY) * cosf(radX);
-
-	cam3D.target = { currentSmoothedTarget.x, currentSmoothedTarget.y, currentSmoothedTarget.z };
-	cam3D.position = Vector3Add(cam3D.target, orbitOffset);
-
-	Vector3 forward = Vector3Subtract(cam3D.target, cam3D.position);
-	forward = Vector3Normalize(forward);
-
-	Vector3 worldUp = { 0.0f, 1.0f, 0.0f };
-	Vector3 right = Vector3CrossProduct(worldUp, forward);
-	right = Vector3Normalize(right);
-
-	cam3D.up = Vector3Normalize(Vector3CrossProduct(forward, right));
-
+	cam3D.up = { camUp.x, camUp.y, camUp.z };
 	cam3D.fovy = 45.0f;
 	cam3D.projection = CAMERA_PERSPECTIVE;
-
 	return cam3D;
 }
 

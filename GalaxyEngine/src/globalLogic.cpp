@@ -625,6 +625,8 @@ void buildKernels() {
 	sph.bitonicSortKernel();
 	sph.offsetKernel();
 	sph.offsetResetKernel();
+
+	rayMarcher.Init();
 }
 
 std::vector<float> pData;
@@ -777,6 +779,8 @@ void freeGPUMemory() {
 	glDeleteBuffers(1, &sph.ssboParticleIndices);
 
 	glDeleteProgram(sph.neighborSearchProgram);
+
+	rayMarcher.Unload();
 }
 
 // -------- This is an unused quadtree creation method I made for learning purposes. It builds the quadtree from Morton keys -------- //
@@ -1511,6 +1515,18 @@ void particleBoxClipping() {
 
 void mode3D() {
 
+	myVar.lowResRayMarching = false;
+
+	if (!myParam.pParticles3D.empty()) {
+		if (myVar.timeFactor != 0.0f) {
+			myVar.lowResRayMarching = true;
+		}
+
+		if (myParam.myCamera3D.HasCameraChanged()) {
+			myVar.lowResRayMarching = true;
+		}
+	}
+
 	if (myVar.is3DMode) {
 		// If menu is active, do not use mouse input for non-menu stuff. I keep raylib's own mouse input for the menu but the custom IO for non-menu stuff
 		if (myParam.rightClickSettings.isMenuActive) {
@@ -1680,6 +1696,10 @@ void mode3D() {
 	copyPaste.copyPasteParticles3D(myVar, myParam, physics3D);
 
 	pinParticles3D();
+
+	if (myVar.isRayMarcherOn) {
+		rayMarcher.Run(myParam.myCamera3D, myParam.pParticles3D, myParam.rParticles3D, myVar.lowResRayMarching);
+	}
 }
 
 void drawConstraints3D() {
@@ -2450,9 +2470,17 @@ void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myRayTracingTexture,
 
 	// EVERYTHING STATIC RELATIVE TO CAMERA BELOW
 
-	//rayMarcher.initPixelGrid();
+	if (myVar.isRayMarcherOn) {
+		/*rayMarcher.initPixelGrid();
 
-	//rayMarcher.drawPixels();
+		rayMarcher.cameraRays(myParam.myCamera3D, myParam.pParticles3D, myParam.rParticles3D);
+
+		rayMarcher.drawPixels();*/
+
+		rayMarcher.rayMarchUI();
+
+		rayMarcher.Draw(myVar.lowResRayMarching);
+	}
 
 	if (!introActive) {
 		myUI.uiLogic(myParam, myVar, sph, save, geSound, lighting, field, ship);

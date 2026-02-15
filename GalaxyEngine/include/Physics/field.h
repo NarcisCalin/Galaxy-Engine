@@ -254,12 +254,29 @@ void main()
 			std::cout << "Fragment shader failed to load\n";
 		}
 
-		const size_t maxVRAM = size_t(512) * 1024 * 1024;
+		const size_t maxVRAM = size_t(2ull) * 1024 * 1024 * 1024;
+		const float safetyMargin = 0.85f;
 
-		const size_t usableVRAM = size_t(maxVRAM * 0.8f);
+		const size_t usableVRAM = size_t(maxVRAM * safetyMargin);
 
 		const size_t bytesPerParticle = 6 * sizeof(float);
-		const size_t maxParticles = usableVRAM / bytesPerParticle;
+
+		const size_t bytesPerFieldCell = 3 * sizeof(float);
+		const size_t fieldWidth = 1024;
+		const size_t fieldHeight = 1024;
+
+		const size_t fieldCells = fieldWidth * fieldHeight;
+		const size_t fieldBytes = fieldCells * bytesPerFieldCell;
+
+		const size_t maxParticles =
+			(usableVRAM - fieldBytes) / bytesPerParticle;
+
+		if (maxParticles < 10000000)
+		{
+			throw std::runtime_error("GPU too small for 10 million particles.");
+		}
+
+		std::cout << "Max particles supported by GPU: " << maxParticles << "\n";
 
 		glGenBuffers(1, &ssboParticlesPos);
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboParticlesPos);
