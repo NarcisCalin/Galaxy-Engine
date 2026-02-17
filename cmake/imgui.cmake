@@ -8,7 +8,7 @@ FetchContent_MakeAvailable(imgui-fetch)
 FetchContent_Declare(
     implot-fetch
     GIT_REPOSITORY https://github.com/epezent/implot.git
-    GIT_TAG        master
+    GIT_TAG        v0.17
 )
 FetchContent_MakeAvailable(implot-fetch)
 

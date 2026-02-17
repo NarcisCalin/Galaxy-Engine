@@ -82,3 +82,8 @@ if(WIN32)
         $<TARGET_FILE_DIR:GalaxyEngine>
     )
 endif()
+
+if(UNIX)
+    find_package(TBB REQUIRED)
+    target_link_libraries(GalaxyEngine PUBLIC TBB::tbb)
+endif()
