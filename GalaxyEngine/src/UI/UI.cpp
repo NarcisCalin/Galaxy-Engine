@@ -87,7 +87,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		myVar.isGPUEnabled = false;
 	}
 
-	if (buttonHelper("3D Mode (BETA)", "Enables 3D simulation", myVar.is3DMode, -1.0f, settingsButtonY, true, enabled)) {
+	if (buttonHelper("3D Mode", "Enables 3D simulation", myVar.is3DMode, -1.0f, settingsButtonY, true, enabled)) {
 		myParam.pParticles.clear();
 		myParam.rParticles.clear();
 
@@ -474,7 +474,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	ImGui::Spacing();
 	ImGui::Separator();
 
-	ImGui::TextColored(UpdateVariables::colMenuInformation, "Optics");
+	ImGui::TextColored(UpdateVariables::colMenuInformation, "Optics (2D Only)");
 
 	ImGui::Separator();
 	ImGui::Spacing();
@@ -484,14 +484,14 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	ImGui::Spacing();
 	ImGui::Separator();
 
-	ImGui::TextColored(UpdateVariables::colMenuInformation, "Fields");
+	ImGui::TextColored(UpdateVariables::colMenuInformation, "Fields (2D Only)");
 
 	ImGui::Separator();
 	ImGui::Spacing();
 
 	bool isNot3DMode = !myVar.is3DMode;
 
-	if (isNot3DMode) {
+	if (myVar.is3DMode) {
 		myVar.isGravityFieldEnabled = false;
 		myVar.gravityFieldDMParticles = false;
 	}
@@ -512,7 +512,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 	buttonHelper("Highlight Selected", "Highlight selected particles", myParam.colorVisuals.selectedColor, -1.0f, settingsButtonY, true, enabled);
 	buttonHelper("Glow", "Enables glow shader", myVar.isGlowEnabled, -1.0f, settingsButtonY, true, enabled);
-	buttonHelper("Predict Path", "Predicts the trajectory of heavy particles before launching them", myVar.enablePathPrediction, -1.0f, settingsButtonY, true, enabled);
+	buttonHelper("Predict Path", "Predicts the trajectory of black holes before launching them", myVar.enablePathPrediction, -1.0f, settingsButtonY, true, enabled);
 
 	ImGui::GetStyle().ItemSpacing.y = oldSpacingY; // End the settings buttons spacing
 
@@ -968,7 +968,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			ImGui::Spacing();
 			ImGui::Separator();
 
-			ImGui::TextColored(UpdateVariables::colMenuInformation, "Simulation Recording");
+			ImGui::TextColored(UpdateVariables::colMenuInformation, "Simulation Recording (3D Only)");
 
 			ImGui::Separator();
 			ImGui::Spacing();
@@ -1040,7 +1040,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 			sliderHelper("Playback Particles Size", "Modifies the size of playback particles", myVar.playbackParticlesSizeMult, 0.0f, 5.0f, parametersSliderX, parametersSliderY, enablePlaybackControls, LogSlider);
 
-			if (buttonHelper("Delete Playback", "Deletes playback and resumes simulation", myVar.deletePlayback, -1.0f, settingsButtonY, true, enabled) && !myVar.playbackRecord) {
+			if (buttonHelper("Delete Playback", "Deletes playback and resumes simulation", myVar.deletePlayback, -1.0f, settingsButtonY, true, enablePlaybackControls) && !myVar.playbackRecord) {
 				myVar.runPlayback = false;
 
 				myParam.playbackFrames.clear();

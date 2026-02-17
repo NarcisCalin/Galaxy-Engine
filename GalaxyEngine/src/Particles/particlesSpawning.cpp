@@ -609,14 +609,14 @@ void ParticlesSpawning3D::particlesInitialConditions(Physics3D& physics3D, Updat
 				}
 				else {
 
-					/*if (myVar.constraintAfterDrawing) {
+					if (myVar.constraintAfterDrawing) {
 						myVar.constraintAfterDrawingFlag = true;
 					}
 
 					if (myVar.constraintAfterDrawingFlag && myVar.constraintAfterDrawing) {
-						physics3D.createConstraints(myParam.pParticles, myParam.rParticles,
+						physics3D.createConstraints(myParam.pParticles3D, myParam.rParticles3D,
 							myVar.constraintAfterDrawingFlag, myVar, myParam);
-					}*/
+					}
 
 					for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
 						myParam.rParticles3D[i].isBeingDrawn = false;

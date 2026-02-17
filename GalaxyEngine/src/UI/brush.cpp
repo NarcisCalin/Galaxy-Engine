@@ -1593,10 +1593,10 @@ void Brush3D::temperatureBrush(UpdateVariables& myVar, UpdateParameters& myParam
 
 	if (IO::shortcutDown(KEY_K) || IO::shortcutDown(KEY_L) || (IO::mouseDown(0) && myVar.toolRaiseTemp) || (IO::mouseDown(0) && myVar.toolLowerTemp)) {
 		for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
-			glm::vec2 distanceFromBrush = { myParam.pParticles3D[i].pos - brushPos };
+			glm::vec3 distanceFromBrush = { myParam.pParticles3D[i].pos - brushPos };
 
 			float distance = sqrt(distanceFromBrush.x * distanceFromBrush.x +
-				distanceFromBrush.y * distanceFromBrush.y);
+				distanceFromBrush.y * distanceFromBrush.y + distanceFromBrush.z * distanceFromBrush.z);
 
 			if (IO::shortcutDown(KEY_K) || (IO::mouseDown(0) && myVar.toolRaiseTemp)) {
 				if (distance < brushRadius) {

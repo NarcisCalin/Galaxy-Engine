@@ -140,8 +140,8 @@ int main(int argc, char** argv) {
 
 	// ---- Intro ---- //
 
-	bool fadeActive = false;
-	bool introActive = false;
+	bool fadeActive = true;
+	bool introActive = true;
 
 	myVar.customFont = LoadFontEx("fonts/Unispace Bd.otf", myVar.introFontSize, 0, 250);
 

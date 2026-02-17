@@ -2391,9 +2391,6 @@ void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myRayTracingTexture,
 
 			myParam.colorVisuals.particlesColorVisuals(myParam.pParticles, myParam.rParticles, myParam.pParticles3D, myParam.rParticles3D, myVar.isTempEnabled, myVar.timeFactor, myVar.is3DMode);
 		}
-		else {
-
-		}
 
 		if (myVar.isOpticsEnabled) {
 			for (Wall& wall : lighting.walls) {

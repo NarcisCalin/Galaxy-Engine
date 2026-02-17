@@ -105,7 +105,7 @@ struct UpdateVariables {
 	float halfDomain3DHeight = domainSize3D.y * 0.5f;
 	float halfDomain3DDepth = domainSize3D.z * 0.5f;
 
-	bool fullscreenState = false;
+	bool fullscreenState = true;
 
 	bool exitGame = false;
 
@@ -199,7 +199,7 @@ struct UpdateVariables {
 
 	bool isRecording = false;
 
-	float particleSizeMultiplier = 1.0f;
+	float particleSizeMultiplier = 0.6f;
 
 	bool isDragging = false;
 	bool isMouseNotHoveringUI = false;

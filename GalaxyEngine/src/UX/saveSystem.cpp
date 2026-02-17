@@ -697,6 +697,7 @@ void SaveSystem::saveLoadLogic(UpdateVariables& myVar, UpdateParameters& myParam
 			if (UI::buttonHelper(fullPath.c_str(), "Select scene file", placeHolder, ImGui::GetContentRegionAvail().x, buttonHeight, enabled, enabled)) {
 				saveSystem(fullPath.c_str(), myVar, myParam, sph, physics, physics3D, lighting, field);
 				loadFlag = false;
+				myVar.playbackRecord = false;
 			}
 
 			filePaths.push_back(fullPath);
