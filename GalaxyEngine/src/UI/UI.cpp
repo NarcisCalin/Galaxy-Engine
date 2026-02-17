@@ -973,7 +973,19 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			ImGui::Separator();
 			ImGui::Spacing();
 
-			buttonHelper("Store Playback On Memory", "Stores the playback on memory instead of disk", myVar.playBackOnMemory, -1.0f, settingsButtonY, true, enabled);
+			bool enablePlaybackControls = false;
+
+			bool isNotRecording = !myVar.playbackRecord;
+
+			if (!myParam.playbackFrames.empty() && !myVar.playbackRecord) {
+				enablePlaybackControls = true;
+			}
+
+			if (myVar.playbackRecord) {
+				myVar.runPlayback = false;
+			}
+
+			buttonHelper("Store Playback On Memory", "Stores the playback on memory instead of disk", myVar.playBackOnMemory, -1.0f, settingsButtonY, true, isNotRecording);
 
 			ImGui::Spacing();
 			ImGui::Separator();
@@ -1018,16 +1030,6 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 					myParam.pParticles3DPlaybackResume.clear();
 					myParam.rParticles3DPlaybackResume.clear();
 				}
-			}
-
-			bool enablePlaybackControls = false;
-
-			if (!myParam.playbackFrames.empty() && !myVar.playbackRecord) {
-				enablePlaybackControls = true;
-			}
-
-			if (myVar.playbackRecord) {
-				myVar.runPlayback = false;
 			}
 
 			buttonHelper("Run Playback", "Plays the recorded simulation", myVar.runPlayback, -1.0f, settingsButtonY, true, enablePlaybackControls);
