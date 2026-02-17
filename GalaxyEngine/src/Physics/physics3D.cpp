@@ -112,7 +112,7 @@ glm::vec3 Physics3D::calculateForceFromGrid3DOld(std::vector<ParticlePhysics3D>&
 				}
 			}
 
-			float invDistance = 1.0f / std::sqrtf(distanceSq);
+			float invDistance = 1.0f / sqrtf(distanceSq);
 			float invDist2 = invDistance * invDistance;
 			float invDist3 = invDist2 * invDistance;
 			float forceMagnitude = Gf * pmass * gridMass * invDist3;
@@ -195,7 +195,7 @@ void Physics3D::calculateForceFromGrid3D(UpdateVariables& myVar) {
 					}
 				}
 
-				float invDistance = 1.0f / std::sqrtf(distanceSq);
+				float invDistance = 1.0f / sqrtf(distanceSq);
 				float invDist2 = invDistance * invDistance;
 				float invDist3 = invDist2 * invDistance;
 
@@ -371,7 +371,7 @@ void Physics3D::naiveGravity3D(std::vector<ParticlePhysics3D>& pParticles3D, Upd
 
 			float distSq = dx * dx + dy * dy + dz * dz + myVar.softening;
 
-			float invDist = 1.0f / std::sqrt(distSq);
+			float invDist = 1.0f / sqrt(distSq);
 			float invDist3 = invDist * invDist * invDist;
 			float factor = myVar.G * massPtr[j] * invDist3;
 
@@ -959,7 +959,7 @@ void Physics3D::spawnCorrection(UpdateParameters& myParam, bool& hasAVX2, const 
 
 			if (dSq > 0.000001f && dSq < minDistSq) {
 
-				float dist = std::sqrt(dSq);
+				float dist = sqrt(dSq);
 
 				glm::vec3 dir = -d / dist;
 

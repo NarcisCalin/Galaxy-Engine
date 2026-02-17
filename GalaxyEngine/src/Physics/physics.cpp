@@ -56,7 +56,7 @@ glm::vec2 Physics::calculateForceFromGridOld(std::vector<ParticlePhysics>& pPart
 				}
 			}
 
-			float invDistance = 1.0f / std::sqrtf(distanceSq);
+			float invDistance = 1.0f / sqrtf(distanceSq);
 			float invDist2 = invDistance * invDistance;
 			float invDist3 = invDist2 * invDistance;
 
@@ -142,7 +142,7 @@ void Physics::calculateForceFromGrid(UpdateVariables& myVar) {
 					}
 				}
 
-				float invDistance = 1.0f / std::sqrtf(distanceSq);
+				float invDistance = 1.0f / sqrtf(distanceSq);
 				float invDist2 = invDistance * invDistance;
 				float invDist3 = invDist2 * invDistance;
 
@@ -311,7 +311,7 @@ void Physics::naiveGravity(std::vector<ParticlePhysics>& pParticles, UpdateVaria
 			}
 
 			float distSq = dx * dx + dy * dy + myVar.softening;
-			float invDist = 1.0f / std::sqrt(distSq);
+			float invDist = 1.0f / sqrt(distSq);
 			float invDist3 = invDist * invDist * invDist;
 			float factor = myVar.G * massPtr[j] * invDist3;
 			finalAccX += dx * factor;
