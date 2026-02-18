@@ -156,6 +156,45 @@ void SaveSystem::saveSystem(const std::string& filename, UpdateVariables& myVar,
 
 	paramIO(filename, out, "CameraIsFollowing3D", myParam.myCamera3D.isFollowing);
 
+	paramIO(filename, out, "CameraOffset3DX", myParam.myCamera3D.offset.x);
+	paramIO(filename, out, "CameraOffset3DY", myParam.myCamera3D.offset.y);
+	paramIO(filename, out, "CameraOffset3DZ", myParam.myCamera3D.offset.z);
+
+	paramIO(filename, out, "CameraDefaultCamDist3D", myParam.myCamera3D.defaultCamDist);
+
+	paramIO(filename, out, "CameraPanOffsetRight3DX", myParam.myCamera3D.panOffsetRight.x);
+	paramIO(filename, out, "CameraPanOffsetRight3DY", myParam.myCamera3D.panOffsetRight.y);
+	paramIO(filename, out, "CameraPanOffsetRight3DZ", myParam.myCamera3D.panOffsetRight.z);
+
+	paramIO(filename, out, "CameraPanOffsetUp3DX", myParam.myCamera3D.panOffsetUp.x);
+	paramIO(filename, out, "CameraPanOffsetUp3DY", myParam.myCamera3D.panOffsetUp.y);
+	paramIO(filename, out, "CameraPanOffsetUp3DZ", myParam.myCamera3D.panOffsetUp.z);
+
+	paramIO(filename, out, "CameraCamNormal3DX", myParam.myCamera3D.camNormal.x);
+	paramIO(filename, out, "CameraCamNormal3DY", myParam.myCamera3D.camNormal.y);
+	paramIO(filename, out, "CameraCamNormal3DZ", myParam.myCamera3D.camNormal.z);
+
+	paramIO(filename, out, "CameraCamRight3DX", myParam.myCamera3D.camRight.x);
+	paramIO(filename, out, "CameraCamRight3DY", myParam.myCamera3D.camRight.y);
+	paramIO(filename, out, "CameraCamRight3DZ", myParam.myCamera3D.camRight.z);
+
+	paramIO(filename, out, "CameraCamUp3DX", myParam.myCamera3D.camUp.x);
+	paramIO(filename, out, "CameraCamUp3DY", myParam.myCamera3D.camUp.y);
+	paramIO(filename, out, "CameraCamUp3DZ", myParam.myCamera3D.camUp.z);
+
+	paramIO(filename, out, "CameraWorldUp3DX", myParam.myCamera3D.worldUp.x);
+	paramIO(filename, out, "CameraWorldUp3DY", myParam.myCamera3D.worldUp.y);
+	paramIO(filename, out, "CameraWorldUp3DZ", myParam.myCamera3D.worldUp.z);
+
+	paramIO(filename, out, "CameraFirstPersonPosition3DX", myParam.myCamera3D.firstPersonPosition.x);
+	paramIO(filename, out, "CameraFirstPersonPosition3DY", myParam.myCamera3D.firstPersonPosition.y);
+	paramIO(filename, out, "CameraFirstPersonPosition3DZ", myParam.myCamera3D.firstPersonPosition.z);
+
+	paramIO(filename, out, "CameraArrowMoveSpeed3D", myParam.myCamera3D.arrowMoveSpeed);
+
+	paramIO(filename, out, "CameraAngleX3D", myParam.myCamera3D.angleX);
+	paramIO(filename, out, "CameraAngleY3D", myParam.myCamera3D.angleY);
+
 	// ----- Constraints -----
 	paramIO(filename, out, "ParticleConstraints", myVar.constraintsEnabled);
 	paramIO(filename, out, "UnbreakableConstraints", myVar.unbreakableConstraints);

@@ -34,7 +34,8 @@ public:
 	const uint32_t version172 = 172;
 	const uint32_t version173 = 173;
 	const uint32_t version180 = 180;
-	const uint32_t currentVersion = version180; // VERY IMPORTANT. CHANGE THIS IF YOU MAKE ANY CHANGES TO THE SAVE SYSTEM. VERSION "1.6.0" = 160, VERSION "1.6.12" = 1612
+	const uint32_t version190 = 190;
+	const uint32_t currentVersion = version190; // VERY IMPORTANT. CHANGE THIS IF YOU MAKE ANY CHANGES TO THE SAVE SYSTEM. VERSION "1.6.0" = 160, VERSION "1.6.12" = 1612
 
 	template <typename T>
 	void paramIO(const std::string& filename, YAML::Emitter& out, std::string key, T& value) {
@@ -166,12 +167,11 @@ public:
 		}
 
 		if (loadedVersion == currentVersion) {
-			deserializeVersion180(file, myParam, physics, physics3D, lighting, myVar.is3DMode);
+			deserializeVersion190(file, myParam, physics, physics3D, lighting, myVar.is3DMode);
 		}
-		else if (loadedVersion == version173) {
-			deserializeVersion180(file, myParam, physics, physics3D, lighting, myVar.is3DMode);
+		else if (loadedVersion == version180) {
+			deserializeVersion190(file, myParam, physics, physics3D, lighting, myVar.is3DMode);
 		}
-		
 
 		if (myVar.isOpticsEnabled) {
 			lighting.shouldRender = true;
@@ -198,7 +198,7 @@ public:
 		return true;
 	}
 
-	bool deserializeVersion180(std::istream& file, UpdateParameters& myParam, Physics& physics, Physics3D& physics3D, Lighting& lighting, bool& is3DMode) {
+	bool deserializeVersion190(std::istream& file, UpdateParameters& myParam, Physics& physics, Physics3D& physics3D, Lighting& lighting, bool& is3DMode) {
 
 		file.read(reinterpret_cast<char*>(&globalId), sizeof(globalId));
 		file.read(reinterpret_cast<char*>(&globalShapeId), sizeof(globalShapeId));
@@ -343,10 +343,10 @@ public:
 			}
 		}
 
-		physics.particleConstraints.clear();
-		physics3D.particleConstraints.clear();
-
 		if (!is3DMode) {
+
+			physics.particleConstraints.clear();
+
 			uint32_t numConstraints = 0;
 			file.read(reinterpret_cast<char*>(&numConstraints), sizeof(numConstraints));
 			if (numConstraints > 0) {
@@ -365,6 +365,9 @@ public:
 			}
 		}
 		else {
+
+			physics3D.particleConstraints.clear();
+
 			uint32_t numConstraints = 0;
 			file.read(reinterpret_cast<char*>(&numConstraints), sizeof(numConstraints));
 			if (numConstraints > 0) {

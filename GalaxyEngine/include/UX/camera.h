@@ -78,7 +78,6 @@ public:
 
 	void cameraFollowObject(UpdateVariables& myVar, UpdateParameters& myParam);
 
-    // Store previous frame values
     glm::vec3 prevOffset = { 0.0f, 0.0f, 0.0f };
     glm::vec3 prevCurrentSmoothedTarget = { 0.0f, 0.0f, 0.0f };
     glm::vec3 prevFollowPosition = { 0.0f, 0.0f, 0.0f };
@@ -97,7 +96,6 @@ public:
 
         bool changed = false;
 
-        // Check glm::vec3 values
         if (glm::length(offset - prevOffset) > epsilon) changed = true;
         if (glm::length(currentSmoothedTarget - prevCurrentSmoothedTarget) > epsilon) changed = true;
         if (glm::length(followPosition - prevFollowPosition) > epsilon) changed = true;
@@ -105,7 +103,6 @@ public:
         if (glm::length(camRight - prevCamRight) > epsilon) changed = true;
         if (glm::length(camUp - prevCamUp) > epsilon) changed = true;
 
-        // Check Vector3 values
         if (fabsf(panFollowingOffset.x - prevPanFollowingOffset.x) > epsilon ||
             fabsf(panFollowingOffset.y - prevPanFollowingOffset.y) > epsilon ||
             fabsf(panFollowingOffset.z - prevPanFollowingOffset.z) > epsilon) changed = true;
@@ -126,10 +123,8 @@ public:
             fabsf(firstPersonPosition.y - prevFirstPersonPosition.y) > epsilon ||
             fabsf(firstPersonPosition.z - prevFirstPersonPosition.z) > epsilon) changed = true;
 
-        // Check float value
         if (fabsf(defaultCamDist - prevDefaultCamDist) > epsilon) changed = true;
 
-        // Update previous values for next frame
         prevOffset = offset;
         prevCurrentSmoothedTarget = currentSmoothedTarget;
         prevFollowPosition = followPosition;

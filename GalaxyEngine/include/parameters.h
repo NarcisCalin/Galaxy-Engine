@@ -105,7 +105,7 @@ struct UpdateVariables {
 	float halfDomain3DHeight = domainSize3D.y * 0.5f;
 	float halfDomain3DDepth = domainSize3D.z * 0.5f;
 
-	bool fullscreenState = true;
+	bool fullscreenState = false;
 
 	bool exitGame = false;
 
