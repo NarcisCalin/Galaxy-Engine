@@ -13,8 +13,8 @@ Node::Node(glm::vec2 pos, float size,
 	this->gridMass = 0.0f;
 	this->centerOfMass = { 0.0f, 0.0f };
 
-	if ((((endIndex - startIndex) <= 16 /*Max Leaf Particles*/ && size <= 2.0f) /*Max Non-Dense Size*/ || (endIndex - startIndex) == 1) ||
-		size <= 0.01f /*Min Leaf Size*/) {
+	if ((((endIndex - startIndex) <= 4 /*Max Leaf Particles*/ && size <= 2.0f) /*Max Non-Dense Size*/ || (endIndex - startIndex) == 1) ||
+		size <= 0.000001f /*Min Leaf Size*/) {
 		computeLeafMass(pParticles);
 	}
 	else {
@@ -25,68 +25,66 @@ Node::Node(glm::vec2 pos, float size,
 	}
 }
 
-template<typename Predicate>
-uint32_t dualPartition(std::vector<ParticlePhysics>& pParticlesVector, std::vector<ParticleRendering>& rParticlesVector, uint32_t begin, uint32_t end, Predicate predicate) {
-	uint32_t i = begin;
-	for (uint32_t j = begin; j < end; ++j) {
-		if (predicate(pParticlesVector[j])) {
-			if (i != j) {
-				std::swap(pParticlesVector[i], pParticlesVector[j]);
-				std::swap(rParticlesVector[i], rParticlesVector[j]);
-			}
-			++i;
-		}
-	}
-	return i;
-}
-
 void Node::subGridMaker(std::vector<ParticlePhysics>& pParticles, std::vector<ParticleRendering>& rParticles) {
 
-	glm::vec2 mid = pos + size * 0.5f;
+    glm::vec2 mid = pos + size * 0.5f;
 
-	uint32_t originalStart = startIndex;
-	uint32_t originalEnd = endIndex;
-	uint32_t boundaries[5];
-	boundaries[0] = originalStart;
+    uint32_t boundaries[5];
+    boundaries[0] = startIndex;
+    boundaries[4] = endIndex;
 
-	auto isQuad0 = [mid](const ParticlePhysics& pParticle) {
-		return (pParticle.pos.x < mid.x && pParticle.pos.y < mid.y);
-		};
-	boundaries[1] = dualPartition(pParticles, rParticles, originalStart, originalEnd, isQuad0);
+    auto beginIt = pParticles.begin();
 
-	auto isQuad1 = [mid](const ParticlePhysics& pParticle) {
-		return (pParticle.pos.x >= mid.x && pParticle.pos.y < mid.y);
-		};
-	boundaries[2] = dualPartition(pParticles, rParticles, boundaries[1], originalEnd, isQuad1);
+    auto isBottomHalf = [mid](const ParticlePhysics& pParticle) {
+        return pParticle.pos.y < mid.y;
+        };
 
-	auto isQuad2 = [mid](const ParticlePhysics& pParticle) {
-		return (pParticle.pos.x < mid.x && pParticle.pos.y >= mid.y);
-		};
-	boundaries[3] = dualPartition(pParticles, rParticles, boundaries[2], originalEnd, isQuad2);
+    auto midY_Iterator = std::partition_point(
+        beginIt + boundaries[0],
+        beginIt + boundaries[4],
+        isBottomHalf
+    );
+    boundaries[2] = std::distance(beginIt, midY_Iterator);
 
-	boundaries[4] = originalEnd;
+    auto isLeftHalf = [mid](const ParticlePhysics& pParticle) {
+        return pParticle.pos.x < mid.x;
+        };
 
-	for (int q = 0; q < 4; ++q) {
-		if (boundaries[q + 1] > boundaries[q]) {
+    auto midX_BottomIterator = std::partition_point(
+        beginIt + boundaries[0],
+        beginIt + boundaries[2],
+        isLeftHalf
+    );
+    boundaries[1] = std::distance(beginIt, midX_BottomIterator);
 
-			glm::vec2 newPos = { pos.x + ((q & 1) ? size * 0.5f : 0.0f), pos.y + ((q & 2) ? size * 0.5f : 0.0f) };
+    auto midX_TopIterator = std::partition_point(
+        beginIt + boundaries[2],
+        beginIt + boundaries[4],
+        isLeftHalf
+    );
+    boundaries[3] = std::distance(beginIt, midX_TopIterator);
 
-			uint32_t childIndex = globalNodes.size();
-			globalNodes.emplace_back();
+    for (int q = 0; q < 4; ++q) {
+        if (boundaries[q + 1] > boundaries[q]) {
 
-			Node& newNode = globalNodes[childIndex];
-			newNode = Node(
-				newPos, size * 0.5f,
-				boundaries[q], boundaries[q + 1],
-				pParticles, rParticles
-			);
+            glm::vec2 newPos = { pos.x + ((q & 1) ? size * 0.5f : 0.0f), pos.y + ((q & 2) ? size * 0.5f : 0.0f) };
 
-			bool lr = (q & 1) ? 1 : 0;
-			bool ud = (q & 2) ? 1 : 0;
+            uint32_t childIndex = globalNodes.size();
+            globalNodes.emplace_back();
 
-			subGrids[lr][ud] = childIndex;
-		}
-	}
+            Node& newNode = globalNodes[childIndex];
+            newNode = Node(
+                newPos, size * 0.5f,
+                boundaries[q], boundaries[q + 1],
+                pParticles, rParticles
+            );
+
+            bool lr = (q & 1) ? 1 : 0;
+            bool ud = (q & 2) ? 1 : 0;
+
+            subGrids[lr][ud] = childIndex;
+        }
+    }
 }
 
 void Quadtree::root(std::vector<ParticlePhysics>& pParticles,
@@ -119,8 +117,8 @@ Node3D::Node3D(glm::vec3 pos, float size,
     this->gridMass = 0.0f;
     this->centerOfMass = { 0.0f, 0.0f, 0.0f };
 
-    if ((((endIndex - startIndex) <= 16 /*Max Leaf Particles*/ && size <= 2.0f) /*Max Non-Dense Size*/ || (endIndex - startIndex) == 1) ||
-        size <= 0.01f /*Min Leaf Size*/) {
+    if ((((endIndex - startIndex) <= 4 /*Max Leaf Particles*/ && size <= 2.0f) /*Max Non-Dense Size*/ || (endIndex - startIndex) == 1) ||
+        size <= 0.000001f /*Min Leaf Size*/) {
         computeLeafMass3D(pParticles);
     }
     else {
@@ -149,46 +147,55 @@ void Node3D::subGridMaker3D(std::vector<ParticlePhysics3D>& pParticles, std::vec
 
     glm::vec3 mid = pos + size * 0.5f;
 
-    uint32_t currentStart = startIndex;
     uint32_t boundaries[9];
-    boundaries[0] = currentStart;
-
-    auto isOct0 = [mid](const ParticlePhysics3D& p) {
-        return p.pos.x < mid.x && p.pos.y < mid.y && p.pos.z < mid.z;
-        };
-    boundaries[1] = dualPartition3D(pParticles, rParticles, boundaries[0], endIndex, isOct0);
-
-    auto isOct1 = [mid](const ParticlePhysics3D& p) {
-        return p.pos.x >= mid.x && p.pos.y < mid.y && p.pos.z < mid.z;
-        };
-    boundaries[2] = dualPartition3D(pParticles, rParticles, boundaries[1], endIndex, isOct1);
-
-    auto isOct2 = [mid](const ParticlePhysics3D& p) {
-        return p.pos.x < mid.x && p.pos.y >= mid.y && p.pos.z < mid.z;
-        };
-    boundaries[3] = dualPartition3D(pParticles, rParticles, boundaries[2], endIndex, isOct2);
-
-    auto isOct3 = [mid](const ParticlePhysics3D& p) {
-        return p.pos.x >= mid.x && p.pos.y >= mid.y && p.pos.z < mid.z;
-        };
-    boundaries[4] = dualPartition3D(pParticles, rParticles, boundaries[3], endIndex, isOct3);
-
-    auto isOct4 = [mid](const ParticlePhysics3D& p) {
-        return p.pos.x < mid.x && p.pos.y < mid.y && p.pos.z >= mid.z;
-        };
-    boundaries[5] = dualPartition3D(pParticles, rParticles, boundaries[4], endIndex, isOct4);
-
-    auto isOct5 = [mid](const ParticlePhysics3D& p) {
-        return p.pos.x >= mid.x && p.pos.y < mid.y && p.pos.z >= mid.z;
-        };
-    boundaries[6] = dualPartition3D(pParticles, rParticles, boundaries[5], endIndex, isOct5);
-
-    auto isOct6 = [mid](const ParticlePhysics3D& p) {
-        return p.pos.x < mid.x && p.pos.y >= mid.y && p.pos.z >= mid.z;
-        };
-    boundaries[7] = dualPartition3D(pParticles, rParticles, boundaries[6], endIndex, isOct6);
-
+    boundaries[0] = startIndex;
     boundaries[8] = endIndex;
+
+    auto beginIt = pParticles.begin();
+
+    auto isBottomHalfZ = [mid](const ParticlePhysics3D& p) {
+        return p.pos.z < mid.z;
+        };
+    auto midZ_It = std::partition_point(
+        beginIt + boundaries[0],
+        beginIt + boundaries[8],
+        isBottomHalfZ
+    );
+    boundaries[4] = std::distance(beginIt, midZ_It);
+
+    auto isBackHalfY = [mid](const ParticlePhysics3D& p) {
+        return p.pos.y < mid.y;
+        };
+
+    auto midY_BottomIt = std::partition_point(
+        beginIt + boundaries[0],
+        beginIt + boundaries[4],
+        isBackHalfY
+    );
+    boundaries[2] = std::distance(beginIt, midY_BottomIt);
+
+    auto midY_TopIt = std::partition_point(
+        beginIt + boundaries[4],
+        beginIt + boundaries[8],
+        isBackHalfY
+    );
+    boundaries[6] = std::distance(beginIt, midY_TopIt);
+
+    auto isLeftHalfX = [mid](const ParticlePhysics3D& p) {
+        return p.pos.x < mid.x;
+        };
+
+    auto midX_01_It = std::partition_point(beginIt + boundaries[0], beginIt + boundaries[2], isLeftHalfX);
+    boundaries[1] = std::distance(beginIt, midX_01_It);
+
+    auto midX_23_It = std::partition_point(beginIt + boundaries[2], beginIt + boundaries[4], isLeftHalfX);
+    boundaries[3] = std::distance(beginIt, midX_23_It);
+
+    auto midX_45_It = std::partition_point(beginIt + boundaries[4], beginIt + boundaries[6], isLeftHalfX);
+    boundaries[5] = std::distance(beginIt, midX_45_It);
+
+    auto midX_67_It = std::partition_point(beginIt + boundaries[6], beginIt + boundaries[8], isLeftHalfX);
+    boundaries[7] = std::distance(beginIt, midX_67_It);
 
     for (int q = 0; q < 8; ++q) {
         if (boundaries[q + 1] > boundaries[q]) {

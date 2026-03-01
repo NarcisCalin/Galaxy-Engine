@@ -744,6 +744,8 @@ void Brush::particlesGrabber(UpdateVariables& myVar, UpdateParameters& myParam) 
 				distanceFromBrush.y * distanceFromBrush.y);
 			if (distance < brushRadius) {
 				myParam.rParticles[i].isGrabbed = true;
+
+				myParam.rParticles[i].turbulence = 0.0f;
 			}
 		}
 	}
@@ -770,7 +772,6 @@ void Brush::particlesGrabber(UpdateVariables& myVar, UpdateParameters& myParam) 
 
 				myParam.pParticles[i].vel = lastMouseVelocity * impulseFactor;
 				myParam.pParticles[i].prevVel = myParam.pParticles[i].vel;
-
 
 				myParam.rParticles[i].isGrabbed = false;
 			}
@@ -1528,6 +1529,8 @@ void Brush3D::particlesGrabber(UpdateVariables& myVar, UpdateParameters& myParam
 
 			if (dist < brushRadius) {
 				myParam.rParticles3D[i].isGrabbed = true;
+
+				myParam.rParticles3D[i].turbulence = 0.0f;
 			}
 		}
 	}
@@ -1540,8 +1543,7 @@ void Brush3D::particlesGrabber(UpdateVariables& myVar, UpdateParameters& myParam
 
 				myParam.pParticles3D[i].acc = { 0.0f, 0.0f, 0.0f };
 				myParam.pParticles3D[i].vel = { 0.0f, 0.0f, 0.0f };
-
-				myParam.pParticles3D[i].prevVel = myParam.pParticles3D[i].pos;
+				myParam.pParticles3D[i].prevVel = { 0.0f, 0.0f, 0.0f };
 			}
 		}
 	}
@@ -1555,7 +1557,7 @@ void Brush3D::particlesGrabber(UpdateVariables& myVar, UpdateParameters& myParam
 
 				myParam.pParticles3D[i].vel = lastBrushVelocity * impulseFactor;
 
-				myParam.pParticles3D[i].prevVel = myParam.pParticles3D[i].pos - myParam.pParticles3D[i].vel;
+				myParam.pParticles3D[i].prevVel = myParam.pParticles3D[i].vel;
 
 				myParam.rParticles3D[i].isGrabbed = false;
 			}

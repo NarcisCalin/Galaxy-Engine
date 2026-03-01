@@ -12,7 +12,6 @@ class SPH3D {
 public:
 	float radiusMultiplier = 3.0f;
 	const float boundDamping = -0.1f;
-	float boundaryFriction = 0.9f;
 
 	float densTolerance = 0.08f;
 

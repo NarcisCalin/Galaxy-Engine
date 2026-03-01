@@ -48,8 +48,10 @@ struct Physics3D {
 		ParticlePhysics3D& pParticle);
 
 	void calculateForceFromGrid3D(UpdateVariables& myVar);
+	void calculateForceFromGrid3DAVX2(UpdateVariables& myVar);
 
 	void naiveGravity3D(std::vector<ParticlePhysics3D>& pParticles3D, UpdateVariables& myVar);
+	void naiveGravity3DAVX2(std::vector<ParticlePhysics3D>& pParticles3D, UpdateVariables& myVar);
 
 	void readFlattenBack3D(std::vector<ParticlePhysics3D>& pParticles3D);
 

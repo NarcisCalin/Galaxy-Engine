@@ -12,6 +12,7 @@ struct ParticlePhysics {
 	glm::vec2 predVel;
 	glm::vec2 pressF;
 
+	uint64_t mortonKey;
 	float mass;
 	float press;
 	float pressTmp;
@@ -25,7 +26,6 @@ struct ParticlePhysics {
 	float temp;
 	float ke;
 	float prevKe;
-	uint32_t mortonKey;
 	uint32_t id;
 	uint32_t neighborOffset;
 
@@ -34,10 +34,10 @@ struct ParticlePhysics {
 
 	// Default constructor
 	ParticlePhysics()
-		: pos(0.0f, 0.0f), vel{ 0,0 }, acc{ 0,0 }, predPos{ 0,0 }, prevVel{ 0.0f, 0.0f }, predVel{ 0.0f, 0.0f }, pressF{ 0.0f,0.0f },
+		: pos(0.0f, 0.0f), vel{ 0,0 }, acc{ 0,0 }, predPos{ 0,0 }, prevVel{ 0.0f, 0.0f }, predVel{ 0.0f, 0.0f }, pressF{ 0.0f,0.0f }, mortonKey(0),
 		mass(8500000000.0f), press(0.0f), pressTmp(0.0f), dens(0.0f), predDens(0.0f), sphMass(1.0f),
 		restDens(0.0f), stiff(0.0f), visc(0.0f), cohesion(0.0f),
-		temp(0.0f), ke(0.0f), prevKe(0.0f), mortonKey(0), id(globalId++), neighborOffset(0),
+		temp(0.0f), ke(0.0f), prevKe(0.0f), id(globalId++), neighborOffset(0),
 		isHotPoint(false), hasSolidified(false)
 	{
 	}
@@ -149,6 +149,7 @@ struct ParticlePhysics3D {
 	glm::vec3 predVel;
 	glm::vec3 pressF;
 
+	uint64_t mortonKey;
 	float mass;
 	float press;
 	float pressTmp;
@@ -162,7 +163,6 @@ struct ParticlePhysics3D {
 	float temp;
 	float ke;
 	float prevKe;
-	uint32_t mortonKey;
 	uint32_t id;
 	uint32_t neighborOffset;
 
@@ -171,10 +171,11 @@ struct ParticlePhysics3D {
 
 	// Default constructor
 	ParticlePhysics3D()
-		: pos(0.0f, 0.0f, 0.0f), vel{ 0.0f,0.0f, 0.0f }, acc{ 0.0f,0.0f, 0.0f }, predPos{ 0.0f,0.0f, 0.0f }, prevVel{ 0.0f, 0.0f, 0.0f }, predVel{ 0.0f, 0.0f, 0.0f }, pressF{ 0.0f,0.0f, 0.0f },
+		: pos(0.0f, 0.0f, 0.0f), vel{ 0.0f,0.0f, 0.0f }, acc{ 0.0f,0.0f, 0.0f }, predPos{ 0.0f,0.0f, 0.0f }, 
+		prevVel{ 0.0f, 0.0f, 0.0f }, predVel{ 0.0f, 0.0f, 0.0f }, pressF{ 0.0f,0.0f, 0.0f }, mortonKey(0),
 		mass(8500000000.0f), press(0.0f), pressTmp(0.0f), dens(0.0f), predDens(0.0f), sphMass(1.0f),
 		restDens(0.0f), stiff(0.0f), visc(0.0f), cohesion(0.0f),
-		temp(0.0f), ke(0.0f), prevKe(0.0f), mortonKey(0), id(globalId++), neighborOffset(0),
+		temp(0.0f), ke(0.0f), prevKe(0.0f), id(globalId++), neighborOffset(0),
 		isHotPoint(false), hasSolidified(false)
 	{
 	}

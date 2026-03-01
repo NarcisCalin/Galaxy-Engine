@@ -27,6 +27,7 @@ struct Physics {
 	const float stiffCorrectionRatio = 0.013333f; // Heuristic. This used to modify the stiffness of a constraint in a more intuitive way. DO NOT CHANGE
 
 	void calculateForceFromGrid(UpdateVariables& myVar);
+	void calculateForceFromGridAVX2(UpdateVariables& myVar);
 
 	glm::vec2 calculateForceFromGridOld(std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar, ParticlePhysics& pParticle);
 
@@ -45,6 +46,7 @@ struct Physics {
 	void flattenParticles(std::vector<ParticlePhysics>& pParticles);
 
 	void naiveGravity(std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar);
+	void naiveGravityAVX2(std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar);
 
 	void readFlattenBack(std::vector<ParticlePhysics>& pParticles);
 

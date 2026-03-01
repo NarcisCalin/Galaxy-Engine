@@ -140,8 +140,8 @@ int main(int argc, char** argv) {
 
 	// ---- Intro ---- //
 
-	bool fadeActive = true;
-	bool introActive = true;
+	bool fadeActive = false;
+	bool introActive = false;
 
 	myVar.customFont = LoadFontEx("fonts/Unispace Bd.otf", myVar.introFontSize, 0, 250);
 
@@ -237,6 +237,15 @@ void main() {
 
 	myVar.hasAVX2 = hasAVX2Support();
 
+	std::cout << "--------------" << std::endl;
+	if (myVar.hasAVX2) {
+		std::cout << "Has AVX2 Support" << std::endl;
+	}
+	else {
+		std::cout << "Doesn't have AVX2 Support" << std::endl;
+	}
+	std::cout << "--------------" << std::endl;
+
 	rlSetClipPlanes(1.0f, 50000.0f);
 
 	// ================= SKYBOX INITIALIZATION ================= //
@@ -299,15 +308,44 @@ void main() {
 
 		fullscreenToggle(lastScreenWidth, lastScreenHeight, wasFullscreen, lastScreenState, myParticlesTexture, myUITexture);
 
-		if (myVar.is3DMode && myParam.colorVisuals.blendMode == 0) {
-			ClearBackground({ 0,0,0,0 });
-		}
-
 		BeginTextureMode(myParticlesTexture);
 
-		ClearBackground(BLACK);
+		ClearBackground({ 0, 0, 0, 0 });
 
 		BeginBlendMode(myParam.colorVisuals.blendMode);
+
+		if (IO::shortcutPress(KEY_C)) {
+			myParam.pParticles.clear();
+			myParam.rParticles.clear();
+			myParam.pParticles3D.clear();
+			myParam.rParticles3D.clear();
+			myParam.trails.segments.clear();
+
+			physics.posX.clear();
+			physics.posY.clear();
+			physics.accX.clear();
+			physics.accY.clear();
+			physics.velX.clear();
+			physics.velY.clear();
+			physics.prevVelX.clear();
+			physics.prevVelY.clear();
+			physics.mass.clear();
+			physics.temp.clear();
+
+			physics3D.posX.clear();
+			physics3D.posY.clear();
+			physics3D.accX.clear();
+			physics3D.accY.clear();
+			physics3D.velX.clear();
+			physics3D.velY.clear();
+			physics3D.prevVelX.clear();
+			physics3D.prevVelY.clear();
+			physics3D.mass.clear();
+			physics3D.temp.clear();
+
+			globalNodes.clear();
+			globalNodes3D.clear();
+		}
 
 		if (myVar.is3DMode) {
 
@@ -420,8 +458,9 @@ void main() {
 
 		// Ray Tracing and Long Exposure
 		if (accumulationCondition) {
-
 			BeginTextureMode(pingPongTexture);
+
+			rlDisableColorBlend();
 
 			BeginShaderMode(accumulationShader);
 
@@ -455,14 +494,18 @@ void main() {
 
 			EndShaderMode();
 
+			rlEnableColorBlend();
+
 			EndTextureMode();
-
 			std::swap(accumulatedTexture, pingPongTexture);
+		}
 
+		BeginDrawing();
 
-			if (myVar.longExposureFlag) {
-				myVar.longExposureCurrent++;
-			}
+		ClearBackground(BLACK);
+
+		if (myVar.flatParticleTexture3D || !myVar.is3DMode) {
+			BeginBlendMode(BLEND_ALPHA_PREMULTIPLY);
 		}
 
 		DrawTextureRec(
@@ -472,6 +515,9 @@ void main() {
 			WHITE
 		);
 
+		if (myVar.flatParticleTexture3D || !myVar.is3DMode) {
+			EndBlendMode();
+		}
 
 		DrawTextureRec(
 			myUITexture.texture,
@@ -480,11 +526,34 @@ void main() {
 			WHITE
 		);
 
-		EndBlendMode();
+		DrawTextureRec(
+			myUITexture.texture,
+			Rectangle{ 0, 0, static_cast<float>(GetScreenWidth()), -static_cast<float>(GetScreenHeight()) },
+			Vector2{ 0, 0 },
+			WHITE
+		);
 
+		BeginTextureMode(testSampleTexture);
 
-		// Detects if the user is recording the screen
-		myVar.isRecording = myParam.screenCapture.screenGrab(accumulatedTexture, myVar, myParam);
+		ClearBackground(BLACK);
+
+		if (myVar.flatParticleTexture3D || !myVar.is3DMode) {
+			BeginBlendMode(BLEND_ALPHA_PREMULTIPLY);
+		}
+
+		DrawTextureRec(
+			accumulatedTexture.texture,
+			Rectangle{ 0, 0, (float)GetScreenWidth(), -((float)GetScreenHeight()) },
+			Vector2{ 0, 0 },
+			WHITE
+		);
+		if (myVar.flatParticleTexture3D || !myVar.is3DMode) {
+			EndBlendMode();
+		}
+
+		EndTextureMode();
+
+		myVar.isRecording = myParam.screenCapture.screenGrab(testSampleTexture, myVar, myParam);
 
 		if (myVar.isRecording) {
 			DrawRectangleLinesEx({ 0,0, static_cast<float>(GetScreenWidth()), static_cast<float>(GetScreenHeight()) }, 3, RED);

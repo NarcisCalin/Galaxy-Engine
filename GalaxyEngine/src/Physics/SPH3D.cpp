@@ -310,54 +310,57 @@ void SPH3D::PCISPH(UpdateVariables& myVar, UpdateParameters& myParam) {
 void SPH3D::groundModeBoundary(std::vector<ParticlePhysics3D>& pParticles,
 	std::vector<ParticleRendering3D>& rParticles,
 	glm::vec3 domainSize, UpdateVariables& myVar) {
+
 #pragma omp parallel for
 	for (size_t i = 0; i < pParticles.size(); ++i) {
 		if (rParticles[i].isPinned) continue;
 		auto& p = pParticles[i];
 		p.acc.y -= myVar.verticalGravity;
 
+		bool hitX = false; 
+		bool hitY = false;
+		bool hitZ = false;
+
 		// Left wall
 		if (p.pos.x - radiusMultiplier < -domainSize.x / 2.0f) {
 			p.vel.x *= boundDamping;
-			p.vel.y *= boundaryFriction;
-			p.vel.z *= boundaryFriction;
 			p.pos.x = -domainSize.x / 2.0f + radiusMultiplier;
+			hitX = true;
 		}
 		// Right wall
 		if (p.pos.x + radiusMultiplier > domainSize.x / 2.0f) {
 			p.vel.x *= boundDamping;
-			p.vel.y *= boundaryFriction;
-			p.vel.z *= boundaryFriction;
 			p.pos.x = domainSize.x / 2.0f - radiusMultiplier;
+			hitX = true;
 		}
 		// Bottom wall
 		if (p.pos.y - radiusMultiplier < -domainSize.y / 2.0f) {
 			p.vel.y *= boundDamping;
-			p.vel.x *= boundaryFriction;
-			p.vel.z *= boundaryFriction;
 			p.pos.y = -domainSize.y / 2.0f + radiusMultiplier;
+			hitY = true;
 		}
 		// Top wall
 		if (p.pos.y + radiusMultiplier > domainSize.y / 2.0f) {
 			p.vel.y *= boundDamping;
-			p.vel.x *= boundaryFriction;
-			p.vel.z *= boundaryFriction;
 			p.pos.y = domainSize.y / 2.0f - radiusMultiplier;
+			hitY = true;
 		}
 		// Front wall
 		if (p.pos.z - radiusMultiplier < -domainSize.z / 2.0f) {
 			p.vel.z *= boundDamping;
-			p.vel.x *= boundaryFriction;
-			p.vel.y *= boundaryFriction;
 			p.pos.z = -domainSize.z / 2.0f + radiusMultiplier;
+			hitZ = true;
 		}
 		// Back wall
 		if (p.pos.z + radiusMultiplier > domainSize.z / 2.0f) {
 			p.vel.z *= boundDamping;
-			p.vel.x *= boundaryFriction;
-			p.vel.y *= boundaryFriction;
 			p.pos.z = domainSize.z / 2.0f - radiusMultiplier;
+			hitZ = true;
 		}
+
+		if (hitX) { p.vel.y *= 1.0f - myVar.boundaryFriction; p.vel.z *= 1.0f - myVar.boundaryFriction; }
+		if (hitY) { p.vel.x *= 1.0f - myVar.boundaryFriction; p.vel.z *= 1.0f - myVar.boundaryFriction; }
+		if (hitZ) { p.vel.x *= 1.0f - myVar.boundaryFriction; p.vel.y *= 1.0f - myVar.boundaryFriction; }
 	}
 }
 

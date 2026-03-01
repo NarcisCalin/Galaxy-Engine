@@ -306,6 +306,8 @@ struct ColorVisuals {
 
 				float shockMag = std::sqrt(shockwave.x * shockwave.x + shockwave.y * shockwave.y + shockwave.z * shockwave.z);
 
+				shockMag = std::log(std::max(shockMag, 0.0001f));
+
 				float clampedShock = std::clamp(shockMag, ShockwaveMinAcc, ShockwaveMaxAcc);
 				float normalizedShock = clampedShock / ShockwaveMaxAcc;
 

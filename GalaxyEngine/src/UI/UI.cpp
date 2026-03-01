@@ -64,7 +64,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 	std::vector<SimilarTypeButton::Mode> gpuSimd{
 { "GPU (Beta)", "Simulates gravity on the GPU", &myVar.isGPUEnabled },
-{ "Naive SIMD", "Simulates gravity with a Naive algorithm with SIMD vectorization (Recommended to leave turned off)", &myVar.naiveSIMD }
+{ "Naive", "Simulates gravity with a Naive algorithm. It is the most precise, but much slower", &myVar.naive }
 	};
 
 	ImGui::Spacing();
@@ -224,6 +224,8 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	SimilarTypeButton::buttonIterator(size, -1.0f, settingsButtonY, true, enabled);
 
 	ImGui::PopItemWidth();
+
+	buttonHelper("Flat 3D Particles", "Toggles how particles are displayed in 3D mode", myVar.flatParticleTexture3D, -1.0f, settingsButtonY, true, myVar.is3DMode);
 
 	ImGui::Spacing();
 	ImGui::Separator();
@@ -903,6 +905,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			sliderHelper("Fluid Cohesion", "Controls how sticky particles are", myVar.cohesionCoefficient, 0.0f, 10.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
 			sliderHelper("Fluid Delta", "Controls the scaling factor in the pressure solver to enforce fluid incompressibility", myVar.delta, 500.0f, 20000.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
 			sliderHelper("Fluid Max Velocity", "Controls the maximum velocity a particle can have in Fluid mode", myVar.sphMaxVel, 0.0f, 2000.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+			sliderHelper("Domain Friction", "Controls the friction of the domain walls", myVar.boundaryFriction, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
 		}
 
 		if (bSoundWindow) {
@@ -1012,7 +1015,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				tooltipText = "Start recording simulation frames";
 			}
 
-			if (buttonHelper(buttonText.c_str(), tooltipText.c_str(), myVar.playbackRecord, -1.0f, settingsButtonY, true, enabled)) {
+			if (buttonHelper(buttonText.c_str(), tooltipText.c_str(), myVar.playbackRecord, -1.0f, settingsButtonY, true, myVar.is3DMode)) {
 				
 				if (!myVar.playbackRecord) {
 					myVar.runPlayback = true;

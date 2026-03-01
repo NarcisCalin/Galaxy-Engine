@@ -25,7 +25,10 @@ void ParticleTrails::trailLogic(UpdateVariables& myVar, UpdateParameters& myPara
 			myParam.pParticles[i].pos.y - selectedParticlesAveragePos.y
 				};
 
-				glm::vec2 prevPos = myParam.pParticles[i].pos - myParam.pParticles[i].vel * myVar.timeFactor;
+				glm::vec2 prevPos = myParam.pParticles[i].pos
+					- myParam.pParticles[i].vel * myVar.timeFactor
+					+ 0.5f * myParam.pParticles[i].acc
+					* myVar.timeFactor * myVar.timeFactor;
 
 				glm::vec2 prevOffset = {
 			prevPos.x - selectedParticlesAveragePrevPos.x,
@@ -58,7 +61,10 @@ void ParticleTrails::trailLogic(UpdateVariables& myVar, UpdateParameters& myPara
 						pParticlePosSumX += selectedParticle.pos.x;
 						pParticlePosSumY += selectedParticle.pos.y;
 
-						glm::vec2 prevPos = selectedParticle.pos - selectedParticle.vel * myVar.timeFactor;
+						glm::vec2 prevPos = selectedParticle.pos
+							- selectedParticle.vel * myVar.timeFactor
+							+ 0.5f * selectedParticle.acc
+							* myVar.timeFactor * myVar.timeFactor;
 
 						pParticlePrevPosSumX += prevPos.x;
 						pParticlePrevPosSumY += prevPos.y;
@@ -90,7 +96,10 @@ void ParticleTrails::trailLogic(UpdateVariables& myVar, UpdateParameters& myPara
 			myParam.pParticlesSelected[i].pos.y - selectedParticlesAveragePos.y
 				};
 
-				glm::vec2 prevPos = myParam.pParticlesSelected[i].pos - myParam.pParticlesSelected[i].vel * myVar.timeFactor;
+				glm::vec2 prevPos = myParam.pParticlesSelected[i].pos
+					- myParam.pParticlesSelected[i].vel * myVar.timeFactor
+					+ 0.5f * myParam.pParticlesSelected[i].acc
+					* myVar.timeFactor * myVar.timeFactor;
 
 				glm::vec2 prevOffset = {
 			prevPos.x - selectedParticlesAveragePrevPos.x,
@@ -122,7 +131,10 @@ void ParticleTrails::trailLogic(UpdateVariables& myVar, UpdateParameters& myPara
 						pParticlePosSumX += selectedParticle.pos.x;
 						pParticlePosSumY += selectedParticle.pos.y;
 
-						glm::vec2 prevPos = selectedParticle.pos - selectedParticle.vel * myVar.timeFactor;
+						glm::vec2 prevPos = selectedParticle.pos
+							- selectedParticle.vel * myVar.timeFactor
+							+ 0.5f * selectedParticle.acc
+							* myVar.timeFactor * myVar.timeFactor;
 
 						pParticlePrevPosSumX += prevPos.x;
 						pParticlePrevPosSumY += prevPos.y;
@@ -147,14 +159,6 @@ void ParticleTrails::trailLogic(UpdateVariables& myVar, UpdateParameters& myPara
 	}
 
 	if (!myVar.isGlobalTrailsEnabled && !myVar.isSelectedTrailsEnabled) {
-		segments.clear();
-	}
-
-	if (IO::shortcutPress(KEY_C)) {
-		myParam.pParticles.clear();
-		myParam.rParticles.clear();
-		myParam.pParticles3D.clear();
-		myParam.rParticles3D.clear();
 		segments.clear();
 	}
 }
@@ -200,7 +204,10 @@ void ParticleTrails::trailLogic3D(UpdateVariables& myVar, UpdateParameters& myPa
 					myParam.pParticles3D[i].pos.z - selectedParticlesAveragePos3D.z
 				};
 
-				glm::vec3 prevPos = myParam.pParticles3D[i].pos - myParam.pParticles3D[i].vel * myVar.timeFactor;
+				glm::vec3 prevPos = myParam.pParticles3D[i].pos
+					- myParam.pParticles3D[i].vel * myVar.timeFactor
+					+ 0.5f * myParam.pParticles3D[i].acc
+					* myVar.timeFactor * myVar.timeFactor;
 
 				glm::vec3 prevOffset = {
 					prevPos.x - selectedParticlesAveragePrevPos3D.x,
@@ -237,7 +244,10 @@ void ParticleTrails::trailLogic3D(UpdateVariables& myVar, UpdateParameters& myPa
 						pParticlePosSumY += selectedParticle.pos.y;
 						pParticlePosSumZ += selectedParticle.pos.z;
 
-						glm::vec3 prevPos = selectedParticle.pos - selectedParticle.vel * myVar.timeFactor;
+						glm::vec3 prevPos = selectedParticle.pos
+							- selectedParticle.vel * myVar.timeFactor
+							+ 0.5f * selectedParticle.acc
+							* myVar.timeFactor * myVar.timeFactor;
 
 						pParticlePrevPosSumX += prevPos.x;
 						pParticlePrevPosSumY += prevPos.y;
@@ -280,7 +290,10 @@ void ParticleTrails::trailLogic3D(UpdateVariables& myVar, UpdateParameters& myPa
 					myParam.pParticlesSelected3D[i].pos.z - selectedParticlesAveragePos3D.z
 				};
 
-				glm::vec3 prevPos = myParam.pParticlesSelected3D[i].pos - myParam.pParticlesSelected3D[i].vel * myVar.timeFactor;
+				glm::vec3 prevPos = myParam.pParticlesSelected3D[i].pos
+					- myParam.pParticlesSelected3D[i].vel * myVar.timeFactor
+					+ 0.5f * myParam.pParticlesSelected3D[i].acc
+					* myVar.timeFactor * myVar.timeFactor;
 
 				glm::vec3 prevOffset = {
 					prevPos.x - selectedParticlesAveragePrevPos3D.x,
@@ -317,7 +330,10 @@ void ParticleTrails::trailLogic3D(UpdateVariables& myVar, UpdateParameters& myPa
 						pParticlePosSumY += selectedParticle.pos.y;
 						pParticlePosSumZ += selectedParticle.pos.z;
 
-						glm::vec3 prevPos = selectedParticle.pos - selectedParticle.vel * myVar.timeFactor;
+						glm::vec3 prevPos = selectedParticle.pos
+							- selectedParticle.vel * myVar.timeFactor
+							+ 0.5f * selectedParticle.acc
+							* myVar.timeFactor * myVar.timeFactor;
 
 						pParticlePrevPosSumX += prevPos.x;
 						pParticlePrevPosSumY += prevPos.y;

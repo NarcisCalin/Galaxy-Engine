@@ -448,7 +448,7 @@ void main() {
     vec3 currentOrigin = camPos;
     vec3 currentDir = rayDir;
     
-    RayResult result = fractal(currentOrigin, currentDir);
+    RayResult result = rayParticle(currentOrigin, currentDir);
     
     if (true) {
         finalColor += result.color;

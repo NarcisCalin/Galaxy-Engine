@@ -122,25 +122,18 @@ void Physics::calculateForceFromGrid(UpdateVariables& myVar) {
 
 			float distanceSq = d.x * d.x + d.y * d.y + softeningSq;
 
-			bool isSubgridsEmty = true;
+			bool isSubgridsEmpty = true;
 			uint32_t s00 = grid.subGrids[0][0];
 			uint32_t s01 = grid.subGrids[0][1];
 			uint32_t s10 = grid.subGrids[1][0];
 			uint32_t s11 = grid.subGrids[1][1];
 			if (s00 != UINT32_MAX || s01 != UINT32_MAX || s10 != UINT32_MAX || s11 != UINT32_MAX) {
-				isSubgridsEmty = false;
+				isSubgridsEmpty = false;
 			}
 
 			float gridSizeSq = gridSize * gridSize;
 
-			if ((gridSizeSq < thetaSq * distanceSq) || isSubgridsEmty) {
-
-				if (((grid.endIndex - grid.startIndex) <= 16 /*Max Leaf Particles*/ && grid.size <= 2.0f) /*Max Non-Dense Size*/ || (grid.endIndex - grid.startIndex) == 1) {
-					if (std::abs(posX[grid.startIndex] - posX[i]) < 0.001f && std::abs(posY[grid.startIndex] - posY[i]) < 0.001f) {
-						gridIdx += grid.next + 1;
-						continue;
-					}
-				}
+			if (gridSizeSq < thetaSq * distanceSq) {
 
 				float invDistance = 1.0f / sqrtf(distanceSq);
 				float invDist2 = invDistance * invDistance;
@@ -162,6 +155,188 @@ void Physics::calculateForceFromGrid(UpdateVariables& myVar) {
 							temp[i] += heatTransfer * myVar.timeFactor;
 						}
 					}
+				}
+
+				gridIdx += grid.next + 1;
+			}
+			else if (isSubgridsEmpty) {
+
+				for (uint32_t j = grid.startIndex; j < grid.endIndex; ++j) {
+					if (i == j) continue;
+
+					glm::vec2 p2pd = glm::vec2{ posX[j], posY[j] } - glm::vec2{ posX[i], posY[i] };
+
+					if (myVar.isPeriodicBoundaryEnabled && !myVar.infiniteDomain) {
+						p2pd.x -= myVar.domainSize.x * ((p2pd.x > myVar.halfDomainWidth) - (p2pd.x < -myVar.halfDomainWidth));
+						p2pd.y -= myVar.domainSize.y * ((p2pd.y > myVar.halfDomainHeight) - (p2pd.y < -myVar.halfDomainHeight));
+					}
+
+					float p2pdistSq = p2pd.x * p2pd.x + p2pd.y * p2pd.y + softeningSq;
+
+					float invDist = 1.0f / sqrtf(p2pdistSq);
+					float invDist2 = invDist * invDist;
+					float invDist3 = invDist2 * invDist;
+
+					float forceMag = Gf * pmass * mass[j] * invDist3;
+					totalForce += p2pd * forceMag;
+
+					if (myVar.isTempEnabled) {
+						float tempDiff = temp[j] - temp[i];
+						float p2pdist = 0.0f;
+
+						if (p2pdistSq > 1e-16f) p2pdist = 1.0f / invDist;
+						if (p2pdist > 1e-8f) {
+							float heatTransfer = myVar.globalHeatConductivity * tempDiff / p2pdist;
+							temp[i] += heatTransfer * myVar.timeFactor;
+						}
+					}
+				}
+
+				gridIdx += grid.next + 1;
+			}
+			else {
+				++gridIdx;
+			}
+		}
+
+		accX[i] = totalForce.x / mass[i];
+		accY[i] = totalForce.y / mass[i];
+	}
+}
+
+void Physics::calculateForceFromGridAVX2(UpdateVariables& myVar) {
+#pragma omp parallel for schedule(dynamic)
+	for (size_t i = 0; i < posX.size(); i++) {
+		glm::vec2 totalForce = { 0.0f,0.0f };
+
+		uint32_t gridIdx = 0;
+		const uint32_t nodeCount = static_cast<uint32_t>(globalNodes.size());
+
+		const float thetaSq = myVar.theta * myVar.theta;
+		const float softeningSq = myVar.softening * myVar.softening;
+		const float Gf = myVar.G;
+		const float pmass = mass[i];
+
+		while (gridIdx < nodeCount) {
+			Node& grid = globalNodes[gridIdx];
+
+			float gridMass = grid.gridMass;
+			if (gridMass <= 0.0f) {
+				gridIdx += grid.next + 1;
+				continue;
+			}
+
+			const glm::vec2 gridCOM = grid.centerOfMass;
+			const float gridSize = grid.size;
+
+			glm::vec2 d = gridCOM - glm::vec2{ posX[i], posY[i] };
+
+			if (myVar.isPeriodicBoundaryEnabled && !myVar.infiniteDomain) {
+				d.x -= myVar.domainSize.x * ((d.x > myVar.halfDomainWidth) - (d.x < -myVar.halfDomainWidth));
+				d.y -= myVar.domainSize.y * ((d.y > myVar.halfDomainHeight) - (d.y < -myVar.halfDomainHeight));
+			}
+
+			float distanceSq = d.x * d.x + d.y * d.y + softeningSq;
+
+			bool isSubgridsEmpty = true;
+			uint32_t s00 = grid.subGrids[0][0];
+			uint32_t s01 = grid.subGrids[0][1];
+			uint32_t s10 = grid.subGrids[1][0];
+			uint32_t s11 = grid.subGrids[1][1];
+			if (s00 != UINT32_MAX || s01 != UINT32_MAX || s10 != UINT32_MAX || s11 != UINT32_MAX) {
+				isSubgridsEmpty = false;
+			}
+
+			float gridSizeSq = gridSize * gridSize;
+
+			if (gridSizeSq < thetaSq * distanceSq) {
+
+				float invDistance = 1.0f / sqrtf(distanceSq);
+				float invDist2 = invDistance * invDistance;
+				float invDist3 = invDist2 * invDistance;
+
+				float forceMagnitude = Gf * pmass * gridMass * invDist3;
+				totalForce += d * forceMagnitude;
+
+				if (myVar.isTempEnabled) {
+					uint32_t count = grid.endIndex - grid.startIndex;
+					if (count > 0) {
+						float gridAverageTemp = grid.gridTemp / static_cast<float>(count);
+						float temperatureDifference = gridAverageTemp - temp[i];
+
+						float distance = 0.0f;
+						if (distanceSq > 1e-16f) distance = 1.0f / invDistance;
+						if (distance > 1e-8f) {
+							float heatTransfer = myVar.globalHeatConductivity * temperatureDifference / distance;
+							temp[i] += heatTransfer * myVar.timeFactor;
+						}
+					}
+				}
+
+				gridIdx += grid.next + 1;
+			}
+			else if (isSubgridsEmpty) {
+
+				__m256 vxi = _mm256_set1_ps(posX[i]);
+				__m256 vyi = _mm256_set1_ps(posY[i]);
+
+				__m256 vsofteningSq = _mm256_set1_ps(softeningSq);
+				__m256 vGfpmass = _mm256_set1_ps(Gf * pmass);
+
+				__m256 vforceX = _mm256_setzero_ps();
+				__m256 vforceY = _mm256_setzero_ps();
+
+				uint32_t j = grid.startIndex;
+
+				for (; j + 7 < grid.endIndex; j += 8) {
+
+					__m256 vxj = _mm256_loadu_ps(&posX[j]);
+					__m256 vyj = _mm256_loadu_ps(&posY[j]);
+					__m256 vmj = _mm256_loadu_ps(&mass[j]);
+
+					__m256 vdx = _mm256_sub_ps(vxj, vxi);
+					__m256 vdy = _mm256_sub_ps(vyj, vyi);
+
+					__m256 vdx2 = _mm256_mul_ps(vdx, vdx);
+					__m256 vdy2 = _mm256_mul_ps(vdy, vdy);
+					__m256 vdistSq = _mm256_add_ps(_mm256_add_ps(vdx2, vdy2), vsofteningSq);
+
+					__m256 vinvDist = _mm256_rsqrt_ps(vdistSq);
+
+					__m256 vinvDist2 = _mm256_mul_ps(vinvDist, vinvDist);
+					__m256 vinvDist3 = _mm256_mul_ps(vinvDist2, vinvDist);
+
+					__m256 vforceMag = _mm256_mul_ps(_mm256_mul_ps(vGfpmass, vmj), vinvDist3);
+
+					__m256 vmaskNotSelf = _mm256_cmp_ps(vdistSq, vsofteningSq, _CMP_NEQ_OQ);
+
+					vforceMag = _mm256_and_ps(vforceMag, vmaskNotSelf);
+
+					vforceX = _mm256_add_ps(vforceX, _mm256_mul_ps(vdx, vforceMag));
+					vforceY = _mm256_add_ps(vforceY, _mm256_mul_ps(vdy, vforceMag));
+				}
+
+				float tempFx[8];
+				float tempFy[8];
+				_mm256_storeu_ps(tempFx, vforceX);
+				_mm256_storeu_ps(tempFy, vforceY);
+
+				for (int k = 0; k < 8; ++k) {
+					totalForce.x += tempFx[k];
+					totalForce.y += tempFy[k];
+				}
+
+				for (; j < grid.endIndex; ++j) {
+					if (i == j) continue;
+
+					glm::vec2 p2pd = glm::vec2{ posX[j], posY[j] } - glm::vec2{ posX[i], posY[i] };
+					float p2pdistSq = p2pd.x * p2pd.x + p2pd.y * p2pd.y + softeningSq;
+
+					float invDist = 1.0f / sqrtf(p2pdistSq);
+					float invDist3 = invDist * invDist * invDist;
+
+					float forceMag = Gf * pmass * mass[j] * invDist3;
+					totalForce += p2pd * forceMag;
 				}
 
 				gridIdx += grid.next + 1;
@@ -216,6 +391,50 @@ void Physics::flattenParticles(std::vector<ParticlePhysics>& pParticles) {
 
 void Physics::naiveGravity(std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar) {
 	int n = static_cast<int>(posX.size());
+	const float* posXPtr = posX.data();
+	const float* posYPtr = posY.data();
+	const float* massPtr = mass.data();
+	float* accXPtr = accX.data();
+	float* accYPtr = accY.data();
+
+#pragma omp parallel for schedule(static)
+	for (int i = 0; i < n; i++) {
+		accXPtr[i] = 0.0f;
+		accYPtr[i] = 0.0f;
+	}
+
+#pragma omp parallel for schedule(dynamic, 64)
+	for (int i = 0; i < n; i++) {
+		float pix = posXPtr[i];
+		float piy = posYPtr[i];
+		float totalAccX = 0.0f;
+		float totalAccY = 0.0f;
+
+		for (int j = 0; j < n; j++) {
+			float dx = posXPtr[j] - pix;
+			float dy = posYPtr[j] - piy;
+
+			if (myVar.isPeriodicBoundaryEnabled && !myVar.infiniteDomain) {
+				dx -= myVar.domainSize.x * ((dx > myVar.halfDomainWidth) - (dx < -myVar.halfDomainWidth));
+				dy -= myVar.domainSize.y * ((dy > myVar.halfDomainHeight) - (dy < -myVar.halfDomainHeight));
+			}
+
+			float distSq = dx * dx + dy * dy + myVar.softening;
+			float invDist = 1.0f / std::sqrt(distSq);
+			float invDist3 = invDist * invDist * invDist;
+			float factor = myVar.G * massPtr[j] * invDist3;
+
+			totalAccX += dx * factor;
+			totalAccY += dy * factor;
+		}
+
+		accXPtr[i] = totalAccX;
+		accYPtr[i] = totalAccY;
+	}
+}
+
+void Physics::naiveGravityAVX2(std::vector<ParticlePhysics>& pParticles, UpdateVariables& myVar) {
+	int n = static_cast<int>(posX.size());
 	__m256 gVec = _mm256_set1_ps(myVar.G);
 	__m256 softVec = _mm256_set1_ps(myVar.softening);
 	const float* posXPtr = posX.data();
@@ -239,10 +458,10 @@ void Physics::naiveGravity(std::vector<ParticlePhysics>& pParticles, UpdateVaria
 
 #pragma omp parallel for schedule(dynamic, 64)
 	for (int i = 0; i < n; i++) {
-		float p_ix = posXPtr[i];
-		float p_iy = posYPtr[i];
-		__m256 pxi = _mm256_set1_ps(p_ix);
-		__m256 pyi = _mm256_set1_ps(p_iy);
+		float pix = posXPtr[i];
+		float piy = posYPtr[i];
+		__m256 pxi = _mm256_set1_ps(pix);
+		__m256 pyi = _mm256_set1_ps(piy);
 		__m256 totalAccX = _mm256_setzero_ps();
 		__m256 totalAccY = _mm256_setzero_ps();
 
@@ -273,20 +492,15 @@ void Physics::naiveGravity(std::vector<ParticlePhysics>& pParticles, UpdateVaria
 				dy = _mm256_sub_ps(dy, correction_y);
 			}
 
-			__m256 distSq =
-				_mm256_add_ps(
-					_mm256_add_ps(_mm256_mul_ps(dx, dx),
-						_mm256_mul_ps(dy, dy)),
-					softVec);
-			__m256 invDist = _mm256_div_ps(
-				_mm256_set1_ps(1.0f),
-				_mm256_sqrt_ps(distSq));
-			__m256 invDist3 =
-				_mm256_mul_ps(invDist,
-					_mm256_mul_ps(invDist, invDist));
-			__m256 factor =
-				_mm256_mul_ps(gVec,
-					_mm256_mul_ps(mj, invDist3));
+			__m256 distSq = _mm256_add_ps(
+				_mm256_add_ps(_mm256_mul_ps(dx, dx),
+					_mm256_mul_ps(dy, dy)),
+				softVec);
+
+			__m256 invDist = _mm256_rsqrt_ps(distSq);
+
+			__m256 invDist3 = _mm256_mul_ps(invDist, _mm256_mul_ps(invDist, invDist));
+			__m256 factor = _mm256_mul_ps(gVec, _mm256_mul_ps(mj, invDist3));
 			totalAccX = _mm256_add_ps(totalAccX, _mm256_mul_ps(dx, factor));
 			totalAccY = _mm256_add_ps(totalAccY, _mm256_mul_ps(dy, factor));
 		}
@@ -302,8 +516,8 @@ void Physics::naiveGravity(std::vector<ParticlePhysics>& pParticles, UpdateVaria
 			accY_array[4] + accY_array[5] + accY_array[6] + accY_array[7];
 
 		for (; j < n; j++) {
-			float dx = posXPtr[j] - p_ix;
-			float dy = posYPtr[j] - p_iy;
+			float dx = posXPtr[j] - pix;
+			float dy = posYPtr[j] - piy;
 
 			if (myVar.isPeriodicBoundaryEnabled && !myVar.infiniteDomain) {
 				dx -= myVar.domainSize.x * ((dx > myVar.halfDomainWidth) - (dx < -myVar.halfDomainWidth));
@@ -311,7 +525,9 @@ void Physics::naiveGravity(std::vector<ParticlePhysics>& pParticles, UpdateVaria
 			}
 
 			float distSq = dx * dx + dy * dy + myVar.softening;
-			float invDist = 1.0f / sqrt(distSq);
+
+			float invDist = _mm_cvtss_f32(_mm_rsqrt_ss(_mm_set_ss(distSq)));
+
 			float invDist3 = invDist * invDist * invDist;
 			float factor = myVar.G * massPtr[j] * invDist3;
 			finalAccX += dx * factor;

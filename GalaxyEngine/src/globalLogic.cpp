@@ -1143,6 +1143,15 @@ void updateScene() {
 		}
 	}
 
+	if (!myVar.is3DMode) {
+		myParam.particlesSpawning.particlesInitialConditions(physics, myVar, myParam);
+	}
+
+	if (!myVar.is3DMode) {
+		copyPaste.copyPasteParticles(myVar, myParam, physics);
+		copyPaste.copyPasteOptics(myParam, lighting);
+	}
+
 	if (myVar.timeFactor != 0.0f) {
 		physics.integrateStart(myParam.pParticles, myParam.rParticles, myVar);
 
@@ -1151,13 +1160,13 @@ void updateScene() {
 		}
 	}
 
-	if (myVar.timeFactor != 0.0f && !myVar.naiveSIMD) {
+	if (myVar.timeFactor != 0.0f && !myParam.pParticles.empty()) {
 		bb = boundingBox();
+		myParam.morton.computeMortonKeys(myParam.pParticles, bb);
+		myParam.morton.sortParticlesByMortonKey(myParam.pParticles, myParam.rParticles);
+	}
 
-		/*if (myVar.timeFactor >= 0) {
-			myParam.morton.computeMortonKeys(myParam.pParticles, bb);
-			myParam.morton.sortParticlesByMortonKey(myParam.pParticles, myParam.rParticles);
-		}*/
+	if (myVar.timeFactor != 0.0f && !myVar.naive && !myParam.pParticles.empty()) {
 
 		/*if (!myParam.pParticles.empty()) {
 			mortonToQuadtree();
@@ -1182,11 +1191,33 @@ void updateScene() {
 
 			Node& q = globalNodes[i];
 
-			DrawRectangleLinesEx({ q.pos.x, q.pos.y, q.size, q.size }, 1.0f, WHITE);
+			DrawLineV(
+				{ q.pos.x, q.pos.y },
+				{ q.pos.x + q.size, q.pos.y },
+				WHITE
+			);
 
-			if (q.gridMass > 0.0f) {
+			DrawLineV(
+				{ q.pos.x, q.pos.y + q.size },
+				{ q.pos.x + q.size, q.pos.y + q.size },
+				WHITE
+			);
+
+			DrawLineV(
+				{ q.pos.x, q.pos.y },
+				{ q.pos.x, q.pos.y + q.size },
+				WHITE
+			);
+
+			DrawLineV(
+				{ q.pos.x + q.size, q.pos.y },
+				{ q.pos.x + q.size, q.pos.y + q.size },
+				WHITE
+			);
+
+			/*if (q.gridMass > 0.0f) {
 				DrawCircleV({ q.centerOfMass.x, q.centerOfMass.y }, 2.0f, { 180,50,50,128 });
-			}
+			}*/
 
 			//DrawText(TextFormat("%i", i), q.pos.x + q.size * 0.5f, q.pos.y + q.size * 0.5f, 5.0f, { 255, 255, 255, 128 });
 		}
@@ -1265,10 +1296,6 @@ void updateScene() {
 		myParam.neighborSearch.cellSize = 3.0f;
 	}
 
-	if (!myVar.is3DMode) {
-		myParam.particlesSpawning.particlesInitialConditions(physics, myVar, myParam);
-	}
-
 	if (myVar.constraintsEnabled && !myVar.isBrushDrawing) {
 		physics.createConstraints(myParam.pParticles, myParam.rParticles, myVar.constraintAfterDrawingFlag, myVar, myParam);
 	}
@@ -1277,11 +1304,6 @@ void updateScene() {
 		physics.particleConstraints.clear();
 
 		physics.idToIndexTable.clear();
-	}
-
-	if (!myVar.is3DMode) {
-		copyPaste.copyPasteParticles(myVar, myParam, physics);
-		copyPaste.copyPasteOptics(myParam, lighting);
 	}
 
 	if ((myVar.timeFactor != 0.0f /*&& myVar.gridExists*/) || myVar.isGPUEnabled) {
@@ -1294,22 +1316,36 @@ void updateScene() {
 		if (myVar.gravityMultiplier != 0.0f || myVar.isTempEnabled) {
 			if (!myVar.isGPUEnabled) {
 
-				if (!myVar.naiveSIMD) {
+				physics.flattenParticles(myParam.pParticles);
 
-					physics.flattenParticles(myParam.pParticles);
-
-					physics.calculateForceFromGrid(myVar);
-
-					physics.readFlattenBack(myParam.pParticles);
+				if (!myVar.naive) {
+					if (!myVar.hasAVX2) {
+						if (myParam.pParticles.size() < 5000) {
+							physics.naiveGravity(myParam.pParticles, myVar);
+						}
+						else {
+							physics.calculateForceFromGrid(myVar);
+						}
+					}
+					else {
+						if (myParam.pParticles.size() < 5000) {
+							physics.naiveGravityAVX2(myParam.pParticles, myVar);
+						}
+						else {
+							physics.calculateForceFromGridAVX2(myVar);
+						}
+					}
 				}
 				else {
-					physics.flattenParticles(myParam.pParticles);
-
-					physics.naiveGravity(myParam.pParticles, myVar);
-
-					physics.readFlattenBack(myParam.pParticles);
-
+					if (!myVar.hasAVX2) {
+						physics.naiveGravity(myParam.pParticles, myVar);
+					}
+					else {
+						physics.naiveGravityAVX2(myParam.pParticles, myVar);
+					}
 				}
+
+				physics.readFlattenBack(myParam.pParticles);
 			}
 			else {
 				gpuGravity();
@@ -1541,6 +1577,10 @@ void mode3D() {
 		myVar.isPlaybackOn = false;
 	}
 
+	myParam.particlesSpawning3D.particlesInitialConditions(physics3D, myVar, myParam);
+
+	copyPaste.copyPasteParticles3D(myVar, myParam, physics3D);
+
 	if (myVar.timeFactor != 0.0f && !myVar.isPlaybackOn) {
 		physics3D.integrateStart3D(myParam.pParticles3D, myParam.rParticles3D, myVar);
 
@@ -1549,8 +1589,13 @@ void mode3D() {
 		}
 	}
 
-	if (myVar.timeFactor != 0.0f && !myVar.naiveSIMD && !myVar.isPlaybackOn) {
+	if (myVar.timeFactor != 0.0f && !myParam.pParticles3D.empty()) {
 		bb3D = boundingBox3D(myParam.pParticles3D);
+		myParam.morton.computeMortonKeys3D(myParam.pParticles3D, bb3D);
+		myParam.morton.sortParticlesByMortonKey3D(myParam.pParticles3D, myParam.rParticles3D);
+	}
+
+	if (myVar.timeFactor != 0.0f && !myVar.naive && !myVar.isPlaybackOn) {
 
 		globalNodes3D.clear();
 
@@ -1574,7 +1619,7 @@ void mode3D() {
 
 			Node3D& q = globalNodes3D[i];
 
-			DrawCubeWiresV({ q.pos.x, q.pos.y, q.pos.z }, { q.size, q.size, q.size }, { 128,128,128,32 });
+			DrawCubeWiresV({ q.pos.x, q.pos.y, q.pos.z }, { q.size, q.size, q.size }, { 128,128,128,64 });
 
 			/*if (q.gridMass > 0.0f) {
 				DrawCircleV({ q.centerOfMass.x, q.centerOfMass.y }, 2.0f, { 180,50,50,128 });
@@ -1607,8 +1652,6 @@ void mode3D() {
 	myParam.brush3D.brushPosLogic(myParam, myVar);
 	myParam.brush3D.brushSize();
 
-	myParam.particlesSpawning3D.particlesInitialConditions(physics3D, myVar, myParam);
-
 	if (myVar.constraintsEnabled && !myVar.isBrushDrawing) {
 		physics3D.createConstraints(myParam.pParticles3D, myParam.rParticles3D, myVar.constraintAfterDrawingFlag, myVar, myParam);
 	}
@@ -1629,22 +1672,36 @@ void mode3D() {
 		if (myVar.gravityMultiplier != 0.0f || myVar.isTempEnabled) {
 
 
-			if (!myVar.naiveSIMD) {
+			physics3D.flattenParticles3D(myParam.pParticles3D);
 
-				physics3D.flattenParticles3D(myParam.pParticles3D);
-
-				physics3D.calculateForceFromGrid3D(myVar);
-
-				physics3D.readFlattenBack3D(myParam.pParticles3D);
+			if (!myVar.naive) {
+				if (!myVar.hasAVX2) {
+					if (myParam.pParticles3D.size() < 5000) {
+						physics3D.naiveGravity3D(myParam.pParticles3D, myVar);
+					}
+					else {
+						physics3D.calculateForceFromGrid3D(myVar);
+					}
+				}
+				else {
+					if (myParam.pParticles3D.size() < 5000) {
+						physics3D.naiveGravity3DAVX2(myParam.pParticles3D, myVar);
+					}
+					else {
+						physics3D.calculateForceFromGrid3DAVX2(myVar);
+					}
+				}
 			}
 			else {
-				physics3D.flattenParticles3D(myParam.pParticles3D);
-
-				physics3D.naiveGravity3D(myParam.pParticles3D, myVar);
-
-				physics3D.readFlattenBack3D(myParam.pParticles3D);
-
+				if (!myVar.hasAVX2) {
+					physics3D.naiveGravity3D(myParam.pParticles3D, myVar);
+				}
+				else {
+					physics3D.naiveGravity3DAVX2(myParam.pParticles3D, myVar);
+				}
 			}
+
+			physics3D.readFlattenBack3D(myParam.pParticles3D);
 		}
 
 		if (myVar.isSPHEnabled) {
@@ -1693,8 +1750,6 @@ void mode3D() {
 	myParam.brush3D.particlesAttractor(myVar, myParam);
 	myParam.brush3D.particlesSpinner(myVar, myParam);
 
-	copyPaste.copyPasteParticles3D(myVar, myParam, physics3D);
-
 	pinParticles3D();
 
 	if (myVar.isRayMarcherOn) {
@@ -1705,6 +1760,14 @@ void mode3D() {
 void drawConstraints3D() {
 
 	if (myVar.visualizeMesh) {
+		struct MeshEdge {
+			size_t i, j;
+			glm::vec3 piPos, pjCorrectedPos;
+			Color lineColor;
+			float distSq;
+		};
+		std::vector<MeshEdge> edges;
+
 		for (size_t i = 0; i < myParam.pParticles3D.size(); i++) {
 			ParticlePhysics3D& pi = myParam.pParticles3D[i];
 
@@ -1732,12 +1795,31 @@ void drawConstraints3D() {
 					}
 
 					glm::vec3 pjCorrectedPos = pi.pos + periodicDelta;
+					glm::vec3 mid = (pi.pos + pjCorrectedPos) * 0.5f;
+					Vector3 midRay = { mid.x, mid.y, mid.z };
 
-					Color lineColor = ColorLerp(myParam.rParticles3D[i].color, myParam.rParticles3D[neighborIndex].color, 0.5f);
-
-					DrawLine3D({ pi.pos.x, pi.pos.y, pi.pos.z }, { pjCorrectedPos.x,pjCorrectedPos.y,pjCorrectedPos.z }, lineColor);
+					MeshEdge edge;
+					edge.i = i;
+					edge.j = neighborIndex;
+					edge.piPos = pi.pos;
+					edge.pjCorrectedPos = pjCorrectedPos;
+					edge.lineColor = ColorLerp(myParam.rParticles3D[i].color, myParam.rParticles3D[neighborIndex].color, 0.5f);
+					edge.distSq = Vector3DistanceSqr(midRay, myParam.myCamera3D.cam3D.position);
+					edges.push_back(edge);
 				}
 			}
+		}
+
+		std::sort(edges.begin(), edges.end(), [](const MeshEdge& a, const MeshEdge& b) {
+			return a.distSq > b.distSq;
+			});
+
+		for (const MeshEdge& edge : edges) {
+			DrawLine3D(
+				{ edge.piPos.x, edge.piPos.y, edge.piPos.z },
+				{ edge.pjCorrectedPos.x, edge.pjCorrectedPos.y, edge.pjCorrectedPos.z },
+				edge.lineColor
+			);
 		}
 	}
 
@@ -2452,7 +2534,7 @@ void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myRayTracingTexture,
 		for (size_t i = 0; i < myParam.pParticles.size() - 1; i++) {
 			DrawLineV({ myParam.pParticles[i].pos.x, myParam.pParticles[i].pos.y }, { myParam.pParticles[i + 1].pos.x,myParam.pParticles[i + 1].pos.y }, WHITE);
 
-			DrawText(TextFormat("%i", i), static_cast<int>(myParam.pParticles[i].pos.x), static_cast<int>(myParam.pParticles[i].pos.y) - 10, 10, { 128,128,128,128 });
+			//DrawText(TextFormat("%i", i), static_cast<int>(myParam.pParticles[i].pos.x), static_cast<int>(myParam.pParticles[i].pos.y) - 10, 10, { 128,128,128,128 });
 		}
 	}
 

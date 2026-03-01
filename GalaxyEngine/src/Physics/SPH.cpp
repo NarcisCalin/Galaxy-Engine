@@ -294,28 +294,28 @@ void SPH::groundModeBoundary(std::vector<ParticlePhysics>& pParticles,
 		// Left wall
 		if (p.pos.x - radiusMultiplier < 0.0f) {
 			p.vel.x *= boundDamping;
-			p.vel.y *= boundaryFriction;
+			p.vel.y *= 1.0f - myVar.boundaryFriction;
 			p.pos.x = radiusMultiplier;
 		}
 
 		// Right wall
 		if (p.pos.x + radiusMultiplier > domainSize.x) {
 			p.vel.x *= boundDamping;
-			p.vel.y *= boundaryFriction;
+			p.vel.y *= 1.0f - myVar.boundaryFriction;
 			p.pos.x = domainSize.x - radiusMultiplier;
 		}
 
 		// Bottom wall
 		if (p.pos.y - radiusMultiplier < 0.0f) {
 			p.vel.y *= boundDamping;
-			p.vel.x *= boundaryFriction;
+			p.vel.x *= 1.0f - myVar.boundaryFriction;
 			p.pos.y = radiusMultiplier;
 		}
 
 		// Top wall
 		if (p.pos.y + radiusMultiplier > domainSize.y) {
 			p.vel.y *= boundDamping;
-			p.vel.x *= boundaryFriction;
+			p.vel.x *= 1.0f - myVar.boundaryFriction;
 			p.pos.y = domainSize.y - radiusMultiplier;
 		}
 	}
