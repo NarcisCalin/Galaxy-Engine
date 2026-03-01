@@ -22,21 +22,25 @@ Special thanks to [Emily](https://github.com/Th3T3chn0G1t) for helping me on mul
 
 ---
 
+<img src="https://github.com/user-attachments/assets/d26ca9b3-51f6-4744-9561-4fab50ee0a96" width="1280">
+
 ![GalaxyCollisionField](https://github.com/user-attachments/assets/fa6d4eb8-7986-49dd-b274-e78ba03614bc)
 
 ![PlanetaryCollision](https://github.com/user-attachments/assets/15cd619c-3274-445c-9618-de88055d4ff0)
-
-<img width="1920" height="1080" alt="Screenshot_96" src="https://github.com/user-attachments/assets/898ae45d-ce00-4b3c-a1b1-13afd7bf814b" />
 
 ## Features
 ---
 ### INTERACTIVITY
 Galaxy Engine was built with interactivity in mind
 
+<img src="https://github.com/user-attachments/assets/affe69df-3d86-4593-baa4-80e7d7dc1372" width="1280">
+
 ![Interactivity](https://github.com/user-attachments/assets/ef3077a5-91c1-43fd-aa30-516b3e84fabc)
 
 ### SPH FLUID PHYSICS
 Galaxy Engine includes SPH fluid physics for different types of simulation
+
+<img src="https://github.com/user-attachments/assets/637dc0c9-2bce-4a5f-b93b-8d4036c6349a" width="1280">
 
 ![PlanetsHQ](https://github.com/user-attachments/assets/0bbe27c9-c61d-435e-b20d-9cd055591e41)
 
