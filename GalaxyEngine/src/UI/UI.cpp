@@ -513,7 +513,6 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	ImGui::Spacing();
 
 	buttonHelper("Highlight Selected", "Highlight selected particles", myParam.colorVisuals.selectedColor, -1.0f, settingsButtonY, true, enabled);
-	buttonHelper("Glow", "Enables glow shader", myVar.isGlowEnabled, -1.0f, settingsButtonY, true, enabled);
 	buttonHelper("Predict Path", "Predicts the trajectory of black holes before launching them", myVar.enablePathPrediction, -1.0f, settingsButtonY, true, enabled);
 
 	ImGui::GetStyle().ItemSpacing.y = oldSpacingY; // End the settings buttons spacing
@@ -624,6 +623,19 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	ImGui::BeginChild("##ContentRegion", ImVec2(0, 0), true); {
 
 		if (bVisualsSliders) {
+
+			ImGui::Spacing();
+			ImGui::Separator();
+
+			ImGui::TextColored(UpdateVariables::colMenuInformation, "Shader");
+
+			ImGui::Separator();
+			ImGui::Spacing();
+
+			buttonHelper("Glow", "Enables glow shader", myVar.isGlowEnabled, -1.0f, settingsButtonY, true, enabled);
+
+			sliderHelper("Glow Size", "Controls glow size", myVar.glowSize, 3, 48, parametersSliderX, parametersSliderY, enabled);
+			sliderHelper("Glow Strength", "Controls glow strength", myVar.glowStrength, 0.1f, 5.0f, parametersSliderX, parametersSliderY, enabled);
 
 			ImGui::Spacing();
 			ImGui::Separator();

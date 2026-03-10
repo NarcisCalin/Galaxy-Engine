@@ -359,4 +359,7 @@ struct UpdateVariables {
 	bool flatParticleTexture3D = true;
 
 	float boundaryFriction = 0.0f;
+
+	int glowSize = 12;
+	float glowStrength = 0.7f;
 };

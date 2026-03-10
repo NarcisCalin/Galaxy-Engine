@@ -59,8 +59,6 @@ int main(int argc, char** argv) {
 
 	Texture2D particleBlurTex = LoadTexture("Textures/ParticleBlur.png");
 
-	Shader myBloom = LoadShader(nullptr, "Shaders/bloom.fs");
-
 	RenderTexture2D myParticlesTexture = CreateFloatRenderTexture(GetScreenWidth(), GetScreenHeight());
 	RenderTexture2D myRayTracingTexture = CreateFloatRenderTexture(GetScreenWidth(), GetScreenHeight());
 	RenderTexture2D myUITexture = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
@@ -206,6 +204,8 @@ void main() {
     finalColor = clamp(finalColor, 0.0, 1.0);
 }
 )";
+
+	Shader myBloom = LoadShader(accumulationVs, "Shaders/bloom.fs");
 
 	Shader accumulationShader = LoadShaderFromMemory(accumulationVs, accumulationFs);
 
@@ -402,14 +402,6 @@ void main() {
 
 		//------------------------ RENDER TEXTURES BELOW ------------------------//
 
-		if (myVar.isGlowEnabled) {
-			BeginShaderMode(myBloom);
-		}
-
-		if (myVar.isGlowEnabled) {
-			EndShaderMode();
-		}
-
 		if (myParam.myCamera.cameraChangedThisFrame) {
 			lighting.shouldRender = true;
 		}
@@ -478,6 +470,7 @@ void main() {
 
 			if (myVar.longExposureFlag) {
 				sampleCount = static_cast<float>(myVar.longExposureCurrent);
+				myVar.longExposureCurrent++;
 			}
 			else {
 				myVar.longExposureCurrent = 0;
@@ -508,12 +501,41 @@ void main() {
 			BeginBlendMode(BLEND_ALPHA_PREMULTIPLY);
 		}
 
+		int resolutionLoc = GetShaderLocation(myBloom, "res");
+		SetShaderValue(myBloom, resolutionLoc,
+			(float[2]) {
+			(float)GetScreenWidth(), (float)GetScreenHeight()
+		},
+			SHADER_UNIFORM_VEC2);
+
+		int glowSizeLoc = GetShaderLocation(myBloom, "glowSize");
+
+		SetShaderValue(myBloom,
+			glowSizeLoc,
+			&myVar.glowSize,
+			SHADER_UNIFORM_INT);
+
+		int glowStrengthLoc = GetShaderLocation(myBloom, "glowStrength");
+
+		SetShaderValue(myBloom,
+			glowStrengthLoc,
+			&myVar.glowStrength,
+			SHADER_UNIFORM_FLOAT);
+
+		if (myVar.isGlowEnabled) {
+			BeginShaderMode(myBloom);
+		}
+
 		DrawTextureRec(
 			accumulatedTexture.texture,
 			Rectangle{ 0, 0, (float)GetScreenWidth(), -((float)GetScreenHeight()) },
 			Vector2{ 0, 0 },
 			WHITE
 		);
+
+		if (myVar.isGlowEnabled) {
+			EndShaderMode();
+		}
 
 		if (myVar.flatParticleTexture3D || !myVar.is3DMode) {
 			EndBlendMode();
