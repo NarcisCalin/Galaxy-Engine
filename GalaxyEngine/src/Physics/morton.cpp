@@ -6,7 +6,7 @@ uint64_t Morton::scaleToGrid(float pos, float minVal, float maxVal) {
     float normalized = (clamped - minVal) / (maxVal - minVal);
 
     uint64_t scaled = static_cast<uint64_t>(normalized * 262144.0f);
-    return std::min(scaled, 262143ULL);
+    return std::min(scaled, uint64_t(262143));
 }
 
 uint64_t Morton::spreadBits(uint64_t x) {
@@ -71,7 +71,7 @@ uint64_t Morton::scaleToGrid3D(float pos, float minVal, float maxVal) {
     float normalized = (clamped - minVal) / (maxVal - minVal);
 
     uint64_t scaled = static_cast<uint64_t>(normalized * 2097151.0f);
-    return std::min(scaled, 2097151ULL);
+    return std::min(scaled, uint64_t(2097151));
 }
 
 uint64_t Morton::spreadBits3D(uint64_t x) {
