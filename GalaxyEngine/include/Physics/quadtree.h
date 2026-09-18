@@ -40,7 +40,10 @@ struct Node {
 	uint32_t endIndex;
 	uint32_t next = 0;
 
-	uint32_t subGrids[2][2] = { { UINT32_MAX, UINT32_MAX }, { UINT32_MAX, UINT32_MAX } };
+	std::array<std::array<uint32_t, 2>, 2> subGrids{ {
+	{{UINT32_MAX, UINT32_MAX}},
+	{{UINT32_MAX, UINT32_MAX}}
+} };
 
 	Node(glm::vec2 pos, float size,
 		uint32_t startIndex, uint32_t endIndex,

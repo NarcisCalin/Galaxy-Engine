@@ -15,6 +15,8 @@ CopyPaste copyPaste;
 
 RayMarcher rayMarcher;
 
+Grid grid;
+
 Field field;
 
 std::vector<Node> globalNodes;
@@ -691,7 +693,7 @@ void gpuGravity() {
 			gridNext[i] = globalNodes[i].next;
 
 			GridChildren children;
-			memcpy(children.subGrids, globalNodes[i].subGrids, sizeof(uint32_t) * 4);
+			//memcpy(children.subGrids, globalNodes[i].subGrids, sizeof(uint32_t) * 4);
 			gridChildrenVector[i] = children;
 
 			gridPIndices[i] = globalNodes[i].startIndex;
@@ -1102,7 +1104,34 @@ uint32_t gridRootIndex;
 
 glm::vec3 bb = { 0.0f, 0.0f, 0.0f };
 
+bool lastOpticsState = myVar.isOpticsEnabled;
+
 void updateScene() {
+
+	if (lastOpticsState != myVar.isOpticsEnabled) {
+
+		myVar.toolDrawParticles = true;
+		myVar.isSpawningAllowed = true;
+
+		lastOpticsState = myVar.isOpticsEnabled;
+	}
+
+	if (myVar.isSPHEnabled) {
+		myVar.isDensitySizeEnabled = false;
+		myVar.isForceSizeEnabled = false;
+	}
+	else {
+		myVar.constraintsEnabled = false;
+	}
+
+	if (myVar.isSPHEnabled) {
+		myParam.particlesSpawning.massMultiplierEnabled = false;
+		myParam.particlesSpawning3D.massMultiplierEnabled = false;
+	}
+	else {
+		myParam.particlesSpawning.massMultiplierEnabled = true;
+		myParam.particlesSpawning3D.massMultiplierEnabled = true;
+	}
 
 	if (!myVar.is3DMode) {
 		// If menu is active, do not use mouse input for non-menu stuff. I keep raylib's own mouse input for the menu but the custom IO for non-menu stuff
@@ -1132,6 +1161,11 @@ void updateScene() {
 		field.initializeCells(myVar);
 	}
 
+	if (myVar.isCellularModeOn) {
+		grid.initGrid();
+		grid.gridLogic(myVar, myParam.brush.brushRadius);
+	}
+
 	myVar.G = 6.674e-11 * myVar.gravityMultiplier;
 
 	if (IO::shortcutPress(KEY_SPACE)) {
@@ -1143,7 +1177,7 @@ void updateScene() {
 		}
 	}
 
-	if (!myVar.is3DMode) {
+	if (!myVar.is3DMode && !myVar.isCellularModeOn) {
 		myParam.particlesSpawning.particlesInitialConditions(physics, myVar, myParam);
 	}
 
@@ -1155,7 +1189,7 @@ void updateScene() {
 	if (myVar.timeFactor != 0.0f) {
 		physics.integrateStart(myParam.pParticles, myParam.rParticles, myVar);
 
-		if (!myVar.isPeriodicBoundaryEnabled && !myVar.sphGround && !myVar.infiniteDomain) {
+		if (!myVar.isPeriodicBoundaryEnabled && !myVar.boundaryCollision && !myVar.infiniteDomain) {
 			physics.pruneParticles(myParam.pParticles, myParam.rParticles, myVar);
 		}
 	}
@@ -1313,7 +1347,7 @@ void updateScene() {
 			myParam.pParticles[i].acc = { 0.0f, 0.0f };
 		}
 
-		if (myVar.gravityMultiplier != 0.0f || myVar.isTempEnabled) {
+		if ((myVar.gravityMultiplier != 0.0f || myVar.isTempEnabled) && !myVar.verticalGravityEnabled) {
 			if (!myVar.isGPUEnabled) {
 
 				physics.flattenParticles(myParam.pParticles);
@@ -1352,8 +1386,9 @@ void updateScene() {
 			}
 		}
 
-		if (myVar.isMergerEnabled)
+		if (myVar.isMergerEnabled) {
 			physics.mergerSolver(myParam.pParticles, myParam.rParticles, myVar, myParam);
+		}
 
 		if (myVar.isSPHEnabled) {
 			sph.pcisphSolver(myVar, myParam);
@@ -1447,11 +1482,6 @@ void updateScene() {
 	}*/
 
 	myParam.myCamera.hasCamMoved();
-
-	if (myVar.sphGround) {
-		myVar.infiniteDomain = false;
-		myVar.isPeriodicBoundaryEnabled = false;
-	}
 }
 
 float boundingBox3DSize = 0.0f;
@@ -1584,7 +1614,7 @@ void mode3D() {
 	if (myVar.timeFactor != 0.0f && !myVar.isPlaybackOn) {
 		physics3D.integrateStart3D(myParam.pParticles3D, myParam.rParticles3D, myVar);
 
-		if (!myVar.isPeriodicBoundaryEnabled && !myVar.sphGround && !myVar.infiniteDomain) {
+		if (!myVar.isPeriodicBoundaryEnabled && !myVar.boundaryCollision && !myVar.infiniteDomain) {
 			physics3D.pruneParticles(myParam.pParticles3D, myParam.rParticles3D, myVar);
 		}
 	}
@@ -1669,7 +1699,7 @@ void mode3D() {
 			myParam.pParticles3D[i].acc = { 0.0f, 0.0f, 0.0f };
 		}
 
-		if (myVar.gravityMultiplier != 0.0f || myVar.isTempEnabled) {
+		if ((myVar.gravityMultiplier != 0.0f || myVar.isTempEnabled) && !myVar.verticalGravityEnabled) {
 
 
 			physics3D.flattenParticles3D(myParam.pParticles3D);
@@ -2411,7 +2441,6 @@ void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myRayTracingTexture,
 
 	if (!myVar.isGravityFieldEnabled) {
 
-
 		if (!myVar.is3DMode) {
 			Rectangle source = {
 		0.0f,
@@ -2482,6 +2511,10 @@ void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myRayTracingTexture,
 	}
 	else {
 		myVar.infiniteDomain = false;
+	}
+
+	if (myVar.isCellularModeOn) {
+		grid.drawCells();
 	}
 
 	EndTextureMode();

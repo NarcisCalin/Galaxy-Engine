@@ -289,7 +289,9 @@ void SPH::groundModeBoundary(std::vector<ParticlePhysics>& pParticles,
 		if (rParticles[i].isPinned) continue;
 
 		auto& p = pParticles[i];
-		p.acc.y += myVar.verticalGravity;
+		if (myVar.verticalGravityEnabled) {
+			p.acc.y += myVar.gravityMultiplier;
+		}
 
 		// Left wall
 		if (p.pos.x - radiusMultiplier < 0.0f) {

@@ -53,7 +53,7 @@ Camera2D SceneCamera::cameraLogic(bool& loadFlag, bool& isMouseNotHoveringUI) {
 		}
 
 		float scale = 0.2f * wheel;
-		camera.zoom = Clamp(expf(logf(camera.zoom) + scale), 0.475f, 64.0f);
+		camera.zoom = Clamp(expf(logf(camera.zoom) + scale), 0.2f, 64.0f);
 	}
 
 	// RESET CAMERA

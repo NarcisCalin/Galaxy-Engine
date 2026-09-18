@@ -315,7 +315,10 @@ void SPH3D::groundModeBoundary(std::vector<ParticlePhysics3D>& pParticles,
 	for (size_t i = 0; i < pParticles.size(); ++i) {
 		if (rParticles[i].isPinned) continue;
 		auto& p = pParticles[i];
-		p.acc.y -= myVar.verticalGravity;
+
+		if (myVar.verticalGravityEnabled) {
+			p.acc.y -= myVar.gravityMultiplier;
+		}
 
 		bool hitX = false; 
 		bool hitY = false;

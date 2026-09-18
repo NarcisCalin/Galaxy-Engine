@@ -41,7 +41,8 @@ struct PlotData {
 class UI {
 public:
 
-	bool bVisualsSliders = true;
+	bool bToolsSettings = true;
+	bool bVisualsSliders = false;
 	bool bPhysicsSliders = false;
 	bool bRecordingSettings = false;
 	bool bStatsWindow = false;

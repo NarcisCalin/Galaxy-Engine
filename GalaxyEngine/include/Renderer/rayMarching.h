@@ -113,7 +113,7 @@ struct RayMarcher {
 
 				minSceneDist = smoothMin(minSceneDist, surfaceDist, smoothingValue);
 
-				minRayLength = smoothMin(minRayLength, surfaceDist, smoothingValue);;
+				minRayLength = smoothMin(minRayLength, surfaceDist, smoothingValue);
 
 			}
 
@@ -292,14 +292,13 @@ float smoothMin(float a, float b, float k) {
     return mix(b, a, h) - k * h * (1.0 - h);
 }
 
-  float de(vec3 p){
-    float s=2., l=0.;
-    p=abs(p);
-    for(int j=0;j++<8;)
-      p=-sign(p)*(abs(abs(abs(p)-2.)-1.)-1.),
-      p*=l=-1.3/dot(p,p),
-      p-=.15, s*=l;
-    return length(p)/s;
+  float de( vec3 p0 ){
+    vec4 p = vec4(p0, 1.);
+    for(int i = 0; i < 8; i++){
+      p.xyz = mod(p.xyz-1.,2.)-1.;
+      p*=1.4/dot(p.xyz,p.xyz);
+    }
+    return (length(p.xz/p.w)*0.25);
   }
 
 vec3 calcNormal(vec3 p) {
@@ -448,7 +447,7 @@ void main() {
     vec3 currentOrigin = camPos;
     vec3 currentDir = rayDir;
     
-    RayResult result = rayParticle(currentOrigin, currentDir);
+    RayResult result = fractal(currentOrigin, currentDir);
     
     if (true) {
         finalColor += result.color;

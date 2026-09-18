@@ -138,8 +138,8 @@ int main(int argc, char** argv) {
 
 	// ---- Intro ---- //
 
-	bool fadeActive = true;
-	bool introActive = true;
+	bool fadeActive = false;
+	bool introActive = false;
 
 	myVar.customFont = LoadFontEx("fonts/Unispace Bd.otf", myVar.introFontSize, 0, 250);
 
@@ -548,13 +548,6 @@ void main() {
 			WHITE
 		);
 
-		DrawTextureRec(
-			myUITexture.texture,
-			Rectangle{ 0, 0, static_cast<float>(GetScreenWidth()), -static_cast<float>(GetScreenHeight()) },
-			Vector2{ 0, 0 },
-			WHITE
-		);
-
 		BeginTextureMode(testSampleTexture);
 
 		ClearBackground(BLACK);
@@ -591,7 +584,6 @@ void main() {
 			Vector2{ 0, 0 },
 			WHITE
 		);
-
 
 		EndDrawing();
 

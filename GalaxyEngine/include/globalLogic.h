@@ -35,6 +35,8 @@
 
 #include "Renderer/rayMarching.h"
 
+#include "Grid/Grid.h"
+
 #include "parameters.h"
 
 extern UpdateParameters myParam;
@@ -53,6 +55,8 @@ extern CopyPaste copyPaste;
 extern RayMarcher rayMarcher;
 
 extern Field field;
+
+extern Grid grid;
 
 struct ParticleBounds {
 	float minX, maxX, minY, maxY;

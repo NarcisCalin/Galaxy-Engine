@@ -105,7 +105,7 @@ struct UpdateVariables {
 	float halfDomain3DHeight = domainSize3D.y * 0.5f;
 	float halfDomain3DDepth = domainSize3D.z * 0.5f;
 
-	bool fullscreenState = true;
+	bool fullscreenState = false;
 
 	bool exitGame = false;
 
@@ -143,7 +143,7 @@ struct UpdateVariables {
 	bool isForceSizeEnabled = false;
 	bool isShipGasEnabled = true;
 	bool isSPHEnabled = false;
-	bool sphGround = false;
+	bool verticalGravityEnabled = false; // This is boundary collision
 	bool isTempEnabled = false;
 	bool constraintsEnabled = false;
 	bool isOpticsEnabled = false;
@@ -199,7 +199,7 @@ struct UpdateVariables {
 
 	bool isRecording = false;
 
-	float particleSizeMultiplier = 0.6f;
+	float particleSizeMultiplier = 1.0f;
 
 	bool isDragging = false;
 	bool isMouseNotHoveringUI = false;
@@ -284,15 +284,15 @@ struct UpdateVariables {
 
 	bool naive = false;
 
-	bool is3DMode = true;
+	bool is3DMode = false;
 
 	bool hasAVX2 = false;
 
 	float heavyParticleWeightMultiplier = 1.0f;
 	int predictPathLength = 1000;
 
-	float particleAmountMultiplier = 1.0;
-	float DMAmountMultiplier = 1.0f;
+	float particleAmountMultiplier = 0.5;
+	float DMAmountMultiplier = 0.5f;
 
 	float massScatter = 0.75f;
 
@@ -353,7 +353,6 @@ struct UpdateVariables {
 	std::string playbackPath = "playbackTemp/playback.bin";
 
 	bool lowResRayMarching = false;
-
 	bool isRayMarcherOn = false;
 
 	bool flatParticleTexture3D = true;
@@ -362,4 +361,8 @@ struct UpdateVariables {
 
 	int glowSize = 12;
 	float glowStrength = 0.7f;
+
+	bool isCellularModeOn = false;
+
+	bool boundaryCollision = false;
 };

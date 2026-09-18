@@ -6,11 +6,11 @@
 struct ColorVisuals {
 
 	bool solidColor = false;
-	bool densityColor = true;
+	bool densityColor = false;
 	bool velocityColor = false;
 	bool shockwaveColor = false;
 	bool turbulenceColor = false;
-	bool forceColor = false;
+	bool forceColor = true;
 	bool pressureColor = false;
 	bool temperatureColor = false;
 	bool gasTempColor = false;

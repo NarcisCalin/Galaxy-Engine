@@ -36,6 +36,9 @@ struct Field {
 
 	int prevRes = 150;
 
+	Color customColA = { 30, 30, 200, 255 };
+	Color customColB = { 200, 30, 30, 255 };
+
 	void initializeCells(UpdateVariables& myVar) {
 
 		if (prevDomainSize != myVar.domainSize) {
@@ -436,8 +439,7 @@ void main()
 
 	float gravityExposure = 3.0f;
 
-	void drawField(UpdateParameters& myParam, UpdateVariables& myVar)
-	{
+	void drawField(UpdateParameters& myParam, UpdateVariables& myVar) {
 		BeginMode2D(myParam.myCamera.camera);
 		BeginShaderMode(drawShader);
 
@@ -453,15 +455,15 @@ void main()
 		int highLoc = GetShaderLocation(drawShader, "colorHigh");
 
 		float lowColor[3] = {
-			static_cast<float>(myParam.colorVisuals.pColor.r / 255.0f),
-			static_cast<float>(myParam.colorVisuals.pColor.g / 255.0f),
-			static_cast<float>(myParam.colorVisuals.pColor.b / 255.0f)
+			static_cast<float>(customColA.r / 255.0f),
+			static_cast<float>(customColA.g / 255.0f),
+			static_cast<float>(customColA.b / 255.0f)
 		};
 
 		float highColor[3] = {
-			static_cast<float>(myParam.colorVisuals.sColor.r / 255.0f),
-			static_cast<float>(myParam.colorVisuals.sColor.g / 255.0f),
-			static_cast<float>(myParam.colorVisuals.sColor.b / 255.0f)
+			static_cast<float>(customColB.r / 255.0f),
+			static_cast<float>(customColB.g / 255.0f),
+			static_cast<float>(customColB.b / 255.0f)
 		};
 
 		SetShaderValue(drawShader, exposureLoc, &gravityExposure, SHADER_UNIFORM_FLOAT);

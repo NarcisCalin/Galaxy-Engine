@@ -434,7 +434,7 @@ void ParticlesSpawning::particlesInitialConditions(Physics& physics, UpdateVaria
 		}
 	}
 
-	if (IsMouseButtonReleased(0)) {
+	if (IsMouseButtonReleased(0) && !myVar.isOpticsEnabled) {
 		myVar.isSpawningAllowed = true;
 		myVar.isDragging = false;
 	}

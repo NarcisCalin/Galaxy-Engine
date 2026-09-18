@@ -626,7 +626,7 @@ void main() {
 
 		PCISPH(myVar, myParam);
 
-		if (myVar.sphGround) {
+		if (myVar.boundaryCollision) {
 			groundModeBoundary(myParam.pParticles, myParam.rParticles, myVar.domainSize, myVar);
 		}
 	}
