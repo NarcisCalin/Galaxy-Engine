@@ -311,3 +311,23 @@ struct SPHMaterials {
 		}
 	}
 };
+
+static SPHMaterial* getMaterial(uint32_t matId) {
+
+	SPHMaterial* pMat = nullptr;
+
+	pMat = SPHMaterials::idToMaterial[matId];
+
+	return pMat;
+}
+
+enum matIds {
+	null1,
+	water1,
+	rock1,
+	iron1,
+	sand1,
+	soil1,
+	mud1,
+	rubber1
+};

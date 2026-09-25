@@ -283,13 +283,11 @@ void main() {
 
 	for (int i = 0; i < 6; i++) {
 
-		ImageDraw(&verticalStrip, faces[i],
+		ImageDrawImageRec(&verticalStrip, faces[i],
 			(Rectangle) {
 			0, 0, (float)width, (float)height
 		},
-			(Rectangle) {
-			0, (float)(i * height), (float)width, (float)height
-		},
+			{ 0.0f, (float)(i * height) },
 			WHITE);
 
 		UnloadImage(faces[i]);
@@ -314,7 +312,7 @@ void main() {
 
 		BeginBlendMode(myParam.colorVisuals.blendMode);
 
-		if (IO::shortcutPress(KEY_C)) {
+		if (IO::shortcutPress(KEY_C) || myVar.clearScene) {
 			myParam.pParticles.clear();
 			myParam.rParticles.clear();
 			myParam.pParticles3D.clear();
@@ -345,6 +343,12 @@ void main() {
 
 			globalNodes.clear();
 			globalNodes3D.clear();
+
+			myParam.trails.segments3D.clear();
+
+			if (!myVar.isOpticsEnabled) {
+				myVar.clearScene = false;
+			}
 		}
 
 		if (myVar.is3DMode) {

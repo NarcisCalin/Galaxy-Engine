@@ -1643,7 +1643,7 @@ struct Lighting {
 			shouldRender = false;
 		}
 
-		if (IO::shortcutPress(KEY_C)) {
+		if (IO::shortcutPress(KEY_C) || myVar.clearScene) {
 			shouldRender = true;
 		}
 
@@ -1677,7 +1677,7 @@ struct Lighting {
 			accumulatedRays += static_cast<int>(rays.size());
 		}
 
-		if (IO::shortcutPress(KEY_C)) {
+		if (IO::shortcutPress(KEY_C) || myVar.clearScene) {
 			rays.clear();
 			pointLights.clear();
 			areaLights.clear();
@@ -1690,6 +1690,8 @@ struct Lighting {
 				wallPointers.push_back(&wall);
 			}
 			bvh.build(wallPointers);
+
+			myVar.clearScene = false;
 		}
 	}
 };

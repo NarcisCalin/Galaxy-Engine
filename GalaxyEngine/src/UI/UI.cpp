@@ -1,7 +1,7 @@
 #include "UI/UI.h"
 
 void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, SaveSystem& save, GESound& geSound,
-	Lighting& lighting, Field& field, ParticleSpaceship& ship) {
+	Lighting& lighting, Field& field, ParticleSpaceship& ship, ArmorMode& armor) {
 
 	if (IO::shortcutPress(KEY_U)) {
 		showSettings = !showSettings;
@@ -25,7 +25,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	float screenX = static_cast<float>(GetScreenWidth());
 	float screenY = static_cast<float>(GetScreenHeight());
 
-	float buttonsWindowX = 220.0f;
+	float buttonsWindowX = 270.0f;
 	float buttonsWindowY = screenY - 30.0f;
 
 	float settingsButtonX = 250.0f;
@@ -47,11 +47,6 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	float oldSpacingY = ImGui::GetStyle().ItemSpacing.y;
 	ImGui::GetStyle().ItemSpacing.y = 5.0f; // Set the spacing only for the settings buttons
 
-	std::vector<SimilarTypeButton::Mode> controlsAndInfo{
-{ "Controls", "Open controls panel", &myParam.controls.isShowControlsEnabled },
-{ "Information", "Open information panel", &myParam.controls.isInformationEnabled }
-	};
-
 	std::vector<SimilarTypeButton::Mode> trails{
 { "Enable Trails For All Particles", "Enables trails for all particles", &myVar.isGlobalTrailsEnabled },
 { "Enable Trails For Selected Particles", "Enables trails for selected particles", &myVar.isSelectedTrailsEnabled }
@@ -61,71 +56,6 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 { "Density Size", "Maps particle neighbor amount to size", &myVar.isDensitySizeEnabled },
 { "Force Size", "Maps particle acceleration to size", &myVar.isForceSizeEnabled }
 	};
-
-	ImGui::Spacing();
-	ImGui::Separator();
-
-	ImGui::TextColored(UpdateVariables::colMenuInformation, "General");
-
-	ImGui::Separator();
-	ImGui::Spacing();
-
-	buttonHelper("Fullscreen", "Toggles fulscreen", myVar.fullscreenState, -1.0f, settingsButtonY, true, enabled);
-
-	SimilarTypeButton::buttonIterator(controlsAndInfo, -1.0f, settingsButtonY, true, enabled);
-
-	buttonHelper("Multi-Threading", "Distributes the simulation across multiple threads", myVar.isMultiThreadingEnabled, -1.0f, settingsButtonY, true, enabled);
-
-	if (myVar.is3DMode) {
-		myVar.isGPUEnabled = false;
-	}
-
-	if (buttonHelper("3D Mode", "Enables 3D simulation", myVar.is3DMode, -1.0f, settingsButtonY, true, enabled)) {
-		myParam.pParticles.clear();
-		myParam.rParticles.clear();
-
-		myParam.pParticlesSelected.clear();
-		myParam.rParticlesSelected.clear();
-
-		myParam.pParticles3D.clear();
-		myParam.rParticles3D.clear();
-
-		myParam.pParticlesSelected3D.clear();
-		myParam.rParticlesSelected3D.clear();
-
-		myParam.trails.segments.clear();
-		myParam.trails.segments3D.clear();
-
-	}
-
-	ImGui::Spacing();
-	ImGui::Separator();
-
-	ImGui::TextColored(UpdateVariables::colMenuInformation, "Exit");
-
-	ImGui::Separator();
-	ImGui::Spacing();
-
-	buttonHelper("Exit Galaxy Engine", "Are you sure you don't want to play a little more?", myVar.exitGame, -1.0f, settingsButtonY, true, enabled);
-
-	ImGui::Spacing();
-	ImGui::Separator();
-
-	ImGui::TextColored(UpdateVariables::colMenuInformation, "Save/Load");
-
-	ImGui::Separator();
-	ImGui::Spacing();
-
-	buttonHelper("Save Scene", "Save current scene to disk", save.saveFlag, -1.0f, settingsButtonY, true, enabled);
-	buttonHelper("Load Scene", "Load a scene from disk", save.loadFlag, -1.0f, settingsButtonY, true, enabled);
-
-	ImGui::Spacing();
-	ImGui::Separator();
-
-	ImGui::TextColored(UpdateVariables::colMenuInformation, "Visuals");
-
-	ImGui::Separator();
-	ImGui::Spacing();
 
 	bool* colorModesArray[] = {
 		&myParam.colorVisuals.solidColor,
@@ -167,35 +97,22 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		}
 	}
 
-	ImGui::PushItemWidth(-FLT_MIN);
-
-	ImGui::Spacing();
-
-	ImGui::PopItemWidth();
-
-	buttonHelper("Flat 3D Particles", "Toggles how particles are displayed in 3D mode", myVar.flatParticleTexture3D, -1.0f, settingsButtonY, true, myVar.is3DMode);
-
-	ImGui::Spacing();
-	ImGui::Separator();
-
-	ImGui::TextColored(UpdateVariables::colMenuInformation, "Simulation");
-
-	ImGui::Separator();
-	ImGui::Spacing();
-
 	static bool galaxyModeDummy = false;
 
 	bool* simModesArray[] = {
 		&galaxyModeDummy,
-		&myVar.isSPHEnabled
-		//&myVar.isMergerEnabled
+		&myVar.isSPHEnabled,
+		&myVar.isOpticsEnabled,
+		&myVar.isArmorModeEnabled
 	};
 
-	const char* simModes[] = { "Galaxy Mode", "Material Mode" };
+	const char* simModes[] = { "Galaxy Mode", "Material Mode", "Optics", "Armor Mode"};
 
 	const char* simModeTips[] = {
 		"Default simulation mode. Used for very large scale simulations like galaxies or Big Bang",
-		"Enables SPH material simulation. Used for planets or small scale simulations. This allows solids"
+		"Enables SPH material simulation. Used for planets or small scale simulations. This allows solids",
+		"Optics simulation with PBR path tracing",
+		"Simulates ballistic collisions. UI settings are limited for specific gameplay"
 	};
 	static int currentSimMode = 0;
 
@@ -217,22 +134,163 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		}
 	}
 
+	if (myVar.isArmorModeEnabled) {
+		myVar.isSPHEnabled = true;
+	}
+
 	ImGui::PushItemWidth(-FLT_MIN);
+
+	if (ImGui::CollapsingHeader("File")) {
+		buttonHelper("Save Scene", "Save current scene to disk", save.saveFlag, -1.0f, settingsButtonY, true, enabled);
+		buttonHelper("Load Scene", "Load a scene from disk", save.loadFlag, -1.0f, settingsButtonY, true, enabled);
+		ImGui::Spacing();
+		ImGui::Separator();
+		ImGui::Spacing();
+	}
+
+	if (ImGui::CollapsingHeader("System")) {
+
+		buttonHelper("Fullscreen", "Toggles fulscreen", myVar.fullscreenState, -1.0f, settingsButtonY, true, enabled);
+
+		//sliderHelper("Threads Amount", "Controls the amount of threads used by the simulation. Half your total amount of threads is usually the sweet spot", myVar.threadsAmount, 1, 32, parametersSliderX, parametersSliderY, enabled);
+
+		buttonHelper("Information", "Open information panel", myParam.controls.isInformationEnabled, -1.0f, settingsButtonY, true, enabled);
+
+		buttonHelper("Multi-Threading", "Distributes the simulation across multiple threads", myVar.isMultiThreadingEnabled, -1.0f, settingsButtonY, true, enabled);
+
+		ImGui::Spacing();
+		ImGui::Separator();
+
+		ImGui::TextColored(UpdateVariables::colMenuInformation, "Exit");
+
+		ImGui::Separator();
+		ImGui::Spacing();
+
+		buttonHelper("Exit Galaxy Engine", "Are you sure you don't want to play a little more?", myVar.exitGame, -1.0f, settingsButtonY, true, enabled);
+	}
 
 	bool wasSPHEnabled = myVar.isSPHEnabled;
 	//bool wasMergerEnabled = myVar.isMergerEnabled;
 
-
-
-	ImGui::PopItemWidth();
-
 	ImGui::Spacing();
 	ImGui::Separator();
 
-	ImGui::TextColored(UpdateVariables::colMenuInformation, "Material Mode Material");
+	ImGui::TextColored(UpdateVariables::colMenuInformation, "Game Modes");
 
 	ImGui::Separator();
 	ImGui::Spacing();
+
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(8.0f, 10.0f));
+	if (ImGui::BeginCombo("##Simulation", simModes[currentSimMode])) {
+		for (int i = 0; i < IM_ARRAYSIZE(simModes); i++) {
+
+			bool isSelected = (currentSimMode == i);
+
+			if (ImGui::Selectable(simModes[i], isSelected)) {
+				currentSimMode = i;
+			}
+
+			if (isSelected) {
+				ImGui::SetItemDefaultFocus();
+			}
+
+			if (ImGui::IsItemHovered()) {
+				ImGui::BeginTooltip();
+				ImGui::TextUnformatted(simModeTips[i]);
+				ImGui::EndTooltip();
+			}
+
+
+		}
+		ImGui::EndCombo();
+
+		for (int i = 0; i < IM_ARRAYSIZE(simModesArray); ++i) {
+			*simModesArray[i] = false;
+		}
+
+		*simModesArray[currentSimMode] = true;
+
+		bool anyModeActive = false;
+		for (int i = 0; i < IM_ARRAYSIZE(simModesArray); ++i) {
+			if (*simModesArray[i]) {
+				anyModeActive = true;
+				break;
+			}
+		}
+		if (!anyModeActive) {
+			galaxyModeDummy = true;
+			currentSimMode = 0;
+		}
+
+		if (!wasSPHEnabled && (myVar.isSPHEnabled || myVar.isArmorModeEnabled)) {
+			for (size_t i = 0; i < IM_ARRAYSIZE(colorModesArray); i++) {
+				*colorModesArray[i] = (colorModesArray[i] == &myParam.colorVisuals.SPHColor);
+				if (colorModesArray[i] == &myParam.colorVisuals.SPHColor) {
+					currentColorMode = i;
+
+					if (!myVar.isArmorModeEnabled) {
+						myVar.SPHWater = true;
+					}
+					else {
+						myVar.SPHIron = true;
+
+					}
+				}
+			}
+		}		
+
+		//if (!wasMergerEnabled && myVar.isMergerEnabled) {
+		//	for (size_t i = 0; i < IM_ARRAYSIZE(colorModesArray); i++) {
+		//		*colorModesArray[i] = (colorModesArray[i] == &myParam.colorVisuals.solidColor);
+		//		if (colorModesArray[i] == &myParam.colorVisuals.solidColor) {
+		//			currentColorMode = i;
+
+		//			//myParam.colorVisuals.pColor = { 255,255,255,255 };
+		//		}
+		//	}
+		//}
+
+		foundSimMode = false;
+		for (int i = 0; i < IM_ARRAYSIZE(simModesArray); i++) {
+			if (*simModesArray[i]) {
+				currentSimMode = i;
+				foundSimMode = true;
+				break;
+			}
+		}
+		if (!foundSimMode) {
+			galaxyModeDummy = true;
+			currentSimMode = 0;
+		}
+	}
+	ImGui::PopStyleVar();
+
+	if (!myVar.isOpticsEnabled) {
+		if (buttonHelper("3D Mode", "Enables 3D simulation", myVar.is3DMode, -1.0f, settingsButtonY, true, enabled)) {
+			myParam.pParticles.clear();
+			myParam.rParticles.clear();
+
+			myParam.pParticlesSelected.clear();
+			myParam.rParticlesSelected.clear();
+
+			myParam.pParticles3D.clear();
+			myParam.rParticles3D.clear();
+
+			myParam.pParticlesSelected3D.clear();
+			myParam.rParticlesSelected3D.clear();
+
+			myParam.trails.segments.clear();
+			myParam.trails.segments3D.clear();
+		}
+	}
+
+	ImGui::Spacing();
+	ImGui::Separator();
+	ImGui::Spacing();
+
+	if (myVar.is3DMode) {
+		myVar.isGPUEnabled = false;
+	}
 
 	bool* materialsArray[] = {
 		&myVar.SPHWater,
@@ -260,56 +318,454 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		}
 	}
 
-	ImGui::PushItemWidth(-FLT_MIN);
+	struct ToolButton {
+		const char* label;
+		const char* tooltip;
+		bool* flag;
+	};
 
-	ImGui::Spacing();
-	ImGui::Separator();
+	auto activateExclusiveTool = [](ToolButton* group, int count, int activeIndex) {
+		for (int i = 0; i < count; ++i) {
+			*group[i].flag = (i == activeIndex);
+		}
+		};
 
-	ImGui::TextColored(UpdateVariables::colMenuInformation, "Dark Matter");
+	if (ImGui::CollapsingHeader("Tools", ImGuiTreeNodeFlags_DefaultOpen)) {
+		if (!myVar.isOpticsEnabled) {
+			// Spawn Settings
+			if (ImGui::CollapsingHeader("Particle Spawn Tools", ImGuiTreeNodeFlags_DefaultOpen)) {
 
-	ImGui::Separator();
-	ImGui::Spacing();
+				ToolButton particleTools[] = {
+					{ "Draw Particles", "Draw particles with the brush", &myVar.toolDrawParticles },
+					{ "Box Tool", "Generate particles inside a box", &myVar.toolBoxDraw },
+					{ "Circle Tool", "Generate particles inside a circle", &myVar.toolDrawCircle },
+					{ "Black Hole", "Throw a black hole particle", &myVar.toolSpawnHeavyParticle },
+					{ "Galaxy", "Spawn a large galaxy", &myVar.toolSpawnGalaxy },
+					{ "Star", "Spawn a small star. This is not meant for material mode", &myVar.toolSpawnStar },
+					{ "Big Bang", "Spawn the Big Bang", &myVar.toolSpawnBigBang }
+				};
 
-	buttonHelper("Dark Matter", "Enables dark matter particles. This works for galaxies and Big Bang", myVar.isDarkMatterEnabled, -1.0f, settingsButtonY, true, enabled);
-	buttonHelper("Show Dark Matter", "Unhides dark matter particles", myParam.colorVisuals.showDarkMatterEnabled, -1.0f, settingsButtonY, true, enabled);
+				std::string galaxyLabel = "Galaxy";
+				std::string starLabel = "Star";
+				std::string bigBangLabel = "Big Bang";
 
-	ImGui::Spacing();
-	ImGui::Separator();
+				std::string boxToolLabel = "Box Tool";
+				std::string circleToolLabel = "Circle Tool";
 
-	ImGui::TextColored(UpdateVariables::colMenuInformation, "Space Modifiers");
+				for (int i = 0; i < IM_ARRAYSIZE(particleTools); ++i) {
 
-	ImGui::Separator();
-	ImGui::Spacing();
+					if ((particleTools[i].label == galaxyLabel ||
+						particleTools[i].label == starLabel ||
+						particleTools[i].label == bigBangLabel) && myVar.isSPHEnabled) {
+						continue;
+					}
 
-	buttonHelper("Boundary Collision", "Makes particles collide with the boundary walls", myVar.verticalGravityEnabled, -1.0f, settingsButtonY, true, myVar.isSPHEnabled);
+					if (particleTools[i].label == boxToolLabel && !myVar.isArmorModeEnabled) {
+						continue;
+					}
 
-	ImGui::Spacing();
-	ImGui::Separator();
+					if (particleTools[i].label == circleToolLabel && !myVar.isArmorModeEnabled) {
+						continue;
+					}
 
-	ImGui::TextColored(UpdateVariables::colMenuInformation, "Temperature");
+					if (buttonHelper(particleTools[i].label, particleTools[i].tooltip, *particleTools[i].flag, -1.0f, settingsButtonY, enabled, enabled)) {
+						activateExclusiveTool(particleTools, IM_ARRAYSIZE(particleTools), i);
 
-	ImGui::Separator();
-	ImGui::Spacing();
+						myVar.toolErase = false;
+						myVar.toolRadialForce = false;
+						myVar.toolSpin = false;
+						myVar.toolMove = false;
+						myVar.toolRaiseTemp = false;
+						myVar.toolLowerTemp = false;
 
-	buttonHelper("Temperature Simulation", "Enables temperature simulation", myVar.isTempEnabled, -1.0f, settingsButtonY, true, enabled);
+						myVar.toolPointLight = false;
+						myVar.toolAreaLight = false;
+						myVar.toolConeLight = false;
+						myVar.toolCircle = false;
+						myVar.toolDrawShape = false;
+						myVar.toolLens = false;
+						myVar.toolWall = false;
+						myVar.toolMoveOptics = false;
+						myVar.toolEraseOptics = false;
+						myVar.toolSelectOptics = false;
 
-	ImGui::Spacing();
-	ImGui::Separator();
+						myVar.longExposureFlag = false;
+					}
+				}
 
-	ImGui::TextColored(UpdateVariables::colMenuInformation, "Optics (2D Only)");
+				if (!myVar.toolSpawnHeavyParticle) {
 
-	ImGui::Separator();
-	ImGui::Spacing();
+					ImGui::Spacing();
+					ImGui::Separator();
+					ImGui::Spacing();
 
-	buttonHelper("Optics", "Enables light simulation with ray tracing. Simulate light from the Optics tab", myVar.isOpticsEnabled, -1.0f, settingsButtonY, true, enabled);
+					sliderHelper("Visible Particles Spawn Amount", "Controls the spawn amount of visible particles", myVar.particleAmountMultiplier, 0.1f, 100.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
 
-	ImGui::Spacing();
-	ImGui::Separator();
+					if (myVar.toolSpawnGalaxy || myVar.toolSpawnBigBang) {
+						sliderHelper("Dark Matter Particles Spawn Amount", "Controls the spawn amount of dark matter particles", myVar.DMAmountMultiplier, 0.1f, 100.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+					}
+					bool isSPHDisabled = !myVar.isSPHEnabled;
 
-	ImGui::TextColored(UpdateVariables::colMenuInformation, "Fields (2D Only)");
+					if (!myVar.isSPHEnabled) {
+						sliderHelper("Random Mass multiplier", "Controls how much mass can vary for each particle", myVar.massScatter, 0.0f, 1.0f, parametersSliderX, parametersSliderY, isSPHDisabled);
+					}
 
-	ImGui::Separator();
-	ImGui::Spacing();
+					if (myVar.isSPHEnabled) {
+
+						if (ImGui::BeginCombo("##Materials", materials[currentMat])) {
+							for (int i = 0; i < IM_ARRAYSIZE(materials); i++) {
+
+								bool isSelected = (currentMat == i);
+
+								if (ImGui::Selectable(materials[i], isSelected)) {
+									currentMat = i;
+								}
+
+								if (isSelected) {
+									ImGui::SetItemDefaultFocus();
+								}
+							}
+							ImGui::EndCombo();
+
+							for (int i = 0; i < IM_ARRAYSIZE(materialsArray); ++i) {
+								*materialsArray[i] = false;
+							}
+
+							*materialsArray[currentMat] = true;
+						}
+					}
+				}
+
+				if (myVar.toolSpawnGalaxy) {
+
+					if (!myVar.is3DMode) {
+
+						ImGui::Spacing();
+						ImGui::Separator();
+
+						ImGui::TextColored(UpdateVariables::colMenuInformation, "Disk");
+
+						ImGui::Separator();
+						ImGui::Spacing();
+
+						sliderHelper("Galaxy Outer Radius", "Controls the outer limit of the galaxy", myParam.particlesSpawning.outerRadius, 10.0f, 500.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+						sliderHelper("Galaxy Radius", "Controls the radius of the galaxy core", myParam.particlesSpawning.scaleLength, 10.0f, 500.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+
+						ImGui::Spacing();
+						ImGui::Separator();
+
+						ImGui::TextColored(UpdateVariables::colMenuInformation, "Dark Matter");
+
+						ImGui::Separator();
+						ImGui::Spacing();
+
+						sliderHelper("DM Halo Size", "Controls the size of the galaxy dark matter halo", myParam.particlesSpawning.outerRadiusDM, 500.0f, 12000.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+						sliderHelper("DM Halo Core Size", "Controls the size of the galaxy dark matter halo core", myParam.particlesSpawning.radiusCoreDM, 0.5f, 15.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+					}
+					else {
+						ImGui::Spacing();
+						ImGui::Separator();
+
+						ImGui::TextColored(UpdateVariables::colMenuInformation, "Rotation");
+
+						ImGui::Separator();
+						ImGui::Spacing();
+
+						sliderHelper("Disk Rotation X", "Controls rotation of disk in the X axist", myParam.particlesSpawning3D.diskAxisX, 0.0f, 180.0f, parametersSliderX, parametersSliderY, enabled);
+						sliderHelper("Disk Rotation Y", "Controls rotation of disk in the Y axist", myParam.particlesSpawning3D.diskAxisY, 0.0f, 180.0f, parametersSliderX, parametersSliderY, enabled);
+
+						ImGui::Spacing();
+						ImGui::Separator();
+
+						ImGui::TextColored(UpdateVariables::colMenuInformation, "Disk");
+
+						ImGui::Separator();
+						ImGui::Spacing();
+
+						sliderHelper("Galaxy Outer Radius", "Controls the outer limit of the galaxy", myParam.particlesSpawning3D.outerRadius, 10.0f, 500.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+						sliderHelper("Galaxy Core Radius", "Controls the radius of the galaxy core", myParam.particlesSpawning3D.radiusCore, 0.1f, 700.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+						sliderHelper("Galaxy Thickness", "Controls the thickness of the galaxy", myParam.particlesSpawning3D.diskThickness, 0.05f, 12.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+
+						ImGui::Spacing();
+						ImGui::Separator();
+
+						ImGui::TextColored(UpdateVariables::colMenuInformation, "Bulge");
+
+						ImGui::Separator();
+						ImGui::Spacing();
+
+						sliderHelper("Galaxy Bulge Size", "Controls the size of the galaxy central bulge", myParam.particlesSpawning3D.bulgeSize, 10.0f, 4000.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+						sliderHelper("Galaxy Bulge Thickness", "Controls the thickness of the galaxy central bulge", myParam.particlesSpawning3D.bulgeThickness, 0.5f, 15.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+
+						ImGui::Spacing();
+						ImGui::Separator();
+
+						ImGui::TextColored(UpdateVariables::colMenuInformation, "Dark Matter");
+
+						ImGui::Separator();
+						ImGui::Spacing();
+
+						sliderHelper("DM Halo Size", "Controls the size of the galaxy dark matter halo", myParam.particlesSpawning3D.outerRadiusDM, 500.0f, 12000.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+						sliderHelper("DM Halo Core Size", "Controls the size of the galaxy dark matter halo core", myParam.particlesSpawning3D.radiusCoreDM, 0.5f, 15.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+					}
+				}
+
+				if (myVar.toolSpawnHeavyParticle) {
+
+					ImGui::Spacing();
+					ImGui::Separator();
+					ImGui::Spacing();
+
+					sliderHelper("Black Hole Spawn Mass", "Controls the mass of black holes when spawned", myVar.heavyParticleWeightMultiplier, 0.005f, 15.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+
+					ImGui::Separator();
+
+					buttonHelper("Black Hole Path Prediction", "Predicts the trajectory of black holes before launching them", myVar.enablePathPrediction, -1.0f, settingsButtonY, true, enabled);
+					if (myVar.enablePathPrediction) {
+						sliderHelper("Path Prediction Length", "Controls how long is the predicted path", myVar.predictPathLength, 100, 2000, parametersSliderX, parametersSliderY, enabled);
+					}
+				}
+
+				ImGui::Spacing();
+				ImGui::Separator();
+				ImGui::Spacing();
+
+			}
+
+			// Brush tab
+			if (ImGui::CollapsingHeader("Brush Tools", ImGuiTreeNodeFlags_DefaultOpen)) {
+				ToolButton brushTools[] = {
+					{ "Eraser Brush", "Erase particles with the brush", &myVar.toolErase },
+					{ "Gravity Brush", "Push particles away. Hold LCTRL to invert.", &myVar.toolRadialForce },
+					{ "Spin Brush", "Spins particles. Hold LCTRL to invert.", &myVar.toolSpin },
+					{ "Grab Brush", "Grab particles inside the brush", &myVar.toolMove },
+					{ "Heat Brush", "Heats the particles inside the brush", &myVar.toolRaiseTemp },
+					{ "Cool Brush", "Cools the particles inside the brush", &myVar.toolLowerTemp }
+				};
+
+				for (int i = 0; i < IM_ARRAYSIZE(brushTools); ++i) {
+
+					std::string heat = "Heat Brush";
+					std::string cool = "Cool Brush";
+
+
+					if ((brushTools[i].label == heat || brushTools[i].label == cool) && !myVar.isTempEnabled) {
+						continue;
+					}
+
+					if (buttonHelper(brushTools[i].label, brushTools[i].tooltip, *brushTools[i].flag, -1.0f, settingsButtonY, enabled, enabled)) {
+						activateExclusiveTool(brushTools, IM_ARRAYSIZE(brushTools), i);
+
+						myVar.toolDrawParticles = false;
+						myVar.toolBoxDraw = false;
+						myVar.toolSpawnHeavyParticle = false;
+						myVar.toolSpawnGalaxy = false;
+						myVar.toolSpawnStar = false;
+						myVar.toolSpawnBigBang = false;
+
+						myVar.toolPointLight = false;
+						myVar.toolAreaLight = false;
+						myVar.toolConeLight = false;
+						myVar.toolCircle = false;
+						myVar.toolDrawShape = false;
+						myVar.toolLens = false;
+						myVar.toolWall = false;
+						myVar.toolMoveOptics = false;
+						myVar.toolEraseOptics = false;
+						myVar.toolSelectOptics = false;
+
+						myVar.longExposureFlag = false;
+					}
+				}
+
+				if (myVar.toolRadialForce) {
+
+					ImGui::Spacing();
+					ImGui::Separator();
+					ImGui::Spacing();
+
+					sliderHelper("Gravity Brush Strength", "Controls the strength of the gravity brush", myVar.brushAttractForceMult, 0.01f, 10.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+				}
+				if (myVar.toolSpin) {
+
+					ImGui::Spacing();
+					ImGui::Separator();
+					ImGui::Spacing();
+
+					sliderHelper("Spin Brush Strength", "Controls the strength of the spin brush", myVar.brushSpinForceMult, 0.01f, 10.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+				}
+
+				ImGui::Spacing();
+				ImGui::Separator();
+				ImGui::Spacing();
+			}
+
+			// Fun tools tab
+			if (ImGui::CollapsingHeader("Fun Tools")) {
+				ImGui::Spacing();
+				ImGui::Separator();
+
+				ImGui::TextColored(UpdateVariables::colMenuInformation, "Long Exposure");
+
+				ImGui::Separator();
+				ImGui::Spacing();
+
+				buttonHelper("Start Long Exposure", "Enable long exposure", myVar.longExposureFlag, -1.0f, settingsButtonY, enabled, enabled);
+				sliderHelper("Long Exposure Duration", "Controls the duration of the long exposure shot", myVar.longExposureDuration, 2, 1000, parametersSliderX, parametersSliderY, enabled);
+
+				ImGui::Spacing();
+				ImGui::Separator();
+
+				ImGui::TextColored(UpdateVariables::colMenuInformation, ".PLY Export");
+
+				ImGui::Separator();
+				ImGui::Spacing();
+
+				buttonHelper("Export .ply File", "Exports particles to a .ply file", myVar.exportPlyFlag, -1.0f, settingsButtonY, true, enabled);
+				buttonHelper("Export .ply Seq.", "Exports particles to a .ply file each frame, creating a .ply sequence", myVar.exportPlySeqFlag, -1.0f, settingsButtonY, true, enabled);
+
+				if (myVar.plyFrameNumber != 0) {
+					ImGui::TextColored(UpdateVariables::colMenuInformation, "%s%d", "Frames Exported: ", myVar.plyFrameNumber);
+				}
+
+				ImGui::Spacing();
+				ImGui::Separator();
+
+				ImGui::TextColored(UpdateVariables::colMenuInformation, "Spaceship");
+
+				ImGui::Separator();
+				ImGui::Spacing();
+
+				buttonHelper("Enable Spaceship", "Enables controlling selected particles with arrow keys", ship.isShipEnabled, -1.0f, settingsButtonY, true, enabled);
+				if (ship.isShipEnabled) {
+					buttonHelper("Ship Gas", "Enables gas particles coming from the ship when controlling particles", myVar.isShipGasEnabled, -1.0f, settingsButtonY, true, enabled);
+					sliderHelper("Spaceship Acceleration", "Controls the acceleration of the spaceship when controlling particles", ship.acceleration, 1.0f, 16.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+				}
+			}
+		}
+
+		// Optics tab
+		if (myVar.isOpticsEnabled) {
+			if (ImGui::CollapsingHeader("Objects", ImGuiTreeNodeFlags_DefaultOpen)) {
+				ToolButton opticObjects[] = {
+					{ "Point Light", "Spawn point light", &myVar.toolPointLight },
+					{ "Area Light", "Spawn area light", &myVar.toolAreaLight },
+					{ "Cone Light", "Spawn cone light", &myVar.toolConeLight },
+					{ "Wall", "Spawn a wall", &myVar.toolWall },
+					{ "Circle", "Spawn a circle", &myVar.toolCircle },
+					{ "Draw Shape", "Draw a shape", &myVar.toolDrawShape },
+					{ "Lens", "Spawn a lens", &myVar.toolLens }
+				};
+
+				for (int i = 0; i < IM_ARRAYSIZE(opticObjects); ++i) {
+					if (buttonHelper(opticObjects[i].label, opticObjects[i].tooltip, *opticObjects[i].flag, -1.0f, settingsButtonY, enabled, myVar.isOpticsEnabled)) {
+						activateExclusiveTool(opticObjects, IM_ARRAYSIZE(opticObjects), i);
+
+						myVar.toolDrawParticles = false;
+						myVar.toolBoxDraw = false;
+						myVar.toolSpawnHeavyParticle = false;
+						myVar.toolSpawnGalaxy = false;
+						myVar.toolSpawnStar = false;
+						myVar.toolSpawnBigBang = false;
+
+						myVar.toolErase = false;
+						myVar.toolRadialForce = false;
+						myVar.toolSpin = false;
+						myVar.toolMove = false;
+						myVar.toolRaiseTemp = false;
+						myVar.toolLowerTemp = false;
+
+						myVar.toolMoveOptics = false;
+						myVar.toolEraseOptics = false;
+						myVar.toolSelectOptics = false;
+
+						myVar.longExposureFlag = false;
+					}
+				}
+
+				if (myVar.toolLens) {
+
+					ImGui::Spacing();
+					ImGui::Separator();
+					ImGui::Spacing();
+
+					buttonHelper("Symmetrical Lens", "Makes both sides of the next lens editable. Hold LCTRL to move both sides at the same time", lighting.symmetricalLens, -1.0f, settingsButtonY, enabled, enabled);
+				}
+
+				if (myVar.toolDrawShape) {
+
+					ImGui::Spacing();
+					ImGui::Separator();
+					ImGui::Spacing();
+
+					sliderHelper("Shape Relax Iter.", "Controls the iterations used to relax the shapes when drawing", lighting.shapeRelaxIter, 0, 50, parametersSliderX, parametersSliderY, enabled);
+					sliderHelper("Shape Relax Factor", "Controls how much the drawn shape should relax each iteration", lighting.shapeRelaxFactor, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled);
+				}
+
+				ImGui::Spacing();
+				ImGui::Separator();
+				ImGui::Spacing();
+
+			}
+
+			if (ImGui::CollapsingHeader("Optics Tools", ImGuiTreeNodeFlags_DefaultOpen)) {
+				ToolButton opticTools[] = {
+						{ "Move", "Move optics elements inside the brush", &myVar.toolMoveOptics },
+						{ "Erase", "Erase optics elements like walls and lights", &myVar.toolEraseOptics},
+						{ "Select", "Select optics elements like walls and lights to modify them. LCTRL adds to selection. LALT removes from selection. LSHIFT selects entire shapes.", &myVar.toolSelectOptics}
+				};
+
+				for (int i = 0; i < IM_ARRAYSIZE(opticTools); ++i) {
+					if (buttonHelper(opticTools[i].label, opticTools[i].tooltip, *opticTools[i].flag, -1.0f, settingsButtonY, enabled, myVar.isOpticsEnabled)) {
+						activateExclusiveTool(opticTools, IM_ARRAYSIZE(opticTools), i);
+
+						myVar.toolDrawParticles = false;
+						myVar.toolBoxDraw = false;
+						myVar.toolSpawnHeavyParticle = false;
+						myVar.toolSpawnGalaxy = false;
+						myVar.toolSpawnStar = false;
+						myVar.toolSpawnBigBang = false;
+
+						myVar.toolErase = false;
+						myVar.toolRadialForce = false;
+						myVar.toolSpin = false;
+						myVar.toolMove = false;
+						myVar.toolRaiseTemp = false;
+						myVar.toolLowerTemp = false;
+
+						myVar.toolPointLight = false;
+						myVar.toolAreaLight = false;
+						myVar.toolConeLight = false;
+						myVar.toolWall = false;
+						myVar.toolCircle = false;
+						myVar.toolDrawShape = false;
+						myVar.toolLens = false;
+
+						myVar.longExposureFlag = false;
+					}
+				}
+
+				if (myVar.toolMoveOptics) {
+
+					ImGui::Spacing();
+					ImGui::Separator();
+					ImGui::Spacing();
+
+					buttonHelper("Relax Shape When Moved", "Relaxes shapes when moving their walls. This is affected too by the relax sliders", lighting.relaxMove, -1.0f, settingsButtonY, enabled, enabled);
+
+					if (lighting.relaxMove) {
+						sliderHelper("Shape Relax Iter.", "Controls the iterations used to relax the shapes when drawing", lighting.shapeRelaxIter, 0, 50, parametersSliderX, parametersSliderY, enabled);
+						sliderHelper("Shape Relax Factor", "Controls how much the drawn shape should relax each iteration", lighting.shapeRelaxFactor, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled);
+					}
+				}
+			}
+		}
+
+		// Armor Mode Tab
+		if (myVar.isArmorModeEnabled) {
+
+		}
+	}
 
 	bool isNot3DMode = !myVar.is3DMode;
 
@@ -317,20 +773,6 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		myVar.isGravityFieldEnabled = false;
 		myVar.gravityFieldDMParticles = false;
 	}
-
-	if (buttonHelper("Gravity Field", "Enables the gravity field visualization mode (IT IS RECOMMENDED TO USE SMALLER DOMAIN SIZES)", myVar.isGravityFieldEnabled, -1.0f, settingsButtonY, true, isNot3DMode)) {
-		field.computeField = true;
-	}
-	buttonHelper("DM Particles", "Enables ignores Dark Matter particles for the gravity field", myVar.gravityFieldDMParticles, -1.0f, settingsButtonY, true, isNot3DMode);
-
-	ImGui::Spacing();
-	ImGui::Separator();
-
-	ImGui::Spacing();
-	ImGui::TextColored(UpdateVariables::colMenuInformation, "Misc.");
-
-	ImGui::Separator();
-	ImGui::Spacing();
 
 	buttonHelper("Highlight Selected", "Highlight selected particles", myParam.colorVisuals.selectedColor, -1.0f, settingsButtonY, true, enabled);
 
@@ -352,36 +794,9 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 	if (ImGui::BeginTabBar("##MainTabBar", ImGuiTabBarFlags_NoTabListScrollingButtons)) {
 
-		if (ImGui::BeginTabItem("Tools")) {
-
-			bToolsSettings = true;
-			bVisualsSliders = false;
-			bPhysicsSliders = false;
-			bStatsWindow = false;
-			bRecordingSettings = false;
-			bSoundWindow = false;
-			bLightingWindow = false;
-
-			// Initialize all tabs for sliders defaults
-			if (loadSettings) {
-				bToolsSettings = true;
-				bVisualsSliders = true;
-				bPhysicsSliders = true;
-				bStatsWindow = true;
-				bRecordingSettings = true;
-				bSoundWindow = true;
-				bLightingWindow = true;
-
-				loadSettings = false;
-			}
-
-			ImGui::EndTabItem();
-		}
-
 		if (!myVar.isOpticsEnabled) {
 			if (ImGui::BeginTabItem("Visuals")) {
 
-				bToolsSettings = false;
 				bVisualsSliders = true;
 				bPhysicsSliders = false;
 				bStatsWindow = false;
@@ -389,12 +804,23 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				bSoundWindow = false;
 				bLightingWindow = false;
 
+				// Initialize all tabs for sliders defaults
+				if (loadSettings) {
+					bVisualsSliders = true;
+					bPhysicsSliders = true;
+					bStatsWindow = true;
+					bRecordingSettings = true;
+					bSoundWindow = true;
+					bLightingWindow = true;
+
+					loadSettings = false;
+				}
+
 				ImGui::EndTabItem();
 			}
 
 			if (ImGui::BeginTabItem("Physics")) {
 
-				bToolsSettings = false;
 				bVisualsSliders = false;
 				bPhysicsSliders = true;
 				bStatsWindow = false;
@@ -407,7 +833,6 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 			if (ImGui::BeginTabItem("Advanced Stats")) {
 
-				bToolsSettings = false;
 				bVisualsSliders = false;
 				bPhysicsSliders = false;
 				bStatsWindow = true;
@@ -420,7 +845,6 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 			if (ImGui::BeginTabItem("Recording")) {
 
-				bToolsSettings = false;
 				bVisualsSliders = false;
 				bPhysicsSliders = false;
 				bStatsWindow = false;
@@ -435,7 +859,6 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		if (myVar.isOpticsEnabled) {
 			if (ImGui::BeginTabItem("Optics")) {
 
-				bToolsSettings = false;
 				bVisualsSliders = false;
 				bPhysicsSliders = false;
 				bStatsWindow = false;
@@ -449,7 +872,6 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 		if (ImGui::BeginTabItem("Sound")) {
 
-			bToolsSettings = false;
 			bVisualsSliders = false;
 			bPhysicsSliders = false;
 			bStatsWindow = false;
@@ -472,424 +894,14 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 	ImGui::End();*/
 
-
-	struct ToolButton {
-		const char* label;
-		const char* tooltip;
-		bool* flag;
-	};
-
-	auto activateExclusiveTool = [](ToolButton* group, int count, int activeIndex) {
-		for (int i = 0; i < count; ++i) {
-			*group[i].flag = (i == activeIndex);
-		}
-		};
-
 	ImGui::BeginChild("##ContentRegion", ImVec2(0, 0), true); {
-
-		if (bToolsSettings) {
-
-			if (!myVar.isOpticsEnabled) {
-				// Spawn Settings
-				if (ImGui::CollapsingHeader("Particle Spawn Tools", ImGuiTreeNodeFlags_DefaultOpen)) {
-
-					ToolButton particleTools[] = {
-						{ "Draw Particles", "Draw particles with the brush", &myVar.toolDrawParticles },
-						{ "Black Hole", "Throw a black hole particle", &myVar.toolSpawnHeavyParticle },
-						{ "Galaxy", "Spawn a large galaxy", &myVar.toolSpawnGalaxy },
-						{ "Star", "Spawn a small star. This is not meant for material mode", &myVar.toolSpawnStar },
-						{ "Big Bang", "Spawn the Big Bang", &myVar.toolSpawnBigBang }
-					};
-
-					std::string galaxyLabel = "Galaxy";
-					std::string starLabel = "Star";
-					std::string bigBangLabel = "Big Bang";
-
-					for (int i = 0; i < IM_ARRAYSIZE(particleTools); ++i) {
-
-						if ((particleTools[i].label == galaxyLabel ||
-							particleTools[i].label == starLabel ||
-							particleTools[i].label == bigBangLabel) && myVar.isSPHEnabled) {
-							continue;
-						}
-
-						if (buttonHelper(particleTools[i].label, particleTools[i].tooltip, *particleTools[i].flag, -1.0f, settingsButtonY, enabled, enabled)) {
-							activateExclusiveTool(particleTools, IM_ARRAYSIZE(particleTools), i);
-
-							myVar.toolErase = false;
-							myVar.toolRadialForce = false;
-							myVar.toolSpin = false;
-							myVar.toolMove = false;
-							myVar.toolRaiseTemp = false;
-							myVar.toolLowerTemp = false;
-
-							myVar.toolPointLight = false;
-							myVar.toolAreaLight = false;
-							myVar.toolConeLight = false;
-							myVar.toolCircle = false;
-							myVar.toolDrawShape = false;
-							myVar.toolLens = false;
-							myVar.toolWall = false;
-							myVar.toolMoveOptics = false;
-							myVar.toolEraseOptics = false;
-							myVar.toolSelectOptics = false;
-
-							myVar.longExposureFlag = false;
-						}
-					}
-
-					if (!myVar.toolSpawnHeavyParticle) {
-
-						ImGui::Spacing();
-						ImGui::Separator();
-						ImGui::Spacing();
-
-						sliderHelper("Visible Particles Spawn Amount", "Controls the spawn amount of visible particles", myVar.particleAmountMultiplier, 0.1f, 100.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
-						sliderHelper("Dark Matter Particles Spawn Amount", "Controls the spawn amount of dark matter particles", myVar.DMAmountMultiplier, 0.1f, 100.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
-
-						bool isSPHDisabled = !myVar.isSPHEnabled;
-
-						if (!myVar.isSPHEnabled) {
-							sliderHelper("Random Mass multiplier", "Controls how much mass can vary for each particle", myVar.massScatter, 0.0f, 1.0f, parametersSliderX, parametersSliderY, isSPHDisabled);
-						}
-					}
-
-					if (myVar.toolSpawnGalaxy) {
-
-						if (!myVar.is3DMode) {
-
-							ImGui::Spacing();
-							ImGui::Separator();
-
-							ImGui::TextColored(UpdateVariables::colMenuInformation, "Disk");
-
-							ImGui::Separator();
-							ImGui::Spacing();
-
-							sliderHelper("Galaxy Outer Radius", "Controls the outer limit of the galaxy", myParam.particlesSpawning.outerRadius, 10.0f, 500.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
-							sliderHelper("Galaxy Radius", "Controls the radius of the galaxy core", myParam.particlesSpawning.scaleLength, 10.0f, 500.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
-
-							ImGui::Spacing();
-							ImGui::Separator();
-
-							ImGui::TextColored(UpdateVariables::colMenuInformation, "Dark Matter");
-
-							ImGui::Separator();
-							ImGui::Spacing();
-
-							sliderHelper("DM Halo Size", "Controls the size of the galaxy dark matter halo", myParam.particlesSpawning.outerRadiusDM, 500.0f, 12000.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
-							sliderHelper("DM Halo Core Size", "Controls the size of the galaxy dark matter halo core", myParam.particlesSpawning.radiusCoreDM, 0.5f, 15.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
-						}
-						else {
-							ImGui::Spacing();
-							ImGui::Separator();
-
-							ImGui::TextColored(UpdateVariables::colMenuInformation, "Rotation");
-
-							ImGui::Separator();
-							ImGui::Spacing();
-
-							sliderHelper("Disk Rotation X", "Controls rotation of disk in the X axist", myParam.particlesSpawning3D.diskAxisX, 0.0f, 180.0f, parametersSliderX, parametersSliderY, enabled);
-							sliderHelper("Disk Rotation Y", "Controls rotation of disk in the Y axist", myParam.particlesSpawning3D.diskAxisY, 0.0f, 180.0f, parametersSliderX, parametersSliderY, enabled);
-
-							ImGui::Spacing();
-							ImGui::Separator();
-
-							ImGui::TextColored(UpdateVariables::colMenuInformation, "Disk");
-
-							ImGui::Separator();
-							ImGui::Spacing();
-
-							sliderHelper("Galaxy Outer Radius", "Controls the outer limit of the galaxy", myParam.particlesSpawning3D.outerRadius, 10.0f, 500.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
-							sliderHelper("Galaxy Core Radius", "Controls the radius of the galaxy core", myParam.particlesSpawning3D.radiusCore, 0.1f, 700.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
-							sliderHelper("Galaxy Thickness", "Controls the thickness of the galaxy", myParam.particlesSpawning3D.diskThickness, 0.05f, 12.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
-
-							ImGui::Spacing();
-							ImGui::Separator();
-
-							ImGui::TextColored(UpdateVariables::colMenuInformation, "Bulge");
-
-							ImGui::Separator();
-							ImGui::Spacing();
-
-							sliderHelper("Galaxy Bulge Size", "Controls the size of the galaxy central bulge", myParam.particlesSpawning3D.bulgeSize, 10.0f, 4000.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
-							sliderHelper("Galaxy Bulge Thickness", "Controls the thickness of the galaxy central bulge", myParam.particlesSpawning3D.bulgeThickness, 0.5f, 15.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
-
-							ImGui::Spacing();
-							ImGui::Separator();
-
-							ImGui::TextColored(UpdateVariables::colMenuInformation, "Dark Matter");
-
-							ImGui::Separator();
-							ImGui::Spacing();
-
-							sliderHelper("DM Halo Size", "Controls the size of the galaxy dark matter halo", myParam.particlesSpawning3D.outerRadiusDM, 500.0f, 12000.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
-							sliderHelper("DM Halo Core Size", "Controls the size of the galaxy dark matter halo core", myParam.particlesSpawning3D.radiusCoreDM, 0.5f, 15.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
-						}
-					}
-
-					if (myVar.toolSpawnHeavyParticle) {
-
-						ImGui::Spacing();
-						ImGui::Separator();
-						ImGui::Spacing();
-
-						sliderHelper("Black Hole Spawn Mass", "Controls the mass of black holes when spawned", myVar.heavyParticleWeightMultiplier, 0.005f, 15.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
-
-						ImGui::Separator();
-
-						buttonHelper("Black Hole Path Prediction", "Predicts the trajectory of black holes before launching them", myVar.enablePathPrediction, -1.0f, settingsButtonY, true, enabled);
-						if (myVar.enablePathPrediction) {
-							sliderHelper("Path Prediction Length", "Controls how long is the predicted path", myVar.predictPathLength, 100, 2000, parametersSliderX, parametersSliderY, enabled);
-						}
-					}
-
-					ImGui::Spacing();
-					ImGui::Separator();
-					ImGui::Spacing();
-
-				}
-
-				// Brush tab
-				if (ImGui::CollapsingHeader("Brush Tools", ImGuiTreeNodeFlags_DefaultOpen)) {
-					ToolButton brushTools[] = {
-						{ "Eraser Brush", "Erase particles with the brush", &myVar.toolErase },
-						{ "Gravity Brush", "Push particles away. Hold LCTRL to invert.", &myVar.toolRadialForce },
-						{ "Spin Brush", "Spins particles. Hold LCTRL to invert.", &myVar.toolSpin },
-						{ "Grab Brush", "Grab particles inside the brush", &myVar.toolMove },
-						{ "Heat Brush", "Heats the particles inside the brush", &myVar.toolRaiseTemp },
-						{ "Cool Brush", "Cools the particles inside the brush", &myVar.toolLowerTemp }
-					};
-
-					for (int i = 0; i < IM_ARRAYSIZE(brushTools); ++i) {
-
-						std::string heat = "Heat Brush";
-						std::string cool = "Cool Brush";
-
-
-						if ((brushTools[i].label == heat || brushTools[i].label == cool) && !myVar.isTempEnabled) {
-							continue;
-						}
-
-						if (buttonHelper(brushTools[i].label, brushTools[i].tooltip, *brushTools[i].flag, -1.0f, settingsButtonY, enabled, enabled)) {
-							activateExclusiveTool(brushTools, IM_ARRAYSIZE(brushTools), i);
-
-							myVar.toolDrawParticles = false;
-							myVar.toolSpawnHeavyParticle = false;
-							myVar.toolSpawnGalaxy = false;
-							myVar.toolSpawnStar = false;
-							myVar.toolSpawnBigBang = false;
-
-							myVar.toolPointLight = false;
-							myVar.toolAreaLight = false;
-							myVar.toolConeLight = false;
-							myVar.toolCircle = false;
-							myVar.toolDrawShape = false;
-							myVar.toolLens = false;
-							myVar.toolWall = false;
-							myVar.toolMoveOptics = false;
-							myVar.toolEraseOptics = false;
-							myVar.toolSelectOptics = false;
-
-							myVar.longExposureFlag = false;
-						}
-					}
-
-					if (myVar.toolRadialForce) {
-
-						ImGui::Spacing();
-						ImGui::Separator();
-						ImGui::Spacing();
-
-						sliderHelper("Gravity Brush Strength", "Controls the strength of the gravity brush", myVar.brushAttractForceMult, 0.01f, 10.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
-					}
-					if (myVar.toolSpin) {
-
-						ImGui::Spacing();
-						ImGui::Separator();
-						ImGui::Spacing();
-
-						sliderHelper("Spin Brush Strength", "Controls the strength of the spin brush", myVar.brushSpinForceMult, 0.01f, 10.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
-					}
-
-					ImGui::Spacing();
-					ImGui::Separator();
-					ImGui::Spacing();
-				}
-
-				// Fun tools tab
-				if (ImGui::CollapsingHeader("Fun Tools")) {
-					ImGui::Spacing();
-					ImGui::Separator();
-
-					ImGui::TextColored(UpdateVariables::colMenuInformation, "Long Exposure");
-
-					ImGui::Separator();
-					ImGui::Spacing();
-
-					buttonHelper("Long Exposure Duration", "Controls the duration of the long exposure shot", myVar.longExposureFlag, -1.0f, settingsButtonY, enabled, enabled);
-					sliderHelper("Long Exposure Duration", "Controls the duration of the long exposure shot", myVar.longExposureDuration, 2, 1000, parametersSliderX, parametersSliderY, enabled);
-
-					ImGui::Spacing();
-					ImGui::Separator();
-
-					ImGui::TextColored(UpdateVariables::colMenuInformation, ".PLY Export");
-
-					ImGui::Separator();
-					ImGui::Spacing();
-
-					buttonHelper("Export .ply File", "Exports particles to a .ply file", myVar.exportPlyFlag, -1.0f, settingsButtonY, true, enabled);
-					buttonHelper("Export .ply Seq.", "Exports particles to a .ply file each frame, creating a .ply sequence", myVar.exportPlySeqFlag, -1.0f, settingsButtonY, true, enabled);
-
-					if (myVar.plyFrameNumber != 0) {
-						ImGui::TextColored(UpdateVariables::colMenuInformation, "%s%d", "Frames Exported: ", myVar.plyFrameNumber);
-					}
-
-					ImGui::Spacing();
-					ImGui::Separator();
-
-					ImGui::TextColored(UpdateVariables::colMenuInformation, "Spaceship");
-
-					ImGui::Separator();
-					ImGui::Spacing();
-
-					buttonHelper("Enable Spaceship", "Enables controlling particles", ship.isShipEnabled, -1.0f, settingsButtonY, true, enabled);
-					buttonHelper("Ship Gas", "Enables gas particles coming from the ship when controlling particles", myVar.isShipGasEnabled, -1.0f, settingsButtonY, true, enabled);
-					sliderHelper("Spaceship Acceleration", "Controls the acceleration of the spaceship when controlling particles", ship.acceleration, 1.0f, 16.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
-				}
-			}
-
-			// Optics tab
-			if (myVar.isOpticsEnabled) {
-				if (ImGui::CollapsingHeader("Objects", ImGuiTreeNodeFlags_DefaultOpen)) {
-					ToolButton opticObjects[] = {
-						{ "Point Light", "Spawn point light", &myVar.toolPointLight },
-						{ "Area Light", "Spawn area light", &myVar.toolAreaLight },
-						{ "Cone Light", "Spawn cone light", &myVar.toolConeLight },
-						{ "Wall", "Spawn a wall", &myVar.toolWall },
-						{ "Circle", "Spawn a circle", &myVar.toolCircle },
-						{ "Draw Shape", "Draw a shape", &myVar.toolDrawShape },
-						{ "Lens", "Spawn a lens", &myVar.toolLens }
-					};
-
-					for (int i = 0; i < IM_ARRAYSIZE(opticObjects); ++i) {
-						if (buttonHelper(opticObjects[i].label, opticObjects[i].tooltip, *opticObjects[i].flag, -1.0f, settingsButtonY, enabled, myVar.isOpticsEnabled)) {
-							activateExclusiveTool(opticObjects, IM_ARRAYSIZE(opticObjects), i);
-
-							myVar.toolDrawParticles = false;
-							myVar.toolSpawnHeavyParticle = false;
-							myVar.toolSpawnGalaxy = false;
-							myVar.toolSpawnStar = false;
-							myVar.toolSpawnBigBang = false;
-
-							myVar.toolErase = false;
-							myVar.toolRadialForce = false;
-							myVar.toolSpin = false;
-							myVar.toolMove = false;
-							myVar.toolRaiseTemp = false;
-							myVar.toolLowerTemp = false;
-
-							myVar.longExposureFlag = false;
-						}
-					}
-
-					ImGui::Spacing();
-					ImGui::Separator();
-					ImGui::Spacing();
-
-				}
-
-				if (ImGui::CollapsingHeader("Tools", ImGuiTreeNodeFlags_DefaultOpen)) {
-					ToolButton opticTools[] = {
-							{ "Move", "Move optics elements inside the brush", &myVar.toolMoveOptics },
-							{ "Erase", "Erase optics elements like walls and lights", &myVar.toolEraseOptics},
-							{ "Select", "Select optics elements like walls and lights to modify them. LCTRL adds to selection. LALT removes from selection. LSHIFT selects entire shapes.", &myVar.toolSelectOptics}
-					};
-
-					for (int i = 0; i < IM_ARRAYSIZE(opticTools); ++i) {
-						if (buttonHelper(opticTools[i].label, opticTools[i].tooltip, *opticTools[i].flag, -1.0f, settingsButtonY, enabled, myVar.isOpticsEnabled)) {
-							activateExclusiveTool(opticTools, IM_ARRAYSIZE(opticTools), i);
-
-							myVar.toolDrawParticles = false;
-							myVar.toolSpawnHeavyParticle = false;
-							myVar.toolSpawnGalaxy = false;
-							myVar.toolSpawnStar = false;
-							myVar.toolSpawnBigBang = false;
-
-							myVar.toolErase = false;
-							myVar.toolRadialForce = false;
-							myVar.toolSpin = false;
-							myVar.toolMove = false;
-							myVar.toolRaiseTemp = false;
-							myVar.toolLowerTemp = false;
-
-							myVar.longExposureFlag = false;
-						}
-					}
-				}
-			}
-		}
-
 
 		if (bVisualsSliders) {
 
 			if (ImGui::CollapsingHeader("Particle Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
 				if (ImGui::CollapsingHeader("Particle Color", ImGuiTreeNodeFlags_DefaultOpen)) {
 
-					Color primaryColors = {
-						static_cast<unsigned char>(myParam.colorVisuals.pColor.r),
-						static_cast<unsigned char>(myParam.colorVisuals.pColor.g),
-						static_cast<unsigned char>(myParam.colorVisuals.pColor.b),
-						static_cast<unsigned char>(myParam.colorVisuals.pColor.a) };
-
-					ImVec4 imguiPColor = rlImGuiColors::Convert(primaryColors);
-					static Color originalPColor = primaryColors;
-
-					bool placeholderP = false;
-
-					if (buttonHelper("Reset Primary Color", "Resets the secondary color picker", placeholderP, 240.0f, 30.0f, true, enabled)) {
-						myParam.colorVisuals.pColor.r = originalPColor.r;
-						myParam.colorVisuals.pColor.g = originalPColor.g;
-						myParam.colorVisuals.pColor.b = originalPColor.b;
-						myParam.colorVisuals.pColor.a = originalPColor.a;
-					}
-
-					if (ImGui::ColorPicker4("Primary Color", (float*)&imguiPColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
-						primaryColors = rlImGuiColors::Convert(imguiPColor);
-						myParam.colorVisuals.pColor.r = primaryColors.r;
-						myParam.colorVisuals.pColor.g = primaryColors.g;
-						myParam.colorVisuals.pColor.b = primaryColors.b;
-						myParam.colorVisuals.pColor.a = primaryColors.a;
-					}
-
-					Color secondaryColors = {
-						static_cast<unsigned char>(myParam.colorVisuals.sColor.r),
-						static_cast<unsigned char>(myParam.colorVisuals.sColor.g),
-						static_cast<unsigned char>(myParam.colorVisuals.sColor.b),
-						static_cast<unsigned char>(myParam.colorVisuals.sColor.a) };
-
-					ImVec4 imguiSColor = rlImGuiColors::Convert(secondaryColors);
-					static Color originalSColor = secondaryColors;
-
-					bool placeholderS = false;
-
-					if (buttonHelper("Reset Secondary Col.", "Resets the primary color picker", placeholderS, 240.0f, 30.0f, true, enabled)) {
-						myParam.colorVisuals.sColor.r = originalSColor.r;
-						myParam.colorVisuals.sColor.g = originalSColor.g;
-						myParam.colorVisuals.sColor.b = originalSColor.b;
-						myParam.colorVisuals.sColor.a = originalSColor.a;
-					}
-
-					if (ImGui::ColorPicker4("Secondary Col.", (float*)&imguiSColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
-						secondaryColors = rlImGuiColors::Convert(imguiSColor);
-						myParam.colorVisuals.sColor.r = secondaryColors.r;
-						myParam.colorVisuals.sColor.g = secondaryColors.g;
-						myParam.colorVisuals.sColor.b = secondaryColors.b;
-						myParam.colorVisuals.sColor.a = secondaryColors.a;
-					}
-
-					if (ImGui::CollapsingHeader("Color Parameters")) {
-
+					if (ImGui::CollapsingHeader("Color Modes"), ImGuiTreeNodeFlags_DefaultOpen) {
 
 						std::string temperatureColMenu = "Temperature Color";
 						std::string temperatureGasMenu = "Temperature Gas Color";
@@ -961,9 +973,62 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 						if (myParam.colorVisuals.temperatureColor || myParam.colorVisuals.gasTempColor) {
 							sliderHelper("Temperature Color Threshold", "Controls the max temperature used to map the colors in the temperature color mode", myParam.colorVisuals.tempColorMaxTemp, 10.0f, 50000.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
 						}
-						if (myVar.constraintsEnabled) {
-							sliderHelper("Constraint Stress Threshold", "Controls the max constraint stress used to map the colors in the constraints stress color mode. If set to 0, it will set the max stress to the material's breaking limit", myVar.constraintMaxStressColor, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
-						}
+
+						ImGui::Spacing();
+						ImGui::Separator();
+						ImGui::Spacing();
+					}
+
+					Color primaryColors = {
+						static_cast<unsigned char>(myParam.colorVisuals.pColor.r),
+						static_cast<unsigned char>(myParam.colorVisuals.pColor.g),
+						static_cast<unsigned char>(myParam.colorVisuals.pColor.b),
+						static_cast<unsigned char>(myParam.colorVisuals.pColor.a) };
+
+					ImVec4 imguiPColor = rlImGuiColors::Convert(primaryColors);
+					static Color originalPColor = primaryColors;
+
+					bool placeholderP = false;
+
+					if (buttonHelper("Reset Primary Color", "Resets the secondary color picker", placeholderP, 240.0f, 30.0f, true, enabled)) {
+						myParam.colorVisuals.pColor.r = originalPColor.r;
+						myParam.colorVisuals.pColor.g = originalPColor.g;
+						myParam.colorVisuals.pColor.b = originalPColor.b;
+						myParam.colorVisuals.pColor.a = originalPColor.a;
+					}
+
+					if (ImGui::ColorPicker4("Primary Color", (float*)&imguiPColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
+						primaryColors = rlImGuiColors::Convert(imguiPColor);
+						myParam.colorVisuals.pColor.r = primaryColors.r;
+						myParam.colorVisuals.pColor.g = primaryColors.g;
+						myParam.colorVisuals.pColor.b = primaryColors.b;
+						myParam.colorVisuals.pColor.a = primaryColors.a;
+					}
+
+					Color secondaryColors = {
+						static_cast<unsigned char>(myParam.colorVisuals.sColor.r),
+						static_cast<unsigned char>(myParam.colorVisuals.sColor.g),
+						static_cast<unsigned char>(myParam.colorVisuals.sColor.b),
+						static_cast<unsigned char>(myParam.colorVisuals.sColor.a) };
+
+					ImVec4 imguiSColor = rlImGuiColors::Convert(secondaryColors);
+					static Color originalSColor = secondaryColors;
+
+					bool placeholderS = false;
+
+					if (buttonHelper("Reset Secondary Col.", "Resets the primary color picker", placeholderS, 240.0f, 30.0f, true, enabled)) {
+						myParam.colorVisuals.sColor.r = originalSColor.r;
+						myParam.colorVisuals.sColor.g = originalSColor.g;
+						myParam.colorVisuals.sColor.b = originalSColor.b;
+						myParam.colorVisuals.sColor.a = originalSColor.a;
+					}
+
+					if (ImGui::ColorPicker4("Secondary Col.", (float*)&imguiSColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
+						secondaryColors = rlImGuiColors::Convert(imguiSColor);
+						myParam.colorVisuals.sColor.r = secondaryColors.r;
+						myParam.colorVisuals.sColor.g = secondaryColors.g;
+						myParam.colorVisuals.sColor.b = secondaryColors.b;
+						myParam.colorVisuals.sColor.a = secondaryColors.a;
 					}
 
 					ImGui::Spacing();
@@ -1066,8 +1131,14 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				ImGui::Spacing();
 			}
 
-			if (myVar.isGravityFieldEnabled) {
-				if (ImGui::CollapsingHeader("Gravity Field Settings")) {
+
+			if (ImGui::CollapsingHeader("Gravity Field Settings")) {
+
+				if (buttonHelper("Gravity Field", "Enables the gravity field visualization mode (IT IS RECOMMENDED TO USE SMALLER DOMAIN SIZES)", myVar.isGravityFieldEnabled, -1.0f, settingsButtonY, true, isNot3DMode)) {
+					field.computeField = true;
+				}
+				if (myVar.isGravityFieldEnabled) {
+					buttonHelper("Dark Matter Contribution", "Takes dark matter particles into account for the gravity field", myVar.gravityFieldDMParticles, -1.0f, settingsButtonY, true, isNot3DMode);
 
 					sliderHelper("Field Resolution", "Controls how much gravity affects the field colors", field.res, 50, 1000, parametersSliderX, parametersSliderY, enabled);
 					sliderHelper("Strength Threshold", "Controls how much gravity affects the field colors", field.gravityDisplayThreshold, 10.0f, 3000.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
@@ -1153,6 +1224,9 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 			}
 
 			if (ImGui::CollapsingHeader("Misc. Settings")) {
+
+				buttonHelper("Highlight Selected", "Highlight selected particles", myParam.colorVisuals.selectedColor, -1.0f, settingsButtonY, true, enabled);
+
 				if (buttonHelper("Visualize Mesh", "Draws a mesh that connect particles", myVar.visualizeMesh, -1.0f, settingsButtonY, true, enabled)) {
 					myVar.drawConstraints = false;
 				}
@@ -1165,95 +1239,16 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				}
 
 				buttonHelper("Visualize Space Filling Curves", "Draws the space filling curves which are used for optimization", myVar.drawZCurves, -1.0f, settingsButtonY, true, enabled);
+
+				if (myVar.is3DMode) {
+					buttonHelper("Flat 3D Particles", "Toggles how particles are displayed in 3D mode", myVar.flatParticleTexture3D, -1.0f, settingsButtonY, true, myVar.is3DMode);
+				}
 			}
 		}
 
 		if (bPhysicsSliders) {
 
-			if (ImGui::BeginCombo("##Simulation", simModes[currentSimMode])) {
-				for (int i = 0; i < IM_ARRAYSIZE(simModes); i++) {
-
-					bool isSelected = (currentSimMode == i);
-
-					if (ImGui::Selectable(simModes[i], isSelected)) {
-						currentSimMode = i;
-					}
-
-					if (isSelected) {
-						ImGui::SetItemDefaultFocus();
-					}
-
-					if (ImGui::IsItemHovered()) {
-						ImGui::BeginTooltip();
-						ImGui::TextUnformatted(simModeTips[i]);
-						ImGui::EndTooltip();
-					}
-
-
-				}
-				ImGui::EndCombo();
-
-				for (int i = 0; i < IM_ARRAYSIZE(simModesArray); ++i) {
-					*simModesArray[i] = false;
-				}
-
-				*simModesArray[currentSimMode] = true;
-
-				bool anyModeActive = false;
-				for (int i = 0; i < IM_ARRAYSIZE(simModesArray); ++i) {
-					if (*simModesArray[i]) {
-						anyModeActive = true;
-						break;
-					}
-				}
-				if (!anyModeActive) {
-					galaxyModeDummy = true;
-					currentSimMode = 0;
-				}
-
-				if (!wasSPHEnabled && myVar.isSPHEnabled) {
-					for (size_t i = 0; i < IM_ARRAYSIZE(colorModesArray); i++) {
-						*colorModesArray[i] = (colorModesArray[i] == &myParam.colorVisuals.SPHColor);
-						if (colorModesArray[i] == &myParam.colorVisuals.SPHColor) {
-							currentColorMode = i;
-
-							myVar.SPHWater = true;
-						}
-					}
-				}
-
-				//if (!wasMergerEnabled && myVar.isMergerEnabled) {
-				//	for (size_t i = 0; i < IM_ARRAYSIZE(colorModesArray); i++) {
-				//		*colorModesArray[i] = (colorModesArray[i] == &myParam.colorVisuals.solidColor);
-				//		if (colorModesArray[i] == &myParam.colorVisuals.solidColor) {
-				//			currentColorMode = i;
-
-				//			//myParam.colorVisuals.pColor = { 255,255,255,255 };
-				//		}
-				//	}
-				//}
-
-				foundSimMode = false;
-				for (int i = 0; i < IM_ARRAYSIZE(simModesArray); i++) {
-					if (*simModesArray[i]) {
-						currentSimMode = i;
-						foundSimMode = true;
-						break;
-					}
-				}
-				if (!foundSimMode) {
-					galaxyModeDummy = true;
-					currentSimMode = 0;
-				}
-			}
-
-			if (ImGui::CollapsingHeader("System")) {
-				sliderHelper("Threads Amount", "Controls the amount of threads used by the simulation. Half your total amount of threads is usually the sweet spot", myVar.threadsAmount, 1, 32, parametersSliderX, parametersSliderY, enabled);
-				ImGui::Spacing();
-				ImGui::Separator();
-				ImGui::Spacing();
-			}
-			if (ImGui::CollapsingHeader("Domain", ImGuiTreeNodeFlags_DefaultOpen)) {
+			if (ImGui::CollapsingHeader("Boundary", ImGuiTreeNodeFlags_DefaultOpen)) {
 
 				buttonHelper("Infinite Boundary", "Enables or disables the domain boundaries that contain the simulation", myVar.infiniteDomain, -1.0f, settingsButtonY, true, enabled);
 
@@ -1289,7 +1284,7 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				sliderHelper("Softening", "Controls the smoothness of the gravity forces", myVar.softening, 0.5f, 30.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
 
 				sliderHelper("Gravity Strength", "Controls how much particles attract eachother", myVar.gravityMultiplier, 0.0f, 10.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
-				
+
 				if (!myVar.naive) {
 					sliderHelper("Gravity Quality (Lower is better)", "Controls the quality of the gravity calculation. Higher means lower quality", myVar.theta, 0.1f, 5.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
 				}
@@ -1297,6 +1292,18 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 				ImGui::Spacing();
 				buttonHelper("Brute Force Gravity (Slower)", "Simulates gravity with a Naive algorithm. It is the most precise, but does not scale well with high particle counts", myVar.naive, -1.0f, settingsButtonY, true, enabled);
 
+				/*ImGui::Spacing();
+				ImGui::Separator();
+
+				ImGui::TextColored(UpdateVariables::colMenuInformation, "Dark Matter");
+
+				ImGui::Separator();
+				ImGui::Spacing();*/
+
+				buttonHelper("Dark Matter", "Enables dark matter particles. This works for galaxies and Big Bang", myVar.isDarkMatterEnabled, -1.0f, settingsButtonY, true, enabled);
+				buttonHelper("Show Dark Matter", "Unhides dark matter particles", myParam.colorVisuals.showDarkMatterEnabled, -1.0f, settingsButtonY, true, enabled);
+
+				buttonHelper("Temperature Simulation", "Enables temperature simulation", myVar.isTempEnabled, -1.0f, settingsButtonY, true, enabled);
 				ImGui::Spacing();
 				ImGui::Separator();
 				ImGui::Spacing();
@@ -1329,6 +1336,11 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 						}
 
 						buttonHelper("Constraint Stress Color", "Maps the constraints stress to an RGB color", myVar.constraintStressColor, -1.0f, settingsButtonY, true, myVar.drawConstraints);
+						
+						if (myVar.constraintStressColor) {
+							sliderHelper("Constraint Stress Threshold", "Controls the max constraint stress used to map the colors in the constraints stress color mode. If set to 0, it will set the max stress to the material's breaking limit", myVar.constraintMaxStressColor, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled, LogSlider);
+						}
+						
 						ImGui::Spacing();
 						ImGui::Separator();
 						ImGui::Spacing();
@@ -1360,32 +1372,6 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 					if (!myVar.infiniteDomain && myVar.verticalGravityEnabled) {
 						sliderHelper("Boundary Friction", "Controls the friction of the domain walls", myVar.boundaryFriction, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled);
 					}
-
-					ImGui::BeginDisabled(!myVar.isSPHEnabled);
-
-					if (ImGui::BeginCombo("##Materials", materials[currentMat])) {
-						for (int i = 0; i < IM_ARRAYSIZE(materials); i++) {
-
-							bool isSelected = (currentMat == i);
-
-							if (ImGui::Selectable(materials[i], isSelected)) {
-								currentMat = i;
-							}
-
-							if (isSelected) {
-								ImGui::SetItemDefaultFocus();
-							}
-						}
-						ImGui::EndCombo();
-
-						for (int i = 0; i < IM_ARRAYSIZE(materialsArray); ++i) {
-							*materialsArray[i] = false;
-						}
-
-						*materialsArray[currentMat] = true;
-					}
-
-					ImGui::EndDisabled();
 				}
 			}
 		}
@@ -1560,190 +1546,187 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 			bool enabled = true;
 
-			ImVec4 imguiLightColor = rlImGuiColors::Convert(lighting.lightColor);
+			if (ImGui::CollapsingHeader("Meshes", ImGuiTreeNodeFlags_DefaultOpen)) {
 
-			Color imguiLightColorRl;
+				if (ImGui::CollapsingHeader("Base Color")) {
+					ImVec4 imguiWallBaseColor = rlImGuiColors::Convert(lighting.wallBaseColor);
 
-			ImGui::Spacing();
-			ImGui::Separator();
+					Color imguiWallBaseColorRl;
 
-			ImGui::TextColored(UpdateVariables::colMenuInformation, "Color Settings");
+					if (ImGui::ColorPicker3("Wall Base Color", (float*)&imguiWallBaseColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
+						imguiWallBaseColorRl = rlImGuiColors::Convert(imguiWallBaseColor);
+						lighting.wallBaseColor.r = imguiWallBaseColorRl.r;
+						lighting.wallBaseColor.g = imguiWallBaseColorRl.g;
+						lighting.wallBaseColor.b = imguiWallBaseColorRl.b;
+						lighting.wallBaseColor.a = imguiWallBaseColorRl.a;
 
-			ImGui::Separator();
-			ImGui::Spacing();
+						lighting.isSliderBaseColor = true;
+					}
+					ImGui::Spacing();
+					ImGui::Separator();
+					ImGui::Spacing();
+				}
 
-			if (ImGui::ColorPicker3("Light Color", (float*)&imguiLightColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
-				imguiLightColorRl = rlImGuiColors::Convert(imguiLightColor);
-				lighting.lightColor.r = imguiLightColorRl.r;
-				lighting.lightColor.g = imguiLightColorRl.g;
-				lighting.lightColor.b = imguiLightColorRl.b;
-				lighting.lightColor.a = imguiLightColorRl.a;
+				if (ImGui::CollapsingHeader("Specular")) {
+					ImVec4 imguiWallSpecularColor = rlImGuiColors::Convert(lighting.wallSpecularColor);
 
-				lighting.isSliderLightColor = true;
+					Color imguiWallSpecularColorRl;
+
+					if (ImGui::ColorPicker3("Wall Specular Color", (float*)&imguiWallSpecularColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
+						imguiWallSpecularColorRl = rlImGuiColors::Convert(imguiWallSpecularColor);
+						lighting.wallSpecularColor.r = imguiWallSpecularColorRl.r;
+						lighting.wallSpecularColor.g = imguiWallSpecularColorRl.g;
+						lighting.wallSpecularColor.b = imguiWallSpecularColorRl.b;
+						lighting.wallSpecularColor.a = imguiWallSpecularColorRl.a;
+
+						lighting.isSliderSpecularColor = true;
+					}
+
+					if (sliderHelper("Wall Specular Roughness", "Controls the specular reflections roughness of walls", lighting.wallSpecularRoughness, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled)) {
+						lighting.isSliderSpecularRough = true;
+					}
+					ImGui::Spacing();
+					ImGui::Separator();
+					ImGui::Spacing();
+				}
+
+				if (ImGui::CollapsingHeader("Refraction")) {
+					ImVec4 imguiWallRefractionColor = rlImGuiColors::Convert(lighting.wallRefractionColor);
+
+					Color imguiWallRefractionColorRl;
+
+					if (sliderHelper("Wall Refraction Amount", "Controls how much light walls will refract", lighting.wallRefractionAmount, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled)) {
+						lighting.isSliderRefractionAmount = true;;
+					}
+
+					if (ImGui::ColorPicker3("Wall Refraction Color", (float*)&imguiWallRefractionColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
+						imguiWallRefractionColorRl = rlImGuiColors::Convert(imguiWallRefractionColor);
+						lighting.wallRefractionColor.r = imguiWallRefractionColorRl.r;
+						lighting.wallRefractionColor.g = imguiWallRefractionColorRl.g;
+						lighting.wallRefractionColor.b = imguiWallRefractionColorRl.b;
+						lighting.wallRefractionColor.a = imguiWallRefractionColorRl.a;
+
+						lighting.isSliderRefractionCol = true;
+					}
+
+					if (sliderHelper("Wall Refraction Roughness", "Controls the refraction surface roughness of walls", lighting.wallRefractionRoughness, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled)) {
+						lighting.isSliderRefractionRough = true;
+					}
+
+					if (sliderHelper("Wall Dispersion", "Controls how much light gets dispersed after refracting from this wall", lighting.wallDispersion, 0.0f, 0.2f, parametersSliderX, parametersSliderY, enabled)) {
+						lighting.isSliderDispersion = true;
+					}
+					ImGui::Spacing();
+					ImGui::Separator();
+					ImGui::Spacing();
+				}
+
+				if (ImGui::CollapsingHeader("Emission")) {
+					ImVec4 imguiWallEmissionColor = rlImGuiColors::Convert(lighting.wallEmissionColor);
+
+					Color imguiWallEmissionColorRl;
+
+					if (ImGui::ColorPicker3("Wall Emission Color", (float*)&imguiWallEmissionColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
+						imguiWallEmissionColorRl = rlImGuiColors::Convert(imguiWallEmissionColor);
+						lighting.wallEmissionColor.r = imguiWallEmissionColorRl.r;
+						lighting.wallEmissionColor.g = imguiWallEmissionColorRl.g;
+						lighting.wallEmissionColor.b = imguiWallEmissionColorRl.b;
+						lighting.wallEmissionColor.a = imguiWallEmissionColorRl.a;
+
+						lighting.isSliderEmissionCol = true;
+					}
+
+					if (sliderHelper("Wall Emission Gain", "Controls how much light walls emit", lighting.wallEmissionGain, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled)) {
+						lighting.isSliderEmissionGain = true;
+					}
+					ImGui::Spacing();
+					ImGui::Separator();
+					ImGui::Spacing();
+				}
+
+				if (sliderHelper("Wall IOR", "Controls the IOR of walls", lighting.wallIOR, 0.0f, 100.0f, parametersSliderX, parametersSliderY, enabled)) {
+					lighting.isSliderIor = true;
+				}
 			}
 
-			ImVec4 imguiWallBaseColor = rlImGuiColors::Convert(lighting.wallBaseColor);
+			if (ImGui::CollapsingHeader("Lights", ImGuiTreeNodeFlags_DefaultOpen)) {
 
-			Color imguiWallBaseColorRl;
+				ImVec4 imguiLightColor = rlImGuiColors::Convert(lighting.lightColor);
 
-			if (ImGui::ColorPicker3("Wall Base Color", (float*)&imguiWallBaseColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
-				imguiWallBaseColorRl = rlImGuiColors::Convert(imguiWallBaseColor);
-				lighting.wallBaseColor.r = imguiWallBaseColorRl.r;
-				lighting.wallBaseColor.g = imguiWallBaseColorRl.g;
-				lighting.wallBaseColor.b = imguiWallBaseColorRl.b;
-				lighting.wallBaseColor.a = imguiWallBaseColorRl.a;
+				Color imguiLightColorRl;
 
-				lighting.isSliderBaseColor = true;
+				if (ImGui::ColorPicker3("Light Color", (float*)&imguiLightColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
+					imguiLightColorRl = rlImGuiColors::Convert(imguiLightColor);
+					lighting.lightColor.r = imguiLightColorRl.r;
+					lighting.lightColor.g = imguiLightColorRl.g;
+					lighting.lightColor.b = imguiLightColorRl.b;
+					lighting.lightColor.a = imguiLightColorRl.a;
+
+					lighting.isSliderLightColor = true;
+				}
+
+				if (sliderHelper("Light Gain", "Controls lights brightness", lighting.lightGain, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled, LogSlider)) {
+					lighting.isSliderLightGain = true;
+				}
+
+				if (sliderHelper("Light Spread", "Controls the spread of area and cone lights", lighting.lightSpread, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled)) {
+					lighting.isSliderlightSpread = true;
+				}
+
+				ImGui::Spacing();
+				ImGui::Separator();
+				ImGui::Spacing();
 			}
 
-			ImVec4 imguiWallSpecularColor = rlImGuiColors::Convert(lighting.wallSpecularColor);
+			if (ImGui::CollapsingHeader("Render Settings")) {
 
-			Color imguiWallSpecularColorRl;
+				if (ImGui::CollapsingHeader("Core")) {
+					if (buttonHelper("Global Illumination", "Enables global illumination", lighting.isDiffuseEnabled, -1.0f, settingsButtonY, enabled, enabled)) {
+						lighting.shouldRender = true;
+					}
+					if (buttonHelper("Specular Reflections", "Enables specular reflections", lighting.isSpecularEnabled, -1.0f, settingsButtonY, enabled, enabled)) {
+						lighting.shouldRender = true;
+					}
+					if (buttonHelper("Enable Refraction", "Enables refraction", lighting.isRefractionEnabled, -1.0f, settingsButtonY, enabled, enabled)) {
+						lighting.shouldRender = true;
+					}
+					if (buttonHelper("Dispersion", "Enables light dispersion with refraction", lighting.isDispersionEnabled, -1.0f, settingsButtonY, enabled, enabled)) {
+						lighting.shouldRender = true;
+					}
+					if (buttonHelper("Enable Emission", "Allows walls to emit light", lighting.isEmissionEnabled, -1.0f, settingsButtonY, enabled, enabled)) {
+						lighting.shouldRender = true;
+					}
+					ImGui::Spacing();
+					ImGui::Separator();
+					ImGui::Spacing();
+				}
 
-			if (ImGui::ColorPicker3("Wall Specular Color", (float*)&imguiWallSpecularColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
-				imguiWallSpecularColorRl = rlImGuiColors::Convert(imguiWallSpecularColor);
-				lighting.wallSpecularColor.r = imguiWallSpecularColorRl.r;
-				lighting.wallSpecularColor.g = imguiWallSpecularColorRl.g;
-				lighting.wallSpecularColor.b = imguiWallSpecularColorRl.b;
-				lighting.wallSpecularColor.a = imguiWallSpecularColorRl.a;
+				if (ImGui::CollapsingHeader("Quality")) {
+					if (sliderHelper("Max Samples", "Controls the total amount of lighting iterations", lighting.maxSamples, 1, 2048, parametersSliderX, parametersSliderY, enabled)) {
+						lighting.shouldRender = true;
+					}
+					if (sliderHelper("Rays Per Sample", "Controls amount of rays emitted on each sample", lighting.sampleRaysAmount, 1, 8192, parametersSliderX, parametersSliderY, enabled)) {
+						lighting.shouldRender = true;
+					}
+					if (sliderHelper("Max Bounces", "Controls how many times rays can bounce", lighting.maxBounces, 0, 16, parametersSliderX, parametersSliderY, enabled)) {
+						lighting.shouldRender = true;
+					}
+					ImGui::Spacing();
+					ImGui::Separator();
+					ImGui::Spacing();
+				}
 
-				lighting.isSliderSpecularColor = true;
+				if (ImGui::CollapsingHeader("Misc.")) {
+					buttonHelper("Show Normals", "Displays the direction a wall is pointing at, also know as the normal", lighting.drawNormals, -1.0f, settingsButtonY, enabled, enabled);
+
+					ImGui::Spacing();
+					ImGui::Separator();
+					ImGui::Spacing();
+				}
+				ImGui::Spacing();
+				ImGui::Separator();
+				ImGui::Spacing();
 			}
-
-			ImVec4 imguiWallRefractionColor = rlImGuiColors::Convert(lighting.wallRefractionColor);
-
-			Color imguiWallRefractionColorRl;
-
-			if (ImGui::ColorPicker3("Wall Refraction Color", (float*)&imguiWallRefractionColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
-				imguiWallRefractionColorRl = rlImGuiColors::Convert(imguiWallRefractionColor);
-				lighting.wallRefractionColor.r = imguiWallRefractionColorRl.r;
-				lighting.wallRefractionColor.g = imguiWallRefractionColorRl.g;
-				lighting.wallRefractionColor.b = imguiWallRefractionColorRl.b;
-				lighting.wallRefractionColor.a = imguiWallRefractionColorRl.a;
-
-				lighting.isSliderRefractionCol = true;
-			}
-
-			ImVec4 imguiWallEmissionColor = rlImGuiColors::Convert(lighting.wallEmissionColor);
-
-			Color imguiWallEmissionColorRl;
-
-			if (ImGui::ColorPicker3("Wall Emission Color", (float*)&imguiWallEmissionColor, ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_DisplayRGB)) {
-				imguiWallEmissionColorRl = rlImGuiColors::Convert(imguiWallEmissionColor);
-				lighting.wallEmissionColor.r = imguiWallEmissionColorRl.r;
-				lighting.wallEmissionColor.g = imguiWallEmissionColorRl.g;
-				lighting.wallEmissionColor.b = imguiWallEmissionColorRl.b;
-				lighting.wallEmissionColor.a = imguiWallEmissionColorRl.a;
-
-				lighting.isSliderEmissionCol = true;
-			}
-
-			ImGui::Spacing();
-			ImGui::Separator();
-
-			ImGui::TextColored(UpdateVariables::colMenuInformation, "Light Settings");
-
-			ImGui::Separator();
-			ImGui::Spacing();
-
-			if (sliderHelper("Light Gain", "Controls lights brightness", lighting.lightGain, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled, LogSlider)) {
-				lighting.isSliderLightGain = true;
-			}
-
-			if (sliderHelper("Light Spread", "Controls the spread of area and cone lights", lighting.lightSpread, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled)) {
-				lighting.isSliderlightSpread = true;
-			}
-
-			ImGui::Spacing();
-			ImGui::Separator();
-
-			ImGui::TextColored(UpdateVariables::colMenuInformation, "Wall Material Settings");
-
-			ImGui::Separator();
-			ImGui::Spacing();
-
-			if (sliderHelper("Wall Specular Roughness", "Controls the specular reflections roughness of walls", lighting.wallSpecularRoughness, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled)) {
-				lighting.isSliderSpecularRough = true;
-			}
-			if (sliderHelper("Wall Refraction Roughness", "Controls the refraction surface roughness of walls", lighting.wallRefractionRoughness, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled)) {
-				lighting.isSliderRefractionRough = true;
-			}
-
-			if (sliderHelper("Wall Refraction Amount", "Controls how much light walls will refract", lighting.wallRefractionAmount, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled)) {
-				lighting.isSliderRefractionAmount = true;;
-			}
-
-			if (sliderHelper("Wall IOR", "Controls the IOR of walls", lighting.wallIOR, 0.0f, 100.0f, parametersSliderX, parametersSliderY, enabled)) {
-				lighting.isSliderIor = true;
-			}
-
-			if (sliderHelper("Wall Dispersion", "Controls how much light gets dispersed after refracting from this wall", lighting.wallDispersion, 0.0f, 0.2f, parametersSliderX, parametersSliderY, enabled)) {
-				lighting.isSliderDispersion = true;
-			}
-
-			if (sliderHelper("Wall Emission Gain", "Controls how much light walls emit", lighting.wallEmissionGain, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled)) {
-				lighting.isSliderEmissionGain = true;
-			}
-
-			ImGui::Spacing();
-			ImGui::Separator();
-
-			ImGui::TextColored(UpdateVariables::colMenuInformation, "Shape Settings");
-
-			ImGui::Separator();
-			ImGui::Spacing();
-
-			sliderHelper("Shape Relax Iter.", "Controls the iterations used to relax the shapes when drawing", lighting.shapeRelaxIter, 0, 50, parametersSliderX, parametersSliderY, enabled);
-			sliderHelper("Shape Relax Factor", "Controls how much the drawn shape should relax each iteration", lighting.shapeRelaxFactor, 0.0f, 1.0f, parametersSliderX, parametersSliderY, enabled);
-
-			ImGui::Spacing();
-			ImGui::Separator();
-
-			ImGui::TextColored(UpdateVariables::colMenuInformation, "Render Settings");
-
-			ImGui::Separator();
-			ImGui::Spacing();
-
-			if (sliderHelper("Max Samples", "Controls the total amount of lighting iterations", lighting.maxSamples, 1, 2048, parametersSliderX, parametersSliderY, enabled)) {
-				lighting.shouldRender = true;
-			}
-			if (sliderHelper("Rays Per Sample", "Controls amount of rays emitted on each sample", lighting.sampleRaysAmount, 1, 8192, parametersSliderX, parametersSliderY, enabled)) {
-				lighting.shouldRender = true;
-			}
-			if (sliderHelper("Max Bounces", "Controls how many times rays can bounce", lighting.maxBounces, 0, 16, parametersSliderX, parametersSliderY, enabled)) {
-				lighting.shouldRender = true;
-			}
-
-			if (buttonHelper("Global Illumination", "Enables global illumination", lighting.isDiffuseEnabled, -1.0f, settingsButtonY, enabled, enabled)) {
-				lighting.shouldRender = true;
-			}
-			if (buttonHelper("Specular Reflections", "Enables specular reflections", lighting.isSpecularEnabled, -1.0f, settingsButtonY, enabled, enabled)) {
-				lighting.shouldRender = true;
-			}
-			if (buttonHelper("Refraction", "Enables refraction", lighting.isRefractionEnabled, -1.0f, settingsButtonY, enabled, enabled)) {
-				lighting.shouldRender = true;
-			}
-			if (buttonHelper("Dispersion", "Enables light dispersion with refraction", lighting.isDispersionEnabled, -1.0f, settingsButtonY, enabled, enabled)) {
-				lighting.shouldRender = true;
-			}
-			if (buttonHelper("Emission", "Allows walls to emit light", lighting.isEmissionEnabled, -1.0f, settingsButtonY, enabled, enabled)) {
-				lighting.shouldRender = true;
-			}
-
-			ImGui::Spacing();
-			ImGui::Separator();
-
-			ImGui::TextColored(UpdateVariables::colMenuInformation, "Misc. Settings");
-
-			ImGui::Separator();
-			ImGui::Spacing();
-
-			buttonHelper("Symmetrical Lens", "Makes both sides of the next lens editable. Hold LCTRL to move both sides at the same time", lighting.symmetricalLens, -1.0f, settingsButtonY, enabled, enabled);
-
-			buttonHelper("Show Normals", "Displays the direction a wall is pointing at, also know as the normal", lighting.drawNormals, -1.0f, settingsButtonY, enabled, enabled);
-
-			buttonHelper("Relax Shape When Moved", "Relaxes shapes when moving their walls. This is affected too by the relax sliders", lighting.relaxMove, -1.0f, settingsButtonY, enabled, enabled);
-
 		}
 	}
 
@@ -1751,9 +1734,9 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 
 	ImGui::End();
 
-	myParam.rightClickSettings.rightClickMenu(myVar, myParam);
+	myParam.rightClickSettings.rightClickMenu(myVar, myParam, armor.disableBoxFlag, armor.disableCircleFlag);
 
-	myParam.controls.showControls();
+	myParam.controls.showControls(parametersWindowSizeX);
 	myParam.controls.showInfo(myVar.fullscreenState);
 
 	ImVec2 statsSize = { 250.0f, myVar.isOpticsEnabled ? 230.0f : 120.0f };
@@ -1766,10 +1749,10 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 		statsSize.y += 25.0f;
 	}
 
-	float statsPosX = screenX - statsSize.x - buttonsWindowX - 20.0f;
+	float statsPosX = screenX - statsSize.x - buttonsWindowX;
 
 	ImGui::SetNextWindowSize(statsSize, ImGuiCond_Always);
-	ImGui::SetNextWindowPos(ImVec2(screenX - statsSize.x - buttonsWindowX - 20.0f, 0.0f), ImGuiCond_Always);
+	ImGui::SetNextWindowPos(ImVec2(screenX - statsSize.x - buttonsWindowX, 0.0f), ImGuiCond_Always);
 
 	ImGui::Begin("Stats", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
 
@@ -1864,6 +1847,19 @@ void UI::uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, Sa
 	ImGui::End();
 
 	myVar.loadDropDownMenus = false;
+
+	ImGui::SetNextWindowPos(ImVec2(parametersWindowSizeX + myParam.controls.controlsSize.x, 0.0f));
+	ImGui::SetNextWindowSize(ImVec2(statsPosX - (parametersWindowSizeX + myParam.controls.controlsSize.x), 150.0f));
+
+	ImGui::Begin("Quick Actions", nullptr, ImGuiWindowFlags_NoResize);
+
+	buttonHelper("Clear Scene", "Clears the entire scene", myVar.clearScene, 100.0f, settingsButtonY, enabled, enabled);
+
+	ImGui::SameLine();
+
+	buttonHelper("Clear Scenes", "Clears the entire scene", myVar.clearScene, 100.0f, settingsButtonY, enabled, enabled);
+
+	ImGui::End();
 }
 
 void UI::statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar) {

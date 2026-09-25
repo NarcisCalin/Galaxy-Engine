@@ -30,6 +30,7 @@ set(
     Particles/particlesSpawning.cpp
     Particles/particleSubdivision.cpp
     Particles/particleTrails.cpp
+    Physics/armorMode.cpp
     Physics/morton.cpp
     Physics/physics.cpp
     Physics/physics3D.cpp

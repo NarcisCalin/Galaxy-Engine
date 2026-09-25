@@ -25,9 +25,9 @@ public:
 
 	bool isMenuActive = false;
 
-	void rightClickMenuSpawnLogic(bool& isMouseNotHoveringUI, bool& isSpawningAlone, bool& isDragging, bool& selectedColor);
+	void rightClickMenuSpawnLogic(bool& isMouseNotHoveringUI, bool& isSpawningAlone, bool& isDragging, bool& selectedColor, bool& disableBoxFlag, bool& disableCircleFlag);
 
-	void rightClickMenu(UpdateVariables& myVar, UpdateParameters& myParam);
+	void rightClickMenu(UpdateVariables& myVar, UpdateParameters& myParam, bool& disableBoxFlag, bool& disableCircleFlag);
 
 private:
 

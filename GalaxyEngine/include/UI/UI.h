@@ -15,6 +15,7 @@
 #include "parameters.h"
 
 #include "Physics/field.h"
+#include "Physics/armorMode.h"
 
 class SaveSystem;
 
@@ -41,7 +42,6 @@ struct PlotData {
 class UI {
 public:
 
-	bool bToolsSettings = true;
 	bool bVisualsSliders = false;
 	bool bPhysicsSliders = false;
 	bool bRecordingSettings = false;
@@ -53,7 +53,7 @@ public:
 	bool prevMassMultiplier = false;
 
 	void uiLogic(UpdateParameters& myParam, UpdateVariables& myVar, SPH& sph, SaveSystem& save, 
-		GESound& geSound, Lighting& lighting, Field& field, ParticleSpaceship& ship);
+		GESound& geSound, Lighting& lighting, Field& field, ParticleSpaceship& ship, ArmorMode& armor);
 
 	void statsWindowLogic(UpdateParameters& myParam, UpdateVariables& myVar);
 

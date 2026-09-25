@@ -49,7 +49,7 @@ void ParticlesSpawning::particlesInitialConditions(Physics& physics, UpdateVaria
 			myVar.constraintAfterDrawingFlag = false;
 		}
 
-		if ((IO::mouseDown(2) || (IO::mouseDown(0) && myVar.toolDrawParticles)) && !IO::shortcutDown(KEY_LEFT_CONTROL) && !IO::shortcutDown(KEY_LEFT_ALT) && !IO::shortcutDown(KEY_X)) {
+		if ((IO::mouseDown(0) && myVar.toolDrawParticles) && !IO::shortcutDown(KEY_LEFT_CONTROL) && !IO::shortcutDown(KEY_LEFT_ALT) && !IO::shortcutDown(KEY_X)) {
 			myVar.isBrushDrawing = true;
 
 			myParam.brush.brushLogic(myParam, myVar.isSPHEnabled, myVar.constraintAfterDrawing, myVar.massScatter, myVar);
@@ -548,7 +548,7 @@ void ParticlesSpawning3D::particlesInitialConditions(Physics3D& physics3D, Updat
 			myVar.constraintAfterDrawingFlag = false;
 		}
 
-		if ((IO::mouseDown(2) || (IO::mouseDown(0) && myVar.toolDrawParticles)) && !IO::shortcutDown(KEY_LEFT_CONTROL) && !IO::shortcutDown(KEY_LEFT_ALT) && !IO::shortcutDown(KEY_X)) {
+		if ((IO::mouseDown(0) && myVar.toolDrawParticles) && !IO::shortcutDown(KEY_LEFT_CONTROL) && !IO::shortcutDown(KEY_LEFT_ALT) && !IO::shortcutDown(KEY_X)) {
 			myVar.isBrushDrawing = true;
 
 			myParam.brush3D.brushLogic(myParam, myVar.isSPHEnabled, myVar.constraintAfterDrawing, myVar.massScatter, myVar);

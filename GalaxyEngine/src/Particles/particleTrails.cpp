@@ -371,14 +371,6 @@ void ParticleTrails::trailLogic3D(UpdateVariables& myVar, UpdateParameters& myPa
 	if (!myVar.isGlobalTrailsEnabled && !myVar.isSelectedTrailsEnabled) {
 		segments3D.clear();
 	}
-
-	if (IO::shortcutPress(KEY_C)) {
-		myParam.pParticles.clear();
-		myParam.rParticles.clear();
-		myParam.pParticles3D.clear();
-		myParam.rParticles3D.clear();
-		segments3D.clear();
-	}
 }
 
 void ParticleTrails::drawTrail3D(std::vector<ParticleRendering3D>& rParticles3D, Texture2D& particleBlur, Camera3D& cam3D) {

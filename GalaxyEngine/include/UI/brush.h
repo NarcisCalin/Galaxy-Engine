@@ -17,6 +17,8 @@ class Brush {
 public:
 	glm::vec2 mouseWorldPos;
 
+	void brushMatHelper(matIds label, UpdateParameters& myParam, UpdateVariables& myVar);
+
 	void brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& constraintAfterDrawing, float& massScatter, UpdateVariables& myVar);
 
 	void brushSize();
@@ -50,6 +52,8 @@ private:
 class Brush3D {
 public:
 	glm::vec2 mouseWorldPos;
+
+	void brushMatHelper(matIds label, UpdateParameters& myParam, UpdateVariables& myVar);
 
 	void brushLogic(UpdateParameters& myParam, bool& isSPHEnabled, bool& constraintAfterDrawing, float& massScatter, UpdateVariables& myVar);
 

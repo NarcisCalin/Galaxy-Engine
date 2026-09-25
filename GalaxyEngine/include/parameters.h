@@ -147,6 +147,7 @@ struct UpdateVariables {
 	bool isTempEnabled = false;
 	bool constraintsEnabled = false;
 	bool isOpticsEnabled = false;
+	bool isArmorModeEnabled = false;
 
 	bool isGPUEnabled = false;
 
@@ -365,4 +366,9 @@ struct UpdateVariables {
 	bool isCellularModeOn = false;
 
 	bool boundaryCollision = false;
+
+	bool clearScene = false;
+
+	bool toolBoxDraw = false;
+	bool toolDrawCircle = false;
 };

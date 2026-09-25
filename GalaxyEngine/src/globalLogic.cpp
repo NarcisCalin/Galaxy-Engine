@@ -19,6 +19,8 @@ Grid grid;
 
 Field field;
 
+ArmorMode armor;
+
 std::vector<Node> globalNodes;
 std::vector<Node3D> globalNodes3D;
 
@@ -1107,6 +1109,11 @@ glm::vec3 bb = { 0.0f, 0.0f, 0.0f };
 bool lastOpticsState = myVar.isOpticsEnabled;
 
 void updateScene() {
+
+	/*DrawCircleV({ a.x, a.y }, 10.0f, RED);
+	DrawCircleV({ b.x, b.y }, 10.0f, RED);*/
+
+	armor.armorLogic(myParam, myVar, physics, myParam.brush.brushRadius);
 
 	if (lastOpticsState != myVar.isOpticsEnabled) {
 
@@ -2595,7 +2602,7 @@ void drawScene(Texture2D& particleBlurTex, RenderTexture2D& myRayTracingTexture,
 	}
 
 	if (!introActive) {
-		myUI.uiLogic(myParam, myVar, sph, save, geSound, lighting, field, ship);
+		myUI.uiLogic(myParam, myVar, sph, save, geSound, lighting, field, ship, armor);
 	}
 
 	save.saveLoadLogic(myVar, myParam, sph, physics, physics3D, lighting, field);

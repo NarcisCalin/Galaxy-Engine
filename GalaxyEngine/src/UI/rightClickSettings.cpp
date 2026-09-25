@@ -4,7 +4,7 @@
 #include "parameters.h"
 
 void RightClickSettings::rightClickMenuSpawnLogic(bool& isMouseNotHoveringUI,
-	bool& isSpawningAllowed, bool& isDragging, bool& selectedColor) {
+	bool& isSpawningAllowed, bool& isDragging, bool& selectedColor, bool& disableBoxFlag, bool& disableCircleFlag) {
 
 	static bool     isMouseMoving = false;
 	static glm::vec2  dragStartPos = { 0.0f, 0.0f };
@@ -31,7 +31,9 @@ void RightClickSettings::rightClickMenuSpawnLogic(bool& isMouseNotHoveringUI,
 		!IsKeyDown(KEY_LEFT_ALT) &&
 		!isMouseMoving &&
 		isMouseNotHoveringUI &&
-		!IsMouseButtonDown(0)) {
+		!IsMouseButtonDown(0) &&
+		!disableBoxFlag &&
+		!disableCircleFlag) {
 		isMenuActive = true;
 		spawnBlocked = false;
 		selectedColorOriginal = selectedColor;
@@ -59,9 +61,9 @@ void RightClickSettings::rightClickMenuSpawnLogic(bool& isMouseNotHoveringUI,
 }
 
 
-void RightClickSettings::rightClickMenu(UpdateVariables& myVar, UpdateParameters& myParam) {
+void RightClickSettings::rightClickMenu(UpdateVariables& myVar, UpdateParameters& myParam, bool& disableBoxFlag, bool& disableCircleFlag) {
 
-	rightClickMenuSpawnLogic(myVar.isMouseNotHoveringUI, myVar.isSpawningAllowed, myVar.isDragging, myParam.colorVisuals.selectedColor);
+	rightClickMenuSpawnLogic(myVar.isMouseNotHoveringUI, myVar.isSpawningAllowed, myVar.isDragging, myParam.colorVisuals.selectedColor, disableBoxFlag, disableCircleFlag);
 
 	if (isMenuActive) {
 

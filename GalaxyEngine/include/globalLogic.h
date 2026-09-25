@@ -37,6 +37,8 @@
 
 #include "Grid/Grid.h"
 
+#include "Physics/armorMode.h"
+
 #include "parameters.h"
 
 extern UpdateParameters myParam;
@@ -57,6 +59,8 @@ extern RayMarcher rayMarcher;
 extern Field field;
 
 extern Grid grid;
+
+extern ArmorMode armor;
 
 struct ParticleBounds {
 	float minX, maxX, minY, maxY;
